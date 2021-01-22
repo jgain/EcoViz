@@ -553,7 +553,6 @@ private:
     void set_ipc_scaling();
 
     void set_specassign_chm(MapFloat *chm);
-    void send_and_receive_nnet();
     void adapt_species_changed();
     void optimise_species_brushstroke(string outfile = "");
 

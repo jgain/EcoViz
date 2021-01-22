@@ -64,14 +64,9 @@
 #include "eco.h"
 #include "window.h"
 #include "data_importer/extract_png.h"
-#include "canopy_placement/gpu_procs.h"
-#include "canopy_placement/canopy_placer.h"
-#include "species_optim/species_assign_exp.h"
-#include "ClusterMatrices.h"
 #include "specselect_window.h"
 #include "histcomp_window.h"
 #include <data_importer/AbioticMapper.h>
-#include <UndergrowthRefiner.h>
 #include <common/custom_exceptions.h>
 
 #include <math.h>
@@ -2050,46 +2045,6 @@ void GLWidget::correct_chm_scaling()
         if (chmdata[i] > max_height) max_height = chmdata[i];
     }
     std::cout << "Maximum height: " << max_height << std::endl;
-
-}
-
-void GLWidget::send_and_receive_nnet()
-{
-    Timer t;
-    t.start();
-
-
-    // send inputs to neural net
-    int scale_down = get_terscale_down(scale_size);		// get the scaling down factor to have image fit into neural net - FIXME: this must actually be 4 always, but we just use this now for experimentation with smaller landscapes
-
-    std::cout << "Sending input to neural net..." << std::endl;
-    ipc->send(getTypeMap(TypeMapType::PAINT), getTerrain(), scale_down);
-
-    std::cout << "Waiting for response from neural net..." << std::endl;
-    // wait to receive neural net outputs
-    ipc->receive_only(ipc_received_raw);
-    //ipc->receive(getCanopyHeightModel());
-
-    std::cout << "Setting scaling factor for nnet..." << std::endl;
-    // set scaling factor for neural net output
-    set_ipc_scaling();
-
-    report_cudamem("GPU memory in use before bilinear upsample: ");
-    std::cout << "Upsampling neural net output..." << std::endl;
-    // upsample chm we obtained from neural net by the appropriate factor (should be 4, see comment at top of function)
-    bilinear_upsample_colmajor_allocate_gpu(ipc_received_raw->data(), getCanopyHeightModel()->data(), ipc_scaling.srcw, ipc_scaling.srch, ipc_scaling.intscale);	// TODO: Make this upsample factor a class variable or constant or something
-    report_cudamem("GPU memory in use after bilinear upsample: ");
-
-    correct_chm_scaling();
-
-    // set CHM for species assignment. Find a quicker way to do this...?
-    set_specassign_chm(getCanopyHeightModel());
-
-    //getTypeMap(TypeMapType::CHM)->convert(getCanopyHeightModel(), TypeMapType::CHM, mtoft*initmaxt);
-    cerr << "typemap size: " << getTypeMap(TypeMapType::CHM)->width() << ", " << getTypeMap(TypeMapType::CHM)->height() << std::endl;
-    cerr << "CHM size: " << getCanopyHeightModel()->width() << ", " << getCanopyHeightModel()->height() << std::endl;
-    t.stop();
-    cerr << "Time for data send and receive " << t.peek() << endl;
 
 }
 
