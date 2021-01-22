@@ -88,16 +88,6 @@
 
 using layerspec = ClusterMatrices::layerspec;
 
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-   if (code != cudaSuccess)
-   {
-      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-      if (abort) exit(code);
-   }
-}
-
 static std::string get_errstring(GLuint errcode)
 {
     switch (errcode)
@@ -315,9 +305,6 @@ GLWidget::~GLWidget()
     if(vizpopup) delete vizpopup;
 
     if (renderer) delete renderer;
-
-    if (specassign_ptr)
-        specassign_ptr.reset(nullptr);
 
     // delete views
     for(int i = 0; i < (int) scenes.size(); i++)
@@ -673,55 +660,6 @@ float GLWidget::getLearnBrushRadius()
     return learnbrush_rad;
 }
 
-void GLWidget::setLearnBrushRadius(float rad)
-{
-    learnbrush_rad = rad;
-
-    if (cmode == ControlMode::PAINTLEARN)
-    {
-        setRadius(learnbrush_rad);
-    }
-}
-
-void GLWidget::species_added(int id)
-{
-    if (species_infomap.count(id) == 0)
-        species_infomap.insert({ id, all_possible_species.at(id) });
-    // only if scene has been loaded already, do we reset specassign ptr. This is
-    // because we cannot set it without a loaded scene, and it gets reset anyway when
-    // a scene gets loaded (see GLWidget::loadScene)
-    if (sceneloaded)
-        species_changed = true;
-        //reset_specassign_ptr();
-    // TODO: re-enable species paint button here
-}
-
-void GLWidget::species_removed(int id)
-{
-    if (species_infomap.count(id) > 0)
-        species_infomap.erase(id);
-    if (sceneloaded)
-        species_changed = true;
-        //reset_specassign_ptr();
-    // TODO: disable species paint button here
-}
-
-float GLWidget::getSpeciesBrushRadius()
-{
-    return specbrush_rad;
-}
-
-void GLWidget::setSpeciesBrushRadius(float rad)
-{
-    specbrush_rad = rad;
-
-    if (cmode == ControlMode::PAINTSPECIES)
-    {
-        setRadius(specbrush_rad);
-    }
-}
-
-
 void GLWidget::bandCanopyHeightTexture(float mint, float maxt)
 {
     getTypeMap(TypeMapType::CHM)->bandCHMMapEric(getCanopyHeightModel(), mint*mtoft, maxt*mtoft);
@@ -1009,147 +947,6 @@ void GLWidget::loadScene(std::string dirprefix)
     setPlantsVisibility(true);
 }
 
-void GLWidget::reset_specassign_ptr()
-{
-    std::map<int, ValueMap<float> > drawmap;
-    std::map<int, ValueMap<bool > > draw_indicator;
-    std::map<int, int> convertmap_idxtoid;
-
-    bool first = true;
-
-    // if we have assigned species previously, we wish to preserve the previous drawing maps.
-    // so we copy them to temporary ones, declared above
-    if (specassign_ptr)
-    {
-        first = false;
-        specassign_ptr->get_mult_maps(drawmap, draw_indicator);
-
-        for (auto &p : drawmap)
-        {
-            // just making sure that the maps correspond in terms of species indexes...
-            assert(draw_indicator.count(p.first) > 0);
-
-            // we need to keep track of which id each index represents for the specassign_ptr that is about to be reset,
-            // so that we can assign the right map to the appropriate species index for the new specassign_ptr
-            convertmap_idxtoid[p.first] = specidxes.at(p.first);
-        }
-    }
-
-    specassign_ptr.reset(nullptr);
-
-    //data_importer::common_data cdata(db_pathname);
-
-    int chmw, chmh;
-
-    MapFloat *chm = getCanopyHeightModel();
-    chm->getDim(chmw, chmh);
-
-    MapFloat *tempmap = getTemperature();
-    MapFloat *slopemap = getSlope();
-    MapFloat *wetmap = getSim()->get_average_moisture_map();
-    MapFloat *sunmap = getSim()->get_average_landsun_map();
-
-    ValueMap<float> tempvmap(chmw, chmh);
-    ValueMap<float> slopevmap(chmw, chmh);
-    ValueMap<float> wetvmap(chmw, chmh);
-    ValueMap<float> sunvmap(chmw, chmh);
-    ValueMap<float> chmvmap(chmw, chmh);
-
-    tempvmap.fill(tempmap->data());
-    slopevmap.fill(slopemap->data());
-    wetvmap.fill(wetmap->data());
-    sunvmap.fill(sunmap->data());
-    chmvmap.fill(chm->data());
-
-    std::vector<ValueMap<float> > vmaps = {tempvmap, slopevmap, wetvmap, sunvmap};
-
-    specidxes.clear();
-    allspecs.clear();
-
-    std::vector<float> max_heights;
-
-    auto get_ideal = [] (const data_importer::viability &viab)
-    {
-        return (viab.cmin + viab.cmax) / 2.0f;
-    };
-
-    auto get_tolerance = [] (const data_importer::viability &viab)
-    {
-        return (viab.cmax - viab.cmin) / 2.0f;
-    };
-
-    std::vector<int> incl_canopyspecs;
-    for (auto &p : species_infomap)
-    {
-        incl_canopyspecs.push_back(p.first);
-    }
-
-
-    specidxes.clear();
-    specassign_id_to_idx.clear();
-    allspecs.clear();
-
-    int count = 0;
-    for (const std::pair<int, data_importer::species> &sppair : cdata.all_species)
-    {
-        // if we cannot find this species in which canopy species we wish to include, we skip it
-        if (std::find(incl_canopyspecs.begin(), incl_canopyspecs.end(), sppair.first) == incl_canopyspecs.end())
-        {
-            continue;
-        }
-
-        data_importer::viability tempviab = sppair.second.temp;
-        data_importer::viability slopeviab = sppair.second.slope;
-        data_importer::viability wetviab = sppair.second.wet;
-        data_importer::viability sunviab = sppair.second.sun;
-        std::vector<suit_func> funcs = {
-            suit_func(get_ideal(tempviab), get_tolerance(tempviab)),
-            suit_func(get_ideal(slopeviab), get_tolerance(slopeviab)),
-            suit_func(get_ideal(wetviab), get_tolerance(wetviab)),
-            suit_func(get_ideal(sunviab), get_tolerance(sunviab))
-        };
-
-        specidxes.push_back(sppair.first);
-        specassign_id_to_idx[sppair.first] = count;
-        allspecs.push_back(species(funcs, sppair.second.maxhght, 0));
-        max_heights.push_back(sppair.second.maxhght);
-        count++;
-    }
-
-
-    specassign_ptr = std::unique_ptr<species_assign>(new species_assign(chmvmap, vmaps, allspecs, max_heights));
-
-    std::map<int, ValueMap<float> > newdrawmap;
-    std::map<int, ValueMap<bool> > newindic_map;
-
-    specassign_ptr->get_mult_maps(newdrawmap, newindic_map);
-
-    // if species has been assigned previously, we move the old drawing maps to new ones
-    // that use indices that correspond with the new specassign_ptr
-    if (!first)
-    {
-        for (auto &p : drawmap)
-        {
-            // convert old indices to new ones for the new ptr
-            int id = convertmap_idxtoid.at(p.first);
-            int newidx;
-            try
-            {
-                newidx = specassign_id_to_idx.at(id);
-            }
-            catch (std::out_of_range &e)
-            {
-                // in this case, a species present in the previous ptr was removed from the current one.
-                // It will therefore not have a place in the new ptr's map
-                continue;
-            }
-            // we std::move to save memory/performance, since the maps can potentially be quite big
-            newdrawmap.at(newidx) = std::move(p.second);
-            newindic_map.at(newidx) = std::move(draw_indicator.at(p.first));
-        }
-        specassign_ptr->set_mult_maps(newdrawmap, newindic_map);
-    }
-}
 
 void GLWidget::saveScene(std::string dirprefix)
 {
@@ -1534,15 +1331,6 @@ void GLWidget::read_pdb_undergrowth(std::string pathname)
 
 }
 
-void GLWidget::adapt_species_changed()
-{
-    if (species_changed)
-    {
-        reset_specassign_ptr();
-        species_changed = false;
-    }
-}
-
 void GLWidget::setSpeciesPercentages(const std::vector<float> &perc)
 {
     species_percentages = perc;
@@ -1621,7 +1409,6 @@ void GLWidget::import_canopyshading(std::string canopyshading)
 void GLWidget::report_cudamem(std::string msg) const
 {
     size_t freemem, totalmem, inuse;
-    gpuErrchk(cudaMemGetInfo(&freemem, &totalmem));
     inuse = totalmem - freemem;
     inuse /= 1024 * 1024;
     std::cout << msg << " " << inuse << "MB" << std::endl;
@@ -1955,23 +1742,6 @@ void GLWidget::set_ipc_scaling()
 
 }
 
-void GLWidget::set_specassign_chm(MapFloat *chm)
-{
-    if (!specassign_ptr)
-        return;
-
-    int w, h;
-    chm->getDim(w, h);
-
-    ValueMap<float> tempchm;
-    tempchm.setDim(*chm);
-    //memcpy(tempchm.data(), getCanopyHeightModel()->data(), sizeof(float) * ipc_scaling.intscale * ipc_scaling.intscale * ipc_scaling.srcw * ipc_scaling.srch);
-    memcpy(tempchm.data(), getCanopyHeightModel()->data(), sizeof(float) * w * h);
-    report_cudamem("GPU memory in use before specassign_ptr->set_chm: ");
-    specassign_ptr->set_chm(tempchm);
-    report_cudamem("GPU memory in use after specassign_ptr->set_chm: ");
-}
-
 void GLWidget::correct_chm_scaling()
 {
     MapFloat *chm = getCanopyHeightModel();		// TODO: scale CHM data from the 0 to 65535 range to 0 to 400
@@ -2083,8 +1853,6 @@ void GLWidget::update_species_brushstroke(int x, int y, float radius, int specie
     gx = fgx; gy = fgy; gh = fgh;
     irad = getTerrain()->toGrid(radius);
     std::swap(gx, gy);		// have to swap these, since landscape xy's are the other way around
-
-    specassign_ptr->add_drawn_circle(gx, gy, irad, 1.0f, specie);
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)

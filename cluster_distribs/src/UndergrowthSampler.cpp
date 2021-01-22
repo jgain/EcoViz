@@ -23,7 +23,6 @@
 #include "ClusterMatrices.h"
 #include "ClusterMaps.h"
 #include "common/constants.h"
-#include <gpusample/src/gpusample.h>
 
 
 
@@ -282,12 +281,6 @@ std::vector<basic_tree> UndergrowthSampler::sample_undergrowth()
     while (nsampled_round > 0);
 
     return undergrowth;
-}
-
-std::vector<basic_tree> UndergrowthSampler::sample_undergrowth_gpu(const std::vector<basic_tree> &canopytrees)
-{
-    clmaps.set_sunmap(sunbackup);
-    return compute_and_sample_plants(clmaps, model, canopytrees, progress_callback);
 }
 
 int UndergrowthSampler::get_overall_target_count()

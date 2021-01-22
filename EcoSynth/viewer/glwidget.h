@@ -81,8 +81,6 @@
 #include "sim.h"
 #include "ipc.h"
 #include "palette.h"
-#include "species_optim/species_assign_exp.h"
-#include "canopy_placement/canopy_placer.h"
 #include "ClusterMatrices.h"
 
 #define PAINTCONTROL
@@ -415,8 +413,6 @@ private:
         int intscale;
     } ipc_scaling;
 
-    std::unique_ptr<species_assign> specassign_ptr;
-    std::vector<species> allspecs;
     std::vector<int> specidxes;		// mapping from index to real species
     std::unordered_map<int, int> specassign_id_to_idx;
 
@@ -506,7 +502,6 @@ private:
     std::string plant_sqldb_name;
     data_importer::common_data cdata;
 
-    std::vector<species> prev_species_vec;
     int nspecies;
     int assign_times;
     bool show_undergrowth = true;
@@ -551,7 +546,6 @@ private:
     void set_ipc_scaling();
 
     void set_specassign_chm(MapFloat *chm);
-    void adapt_species_changed();
 
     void reset_filecounts();
     void correct_chm_scaling();

@@ -29,19 +29,6 @@
     set(COMMON_DIR ${BASE_ALL_DIR}/common)
     set(GPUSAMPLE_DIR ${BASE_ALL_DIR}/gpusample/src)
 
-    set(SPECIES_SOURCES
-       ${SPECIES_DIR}/species_assign_exp.cpp
-       ${SPECIES_DIR}/species_assign_exp.h
-       ${SPECIES_DIR}/gpu_eval.cu
-        )
-
-    set(CANOPY_SOURCES
-       ${CANOPY_DIR}/gl_wrapper.cpp
-       ${CANOPY_DIR}/gpu_procs.cu
-       ${CANOPY_DIR}/sphere_obj_string.cpp
-       ${CANOPY_DIR}/canopy_placer.cpp
-        )
-
     set(DATAIMPORT_SOURCES
        ${DATAIMPORT_DIR}/data_importer.cpp
        ${DATAIMPORT_DIR}/AbioticMapper.cpp
@@ -79,11 +66,6 @@
        ${COMMON_DIR}/custom_exceptions.cpp
         )
 
-    set(GPUSAMPLE_SOURCES
-       ${GPUSAMPLE_DIR}/gpusample.h
-       ${GPUSAMPLE_DIR}/gpusample.cu
-        )
-
     set(GUI_SOURCES
        glwidget.cpp
        timer.cpp
@@ -119,12 +101,9 @@
        speciesColoursWindow.cpp
        speciesColoursWindow.h
 
-       ${SPECIES_SOURCES}
-       ${CANOPY_SOURCES}
        ${DATAIMPORT_SOURCES}
        ${ANALYSIS_SOURCES}
        ${COMMON_SOURCES}
-       ${GPUSAMPLE_SOURCES}
 
        ${KMEANS_DIR}/kmeans.cpp
 )
