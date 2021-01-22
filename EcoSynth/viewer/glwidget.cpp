@@ -249,7 +249,6 @@ GLWidget::GLWidget(const QGLFormat& format, int scale_size, QWidget *parent)
     currscene = 0;
 
     renderer = new PMrender::TRenderer(NULL, "../viewer/shaders/");
-    palette = new BrushPalette(getTypeMap(TypeMapType::PAINT), 3, this);
 
     all_possible_species = cdata.all_species;
     species_infomap = cdata.all_species;		// TODO: species_infomap starts as all species selected - need to do so accordingly for checkboxes
@@ -268,8 +267,6 @@ GLWidget::GLWidget(const QGLFormat& format, int scale_size, QWidget *parent)
     {
         specbrushes.push_back(p.second.idx);
     }
-
-    species_palette = new SpeciesPalette(getTypeMap(TypeMapType::SPECIES), specbrushes, this);
 
     setRadius(250.0f);
     cmode = ControlMode::VIEW;
@@ -524,28 +521,11 @@ void GLWidget::setCtrlMode(ControlMode mode)
     else
     {
         cmode = mode;
-        if (cmode == ControlMode::PAINTLEARN)
-        {
-            species_palette->deactiveSelection();
-            setRadius(getLearnBrushRadius());
-            signalEnableSpecSelect();
-        }
-        else if (cmode == ControlMode::PAINTSPECIES)
-        {
-            palette->deactiveSelection();
-            setRadius(getSpeciesBrushRadius());
-            signalDisableSpecSelect();
-            adapt_species_changed();
-        }
     }
 }
 
 void GLWidget::setMode(ControlMode mode)
 {
-    if (cmode == ControlMode::PAINTLEARN)
-        palette->deactiveSelection();
-    if (cmode == ControlMode::PAINTSPECIES)
-        species_palette->deactiveSelection();
 
     switch(mode)
     {
@@ -1463,42 +1443,6 @@ void GLWidget::paintGL()
 
     }
 
-    if(cmode == ControlMode::PAINTLEARN)
-    {
-        std::vector<GLfloat> bcol(4);
-        memcpy(bcol.data(), getTypeMap(TypeMapType::PAINT)->getColour((int) palette->getDrawType()), sizeof(float) * 4);
-
-        ShapeDrawData sdd;
-
-        brushcursor.shape.clear();
-        brushcursor.setBrushColour(getTypeMap(TypeMapType::PAINT)->getColour((int) palette->getDrawType()));
-        brushcursor.genBrushRing(getView(), getTerrain(), getRadius(), false);
-        if(brushcursor.shape.bindInstances(getView(), &sinst, &cinst))
-        {
-            sdd = brushcursor.shape.getDrawParameters();
-            sdd.current = false;
-            sdd.brush = true;
-            drawParams.push_back(sdd);
-        }
-    }
-    else if (cmode == ControlMode::PAINTSPECIES)
-    {
-
-        ShapeDrawData sdd;
-
-        brushcursor.shape.clear();
-        brushcursor.setBrushColour(getTypeMap(TypeMapType::SPECIES)->getColour((int) species_palette->getDrawType()));
-        //brushcursor.setBrushColour(getTypeMap(TypeMapType::PAINT)->getColour((int) palette->getDrawType()));
-        brushcursor.genBrushRing(getView(), getTerrain(), getRadius(), false);
-        if(brushcursor.shape.bindInstances(getView(), &sinst, &cinst))
-        {
-            sdd = brushcursor.shape.getDrawParameters();
-            sdd.current = false;
-            sdd.brush = true;
-            drawParams.push_back(sdd);
-        }
-    }
-
     if(focuschange)
     {
         // visualization of random hemispheric sampling
@@ -2069,27 +2013,6 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
             pickInfo(x, y);
         }
     }
-}
-
-void GLWidget::optimise_species_brushstroke(std::string outfile)
-{
-    canopycalc.lock();
-
-    signalSpeciesOptimStart();
-
-    auto progupdate = [this](int val) { signalUpdateProgress(val); };
-
-    specassign_ptr->set_progress_func(progupdate);
-
-    int spec_idx;
-    int specid = (int)species_palette->getDrawType();
-    //int specid = allcanopy_idx_to_id.at(specidx);
-    //spec_idx = (int)btype - (int)BrushType::SPEC1;
-    spec_idx = specassign_id_to_idx.at(specid);
-    specassign_ptr->optimise_brushstroke(spec_idx, getSpecPerc(), outfile);
-    specassign_ptr->clear_brushstroke_data();
-
-    canopycalc.unlock();
 }
 
 void GLWidget::reset_filecounts()

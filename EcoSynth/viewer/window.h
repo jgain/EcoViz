@@ -119,12 +119,9 @@ public:
     Terrain &getTerrain() { return *perspectiveView->getTerrain(); }
     GLWidget * getGLWidget(){ return perspectiveView; }
     void setSunWindow(SunWindow * sun){ sunwindow = sun; }
-    BrushPalette * getPalette() { return perspectiveView->getPalette(); }
 
     /// Adjust rendering parameters, grid and contours, to accommodate current scale
     void scaleRenderParams(float scale);
-
-    specpalette_window *get_species_palette_window() { return species_palette_window; }
 
 
 
@@ -151,7 +148,6 @@ public slots:
 
     void saveAsCHM();
 
-    void species_removed(int id);
     void showImportCanopy();
     void showImportUndergrowth();
     void showSpeciesColours();
@@ -173,13 +169,10 @@ private:
     QWidget * renderPanel;      ///< Side panel to adjust various rendering style parameters
     QVBoxLayout * renderLayout;
     SunWindow * sunwindow;      ///< Link to renderer for sunshine
-    specselect_window *specwindow;
 
     // high level windows, widgets and layouts
     QWidget *mainWidget;
     QGridLayout *mainLayout;
-    QVBoxLayout *palLayout;
-    QVBoxLayout *specpalLayout;
 
     QPushButton *procdrawingButton;
     QPushButton *sampleUndergrowthButton;
@@ -193,20 +186,6 @@ private:
     // render panel widgets
     QLineEdit * gridSepXEdit, * gridSepZEdit, * gridWidthEdit, * gridIntensityEdit, * contourSepEdit, * contourWidthEdit, * contourIntensityEdit, * radianceEnhanceEdit;
 
-
-    QWidget *progress_bar_window;
-    QProgressBar *canopy_placement_progress;
-    QProgressBar *quick_undergrowth_progress;
-    QProgressBar *undersynth_progress;
-    QProgressBar *synth_progress;
-    QLabel *currsynth_label;
-
-    // palette panel widgets
-    QSlider * radslider;
-    QSlider * specradslider;
-    QSlider * percslider;
-    QLabel * radlabel;
-    QLabel * perclabel;
     QLineEdit * minTreeEdit, * maxTreeEdit;
 
 
@@ -258,8 +237,6 @@ private:
     // init menu
     void createActions();
     void createMenus();
-
-    specpalette_window *species_palette_window;
 
     SpeciesColoursWindow *specColoursWindow = nullptr;
     void importClusterFiles(std::vector<std::string> fname_list);

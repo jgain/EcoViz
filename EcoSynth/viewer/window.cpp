@@ -133,13 +133,6 @@ bool Window::checkAndLoadLandscapeDialog()
 }
 
 
-void Window::species_removed(int id)
-{
-    perspectiveView->species_removed(id);
-    int idx = species_palette_window->id_to_idx(id);
-    species_palette_window->disable_species(idx);
-}
-
 QSize Window::sizeHint() const
 {
     return QSize(1000, 800);
@@ -267,10 +260,6 @@ Window::Window(int scale_size)
     renderLayout->addWidget(contourGroup);
     renderLayout->addWidget(radianceGroup);
 
-    // right-hand panel for pallete
-    palLayout = new QVBoxLayout;
-    specpalLayout = new QVBoxLayout;
-
     // OpenGL widget
     // Specify an OpenGL 3.2 format.
 
@@ -293,18 +282,6 @@ Window::Window(int scale_size)
     numGridX = 1.0f / gridSepX;
     numGridZ = 1.0f / gridSepZ;
 
-    // Palette Widget
-
-    palLayout->addWidget(perspectiveView->getPalette());
-    SpeciesPalette * specpal = perspectiveView->getSpeciesPalette();
-    specpalLayout->addWidget(perspectiveView->getSpeciesPalette());
-
-    species_palette_window = new specpalette_window(this, specpal);
-
-    progress_bar_window = new QWidget(this, Qt::Window);
-
-    QVBoxLayout *progress_layout = new QVBoxLayout();
-
     QVBoxLayout *cplace_layout = new QVBoxLayout();
     QVBoxLayout *qundergrowth_layout = new QVBoxLayout();
     QVBoxLayout *undersynth_layout = new QVBoxLayout();
@@ -315,41 +292,6 @@ Window::Window(int scale_size)
     qundergrowth_layout->addWidget(qundergrowth_label);
     QLabel *undersynth_label = new QLabel("Undergrowth Synthesis");
     undersynth_layout->addWidget(undersynth_label);
-
-    canopy_placement_progress = new QProgressBar();
-    //canopy_placement_progress->setWindowFlags(Qt::Window);
-    canopy_placement_progress->setMinimum(0);
-    canopy_placement_progress->setMaximum(5);
-    canopy_placement_progress->setFixedWidth(200);
-    //canopy_placement_progress->show();
-    cplace_layout->addWidget(canopy_placement_progress);
-    cplace_layout->setSpacing(10);
-
-    quick_undergrowth_progress = new QProgressBar();
-    quick_undergrowth_progress->setMinimum(0);
-    quick_undergrowth_progress->setMaximum(100);
-    quick_undergrowth_progress->setFixedWidth(200);
-    qundergrowth_layout->addWidget(quick_undergrowth_progress);
-    qundergrowth_layout->setSpacing(10);
-
-    undersynth_progress = new QProgressBar();
-    undersynth_progress->setMinimum(0);
-    undersynth_progress->setMaximum(100);
-    undersynth_progress->setFixedWidth(200);
-    undersynth_layout->addWidget(undersynth_progress);
-    undersynth_layout->setSpacing(10);
-
-    currsynth_label = new QLabel("Canopy placement");
-
-    synth_progress = new QProgressBar();
-    synth_progress->setMinimum(0);
-    synth_progress->setMaximum(100);
-    synth_progress->setFixedWidth(200);
-    progress_layout->addWidget(currsynth_label);
-    progress_layout->addWidget(synth_progress);
-
-    progress_bar_window->setLayout(progress_layout);
-    progress_bar_window->show();
 
 
     // signal to slot connections
@@ -375,7 +317,6 @@ Window::Window(int scale_size)
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(perspectiveView, 0, 1, 10, 1);
-    mainLayout->addLayout(palLayout, 0, 2, Qt::AlignTop);
 
     createActions();
     createMenus();

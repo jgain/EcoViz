@@ -200,7 +200,6 @@ public:
 
     /// getter and setter for palette
     // void setPalette(BrushPalette * pal){ palette = pal; }
-    BrushPalette * getPalette(){ return palette; }
     SpeciesPalette * getSpeciesPalette() { return species_palette; }
 
     QWidget *species_palette_window;
@@ -486,7 +485,6 @@ private:
     std::mutex canopycalc;
 
     // brush variables
-    BrushPalette * palette;
     SpeciesPalette * species_palette;
     BrushCursor brushcursor;
     BrushPaint brush;
@@ -554,7 +552,6 @@ private:
 
     void set_specassign_chm(MapFloat *chm);
     void adapt_species_changed();
-    void optimise_species_brushstroke(string outfile = "");
 
     void reset_filecounts();
     void correct_chm_scaling();
