@@ -62,7 +62,6 @@
 #define WINDOW_H
 
 #include "glwidget.h"
-#include "specpalette_window.h"
 #include "speciesColoursWindow.h"
 #include <QWidget>
 #include <QtWidgets>

@@ -63,7 +63,6 @@
 #include "window.h"
 #include "vecpnt.h"
 #include "common/str.h"
-#include "specselect_window.h"
 #include "convertpaintingdialog.h"
 
 #include <cuda_runtime.h>

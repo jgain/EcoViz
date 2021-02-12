@@ -90,8 +90,6 @@
        window.cpp
        shaderProgram.cpp
        trenderer.cpp
-       specselect_window.cpp
-       specpalette_window.cpp
        palette_base.cpp
        histcomp_window.cpp
        histcomp_window.h
@@ -102,7 +100,7 @@
        speciesColoursWindow.h
 
        ${DATAIMPORT_SOURCES}
-       ${ANALYSIS_SOURCES}
+       #${ANALYSIS_SOURCES}
        ${COMMON_SOURCES}
 
        ${KMEANS_DIR}/kmeans.cpp

@@ -81,9 +81,16 @@
 #include "sim.h"
 #include "ipc.h"
 #include "palette.h"
-#include "ClusterMatrices.h"
+//#include "ClusterMatrices.h"
 
 #define PAINTCONTROL
+
+enum class layerspec
+{
+    UNDERGROWTH,
+    CANOPY,
+    ALL
+};
 
 //! [0]
 
@@ -384,7 +391,7 @@ public slots:
     // @param repaint_here if true, then update interface within this function call. If false, interface will be updated elsewhere, probably in next render loop iteration
     // @param layer Specify layers to do the update on, either canopy, undergrowth, or both
     // @param clearplants specify if plants should be cleared before redrawing
-    void redrawPlants(bool repaint_here = true, ClusterMatrices::layerspec layer = ClusterMatrices::layerspec::ALL, clearplants clr = clearplants::YES);
+    void redrawPlants(bool repaint_here = true, layerspec layer = layerspec::ALL, clearplants clr = clearplants::YES);
 
 protected:
     void initializeGL();
@@ -489,10 +496,6 @@ private:
     QColor qtWhite;
     QTimer * atimer, * rtimer; // timers to control different types of animation
     QLabel * vizpopup;  //< for debug visualisation
-
-    //canopy_synthesizer *csynth = nullptr;
-    ClusterMatrices *clptr_temp = nullptr;
-    std::unique_ptr<ClusterMatrices> clptr;
 
     std::vector<basic_tree> underplants;
     std::vector<basic_tree *> canopytrees_ptrs;

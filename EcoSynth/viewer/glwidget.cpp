@@ -64,7 +64,6 @@
 #include "eco.h"
 #include "window.h"
 #include "data_importer/extract_png.h"
-#include "specselect_window.h"
 #include "histcomp_window.h"
 #include <data_importer/AbioticMapper.h>
 #include <common/custom_exceptions.h>
@@ -86,7 +85,7 @@
 #include <QInputDialog>
 #include <QDir>
 
-using layerspec = ClusterMatrices::layerspec;
+//using layerspec = ClusterMatrices::layerspec;
 
 static std::string get_errstring(GLuint errcode)
 {
