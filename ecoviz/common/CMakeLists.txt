@@ -14,26 +14,26 @@ set(COMMON_SOURCES
 
 if (BUILD_SOURCE2CPP)
     set(KERNELS
-        ../sim/shaders/basic.vert
-        ../sim/shaders/basic.frag
-        ../sim/shaders/genNormal.vert
-        ../sim/shaders/genNormal.frag
-        ../sim/shaders/simple.vert
-        ../sim/shaders/simple.frag
-        ../sim/shaders/phong.vert
-        ../sim/shaders/phong.frag
-        ../sim/shaders/phongRS.vert
-        ../sim/shaders/phongRS.frag
-        ../sim/shaders/phongRSmanip.vert
-        ../sim/shaders/phongRSmanip.frag
-        ../sim/shaders/rad_scaling_pass1.vert
-        ../sim/shaders/rad_scaling_pass1.frag
-        ../sim/shaders/rad_scaling_pass2.vert
-        ../sim/shaders/rad_scaling_pass2.frag
-        ../sim/shaders/sun.vert
-        ../sim/shaders/sun.frag
-        ../sim/shaders/canopy.vert
-        ../sim/shaders/canopy.frag
+        ../viz/shaders/basic.vert
+        ../viz/shaders/basic.frag
+        ../viz/shaders/genNormal.vert
+        ../viz/shaders/genNormal.frag
+        ../viz/shaders/simple.vert
+        ../viz/shaders/simple.frag
+        ../viz/shaders/phong.vert
+        ../viz/shaders/phong.frag
+        ../viz/shaders/phongRS.vert
+        ../viz/shaders/phongRS.frag
+        ../viz/shaders/phongRSmanip.vert
+        ../viz/shaders/phongRSmanip.frag
+        ../viz/shaders/rad_scaling_pass1.vert
+        ../viz/shaders/rad_scaling_pass1.frag
+        ../viz/shaders/rad_scaling_pass2.vert
+        ../viz/shaders/rad_scaling_pass2.frag
+        ../viz/shaders/sun.vert
+        ../viz/shaders/sun.frag
+        ../viz/shaders/canopy.vert
+        ../viz/shaders/canopy.frag
         ../clh/texmark.cl)
     add_custom_command(
         OUTPUT source2cpp.cpp

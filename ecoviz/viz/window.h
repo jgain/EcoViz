@@ -72,29 +72,6 @@ class QMenu;
 class QLineEdit;
 class GLWidget;
 
-class SunWindow : public QMainWindow
-{
-    Q_OBJECT
-
-public:
-    SunWindow(){}
-
-    ~SunWindow(){}
-
-    QSize sizeHint() const;
-
-    /// Various getters for rendering and scene context
-    View &getView() { return *orthoView->getView(); }
-    Terrain &getTerrain() { return *orthoView->getTerrain(); }
-    void setOrthoView(GLWidget * ortho);
-
-public slots:
-    void repaintAllGL();
-
-private:
-    GLWidget * orthoView;
-};
-
 class Window : public QMainWindow
 {
     Q_OBJECT
@@ -110,15 +87,11 @@ public:
     View &getView() { return *perspectiveView->getView(); }
     Terrain &getTerrain() { return *perspectiveView->getTerrain(); }
     GLWidget * getGLWidget(){ return perspectiveView; }
-    void setSunWindow(SunWindow * sun){ sunwindow = sun; }
 
     /// Adjust rendering parameters, grid and contours, to accommodate current scale
     void scaleRenderParams(float scale);
 
-    /// Different forms of undersim execution depending on runtime switches
-    void run_abiotics_only(bool include_canopy);
-    void run_undersim_viewer();
-    void run_undersim_foolproof(int run_id, int nyears);
+    void run_viewer();
 
 public slots:
     void repaintAllGL();
@@ -147,7 +120,6 @@ private:
     GLWidget * perspectiveView; ///< Main OpenGL window
     QWidget * renderPanel;      ///< Side panel to adjust various rendering style parameters
     QWidget * plantPanel;      ///< Side panel to adjust various plant visualization parameters
-    SunWindow * sunwindow;      ///< Link to renderer for sunshine
 
     // rendering parameters
     float gridSepX, numGridX, gridSepZ, numGridZ, gridWidth, gridIntensity; ///< grid params

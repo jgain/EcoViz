@@ -1,5 +1,5 @@
 # This is needed for automoc
-project(UnderSim)
+project(EcoViz)
 cmake_minimum_required(VERSION 3.5)
 include(CheckLibraryExists)
 #set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/5.7/gcc_64)
@@ -51,7 +51,7 @@ include_directories(
 link_directories(
     ${PROJECT_SOURCE_DIR}/common
     ${PROJECT_SOURCE_DIR}/clh
-    ${PROJECT_SOURCE_DIR}/sim
+    ${PROJECT_SOURCE_DIR}/viz
     ${CppUnit_LIBRARY_DIRS}
     ${OpenEXR_LIBRARY_DIRS}
     ${Eigen_LIBRARY_DIRS}
@@ -135,7 +135,7 @@ if (BUILD_DOCS)
         DEPENDS
             ${CMAKE_CURRENT_SOURCE_DIR}/clh/*
             ${CMAKE_CURRENT_SOURCE_DIR}/common/*
-            ${CMAKE_CURRENT_SOURCE_DIR}/sim/*
+            ${CMAKE_CURRENT_SOURCE_DIR}/viz/*
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API documentation" VERBATIM)
     add_custom_target(doc ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doc/html/index.html)
@@ -188,4 +188,4 @@ endif()
 
 add_subdirectory(common)
 add_subdirectory(clh)
-add_subdirectory(sim)
+add_subdirectory(viz)

@@ -471,6 +471,83 @@ namespace data_importer
     }
 
     /*
+     * Load a grid data file from 'filename' and return as type T.
+     * The file format must follow Arc/Info ASCII grid format (otherwise known as an ASCII Esri Grid
+     * https://en.wikipedia.org/wiki/Esri_grid
+     */
+    template<typename T>
+    T load_esri(std::string filename)
+    {
+        using namespace std;
+        
+        int dx, dy, width, height;
+        float real_w, real_h, step, nodataval, xorigin, yorigin;
+        std::string datatype;
+       
+        float val;
+        ifstream infile;
+        
+        T retmap;
+        
+        infile.open((char *) filename.c_str(), ios_base::in);
+        if(infile.is_open())
+        {
+            // CAPS unimportant
+            
+            infile >> datatype >> dx;
+            if(datatype.compare("ncols") != 0 && datatype.compare("NCOLS") != 0)
+                throw runtime_error("Error data_importer::load_esri: file does not obey ASCII esri format, no ncols " + filename);
+            infile >> datatype >> dy;
+            if(datatype.compare("nrows") != 0 && datatype.compare("NROWS") != 0)
+                throw runtime_error("Error data_importer::load_esri: file does not obey ASCII esri format, no nrows " + filename);
+            // position of the origin (bottom-left) in global coordinate system
+            // not used here
+            infile >> datatype >> xorigin;
+            if(datatype.compare("xllcorner") != 0 && datatype.compare("XLLCORNER") != 0)
+            throw runtime_error("Error data_importer::load_esri: file does not obey ASCII esri format, no xllcorner " + filename);
+            infile >> datatype >> yorigin;
+            if(datatype.compare("yllcorner") != 0 && datatype.compare("YLLCORNER") != 0)
+                throw runtime_error("Error data_importer::load_esri: file does not obey ASCII esri format, no yllcorner " + filename);
+            infile >> datatype >> step;
+            if(datatype.compare("cellsize") != 0 && datatype.compare("CELLSIZE") != 0)
+                throw runtime_error("Error data_importer::load_esri: file does not obey ASCII esri format, no cellsize " + filename);
+	    infile >> std::ws; // eat up any whitespace
+            char c = infile.peek();
+            if(c == 'n' || c == 'N') // optional no data field expected
+            {
+                infile >> datatype >> nodataval;
+                if(datatype.compare("nodata_value") != 0 && datatype.compare("NODATA_value") != 0 && datatype.compare("NODATA_VALUE") != 0)
+                     throw runtime_error("Error data_importer::load_esri: file does not obey ASCII esri format, malformed nodata_value " + filename);
+            }
+                
+            // TODO: need to settle on a way to handle no data values
+            
+            width = dx;
+            height = dy;
+            real_w = width * step;
+            real_h = height * step;
+            
+            retmap.setDimReal(real_w, real_h);
+            retmap.setDim(width, height);
+            for (int r = 0; r < height; r++)
+            {
+                for (int c = 0; c < width; c++)
+                {
+                    infile >> val;
+                    // if(val == nodataval)
+                    retmap.set(r, c, val);
+                }
+            }
+            infile.close();
+        }
+        else
+        {
+            throw runtime_error("Error data_importer::load_esri: unable to open file " + filename);
+        }
+        return retmap;
+    }
+    
+    /*
      * Load an elevation file from 'filename' and return as type T.
      * XXX: This function can probably be merged quite easily with load_txt since the formats are so similar
      */

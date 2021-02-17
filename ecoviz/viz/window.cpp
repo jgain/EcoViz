@@ -70,40 +70,6 @@
 using namespace std;
 
 ////
-// SunWindow
-///
-
-
-QSize SunWindow::sizeHint() const
-{
-    return QSize(1000, 1000);
-}
-
-void SunWindow::setOrthoView(GLWidget * ortho)
-{
-    QWidget *mainWidget = new QWidget;
-    QGridLayout *mainLayout = new QGridLayout;
-
-    orthoView = ortho;
-
-    setCentralWidget(mainWidget);
-    mainLayout->setColumnStretch(0, 1);
-
-    // signal to slot connections
-    connect(orthoView->getGLSun(), SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-
-    mainLayout->addWidget(orthoView->getGLSun(), 0, 0);
-    mainWidget->setLayout(mainLayout);
-    setWindowTitle(tr("EcoSun"));
-}
-
-void SunWindow::repaintAllGL()
-{
-    if(orthoView->getGLSun() != NULL)
-        orthoView->getGLSun()->repaint();
-}
-
-////
 // Window
 ///
 
@@ -367,7 +333,7 @@ Window::Window(string datadir)
     getTerrain().getGridDim(dx, dy);
     getTerrain().getTerrainDim(sx, sy);
 
-    perspectiveView->getGLSun()->setScene(&getTerrain(), NULL, NULL);
+    // perspectiveView->getGLSun()->setScene(&getTerrain(), NULL, NULL);
 
     numGridX = 1.0f / gridSepX;
     numGridZ = 1.0f / gridSepZ;
@@ -428,7 +394,7 @@ Window::Window(string datadir)
     createMenus();
 
     mainWidget->setLayout(mainLayout);
-    setWindowTitle(tr("UnderSim"));
+    setWindowTitle(tr("EcoViz"));
     mainWidget->setMouseTracking(true);
     setMouseTracking(true);
 
@@ -440,33 +406,10 @@ Window::Window(string datadir)
     perspectiveView->getRenderer()->setRadianceScalingParams(radianceEnhance);
 }
 
-void Window::run_abiotics_only(bool include_canopy)
-{
-    sunwindow->show();
-    sunwindow->repaint();
-    perspectiveView->setIncludeCanopy(include_canopy);
-    perspectiveView->loadScene(0);
-    repaintAllGL();
-    sunwindow->hide();
-    perspectiveView->hide();
-}
-
-void Window::run_undersim_viewer()
+void Window::run_viewer()
 {
     perspectiveView->loadFinScene(0);
     repaintAllGL();
-}
-
-void Window::run_undersim_foolproof(int run_id, int nyears)
-{
-    sunwindow->show();
-    sunwindow->repaint();
-    perspectiveView->setIncludeCanopy(true);
-    perspectiveView->loadScene(run_id);
-    repaintAllGL();
-    sunwindow->hide();
-    perspectiveView->run_undersim_only(run_id, nyears);
-    perspectiveView->hide();
 }
 
 void Window::scaleRenderParams(float scale)

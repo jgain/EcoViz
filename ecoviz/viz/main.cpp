@@ -77,13 +77,10 @@
 int main(int argc, char *argv[])
 {
     int run_id, nyears;
-    SunWindow * sunwindow;
 
-    if (argc > 5 || argc < 3)
+    if (argc != 2)
     {
-        std::cerr << "Usage: sim -sim <data directory> <run id> <number of years>" << std::endl;
-        std::cerr << "or sim -view <data directory>" << std::endl;
-        std::cerr << "or sim -sun <data directory> [--ignore-canopy]" << std::endl;
+        std::cerr << "Usage: ecoviz <data directory>" << std::endl;
         return 1;
     }
 
@@ -91,9 +88,7 @@ int main(int argc, char *argv[])
     {
         QApplication app(argc, argv);
 
-        std::string usagestr = argv[1];
-
-        std::string datadir = argv[2];
+        std::string datadir = argv[1];
         while (datadir.back() == '/')
             datadir.pop_back();
 
@@ -105,22 +100,6 @@ int main(int argc, char *argv[])
         window->setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
         window->getView().setForcedFocus(window->getTerrain().getFocus());
 
-        if(usagestr == "-sim" || usagestr == "-sun")
-        {
-            if(argc == 5)
-            {
-                run_id = std::stoi(argv[3]);
-                nyears = std::stoi(argv[4]);
-            }
-
-            // sunwindow
-            sunwindow = new SunWindow();
-            sunwindow->setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
-            sunwindow->resize(window->sizeHint());
-            sunwindow->setOrthoView(window->getGLWidget());
-            sunwindow->getView().setForcedFocus(window->getTerrain().getFocus());
-        }
-
         int desktopArea = QApplication::desktop()->width() *
             QApplication::desktop()->height();
         int widgetArea = window->width() * window->height();
@@ -128,45 +107,9 @@ int main(int argc, char *argv[])
             window->show();
         else
             window->showMaximized();
-
-        if(usagestr == "-sim") // run simulation
-        {
-            window->setSunWindow(sunwindow);
-            window->run_undersim_foolproof(run_id, nyears);
-            window->close();
-            QCoreApplication::exit();
-        }
-        else
-        {
-            if(usagestr == "-sun") // run abiotic component of simulation. This actually includes moisture if not already computed.
-            {
-                bool include_canopy = true;
-                if (argc >= 4)	// if there is another argument, we check if it's the ignore-canopy switch and quit with informative message if switch is wrong
-                {
-                    std::string canopyignore_string = argv[3];
-                    if (canopyignore_string == "--ignore-canopy")
-                    {
-                        include_canopy = false;
-                    }
-                    else
-                    {
-                        std::cout << "Unknown switch " << canopyignore_string << " for option -sun. Known switches are: --ignore-canopy" << std::endl;
-                        QCoreApplication::exit(1);
-                    }
-                }
-                window->setSunWindow(sunwindow);
-                window->run_abiotics_only(include_canopy);
-                window->close();
-                QCoreApplication::exit();
-            }
-            else
-                if(usagestr == "-view") // viewing only
-                {
-                    window->run_undersim_viewer();
-                    int status = app.exec();
-                    return status;
-                }
-        }
+        window->run_viewer();
+        int status = app.exec();
+        return status;
     }
     catch (std::exception &e)
     {

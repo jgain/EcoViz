@@ -74,17 +74,13 @@
 #include <common/debug_list.h>
 
 #include "view.h"
-#include "sim.h"
-#include "typemap.h"
-// #include "palette.h"
+#include "eco.h"
+#include "dice_roller.h"
+#include "common/basic_types.h"
 #include "stroke.h"
 #include "typemap.h"
 #include "shape.h"
-/*
-#include <QWidget>
-#include <QImage>
-#include <common/map.h>
-*/
+
 
 
 //! [0]
@@ -114,10 +110,13 @@ public:
     View * view;
     Terrain * terrain;
     TypeMap * maps[(int) TypeMapType::TMTEND];
-    MapFloat * moisture, * illumination, * temperature, * chm, * cdm; //< condition maps
+    MapFloat * slope, * chm, * cdm; //< condition maps
+    std::vector<MapFloat *> sunlight; //< local per cell illumination for each month
+    std::vector<MapFloat *> moisture; //< local per cell moisture for each month
+    std::vector<float> temperature; //< average monthly temperature
+
     EcoSystem * eco;
     Biome * biome;
-    Simulation * sim;
     TypeMapType overlay; //< currently active overlay texture: CATEGORY, WATER, SUNLIGHT, TEMPERATURE, etc
 
     Scene();
@@ -152,7 +151,6 @@ public:
     TypeMap * getTypeMap(TypeMapType purpose);
     PMrender::TRenderer * getRenderer();
     EcoSystem * getEcoSys();
-    Simulation * getSim();
     MapFloat * getSunlight(int month);
     MapFloat * getSlope();
     MapFloat * getMoisture(int month);
@@ -160,10 +158,31 @@ public:
     MapFloat * getCanopyHeightModel();
     MapFloat * getCanopyDensityModel();
     Biome * getBiome();
-    GLSun * getGLSun();
 
-    // initialize simulator for current scene
-    void initSceneSim();
+    /**
+     * @brief calcSlope    Calculate per cell ground slope
+     */
+    void calcSlope();
+
+    /**
+     * @brief readMonthlyMap Read a set of 12 maps from file
+     * @param filename   name of file to be read
+     * @param monthly    content will be loaded into this vector of maps
+     */
+    bool readMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly);
+
+    /**
+     * @brief writeMonthlyMap    Write a set of 12 maps to file
+     * @param filename   name of file to be written
+     * @param monthly    map content to be written
+     */
+    bool writeMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly);
+
+    /// read and write condition maps
+    bool readSun(std::string filename);
+    bool writeSun(std::string filename);
+    bool readMoisture(std::string filename);
+    bool writeMoisture(std::string filename);
 
     /// getter and setter for brush radii
     float getRadius();
@@ -176,12 +195,6 @@ public:
     void setMap(TypeMapType type, int mth);
 
     /**
-     * @brief setIncludeCanopy Toggle switch on exclusion or exclusion of canopy in sunlight calculations
-     * @param canopyon true if canopy is to be included, false otherwise.
-     */
-    void setIncludeCanopy(bool canopyon){ inclcanopy = canopyon; }
-
-    /**
      * @brief bandCanopyHeightTexture   Recolour the canopy height texture according to a band of min and max tree heights
      * @param mint  Minimum tree height (below which heights are coloured black)
      * @param maxt  Maximum tree height (above which heights are coloured red)
@@ -192,8 +205,6 @@ public:
      * Load scene attributes that are located in the directory specified
      * @param dirprefix     directory path and file name prefix combined for loading a scene
      */
-    void loadScene(int curr_canopy);
-    void loadScene(std::string dirprefix, int curr_canopy);
     void loadFinScene(int curr_canopy);
     void loadFinScene(std::string dirprefix, int curr_canopy);
 
@@ -251,9 +262,6 @@ public:
     /// Toggle visibility of an individual species on or off
     void toggleSpecies(int p, bool vis);
 
-    void sim_canopy_sunlight(std::string sunfile);
-    void loadAndSimSunlightMoistureOnly(string dirprefix);
-    void loadAndSimSunlightMoistureOnly();
 signals:
     void signalRepaintAllGL();
     
@@ -261,10 +269,8 @@ public slots:
     void animUpdate(); // animation step for change of focus
     void rotateUpdate(); // animation step for rotating around terrain center
 
-    void run_undersim_only(int curr_run, int nyears);
     std::string get_dirprefix();
-    void loadSceneWithoutSims(std::string dirprefix, int curr_canopy, string chmfile, std::string output_sunfile);
-    void loadSceneWithoutSims(int curr_canopy, string chmfile, string output_sunfile);
+
 protected:
     void initializeGL();
     void paintGL();
@@ -281,11 +287,6 @@ private:
      QGLFormat glformat; //< format for OpenGL
     // scene control
     uts::vector<Scene *> scenes;
-    GLSun * glsun;
-    bool simvalid; //< whether or not a simulation can be run
-    bool firstsim; //< is this the first simulation run
-    bool inclcanopy; //< is the canopy included in the sunlight simulation
-
     std::string datadir;
 
     int currscene;

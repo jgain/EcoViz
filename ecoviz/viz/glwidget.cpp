@@ -76,6 +76,8 @@
 #include <QInputDialog>
 
 #include <fstream>
+#include "data_importer/data_importer.h"
+#include "data_importer/map_procs.h"
 
 using namespace std;
 
@@ -94,8 +96,6 @@ Scene::Scene()
     terrain->initGrid(1024, 1024, 10000.0f, 10000.0f);
     view->setForcedFocus(terrain->getFocus());
     view->setViewScale(terrain->longEdgeDist());
-
-    sim = new Simulation();
     eco = new EcoSystem();
     biome = new Biome();
 
@@ -103,11 +103,16 @@ Scene::Scene()
     terrain->getGridDim(dx, dy);
 
     for(TypeMapType t: all_typemaps)
-        maps[(int) t] = new TypeMap(dx, dy, t);
+        maps[static_cast<int>(t)] = new TypeMap(dx, dy, t);
     maps[2]->setRegion(terrain->coverRegion());
-    moisture = new MapFloat();
-    illumination = new MapFloat();
-    temperature = new MapFloat();
+
+    for(int m = 0; m < 12; m++)
+    {
+        moisture.push_back(new MapFloat());
+        sunlight.push_back(new MapFloat());
+        temperature.push_back(0.0f);
+    }
+    slope = new MapFloat();
     chm = new MapFloat();
     cdm = new MapFloat();
     overlay = TypeMapType::EMPTY;
@@ -118,17 +123,21 @@ Scene::~Scene()
     delete view;
     delete terrain;
     for(TypeMapType t: all_typemaps)
-        if(maps[(int) t] != nullptr)
+        if(maps[static_cast<int>(t)] != nullptr)
         {
-            delete maps[(int) t];
-            maps[(int) t] = nullptr;
+            delete maps[static_cast<int>(t)];
+            maps[static_cast<int>(t)] = nullptr;
         }
-    delete sim;
+
+    // delete sim;
     delete eco;
     delete biome;
-    delete illumination;
-    delete moisture;
-    delete temperature;
+    for(int m = 0; m < 12; m++)
+    {
+        delete sunlight[static_cast<int>(m)];
+        delete moisture[static_cast<int>(m)];
+    }
+    temperature.clear();
     delete chm;
     delete cdm;
 }
@@ -160,7 +169,7 @@ GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
 
     currscene = 0;
 
-    renderer = new PMrender::TRenderer(NULL, "../sim/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
     cmode = ControlMode::VIEW;
     viewing = false;
     viewlock = false;
@@ -170,7 +179,7 @@ GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
     timeron = false;
     dbloaded = false;
     ecoloaded = false;
-    inclcanopy = true;
+    // inclcanopy = true;
     active = true;
     scf = 10000.0f;
     decalTexture = 0;
@@ -180,10 +189,6 @@ GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
 
     resize(sizeHint());
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
-
-    simvalid = false;
-    firstsim = false;
-    glsun = new GLSun(glformat);
 }
 
 GLWidget::~GLWidget()
@@ -193,10 +198,9 @@ GLWidget::~GLWidget()
     if(vizpopup) delete vizpopup;
 
     if (renderer) delete renderer;
-    if(glsun) delete glsun;
 
     // delete views
-    for(int i = 0; i < (int) scenes.size(); i++)
+    for(int i = 0; i < static_cast<int>(scenes.size()); i++)
         delete scenes[i];
 
     if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
@@ -224,69 +228,66 @@ void GLWidget::screenCapture(QImage * capImg, QSize capSize)
 
 View * GLWidget::getView()
 {
-    if((int) scenes.size() > 0)
+     if(!scenes.empty())
         return scenes[currscene]->view;
     else
-        return NULL;
+        return nullptr;
 }
 
 Terrain * GLWidget::getTerrain()
 {
-    if((int) scenes.size() > 0)
+    if(!scenes.empty())
         return scenes[currscene]->terrain;
     else
-        return NULL;
+        return nullptr;
 }
 
 TypeMap * GLWidget::getTypeMap(TypeMapType purpose)
 {
-    if((int) scenes.size() > 0)
-    {
-        int idx = (int)purpose;
-        return scenes[currscene]->maps[(int) purpose];
-    }
+    if(!scenes.empty())
+        return scenes[currscene]->maps[static_cast<int>(purpose)];
     else
-        return NULL;
+        return nullptr;
 }
 
 MapFloat * GLWidget::getSunlight(int month)
 {
-    if((int) scenes.size() > 0)
-        return scenes[currscene]->sim->getSunlightMap(month);
+     if(!scenes.empty())
+        return scenes[currscene]->sunlight[month];
     else
-        return NULL;
+        return nullptr;
 }
 
 MapFloat * GLWidget::getSlope()
 {
-    if((int) scenes.size() > 0)
-        return scenes[currscene]->sim->getSlopeMap();
+    if(!scenes.empty())
+        return scenes[currscene]->slope;
     else
-        return NULL;
+        return nullptr;
 }
 
 MapFloat * GLWidget::getMoisture(int month)
 {
-    if((int) scenes.size() > 0)
-        return scenes[currscene]->sim->getMoistureMap(month);
+   if(!scenes.empty())
+        return scenes[currscene]->moisture[month];
     else
-        return NULL;
+        return nullptr;
 }
 
 MapFloat * GLWidget::getCanopyHeightModel()
 {
-    if((int) scenes.size() > 0)
+    if(!scenes.empty())
         return scenes[currscene]->chm;
     else
-        return NULL;
+        return nullptr;
 }
 
 MapFloat * GLWidget::getCanopyDensityModel()
 {
-    if((int) scenes.size() > 0)
+    if(!scenes.empty())
         return scenes[currscene]->cdm;
     else
-        return NULL;
+        return nullptr;
 }
 
 PMrender::TRenderer * GLWidget::getRenderer()
@@ -296,40 +297,127 @@ PMrender::TRenderer * GLWidget::getRenderer()
 
 EcoSystem * GLWidget::getEcoSys()
 {
-    if((int) scenes.size() > 0)
+    if(!scenes.empty())
         return scenes[currscene]->eco;
     else
-        return NULL;
-}
-
-Simulation * GLWidget::getSim()
-{
-    if((int) scenes.size() > 0)
-        return scenes[currscene]->sim;
-    else
-        return NULL;
-}
-
-void GLWidget::initSceneSim()
-{
-    // assumes terrain and biome already loaded
-    if((int) scenes.size() > 0)
-    {
-        scenes[currscene]->sim = new Simulation(getTerrain(), getBiome(), 5);
-    }
+        return nullptr;
 }
 
 Biome * GLWidget::getBiome()
 {
-    if((int) scenes.size() > 0)
+    if(!scenes.empty())
         return scenes[currscene]->biome;
     else
-        return NULL;
+        return nullptr;
 }
 
-GLSun * GLWidget::getGLSun()
+bool GLWidget::readMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly)
 {
-    return glsun;
+    float val;
+    ifstream infile;
+    int gx, gy, dx, dy;
+
+    infile.open((char *) filename.c_str(), ios_base::in);
+    if(infile.is_open())
+    {
+        infile >> gx >> gy;
+#ifdef STEPFILE
+        float step;
+        infile >> step; // new format
+#endif
+        getTerrain()->getGridDim(dx, dy);
+        if((gx != dx) || (gy != dy))
+            cerr << "Error Simulation::readMonthlyMap: map dimensions do not match terrain" << endl;
+
+        for(int m = 0; m < 12; m++)
+            monthly[m]->setDim(gx, gy);
+
+        for (int y = 0; y < gy; y++)
+            for (int x = 0; x < gx; x++)
+                for(int m = 0; m < 12; m++)
+                {
+                    infile >> val;
+                    monthly[m]->set(x, y, val);
+                }
+        infile.close();
+        return true;
+    }
+    else
+    {
+        cerr << "Error Simulation::readMonthlyMap: unable to open file" << filename << endl;
+        return false;
+    }
+}
+
+bool GLWidget::writeMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly)
+{
+    int gx, gy;
+    ofstream outfile;
+    monthly[0]->getDim(gx, gy);
+
+    outfile.open((char *) filename.c_str(), ios_base::out);
+    if(outfile.is_open())
+    {
+        outfile << gx << " " << gy;
+#ifdef STEPFILE
+        outfile << " 0.9144"; // hardcoded step
+#endif
+        outfile << endl;
+        for (int y = 0; y < gy; y++)
+            for (int x = 0; x < gx; x++)
+                for(int m = 0; m < 12; m++)
+                    outfile << monthly[m]->get(x, y) << " ";
+
+        outfile << endl;
+        outfile.close();
+        return true;
+    }
+    else
+    {
+        cerr << "Error Simulation::writeMonthlyMap:unable to open file " << filename << endl;
+        return true;
+    }
+
+}
+
+bool GLWidget::readSun(std::string filename)
+{
+    return readMonthlyMap(filename, scenes[currscene]->sunlight);
+}
+
+bool GLWidget::writeSun(std::string filename)
+{
+    return writeMonthlyMap(filename, scenes[currscene]->sunlight);
+}
+
+bool GLWidget::readMoisture(std::string filename)
+{
+    return readMonthlyMap(filename, scenes[currscene]->moisture);
+}
+
+bool GLWidget::writeMoisture(std::string filename)
+{
+    return writeMonthlyMap(filename, scenes[currscene]->moisture);
+}
+
+void GLWidget::calcSlope()
+{
+    int dx, dy;
+    Vector up, n;
+
+    // slope is dot product of terrain normal and up vector
+    up = Vector(0.0f, 1.0f, 0.0f);
+    getTerrain()->getGridDim(dx, dy);
+    getSlope()->setDim(dx, dy);
+    getSlope()->fill(0.0f);
+    for(int x = 0; x < dx; x++)
+        for(int y = 0; y < dy; y++)
+        {
+            getTerrain()->getNormal(x, y, n);
+            float rad = acos(up.dot(n));
+            float deg = RAD2DEG * rad;
+            getSlope()->set(y, x, deg);
+        }
 }
 
 void GLWidget::refreshOverlay()
@@ -370,21 +458,6 @@ std::string GLWidget::get_dirprefix()
     return dirprefix;
 }
 
-void GLWidget::loadScene(int curr_canopy)
-{
-    std::cout << "Datadir before fixing: " << datadir << std::endl;
-    while (datadir.back() == '/')
-        datadir.pop_back();
-
-    std::cout << "Datadir after fixing: " << datadir << std::endl;
-
-    int slash_idx = datadir.find_last_of("/");
-    std::string setname = datadir.substr(slash_idx + 1);
-    std::string dirprefix = get_dirprefix();
-
-    loadScene(dirprefix, curr_canopy);
-}
-
 void GLWidget::loadFinScene(int curr_canopy)
 {
     std::cout << "Datadir before fixing: " << datadir << std::endl;
@@ -400,252 +473,8 @@ void GLWidget::loadFinScene(int curr_canopy)
     loadFinScene(dirprefix, curr_canopy);
 }
 
-void GLWidget::sim_canopy_sunlight(std::string sunfile)
-{
-    getGLSun()->setScene(getTerrain(), getCanopyHeightModel(), getCanopyDensityModel());
-    getGLSun()->deriveAlpha(getEcoSys(), getBiome());
-    cerr << "About to report Alpha Map Stats" << endl;
-    getGLSun()->alphaMapStats();
-    auto bt = std::chrono::steady_clock::now().time_since_epoch();
-    getSim()->calcSunlight(getGLSun(), 15, 50, inclcanopy);
-    auto et = std::chrono::steady_clock::now().time_since_epoch();
-    auto t = std::chrono::duration_cast<std::chrono::milliseconds>(et - bt).count();
-    std::cout << "Time ms: " << t << std::endl;
-    getSim()->reportSunAverages();
-    getSim()->writeSunCopy(sunfile);
-}
-
-void GLWidget::loadAndSimSunlightMoistureOnly()
-{
-    std::cout << "Datadir before fixing: " << datadir << std::endl;
-    while (datadir.back() == '/')
-        datadir.pop_back();
-
-    std::cout << "Datadir after fixing: " << datadir << std::endl;
-
-    int slash_idx = datadir.find_last_of("/");
-    std::string setname = datadir.substr(slash_idx + 1);
-    std::string dirprefix = get_dirprefix();
-    loadAndSimSunlightMoistureOnly(dirprefix);
-}
-
-void GLWidget::loadAndSimSunlightMoistureOnly(std::string dirprefix)
-{
-    simvalid = true;
-    std::string terfile = dirprefix+".elv";
-    //std::string pdbfile = dirprefix+".pdb";
-    std::string pdbfile = dirprefix + "_canopy";
-    pdbfile += std::to_string(0) + ".pdb";
-    std::string chmfile = dirprefix+".chm";
-    std::string cdmfile = dirprefix+".cdm";
-    std::string sunfile = dirprefix+"_sun.txt";
-    std::string wetfile = dirprefix+"_wet.txt";
-    std::string climfile = dirprefix+"_clim.txt";
-    std::string bmefile = dirprefix+"_biome.txt";
-    std::string catfile = dirprefix+"_plt.png";
-
-    // load terrain
-    currscene = 0;
-    getTerrain()->loadElv(terfile);
-    cerr << "Elevation file loaded" << endl;
-    scf = getTerrain()->getMaxExtent();
-    getView()->setForcedFocus(getTerrain()->getFocus());
-    getView()->setViewScale(getTerrain()->longEdgeDist());
-    getView()->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
-    getTerrain()->calcMeanHeight();
-
-    // match dimensions for empty overlay
-    int dx, dy;
-    getTerrain()->getGridDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->fill(0);
-    getTypeMap(TypeMapType::EMPTY)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::EMPTY)->clear();
-
-    if(getCanopyHeightModel()->read(chmfile))
-    {
-        cerr << "CHM file loaded" << endl;
-        loadTypeMap(getCanopyHeightModel(), TypeMapType::CHM);
-    }
-    else
-    {
-        cerr << "No Canopy Height Model found. Simulation invalidated." << endl;
-        simvalid = false;
-    }
-
-    if(getCanopyDensityModel()->read(cdmfile))
-    {
-        loadTypeMap(getCanopyDensityModel(), TypeMapType::CDM);
-        cerr << "CDM file loaded" << endl;
-    }
-    else
-    {
-        cerr << "No Canopy Density Model found. Simulation invalidated." << endl;
-        simvalid = false;
-    }
-
-    if(getBiome()->read(bmefile))
-    {
-        cerr << "Biome file loaded" << endl;
-        for(int t = 0; t < getBiome()->numPFTypes(); t++)
-            plantvis.push_back(true);
-        canopyvis = true;
-        undervis = true;
-
-        /*
-        // report max plant size
-        for(int t = 0; t < getBiome()->numPFTypes(); t++)
-        {
-            cerr << getBiome()->getPFType(t)->code << " max hght = " << getBiome()->maxGrowthTest(t) << endl;
-        }
-        */
-
-        // initialize simulation
-        initSceneSim();
-
-        // read climate parameters
-        if(!getSim()->readClimate(climfile))
-        {
-            simvalid = false;
-            cerr << "No climate file " << climfile << " found. Simulation invalidated" << endl;
-        }
-        else
-        {
-            cerr << "Climate file loaded" << endl;
-        }
-
-
-        // read sunlight, and if that fails simulate it and store results
-        if(!getSim()->readSun(sunfile))
-        {
-            cerr << "No Sunlight file " << sunfile << " found, so simulating sunlight" << endl;
-            sim_canopy_sunlight(sunfile);
-        }
-        else
-        {
-            cerr << "Sunlight file loaded" << endl;
-
-        }
-
-        sun_mth = 0;
-        loadTypeMap(getSunlight(sun_mth), TypeMapType::SUNLIGHT);
-        loadTypeMap(getSlope(), TypeMapType::SLOPE);
-
-        // read soil moisture, and if that fails simulate it and store results
-        if(!getSim()->readMoisture(wetfile))
-        {
-            cerr << "No Soil moisture file " << wetfile << " found, so simulating soil moisture" << endl;
-            getSim()->calcMoisture();
-            getSim()->writeMoisture(wetfile);
-        }
-        else
-        {
-            cerr << "Soil moisture file loaded" << endl;
-        }
-    }
-}
-
-void GLWidget::loadSceneWithoutSims(int curr_canopy, std::string chmfile, string output_sunfile)
-{
-    std::cout << "Datadir before fixing: " << datadir << std::endl;
-    while (datadir.back() == '/')
-        datadir.pop_back();
-
-    std::cout << "Datadir after fixing: " << datadir << std::endl;
-
-    int slash_idx = datadir.find_last_of("/");
-    std::string setname = datadir.substr(slash_idx + 1);
-    std::string dirprefix = get_dirprefix();
-
-    loadSceneWithoutSims(dirprefix, curr_canopy, chmfile, output_sunfile);
-}
-
-void GLWidget::loadSceneWithoutSims(std::string dirprefix, int curr_canopy, std::string chmfile, std::string output_sunfile)
-{
-    simvalid = true;
-    std::string terfile = dirprefix+".elv";
-    std::string pdbfile = dirprefix + "_canopy";
-    pdbfile += std::to_string(curr_canopy) + ".pdb";
-    std::string cdmfile = dirprefix+".cdm";
-    std::string sunfile = dirprefix+"_sun.txt";
-    std::string wetfile = dirprefix+"_wet.txt";
-    std::string climfile = dirprefix+"_clim.txt";
-    std::string bmefile = dirprefix+"_biome.txt";
-    std::string catfile = dirprefix+"_plt.png";
-
-    // load terrain
-    currscene = 0;
-    getTerrain()->loadElv(terfile);
-    cerr << "Elevation file loaded" << endl;
-    scf = getTerrain()->getMaxExtent();
-    getView()->setForcedFocus(getTerrain()->getFocus());
-    getView()->setViewScale(getTerrain()->longEdgeDist());
-    getView()->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
-    getTerrain()->calcMeanHeight();
-
-    // match dimensions for empty overlay
-    int dx, dy;
-    getTerrain()->getGridDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->fill(0);
-    getTypeMap(TypeMapType::EMPTY)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::EMPTY)->clear();
-
-    if(getCanopyHeightModel()->read(chmfile))
-    {
-        cerr << "CHM file loaded" << endl;
-        loadTypeMap(getCanopyHeightModel(), TypeMapType::CHM);
-    }
-    else
-    {
-        cerr << "No Canopy Height Model found. Simulation invalidated." << endl;
-        simvalid = false;
-    }
-
-    if(getCanopyDensityModel()->read(cdmfile))
-    {
-        loadTypeMap(getCanopyDensityModel(), TypeMapType::CDM);
-        cerr << "CDM file loaded" << endl;
-    }
-    else
-    {
-        cerr << "No Canopy Density Model found. Simulation invalidated." << endl;
-        simvalid = false;
-    }
-
-    if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
-    {
-        if (plantvis.size() < getBiome()->numPFTypes())
-            plantvis.resize(getBiome()->numPFTypes());
-        cerr << "Biome file load" << endl;
-        for(int t = 0; t < getBiome()->numPFTypes(); t++)
-            plantvis[t] = true;
-
-        // initialize simulation
-        initSceneSim();
-
-        // read climate parameters
-        if(!getSim()->readClimate(climfile))
-        {
-            simvalid = false;
-            cerr << "No climate file " << climfile << " found. Simulation invalidated" << endl;
-        }
-        sim_canopy_sunlight(output_sunfile);
-
-    }
-    else
-    {
-        std::cerr << "Biome file " << bmefile << "does not exist. Simulation invalidated." << endl;
-    }
-
-    focuschange = false;
-    if(simvalid)
-        firstsim = true;
-}
-
 void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
 {
-    simvalid = true;
     std::string terfile = dirprefix+".elv";
     std::string cpdbfile = dirprefix + "_canopy";
     std::string updbfile = dirprefix + "_undergrowth";
@@ -659,7 +488,6 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
     std::string bmefile = dirprefix+"_biome.txt";
     std::string catfile = dirprefix+"_plt.png";
 
-    simvalid = false;
     // load terrain
     currscene = 0;
     getTerrain()->loadElv(terfile);
@@ -667,7 +495,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
     scf = getTerrain()->getMaxExtent();
     getView()->setForcedFocus(getTerrain()->getFocus());
     getView()->setViewScale(getTerrain()->longEdgeDist());
-    getView()->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
+    getView()->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
     getTerrain()->calcMeanHeight();
 
     // match dimensions for empty overlay
@@ -700,7 +528,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
 
     if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
     {
-        if (plantvis.size() < getBiome()->numPFTypes())
+        if (static_cast<int>(plantvis.size()) < getBiome()->numPFTypes())
             plantvis.resize(getBiome()->numPFTypes());
         cerr << "Biome file load" << endl;
         for(int t = 0; t < getBiome()->numPFTypes(); t++)
@@ -709,14 +537,12 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
         canopyvis = true;
         undervis = true;
 
-        initSceneSim();
-
         // read climate parameters
-        if(!getSim()->readClimate(climfile))
-            cerr << "No climate file " << climfile << " found." << endl;
+        // if(!getSim()->readClimate(climfile))
+        //    cerr << "No climate file " << climfile << " found." << endl;
 
         // read soil moisture, and if that fails simulate it and store results
-        if(!getSim()->readMoisture(wetfile))
+        if(!readMoisture(wetfile))
         {
             cerr << "No Soil moisture file " << wetfile << " found" << endl;
         }
@@ -746,7 +572,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
         update();
 
         // read sunlight, and if that fails simulate it and store results
-        if(!getSim()->readSun(sunfile))
+        if(!readSun(sunfile))
         {
             cerr << "No Sunlight file " << sunfile << " found" << endl;
         }
@@ -764,148 +590,6 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
         std::cerr << "Biome file " << bmefile << "does not exist." << endl;
         focuschange = false;
     }
-}
-
-void GLWidget::loadScene(std::string dirprefix, int curr_canopy)
-{
-    simvalid = true;
-    std::string terfile = dirprefix+".elv";
-    std::string pdbfile = dirprefix + "_canopy";
-    pdbfile += std::to_string(curr_canopy) + ".pdb";
-    std::string chmfile = dirprefix+".chm";
-    std::string cdmfile = dirprefix+".cdm";
-    std::string sunfile = dirprefix+"_sun.txt";
-    std::string sunlandfile = dirprefix+"_sun_landscape.txt";
-    std::string wetfile = dirprefix+"_wet.txt";
-    std::string climfile = dirprefix+"_clim.txt";
-    std::string bmefile = dirprefix+"_biome.txt";
-    std::string catfile = dirprefix+"_plt.png";
-
-    // load terrain
-    currscene = 0;
-    getTerrain()->loadElv(terfile);
-    cerr << "Elevation file loaded" << endl;
-    scf = getTerrain()->getMaxExtent();
-    getView()->setForcedFocus(getTerrain()->getFocus());
-    getView()->setViewScale(getTerrain()->longEdgeDist());
-    getView()->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
-    getTerrain()->calcMeanHeight();
-
-    // match dimensions for empty overlay
-    int dx, dy;
-    getTerrain()->getGridDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->fill(0);
-    getTypeMap(TypeMapType::EMPTY)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::EMPTY)->clear();
-
-    if(getCanopyHeightModel()->read(chmfile))
-    {
-        cerr << "CHM file loaded" << endl;
-        loadTypeMap(getCanopyHeightModel(), TypeMapType::CHM);
-    }
-    else
-    {
-        cerr << "No Canopy Height Model found. Simulation invalidated." << endl;
-        simvalid = false;
-    }
-
-    bool sim_densitymodel = false;
-
-    if(getCanopyDensityModel()->read(cdmfile))
-    {
-        loadTypeMap(getCanopyDensityModel(), TypeMapType::CDM);
-        cerr << "CDM file loaded" << endl;
-    }
-    else
-    {
-        cerr << "No Canopy Density Model found. One will be calculated from the imported canopy trees." << endl;
-        sim_densitymodel = true;
-    }
-
-    if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
-    {
-        if (plantvis.size() < getBiome()->numPFTypes())
-            plantvis.resize(getBiome()->numPFTypes());
-        cerr << "Biome file load" << endl;
-        for(int t = 0; t < getBiome()->numPFTypes(); t++)
-            plantvis[t] = true;
-
-        canopyvis = true;
-        undervis = true;
-
-        // initialize simulation
-        initSceneSim();
-
-        // read climate parameters
-        if(!getSim()->readClimate(climfile))
-        {
-            simvalid = false;
-            cerr << "No climate file " << climfile << " found. Simulation invalidated" << endl;
-        }
-
-        // read soil moisture, and if that fails simulate it and store results
-        if(!getSim()->readMoisture(wetfile))
-        {
-            cerr << "No Soil moisture file " << wetfile << " found, so simulating soil moisture" << endl;
-            getSim()->calcMoisture();
-            getSim()->writeMoisture(wetfile);
-        }
-        else
-        {
-            cerr << "Soil moisture file loaded" << endl;
-        }
-        wet_mth = 0;
-        loadTypeMap(getMoisture(wet_mth), TypeMapType::WATER);
-
-        // loading plant distribution
-        getEcoSys()->setBiome(getBiome());
-        if(!getEcoSys()->loadNichePDB(pdbfile, getTerrain()))
-        {
-             std::cerr << "Plant distribution file " << pdbfile << "does not exist" << endl; // just report but not really an issue
-        }
-        else
-        {
-            getEcoSys()->pickAllPlants(getTerrain());
-            std::cerr << "Plant canopy distribution file loaded" << std::endl;
-        }
-
-        getEcoSys()->redrawPlants();
-
-        if (sim_densitymodel)
-        {
-            std::cerr << "Computing canopy density model from imported canopy..." << std::endl;
-            getSim()->calcCanopyDensity(getEcoSys(), getCanopyDensityModel(), cdmfile);
-            std::cerr << "Done computing canopy density model" << std::endl;
-        }
-
-        std::string simsun_file = inclcanopy ? sunfile : sunlandfile;		// if we do not include canopy, we only simulate sunlight based on landscape shadowing
-                                                                            // This is only applicable when running viewer with the -sun option, for sunlight sim only
-
-        std::cerr << "Looking for sunfile " << simsun_file << " (include canopy = " << inclcanopy << ")" << std::endl;
-        // read sunlight, and if that fails simulate it and store results
-        if(!getSim()->readSun(simsun_file))
-        {
-            cerr << "No Sunlight file " << simsun_file << " found, so simulating sunlight" << endl;
-            sim_canopy_sunlight(simsun_file);
-        }
-        else
-        {
-            cerr << "Sunlight file loaded" << endl;
-        }
-
-        sun_mth = 0;
-        loadTypeMap(getSunlight(sun_mth), TypeMapType::SUNLIGHT);
-        loadTypeMap(getSlope(), TypeMapType::SLOPE);
-    }
-    else
-    {
-        std::cerr << "Biome file " << bmefile << "does not exist. Simulation invalidated." << endl;
-    }
-
-    focuschange = false;
-    if(simvalid)
-        firstsim = true;
 }
 
 void GLWidget::saveScene(std::string dirprefix)
@@ -928,16 +612,16 @@ void GLWidget::writePaintMap(std::string paintfile)
 void GLWidget::addScene()
 {
     Scene * scene = new Scene();
-    scene->view->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
+    scene->view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
 
     plantvis.clear();
     scenes.push_back(scene);
-    currscene = (int) scenes.size() - 1;
+    currscene = static_cast<int>(scenes.size()) - 1;
 }
 
 void GLWidget::setScene(int s)
 {
-    if(s >= 0 && s < (int) scenes.size())
+    if(s >= 0 && s < static_cast<int>(scenes.size()))
     {
         currscene = s;
         getTerrain()->setBufferToDirty();
@@ -952,8 +636,8 @@ void GLWidget::loadDecals()
     QImage decalImg, t;
 
     // load image
-    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../sim/Icons/manipDecals.png"))
-        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../sim/Icons/manipDecals.png" << " not found" << endl;
+    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../viz/Icons/manipDecals.png"))
+        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../viz/Icons/manipDecals.png" << " not found" << endl;
 
     // Qt prep image for OpenGL
     QImage fixedImage(decalImg.width(), decalImg.height(), QImage::Format_ARGB32);
@@ -1095,7 +779,6 @@ void GLWidget::paintGL()
     glm::vec3 trs, rot;
     uts::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
     Shape shape;  // geometry for focus indicator
-    std::vector<Shape>::iterator sit;
     std::vector<glm::mat4> sinst;
     std::vector<glm::vec4> cinst;
 
@@ -1164,7 +847,7 @@ void GLWidget::resizeGL(int width, int height)
     glViewport((width - side) / 2, (height - side) / 2, width, height);
 
     // apply to all views
-    for(int i = 0; i < (int) scenes.size(); i++)
+    for(int i = 0; i < static_cast<int>(scenes.size()); i++)
     {
         scenes[i]->view->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
         scenes[i]->view->apply();
@@ -1202,6 +885,16 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         canopyvis = !canopyvis; // toggle canopy visibility
         getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
         update();
+    }
+    if(event->key() == Qt::Key_O) // 'O' to run simple unit test
+    {
+        /*
+        cerr << "unit test on ascii grid load" << endl;
+        ValueGridMap<float> map;
+        map = data_importer::load_esri<ValueGridMap<float>>("./test.txt");
+        cerr << map.get(0, 0) << " " << map.get(1, 2) << endl;
+        // possible order issue on reads
+        */
     }
     if(event->key() == Qt::Key_P) // 'P' to toggle plant visibility
     {
@@ -1261,7 +954,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
     if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
     {
-        int p = (int) event->key() - (int) Qt::Key_1 + 1;
+        int p = static_cast<int>(event->key()) - static_cast<int>(Qt::Key_1) + 1;
         setSinglePlantVis(p);
         cerr << "single species visibility " << p << endl;
     }
@@ -1318,7 +1011,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 
 void GLWidget::setAllPlantsVis()
 {
-    for(int i = 0; i < (int) plantvis.size(); i++)
+    for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
         plantvis[i] = true;
 }
 
@@ -1340,7 +1033,7 @@ void GLWidget::setUndergrowthVis(bool vis)
 
 void GLWidget::setAllSpecies(bool vis)
 {
-    for(int i = 0; i < (int) plantvis.size(); i++)
+    for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
         plantvis[i] = vis;
     getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
     update();
@@ -1350,7 +1043,7 @@ void GLWidget::setSinglePlantVis(int p)
 {
     if(p < (int) plantvis.size())
     {
-        for(int i = 0; i < (int) plantvis.size(); i++)
+        for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
             plantvis[i] = false;
         plantvis[p] = true;
         getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
@@ -1364,7 +1057,7 @@ void GLWidget::setSinglePlantVis(int p)
 
 void GLWidget::toggleSpecies(int p, bool vis)
 {
-    if(p < (int) plantvis.size())
+    if(p < static_cast<int>(plantvis.size()))
     {
         plantvis[p] = vis;
         getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
@@ -1376,40 +1069,6 @@ void GLWidget::toggleSpecies(int p, bool vis)
     }
 }
 
-void GLWidget::run_undersim_only(int curr_run, int nyears)
-{
-    while (datadir.back() == '/')
-        datadir.pop_back();
-    std::string out_filename = get_dirprefix() + "_undergrowth";
-    out_filename += std::to_string(curr_run); // + ".pdb";
-    std::string out_filename_over = get_dirprefix() + "_overgrowth";
-    out_filename_over += std::to_string(curr_run) + ".pdb";
-    std::string seedbank_file = get_dirprefix() + "_seedbank" + std::to_string(curr_run) + ".sdb";
-    std::string seedchance_file = get_dirprefix() + "_seedchance" + std::to_string(curr_run) + ".txt";
-    out_filename += ".pdb";
-    if (simvalid)
-    {
-        if(firstsim)
-        {
-            std::cout << "Importing canopy..." << std::endl;
-            getSim()->importCanopy(getEcoSys(), seedbank_file, seedchance_file); // transfer plants to simulation
-            std::cout << "Done importing canopy" << std::endl;
-            firstsim = false;
-        }
-        // strictly only needs to be done on the first simulation run
-        if (nyears > 0)
-        {
-            getSim()->simulate(getEcoSys(), seedbank_file, seedchance_file, nyears);
-            getSim()->exportUnderstory(getEcoSys()); // transfer plants from simulation
-            this->getEcoSys()->saveNichePDB(out_filename, 1);
-        }
-        else
-        {
-            std::cout << "No simulation done because specified number of years is not greater than zero" << std::endl;
-        }
-    }
-
-}
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
@@ -1417,7 +1076,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     vpPoint pnt;
     
     int x = event->x(); int y = event->y();
-    float W = (float) width(); float H = (float) height();
+    float W = static_cast<float>(width()); float H = static_cast<float>(height());
 
     update(); // ensure this viewport is current for unproject
 
