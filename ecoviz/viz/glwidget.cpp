@@ -458,7 +458,7 @@ std::string GLWidget::get_dirprefix()
     return dirprefix;
 }
 
-void GLWidget::loadFinScene(int curr_canopy)
+void GLWidget::loadFinScene(int timestep_start, int timestep_end)
 {
     std::cout << "Datadir before fixing: " << datadir << std::endl;
     while (datadir.back() == '/')
@@ -470,23 +470,28 @@ void GLWidget::loadFinScene(int curr_canopy)
     std::string setname = datadir.substr(slash_idx + 1);
     std::string dirprefix = get_dirprefix();
 
-    loadFinScene(dirprefix, curr_canopy);
+    loadFinScene(dirprefix, timestep_start, timestep_end);
 }
 
-void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
+void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int timestep_end)
 {
+    using namespace data_importer;
+
+    std::vector<std::string> timestep_files;
     std::string terfile = dirprefix+".elv";
+
+    for (int ts = timestep_start; ts <= timestep_end; ts++)
+    {
+        timestep_files.push_back("ecoviz_" + std::to_string(ts) + ".pdb");
+    }
+
+
+    /*
     std::string cpdbfile = dirprefix + "_canopy";
     std::string updbfile = dirprefix + "_undergrowth";
     cpdbfile += std::to_string(curr_canopy) + ".pdb";
     updbfile += std::to_string(curr_canopy) + ".pdb";
-    std::string chmfile = dirprefix+".chm";
-    std::string cdmfile = dirprefix+".cdm";
-    std::string sunfile = dirprefix+"_sun.txt";
-    std::string wetfile = dirprefix+"_wet.txt";
-    std::string climfile = dirprefix+"_clim.txt";
-    std::string bmefile = dirprefix+"_biome.txt";
-    std::string catfile = dirprefix+"_plt.png";
+    */
 
     // load terrain
     currscene = 0;
@@ -506,24 +511,25 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
     getTypeMap(TypeMapType::EMPTY)->matchDim(dx, dy);
     getTypeMap(TypeMapType::EMPTY)->clear();
 
-    if(getCanopyHeightModel()->read(chmfile))
-    {
-        cerr << "CHM file loaded" << endl;
-        loadTypeMap(getCanopyHeightModel(), TypeMapType::CHM);
-    }
-    else
-    {
-        cerr << "No Canopy Height Model found. Simulation invalidated." << endl;
-    }
+    float rw, rh;
+    getTerrain()->getTerrainDim(rw, rh);
 
-    if(getCanopyDensityModel()->read(cdmfile))
+    // import cohorts
+    std::vector<ValueMap<std::vector<ilanddata::cohort> > > cohortmaps;
+
+    for (auto &tsfname : timestep_files)
     {
-        loadTypeMap(getCanopyDensityModel(), TypeMapType::CDM);
-        cerr << "CDM file loaded" << endl;
-    }
-    else
-    {
-        cerr << "No Canopy Density Model found. One will be calculated from the imported canopy trees." << endl;
+        auto fdata = ilanddata::read(tsfname, "2.0");
+
+        cohortmaps.push_back(ValueMap<std::vector<ilanddata::cohort> >());
+        cohortmaps.back().setDim(int(ceil(rw / 2)), int(ceil(rh / 2)));
+
+        for (auto &crt : fdata.cohorts)
+        {
+            int gx = (crt.xs - 1) / 2;
+            int gy = (crt.ys - 1) / 2;
+            cohortmaps.back().get(gx, gy).push_back(crt);
+        }
     }
 
     if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
@@ -537,33 +543,21 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
         canopyvis = true;
         undervis = true;
 
-        // read climate parameters
-        // if(!getSim()->readClimate(climfile))
-        //    cerr << "No climate file " << climfile << " found." << endl;
-
-        // read soil moisture, and if that fails simulate it and store results
-        if(!readMoisture(wetfile))
-        {
-            cerr << "No Soil moisture file " << wetfile << " found" << endl;
-        }
-        else
-        {
-            cerr << "Soil moisture file loaded" << endl;
-            wet_mth = 0;
-            loadTypeMap(getMoisture(wet_mth), TypeMapType::WATER);
-        }
-
         // loading plant distribution
         getEcoSys()->setBiome(getBiome());
+
+        /*
         if(!getEcoSys()->loadNichePDB(cpdbfile, getTerrain()))
              std::cerr << "Plant distribution file " << cpdbfile << "does not exist" << endl; // just report but not really an issue
         else
             std::cerr << "Plant canopy distribution file loaded" << std::endl;
 
+
         if(!getEcoSys()->loadNichePDB(updbfile, getTerrain(), 1))
              std::cerr << "Undergrowth distribution file " << updbfile << " does not exist" << endl; // just report but not really an issue
         else
             std::cerr << "Plant undergrowth distribution file loaded" << std::endl;
+        */
 
         setAllPlantsVis();
         focuschange = !focuschange;
@@ -571,23 +565,10 @@ void GLWidget::loadFinScene(std::string dirprefix, int curr_canopy)
         getEcoSys()->redrawPlants();
         update();
 
-        // read sunlight, and if that fails simulate it and store results
-        if(!readSun(sunfile))
-        {
-            cerr << "No Sunlight file " << sunfile << " found" << endl;
-        }
-        else
-        {
-            cerr << "Sunlight file loaded" << endl;
-            sun_mth = 0;
-            loadTypeMap(getSunlight(sun_mth), TypeMapType::SUNLIGHT);
-        }
-
         loadTypeMap(getSlope(), TypeMapType::SLOPE);
     }
     else
     {
-        std::cerr << "Biome file " << bmefile << "does not exist." << endl;
         focuschange = false;
     }
 }

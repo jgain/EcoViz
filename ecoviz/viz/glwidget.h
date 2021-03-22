@@ -205,8 +205,8 @@ public:
      * Load scene attributes that are located in the directory specified
      * @param dirprefix     directory path and file name prefix combined for loading a scene
      */
-    void loadFinScene(int curr_canopy);
-    void loadFinScene(std::string dirprefix, int curr_canopy);
+    void loadFinScene(int timestep_start, int timestep_end);
+    void loadFinScene(std::string dirprefix, int timestep_start, int timestep_end);
 
      /**
       * Save scene attributes to the directory specified

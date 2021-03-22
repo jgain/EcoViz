@@ -37,6 +37,45 @@
 
 namespace data_importer
 {
+		namespace ilanddata
+		{
+			struct params
+			{
+				params(std::string filename);
+
+				int width, height;
+				float quantdiv, radialmult;
+				int maxpercell;
+				int samplemult;
+			};
+
+
+			struct cohort
+			{
+				cohort(int xs, int ys, int specidx, float dbh, float height, int nplants);
+
+				cohort(std::stringstream &ss);
+
+				int xs, ys;
+				int specidx;
+				float dbh, height;
+				int nplants;
+			};
+
+			struct filedata
+			{
+				int timestep;
+				std::string version;
+				std::vector<cohort> cohorts;
+				std::vector<basic_tree> trees;
+			};
+
+			bool fileversion_gteq(std::string v1, std::string v2);
+
+                        filedata read(std::string filename, std::string minversion);
+
+                        void trim_filedata_spatial(filedata &data, int width, int height);
+		}
 
         struct viability
         {

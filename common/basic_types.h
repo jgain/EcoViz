@@ -567,7 +567,13 @@ public:
     T get(int x, int y) const
     { return fmap.at(flatten(x, y)); }
 
+    T &get(int x, int y)
+    { return fmap.at(flatten(x, y)); }
+
     T get(int idx) const
+    { return fmap.at(idx); }
+
+    T &get(int idx)
     { return fmap.at(idx); }
 
     T &operator ()(int x, int y)

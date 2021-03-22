@@ -49,6 +49,179 @@ const std::array<std::string, 12> months_arr = {"January",
                                         "December"};
 
 
+data_importer::ilanddata::params::params(std::string filename)
+{
+	std::ifstream ifs(filename);
+
+	std::string line;
+
+	while (ifs.good())
+	{
+		std::getline(ifs, line);
+		std::stringstream ss(line);
+		std::string category, value;
+		std::getline(ss, category, '=');
+		std::getline(ss, value);
+
+		if (category == "width")
+			width = atoi(value.c_str());
+		else if (category == "height")
+			height = atoi(value.c_str());
+		else if (category == "quantdiv")
+			quantdiv = atof(value.c_str());
+		else if (category == "radialmult")
+			radialmult = atof(value.c_str());
+		else if (category == "maxpercell")
+			maxpercell = atoi(value.c_str());
+		else if (category == "samplemult")
+			samplemult = atoi(value.c_str());
+	}
+}
+
+data_importer::ilanddata::cohort::cohort(int xs, int ys, int specidx, float dbh, float height, int nplants)
+		: xs(xs), ys(ys), specidx(specidx), dbh(dbh), height(height), nplants(nplants)
+{}
+
+data_importer::ilanddata::cohort::cohort(std::stringstream &ss)
+{
+	ss >> xs;
+	ss >> ys;
+	ss >> specidx;
+	ss >> dbh;
+	ss >> height;
+	ss >> nplants;
+}
+
+bool data_importer::ilanddata::fileversion_gteq(std::string v1, std::string v2)
+{
+	std::stringstream sstr1(v1);
+	std::stringstream sstr2(v2);
+
+	while (sstr1.good() || sstr2.good())
+	{
+		std::string s1 = "0", s2 = "0";
+
+		if (sstr1.good())
+			std::getline(sstr1, s1, '.');
+		if (sstr2.good())
+			std::getline(sstr2, s2, '.');
+
+		if (std::stoi(s1) > std::stoi(s2))
+			return true;
+		else if (std::stoi(s1) < std::stoi(s2))
+			return false;
+	}
+
+	return true;		// in this case, they should be equal
+}
+
+data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string filename, std::string minversion)
+{
+	using namespace data_importer::ilanddata;
+
+	std::ifstream ifs(filename);
+
+	if (!ifs.is_open())
+		throw std::invalid_argument("Could not open file at " + filename);
+
+	filedata fdata;
+
+	std::string lstr;
+
+	std::getline(ifs, lstr);		// TODO: make sure this string's format is correct for the fileversion function call below
+	if (!fileversion_gteq(lstr, minversion))
+	{
+		throw std::invalid_argument("File version " + lstr + " is not up to date with minimum version " + minversion + ". Aborting import.");
+	}
+	fdata.version = lstr;
+
+	std::getline(ifs, lstr);
+	fdata.timestep = std::stoi(lstr);
+
+	std::getline(ifs, lstr);
+	int ntrees_expected = std::stoi(lstr);		// can use this integer to check that the file and import are consistent by comparing to tree vector size
+
+	int lidx = 3;
+
+	std::cout << "Reading " << ntrees_expected << " trees..." << std::endl;
+
+	int ntokens;
+	for (int i = 0; i < ntrees_expected; i++)
+	{
+		std::getline(ifs, lstr);
+		std::stringstream ss(lstr);
+
+		basic_tree tree;
+		
+		int treeid;
+		ss >> treeid;    // TODO: leaving out ID for now, must include it later
+
+		ss >> tree.species;
+		ss >> tree.x;
+		ss >> tree.y;
+		ss >> tree.height;
+		ss >> tree.radius;
+
+		float dbh;
+		ss >> dbh;   // TODO: leaving out dbh for now, must include it later
+		ss >> lstr;		// seems like an unused zero at the end of each line? ignoring it for now
+
+		fdata.trees.push_back(tree);
+	}
+
+	std::getline(ifs, lstr);
+	int ncohorts_expected = std::stoi(lstr);
+	std::cout << "Reading " << ncohorts_expected << " cohorts..." << std::endl;
+
+	for (int i = 0; i < ncohorts_expected; i++)
+	{
+		std::getline(ifs, lstr);
+		std::stringstream ss(lstr);
+		if (!ifs.eof())
+			fdata.cohorts.emplace_back(ss);
+		else
+		{
+			std::cout << "Warning: Read only " << i << " cohorts out of an expected " << ncohorts_expected << std::endl;
+			break;
+		}
+	}
+
+	std::cout << "Done. Returning file data for timestep " << fdata.timestep << std::endl;
+
+	return fdata;
+}
+
+void data_importer::ilanddata::trim_filedata_spatial(data_importer::ilanddata::filedata &data, int width, int height)
+{
+    using namespace data_importer::ilanddata;
+    std::vector<std::vector<cohort>::iterator > to_remove;
+    for (auto iter = data.cohorts.begin(); iter != data.cohorts.end(); advance(iter, 1))
+    {
+        if (iter->xs <= -2 || iter->xs >= width || iter->ys <= -2 || iter->ys >= height)
+        {
+            to_remove.push_back(iter);
+        }
+    }
+
+    // remove iterators in reverse order, so that we don't invalidate the ones coming after the one we removed last
+    for (auto riter = to_remove.rbegin(); riter != to_remove.rend(); advance(riter, 1))
+    {
+        data.cohorts.erase(*riter);
+    }
+
+    std::vector<std::vector<basic_tree>::iterator > to_remove_trees;
+
+    for (auto iter = data.trees.begin(); iter != data.trees.end(); advance(iter, 1))
+    {
+        to_remove_trees.push_back(iter);
+    }
+
+    for (auto riter = to_remove_trees.rbegin(); riter != to_remove_trees.rend(); advance(riter, 1))
+    {
+        data.trees.erase(*riter);
+    }
+}
+
 std::map<std::string, int> make_monthmap()
 {
     std::map<std::string, int> monthmap;
@@ -1267,3 +1440,4 @@ std::map<std::string, data_importer::grass_viability> data_importer::read_grass_
 
     return vs;
 }
+
