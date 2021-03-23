@@ -142,6 +142,11 @@ void TypeMap::initPaletteColTable()
     colmap[6] = densetall;
 }
 
+int TypeMap::getNumSamples()
+{
+    return numSamples;
+}
+
 void TypeMap::initCategoryColTable()
 {
     GLfloat *col;
@@ -272,6 +277,12 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
             i++;
         }
         infile.close();
+        numSamples = samples+1;
+    }
+    else
+    {
+        std::cerr << "Warning: could not read colourmap at " << colmapfile << std::endl;
+        numSamples = -1;
     }
 
     // now sample the colour map at even intervals according to the number of samples
@@ -283,7 +294,6 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
         colmap[i][0] = (GLfloat) r[pos]; colmap[i][1] = (GLfloat) g[pos]; colmap[i][2] = (GLfloat) b[pos];
         pos += step;
     }
-    numSamples = samples+1;
 }
 
 void TypeMap::clipRegion(Region &reg)
