@@ -566,7 +566,6 @@ void Terrain::saveElv(const uts::string &filename)
     float step;
     int gx, gy;
 
-    float val;
     ofstream outfile;
 
     outfile.open((char *) filename.c_str(), ios_base::out);

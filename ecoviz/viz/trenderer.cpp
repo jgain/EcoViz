@@ -1157,8 +1157,11 @@ void TRenderer::loadTerrainData(const float* data, int wd, int ht, float scx, fl
           typeBuffer[4*cnt+1] = (*ct)[ colIdx ][1];
           typeBuffer[4*cnt+2] = (*ct)[ colIdx ][2];
           typeBuffer[4*cnt+3] = (*ct)[ colIdx ][3];
+
           //std::cout << "Map Colour=[" << typeBuffer[4*cnt] << "," <<
-          // typeBuffer[4*cnt + 1] << "," << typeBuffer[4*cnt + 2] << "," << typeBuffer[4*cnt + 3] << "]\n";
+          //typeBuffer[4*cnt + 1] << "," << typeBuffer[4*cnt + 2] << "," << typeBuffer[4*cnt + 3] << "]";
+          //std::cout << " (with colIdx = " << colIdx << " at location " << (xoff + j) << ", " << (yoff + i) << std::endl;
+
         }
       cnt++;
     }
