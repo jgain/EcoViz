@@ -776,6 +776,10 @@ void TypeMap::setPurpose(TypeMapType purpose)
             initPerceptualColTable("../../common/colourmaps/linear_gow_60-85_c27_n256.csv", 20, 0.8f);
             // initPerceptualColTable("../../colourmaps/isoluminant_cgo_70_c39_n256.csv", 10);
             break;
+        case TypeMapType::COHORT:
+            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
+            // replace 0 with natural terrain colour
+            colmap[1][0] = 0.7f; colmap[1][1] = 0.6f; colmap[1][2] = 0.5f;
         default:
             break;
     }

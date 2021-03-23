@@ -43,9 +43,10 @@ enum class TypeMapType
     CHM,            //< canopy height model for tree heights
     CDM,            //< canopy density model for ground visibility
     SUITABILITY,    //< shows discrepancy between terrain and user painted distributions
+    COHORT,			//< shows plant counts/densities for cohorts over landscape
     TMTEND
 };
-const std::array<TypeMapType, 10> all_typemaps = {TypeMapType::EMPTY, TypeMapType::PAINT, TypeMapType::CATEGORY, TypeMapType::SLOPE, TypeMapType::WATER, TypeMapType::SUNLIGHT, TypeMapType::TEMPERATURE, TypeMapType::CHM, TypeMapType::CDM, TypeMapType::SUITABILITY}; // to allow iteration over the typemaps
+//const std::array<TypeMapType, 10> all_typemaps = {TypeMapType::EMPTY, TypeMapType::PAINT, TypeMapType::CATEGORY, TypeMapType::SLOPE, TypeMapType::WATER, TypeMapType::SUNLIGHT, TypeMapType::TEMPERATURE, TypeMapType::CHM, TypeMapType::CDM, TypeMapType::SUITABILITY}; // to allow iteration over the typemaps
 
 class MapFloat;
 
@@ -66,6 +67,7 @@ private:
 
     /// Set up the colour table with colours appropriate to the initial ecosystem pallete of operations
     void initPaletteColTable();
+
 
     /**
      * @brief initPerceptualColTable Set up a colour table sampled from a perceptually uniform colour map stored in a CSV file
@@ -207,6 +209,148 @@ public:
      * @param wetthresh Moisture value above which pixel is considered as open water
      */
     void setWater(MapFloat * wet, float wetthresh);
+
+    int getNumSamples();
+
+    template<typename T>
+    int convert(const T &map, TypeMapType purpose, float range)
+    {
+        const float _pluszero = 1e-5f;
+
+        int tp, maxtp = 0;
+        int width, height;
+        float val, maxval = 0.0f;
+
+        map.getDim(width, height);
+        matchDim(width, height);
+        // convert to internal type map format
+        int mincm, maxcm;
+        mincm = 100; maxcm = -1;
+
+        for(int x = 0; x < width; x++)
+            for(int y = 0; y < height; y++)
+            {
+                tp = 0;
+                switch(purpose)
+                {
+                    case TypeMapType::EMPTY: // do nothing
+                        break;
+                    case TypeMapType::PAINT: // do nothing
+                        break;
+                    case TypeMapType::CATEGORY: // do nothing, since categories are integers not floats
+                        break;
+                    case TypeMapType::SLOPE:
+                        val = map.get(x, y);
+                        if(val > maxval)
+                            maxval = val;
+
+                        // discretise into ranges of illumination values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        break;
+                    case TypeMapType::WATER:
+                        val = map.get(x, y);
+                        if(val > maxval)
+                            maxval = val;
+
+                        // discretise into ranges of water values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        break;
+                    case TypeMapType::SUNLIGHT:
+                         val = map.get(x, y);
+                        if(val > maxval)
+                            maxval = val;
+
+                        // discretise into ranges of illumination values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        break;
+                    case TypeMapType::TEMPERATURE:
+                        val = map.get(x, y);
+                        if(val > maxval)
+                            maxval = val;
+
+                        // discretise into ranges of temperature values
+                        // clamp values to range, temperature is bidrectional
+                        if(val < -range) val = -range;
+                        if(val > range) val = range;
+                        tp = (int) ((val+range) / (2.0f*range+_pluszero) * (numSamples-2)) + 1;
+
+                        break;
+                    case TypeMapType::CHM:
+                         val = map.get(y, x);
+                         if(val > maxval)
+                            maxval = val;
+
+                        // discretise into ranges of tree height values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        if(tp < mincm)
+                            mincm = tp;
+                        if(tp > maxcm)
+                            maxcm = tp;
+                        break;
+                    case TypeMapType::CDM:
+                        val = map.get(y, x);
+                        if(val > maxval)
+                            maxval = val;
+
+                        // discretise into ranges of tree density values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        if(tp < mincm)
+                            mincm = tp;
+                        if(tp > maxcm)
+                            maxcm = tp;
+                        break;
+                    case TypeMapType::SUITABILITY:
+                        val = map.get(x, y);
+                        if(val > maxval)
+                            maxval = val;
+                        // discretise into ranges of illumination values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        break;
+                    case TypeMapType::COHORT:
+                        val = map.get(x, y);
+                        if(val > maxval)
+                            maxval = val;
+                        // discretise into ranges of illumination values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        break;
+
+                    default:
+                        break;
+                }
+                (* tmap)[y][x] = tp;
+
+                if(tp > maxtp)
+                    maxtp = tp;
+            }
+        /*
+        if(purpose == TypeMapType::CDM)
+        {
+            cerr << "Minimum colour value = " << mincm << endl;
+            cerr << "Maxiumum colour value = " << maxcm << endl;
+        }*/
+        return maxtp;
+    }
 };
 
 #endif
