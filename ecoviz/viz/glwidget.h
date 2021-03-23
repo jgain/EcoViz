@@ -80,6 +80,7 @@
 #include "stroke.h"
 #include "typemap.h"
 #include "shape.h"
+#include "scrollwindow.h"
 
 
 
@@ -308,6 +309,7 @@ signals:
 public slots:
     void animUpdate(); // animation step for change of focus
     void rotateUpdate(); // animation step for rotating around terrain center
+    void set_timestep(int tstep);
 
     std::string get_dirprefix();
 
@@ -357,8 +359,11 @@ private:
     QTimer * atimer, * rtimer; // timers to control different types of animation
     QLabel * vizpopup;  //< for debug visualisation
 
+    scrollwindow *tstep_scrollwindow;
+
     std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > cohortmaps;
     std::vector<ValueMap<float> > cohort_plantcountmaps;
+    int initstep;
 
     /**
      * @brief pickInfo  write information about a terrain cell to the console

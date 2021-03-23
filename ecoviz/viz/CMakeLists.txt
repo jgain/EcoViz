@@ -28,6 +28,7 @@ if (BUILD_GUI)
        trenderer.cpp
        ${DATA_IMPORT_DIR}/data_importer.cpp
        ${BASE_ALL_DIR}/common/basic_types.h
+       scrollwindow.cpp
 )
 
    #set(CMAKE_BUILD_TYPE Debug)

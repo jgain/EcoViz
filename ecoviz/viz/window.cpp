@@ -338,6 +338,8 @@ Window::Window(string datadir)
     numGridX = 1.0f / gridSepX;
     numGridZ = 1.0f / gridSepZ;
 
+    std::cout << "PerspectiveView address: " << perspectiveView << std::endl;
+
     // signal to slot connections
     connect(perspectiveView, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
     connect(gridSepXEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
@@ -408,7 +410,7 @@ Window::Window(string datadir)
 
 void Window::run_viewer()
 {
-    perspectiveView->loadFinScene(25, 25);
+    perspectiveView->loadFinScene(1, 25);
     repaintAllGL();
 }
 

@@ -152,6 +152,8 @@ Scene::~Scene()
 // GLWidget
 ////
 
+static int curr_cohortmap = 0;
+
 GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
     : QGLWidget(format, parent)
 {
@@ -194,6 +196,7 @@ GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
 
     resize(sizeHint());
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
+
 }
 
 GLWidget::~GLWidget()
@@ -465,6 +468,9 @@ std::string GLWidget::get_dirprefix()
 
 void GLWidget::loadFinScene(int timestep_start, int timestep_end)
 {
+    tstep_scrollwindow = new scrollwindow(this, timestep_start, timestep_end, 300, 100);
+    tstep_scrollwindow->setVisible(false);
+
     std::cout << "Datadir before fixing: " << datadir << std::endl;
     while (datadir.back() == '/')
         datadir.pop_back();
@@ -485,6 +491,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     std::vector<std::string> timestep_files;
     std::string terfile = datadir+"/dem.elv";
 
+    initstep = timestep_start;
     for (int ts = timestep_start; ts <= timestep_end; ts++)
     {
         timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
@@ -899,7 +906,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
         update();
     }
-    if(event->key() == Qt::Key_O) // 'O' to run simple unit test
+    if(event->key() == Qt::Key_O) // 'O' to toggle timestep slider
     {
         if (getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
         {
@@ -907,9 +914,10 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         }
         else if (cohort_plantcountmaps.size() > 0)
         {
-            loadTypeMap(cohort_plantcountmaps.front(), TypeMapType::COHORT);
-            setOverlay(TypeMapType::COHORT);
-            getTypeMap(TypeMapType::COHORT)->save("/home/konrad/cohorttypemap.txt");
+            tstep_scrollwindow->setVisible(true);
+            set_timestep(initstep);
+            //curr_cohortmap++;
+            //getTypeMap(TypeMapType::COHORT)->save("/home/konrad/cohorttypemap.txt");
         }
         else
             QMessageBox(QMessageBox::Warning, "Typemap Error", "No cohort plant count maps available").exec();
@@ -1239,4 +1247,17 @@ void GLWidget::rotateUpdate()
 {
     if(getView()->spin())
         update();
+}
+
+void GLWidget::set_timestep(int tstep)
+{
+    curr_cohortmap = tstep - initstep;
+    if (curr_cohortmap >= cohort_plantcountmaps.size())
+        curr_cohortmap = cohort_plantcountmaps.size() - 1;
+    loadTypeMap(cohort_plantcountmaps.at(curr_cohortmap), TypeMapType::COHORT);
+    setOverlay(TypeMapType::COHORT);
+
+    tstep_scrollwindow->set_labelvalue(tstep);
+
+    std::cout << "Timestep changed to " << tstep << std::endl;
 }
