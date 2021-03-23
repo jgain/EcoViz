@@ -262,6 +262,46 @@ public:
     /// Toggle visibility of an individual species on or off
     void toggleSpecies(int p, bool vis);
 
+    template<typename T>
+    int loadTypeMap(const T &map, TypeMapType purpose)
+    {
+        int numClusters = 0;
+
+        switch(purpose)
+        {
+            case TypeMapType::EMPTY:
+                break;
+            case TypeMapType::PAINT:
+                break;
+            case TypeMapType::CATEGORY:
+                break;
+            case TypeMapType::SLOPE:
+                numClusters = getTypeMap(purpose)->convert(map, purpose, 90.0f);
+                break;
+            case TypeMapType::WATER:
+                numClusters = getTypeMap(purpose)->convert(map, purpose, 100.0); // 1000.0f);
+                break;
+            case TypeMapType::SUNLIGHT:
+                 numClusters = getTypeMap(purpose)->convert(map, purpose, 13.0f);
+                 break;
+            case TypeMapType::TEMPERATURE:
+                numClusters = getTypeMap(purpose)->convert(map, purpose, 20.0f);
+                break;
+            case TypeMapType::CHM:
+                numClusters = getTypeMap(purpose)->convert(map, purpose, mtoft*initmaxt);
+                break;
+            case TypeMapType::CDM:
+                numClusters = getTypeMap(purpose)->convert(map, purpose, 1.0f);
+                break;
+            case TypeMapType::COHORT:
+                numClusters = getTypeMap(purpose)->convert(map, purpose, 60.0f);
+                break;
+            default:
+                break;
+        }
+        return numClusters;
+    }
+
 signals:
     void signalRepaintAllGL();
     
@@ -316,6 +356,9 @@ private:
     QColor qtWhite;
     QTimer * atimer, * rtimer; // timers to control different types of animation
     QLabel * vizpopup;  //< for debug visualisation
+
+    std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > cohortmaps;
+    std::vector<ValueMap<float> > cohort_plantcountmaps;
 
     /**
      * @brief pickInfo  write information about a terrain cell to the console

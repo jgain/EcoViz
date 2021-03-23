@@ -102,9 +102,10 @@ Scene::Scene()
     int dx, dy;
     terrain->getGridDim(dx, dy);
 
-    for(TypeMapType t: all_typemaps)
-        maps[static_cast<int>(t)] = new TypeMap(dx, dy, t);
-    maps[2]->setRegion(terrain->coverRegion());
+    // instantiate typemaps for all possible typemaps		(XXX: this could lead to memory issues for larger landscapes?)
+    for (int t = 0; t < int(TypeMapType::TMTEND); t++)
+        maps[t] = new TypeMap(dx, dy, (TypeMapType)t);
+    maps[2]->setRegion(terrain->coverRegion());		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
     for(int m = 0; m < 12; m++)
     {
@@ -122,12 +123,16 @@ Scene::~Scene()
 {
     delete view;
     delete terrain;
-    for(TypeMapType t: all_typemaps)
-        if(maps[static_cast<int>(t)] != nullptr)
+
+    // cycle through all typemaps, and if exists, delete and assign nullptr to indicate empty
+    for (int t = 0; t < int(TypeMapType::TMTEND); t++)
+    {
+        if (maps[int(t)] != nullptr)
         {
-            delete maps[static_cast<int>(t)];
-            maps[static_cast<int>(t)] = nullptr;
+            delete maps[int(t)];
+            maps[int(t)] = nullptr;
         }
+    }
 
     // delete sim;
     delete eco;
@@ -478,11 +483,11 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     using namespace data_importer;
 
     std::vector<std::string> timestep_files;
-    std::string terfile = dirprefix+".elv";
+    std::string terfile = datadir+"/dem.elv";
 
     for (int ts = timestep_start; ts <= timestep_end; ts++)
     {
-        timestep_files.push_back("ecoviz_" + std::to_string(ts) + ".pdb");
+        timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
     }
 
 
@@ -515,11 +520,11 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     getTerrain()->getTerrainDim(rw, rh);
 
     // import cohorts
-    std::vector<ValueMap<std::vector<ilanddata::cohort> > > cohortmaps;
 
     for (auto &tsfname : timestep_files)
     {
         auto fdata = ilanddata::read(tsfname, "2.0");
+        ilanddata::trim_filedata_spatial(fdata, int(rw), int(rh));
 
         cohortmaps.push_back(ValueMap<std::vector<ilanddata::cohort> >());
         cohortmaps.back().setDim(int(ceil(rw / 2)), int(ceil(rh / 2)));
@@ -529,6 +534,33 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
             int gx = (crt.xs - 1) / 2;
             int gy = (crt.ys - 1) / 2;
             cohortmaps.back().get(gx, gy).push_back(crt);
+        }
+    }
+
+    for (auto &tscmap : cohortmaps)
+    {
+        int gw, gh;
+        tscmap.getDim(gw, gh);
+
+        int tgw = ceil(rw), tgh = ceil(rh);
+
+        cohort_plantcountmaps.emplace_back(tgw, tgh);
+
+        for (int y = 0; y < gh; y++)
+        {
+            for (int x = 0; x < gw; x++)
+            {
+                auto &crts = tscmap.get(x, y);
+                float count = 0.0f;
+                for (auto &crt : crts)
+                {
+                    count += float(crt.nplants);		// nplants should be float...?
+                }
+                for (int i = 0; i < 2; i++)
+                    for (int j = 0; j < 2; j++)
+                        if (x * 2 + 1 + i < tgw && y * 2 + 1 + j < tgh)
+                            cohort_plantcountmaps.back().set(x * 2 + 1 + i, y * 2 + 1 + j, count);
+            }
         }
     }
 
@@ -869,6 +901,19 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
     if(event->key() == Qt::Key_O) // 'O' to run simple unit test
     {
+        if (getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
+        {
+            QMessageBox(QMessageBox::Warning, "Typemap Error", "Type map for cohorts does not have a valid colour table").exec();
+        }
+        else if (cohort_plantcountmaps.size() > 0)
+        {
+            loadTypeMap(cohort_plantcountmaps.front(), TypeMapType::COHORT);
+            setOverlay(TypeMapType::COHORT);
+            getTypeMap(TypeMapType::COHORT)->save("/home/konrad/cohorttypemap.txt");
+        }
+        else
+            QMessageBox(QMessageBox::Warning, "Typemap Error", "No cohort plant count maps available").exec();
+
         /*
         cerr << "unit test on ascii grid load" << endl;
         ValueGridMap<float> map;
