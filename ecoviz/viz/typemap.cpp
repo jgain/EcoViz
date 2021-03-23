@@ -738,32 +738,32 @@ void TypeMap::setPurpose(TypeMapType purpose)
             initCategoryColTable();
             break;
         case TypeMapType::SLOPE:
-            initPerceptualColTable("../../../../data/colourmaps/linear_kry_5-95_c72_n256.csv", 10);
+            initPerceptualColTable("../../common/colourmaps/linear_kry_5-95_c72_n256.csv", 10);
             break;
         case TypeMapType::WATER:
-            initPerceptualColTable("../../../../data/colourmaps/linear_blue_95-50_c20_n256.csv", 10);
+            initPerceptualColTable("../../common/colourmaps/linear_blue_95-50_c20_n256.csv", 10);
             break;
         case TypeMapType::SUNLIGHT:
-            initPerceptualColTable("../../../../data/colourmaps/linear_kry_5-95_c72_n256.csv", 10);
+            initPerceptualColTable("../../common/colourmaps/linear_kry_5-95_c72_n256.csv", 10);
             break;
         case TypeMapType::TEMPERATURE:
-            initPerceptualColTable("../../../../data/colourmaps/diverging_bwr_55-98_c37_n256.csv", 10);
+            initPerceptualColTable("../../common/colourmaps/diverging_bwr_55-98_c37_n256.csv", 10);
             break;
         case TypeMapType::CHM:
             // initPerceptualColTable("../colourmaps/linear_ternary-green_0-46_c42_n256.csv", 20);
-            initPerceptualColTable("../../../../data/colourmaps/linear_green_5-95_c69_n256.csv", 20);
+            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
             // replace 0 with natural terrain colour
             colmap[1][0] = 0.7f; colmap[1][1] = 0.6f; colmap[1][2] = 0.5f; // transparent
             colmap[2][0] = 0.0f; colmap[2][1] = 0.0f; colmap[2][2] = 1.0f; // black
             colmap[numSamples+2][0] = 1.0f; colmap[numSamples+2][1] = 0.0f; colmap[numSamples+2][2] = 0.0f; // red
             break;
         case TypeMapType::CDM:
-            initPerceptualColTable("../../../../data/colourmaps/linear_green_5-95_c69_n256.csv", 20);
+            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
             // replace 0 with natural terrain colour
             colmap[1][0] = 0.7f; colmap[1][1] = 0.6f; colmap[1][2] = 0.5f;
             break;
         case TypeMapType::SUITABILITY:
-            initPerceptualColTable("../../../../data/colourmaps/linear_gow_60-85_c27_n256.csv", 20, 0.8f);
+            initPerceptualColTable("../../common/colourmaps/linear_gow_60-85_c27_n256.csv", 20, 0.8f);
             // initPerceptualColTable("../../colourmaps/isoluminant_cgo_70_c39_n256.csv", 10);
             break;
         default:
