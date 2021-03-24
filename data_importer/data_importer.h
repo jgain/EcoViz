@@ -59,7 +59,7 @@ namespace data_importer
 				int xs, ys;
 				int specidx;
 				float dbh, height;
-				int nplants;
+                                float nplants;
 			};
 
 			struct filedata

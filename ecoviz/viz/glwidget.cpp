@@ -544,10 +544,11 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
         }
     }
 
+    int gw, gh;
+    if (cohortmaps.size() > 0)
+        cohortmaps[0].getDim(gw, gh);
     for (auto &tscmap : cohortmaps)
     {
-        int gw, gh;
-        tscmap.getDim(gw, gh);
 
         int tgw = ceil(rw), tgh = ceil(rh);
 
@@ -565,10 +566,22 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
                 }
                 for (int i = 0; i < 2; i++)
                     for (int j = 0; j < 2; j++)
-                        if (x * 2 + 1 + i < tgw && y * 2 + 1 + j < tgh)
-                            cohort_plantcountmaps.back().set(x * 2 + 1 + i, y * 2 + 1 + j, count);
+                    {
+                        int xloc = x * 2 + 1 + i;
+                        int yloc = y * 2 + 1 + j;
+                        if (xloc < tgw && yloc < tgh)
+                            cohort_plantcountmaps.back().set(yloc, xloc, count);
+                    }
             }
         }
+    }
+
+    if (cohortmaps.size() > 0)
+    {
+        sampler = std::unique_ptr<cohortsampler>(new cohortsampler(rw, rh, gw, gh, 10, 3));
+
+        //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
+        //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
     }
 
     if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
@@ -656,8 +669,8 @@ void GLWidget::loadDecals()
     QImage decalImg, t;
 
     // load image
-    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../viz/Icons/manipDecals.png"))
-        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../viz/Icons/manipDecals.png" << " not found" << endl;
+    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../common/Icons/manipDecals.png"))
+        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../common/Icons/manipDecals.png" << " not found" << endl;
 
     // Qt prep image for OpenGL
     QImage fixedImage(decalImg.width(), decalImg.height(), QImage::Format_ARGB32);
@@ -1230,7 +1243,7 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         }
         else if(!deg.isNull()) // mouse wheel instead
         {
-            del = (float) deg.y() * 2.5f;
+            del = (float) -deg.y() * 2.5f;
             getView()->incrZoom(del);
             update();
         }
@@ -1258,6 +1271,13 @@ void GLWidget::set_timestep(int tstep)
     setOverlay(TypeMapType::COHORT);
 
     tstep_scrollwindow->set_labelvalue(tstep);
+
+    auto trees = sampler->sample(cohortmaps.at(curr_cohortmap));
+    for (auto &t : trees)
+        t.species = t.species % 6;
+    getEcoSys()->clear();
+    getEcoSys()->placeManyPlants(getTerrain(), trees);
+    getEcoSys()->redrawPlants();
 
     std::cout << "Timestep changed to " << tstep << std::endl;
 }

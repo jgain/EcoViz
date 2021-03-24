@@ -1470,14 +1470,17 @@ void TRenderer::draw(View * view)
     if (shadModel == RADIANCE_SCALING)
     {
       programID = (*shaders["phongRS"]).getProgramID();
+      //std::cout << "Using phongRS shader" << std::endl;
     }
     else if (shadModel == SUN)
     {
         programID = (*shaders["canopyShader"]).getProgramID();
+        //std::cout << "Using canopyShader shader" << std::endl;
     }
     else
     {
         programID = (*shaders["phong"]).getProgramID();
+        //std::cout << "Using phong shader" << std::endl;
     }
 
     drawManipulators(programID);

@@ -109,6 +109,12 @@ vpPoint Terrain::toWorld(int x, int y, float h) const
     return vpPoint((float) x * convx, h, (float) y * convy);
 }
 
+float Terrain::getHeightFromReal(float x, float y)
+{
+    int gx, gy;
+    toGrid(vpPoint(x, 0, y), gx, gy);
+    return grid[gx][gy];
+}
 
 float Terrain::toWorld(float gdist) const
 {

@@ -29,6 +29,7 @@ if (BUILD_GUI)
        ${DATA_IMPORT_DIR}/data_importer.cpp
        ${BASE_ALL_DIR}/common/basic_types.h
        scrollwindow.cpp
+       cohortsampler.cpp
 )
 
    #set(CMAKE_BUILD_TYPE Debug)

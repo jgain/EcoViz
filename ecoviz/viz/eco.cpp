@@ -126,6 +126,8 @@ void PlantGrid::placePlant(Terrain * ter, int species, Plant plant)
     pgrid[flatten(cx, cy)].pop[species].push_back(plant);
 }
 
+
+
 void PlantGrid::placePlantExactly(Terrain * ter, int species, Plant plant, int x, int y)
 {
      pgrid[flatten(x, y)].pop[species].push_back(plant);
@@ -974,3 +976,37 @@ void EcoSystem::bindPlants(View * view, Terrain * ter, TypeMap * clusters, std::
     cerr << "end ecosys bind" << endl;
 }
 
+void EcoSystem::placePlant(Terrain *ter, const basic_tree &tree)
+{
+    //float h = ter->getHeight(tree.x, tree.y);
+    float h = ter->getHeightFromReal(tree.x, tree.y);
+    //vpPoint pos = ter->toWorld(tree.y, tree.x, h);	// h is not affected by this function
+    vpPoint pos(tree.y, h, tree.x);
+    //const GLfloat *coldata = colours[(int)tree.species];
+    const GLfloat *coldata;
+    coldata = biome->getSpeciesColour(tree.species);		// XXX: have to make sure that this is the species id, not the index...
+    glm::vec4 colour(coldata[0], coldata[1], coldata[2], coldata[3]);
+
+    /*
+    if (canopy && (fmod(pos.x / 0.9144f, 0.5f) < 1e-4 || fmod(pos.z / 0.9144f, 0.5f) < 1e-4))
+    {
+        std::cout << "Middle of cell encountered " << std::endl;
+    }
+    if (canopy)
+    {
+        std::cout << "Adding canopytree xy: " << pos.x << ", " << pos.z << std::endl;
+    }
+    */
+
+
+    Plant plnt = {pos, tree.height, tree.radius * 2, colour};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
+    esys.placePlant(ter, ((int)tree.species) * 3, plnt);		// FIXME, XXX: I don't think we should be multiplying by 3 here...
+}
+
+void EcoSystem::placeManyPlants(Terrain *ter, const std::vector<basic_tree> &trees)
+{
+    for (auto &tr : trees)
+    {
+        placePlant(ter, tr);
+    }
+}

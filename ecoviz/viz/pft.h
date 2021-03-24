@@ -332,6 +332,7 @@ public:
      * @brief printParams Print the biome parameters for viability to console
      */
     void printParams();
+    GLfloat *getSpeciesColour(int specid);
 };
 
 

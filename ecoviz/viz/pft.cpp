@@ -54,6 +54,11 @@ void Biome::categoryNameLookup(int idx, std::string &catName)
         catName = "OutOfCategoryTableRange";
 }
 
+GLfloat *Biome::getSpeciesColour(int specid)
+{
+    return pftypes.at(specid).basecol;
+}
+
 float Biome::getMinIdealMoisture(int i)
 {
     float c, r;

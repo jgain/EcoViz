@@ -457,6 +457,8 @@ public:
      */
     void bindPlants(View * view, Terrain * ter, TypeMap * clusters, std::vector<bool> * plantvis, std::vector<ShapeDrawData> &drawParams);
     void bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis);
+    void placePlant(Terrain *ter, const basic_tree &tree);
+    void placeManyPlants(Terrain *ter, const std::vector<basic_tree> &trees);
 };
 
 #endif

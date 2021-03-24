@@ -50,7 +50,6 @@ void main(void)
         halfV = normalize(halfVector);
         NdotHV = max(dot(n,halfV),0.0);
         color += matSpec * specularCol * pow(NdotHV, shiny);
-
      }
      // decal texturing:
      if (useTexturing == 1)

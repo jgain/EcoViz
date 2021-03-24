@@ -72,6 +72,7 @@
 #include <list>
 #include <common/debug_vector.h>
 #include <common/debug_list.h>
+#include <memory>
 
 #include "view.h"
 #include "eco.h"
@@ -81,6 +82,7 @@
 #include "typemap.h"
 #include "shape.h"
 #include "scrollwindow.h"
+#include "cohortsampler.h"
 
 
 
@@ -364,6 +366,8 @@ private:
     std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > cohortmaps;
     std::vector<ValueMap<float> > cohort_plantcountmaps;
     int initstep;
+
+    std::unique_ptr<cohortsampler> sampler;
 
     /**
      * @brief pickInfo  write information about a terrain cell to the console

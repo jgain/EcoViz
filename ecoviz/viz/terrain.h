@@ -337,6 +337,7 @@ public:
 
     /// Recalculate the mean height over the terrain
     void calcMeanHeight();
+    float getHeightFromReal(float x, float y);
 };
 
 #endif // TERRAIN_H
