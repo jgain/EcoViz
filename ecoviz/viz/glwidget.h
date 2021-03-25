@@ -383,6 +383,9 @@ private:
 
     int mouseprevx = -1, mouseprevy = -1;
 
+    bool show_transect_control = false;
+    bool transect_filter = false;
+
     /**
      * @brief pickInfo  write information about a terrain cell to the console
      * @param x         x-coord on terrain grid

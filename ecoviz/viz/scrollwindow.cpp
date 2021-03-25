@@ -59,3 +59,8 @@ void scrollwindow::set_labelvalue(int value)
 {
     value_label->setText(std::to_string(value).c_str());
 }
+
+int scrollwindow::get_sliderval()
+{
+    return tstep_slider->value();
+}

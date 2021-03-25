@@ -15,6 +15,7 @@ public:
     QSlider *tstep_slider;
     QLabel *value_label;
     void set_labelvalue(int value);
+    int get_sliderval();
 };
 
 #endif

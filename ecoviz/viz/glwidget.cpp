@@ -856,7 +856,7 @@ void GLWidget::paintGL()
 
         }
 
-        if (focuschange)
+        if (focuschange && show_transect_control)
         {
             ShapeDrawData sdd;
             GLfloat planeCol[] = {0.9f, 0.1f, 0.1f, 0.2f};		// FIXME: try to make it semi-transparent
@@ -954,6 +954,17 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         getView()->flatview();
         update();
     }
+    if (event->key() == Qt::Key_B)
+    {
+        show_transect_control = !show_transect_control;
+        if (!(event->modifiers() == Qt::ShiftModifier))
+        {
+            transect_filter = !transect_filter;
+        }
+        else if (!transect_filter)
+            transect_filter = true;
+        update();
+    }
     if(event->key() == Qt::Key_C) // 'C' to show canopy height model texture overlay
     {
         setOverlay(TypeMapType::CHM);
@@ -987,7 +998,11 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         else if (cohort_plantcountmaps.size() > 0)
         {
             tstep_scrollwindow->setVisible(true);
-            set_timestep(initstep);
+            if (tstep_scrollwindow->isVisible())
+                set_timestep(tstep_scrollwindow->get_sliderval());
+            else
+                set_timestep(initstep);
+            update();
             //curr_cohortmap++;
             //getTypeMap(TypeMapType::COHORT)->save("/home/konrad/cohorttypemap.txt");
         }
@@ -1417,26 +1432,27 @@ void GLWidget::set_timestep(int tstep)
         t.species = t.species % 6;
 
     std::vector<bool> active;
-    for (auto &tr : trees)
-    {
-        if (!isnan(m))
+    if (transect_filter)
+        for (auto &tr : trees)
         {
-            float y1 = tr.x * m + c1;
-            float y2 = tr.x * m + c2;
-            if ((tr.y > y1 && tr.y < y2) || (tr.y < y1 && tr.y > y2))
+            if (!isnan(m))
+            {
+                float y1 = tr.x * m + c1;
+                float y2 = tr.x * m + c2;
+                if ((tr.y > y1 && tr.y < y2) || (tr.y < y1 && tr.y > y2))
+                {
+                    active.push_back(true);
+                }
+                else
+                    active.push_back(false);
+            }
+            else if ((tr.x > c1 && tr.x < c2) || (tr.x < c1 && tr.x > c2))
             {
                 active.push_back(true);
             }
             else
                 active.push_back(false);
         }
-        else if ((tr.x > c1 && tr.x < c2) || (tr.x < c1 && tr.x > c2))
-        {
-            active.push_back(true);
-        }
-        else
-            active.push_back(false);
-    }
     //active = set_active_trees(trees, 0.0f, 100.0f, 0.0f, 1024.0f);
 
     getEcoSys()->clear();
