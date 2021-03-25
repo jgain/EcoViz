@@ -947,11 +947,18 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_A) // 'A' for animated spin around center point of terrain
     {
-        getView()->setForcedFocus(vpPoint(500.0f, 0.0f, 50.0f));
+        getView()->setForcedFocus(vpPoint(transect_pos.x, 0.0f, transect_pos.z));
+        getView()->setZoomdist(150.0f);
+
+        glm::vec3 trvec(transect_vec.x, 0.0f, transect_vec.z);
+        glm::vec3 baseorthog(0.0f, 0.0f, 1.0f);
+        glm::vec3 orthog = glm::cross(trvec, glm::vec3(0.0f, -1.0f, 0.0f));
+        float rad = acos(glm::dot(baseorthog, orthog) / (glm::length(baseorthog) * glm::length(orthog)));
+
 
         //getView()->startSpin();
         //rtimer->start(20);
-        getView()->flatview();
+        getView()->flatview(-rad);
         update();
     }
     if (event->key() == Qt::Key_B)

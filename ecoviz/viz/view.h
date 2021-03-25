@@ -216,6 +216,11 @@ public:
         apply();
     }
 
+    inline void setZoomdist(float dist)
+    {
+        zoomdist = dist;
+    }
+
     /// Get the current zoom distance
     inline float getZoom()
     {
@@ -302,6 +307,6 @@ public:
 
     /// print view stats to cerr
     void print();
-    void flatview();
+    void flatview(float rad);
 };
 # endif // _INC_VIEW
