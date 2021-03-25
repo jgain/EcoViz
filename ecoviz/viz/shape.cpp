@@ -931,6 +931,60 @@ void Shape::genSphereCurve(std::vector<vpPoint> &curve, float thickness)
     }
 }
 
+static std::ostream & operator << (std::ostream &o, const vpPoint &rhs)
+{
+    o << rhs.x << ", " << rhs.y << ", " << rhs.z << std::endl;
+    return o;
+}
+
+void Shape::genPlane(const vpPoint &orient, const vpPoint &center, float thickness, float length, glm::mat4x4 trm)
+{
+    vpPoint b[4];
+    glm::vec4 p;
+    Vector v;
+    glm::vec3 n;
+
+    glm::vec3 cent = glm::vec3(center.x, center.y, center.z);
+    glm::vec3 ornt = glm::vec3(orient.x, orient.y, orient.z);
+    ornt = glm::normalize(ornt);
+    glm::vec3 orthog = glm::cross(glm::vec3(0.0f, -1.0f, 0.0f), ornt);
+
+    glm::vec3 tl = cent + ornt * length / 2.0f - orthog * thickness;
+    glm::vec3 tr = cent + ornt * length / 2.0f + orthog * thickness;
+    glm::vec3 bl = cent - ornt * length / 2.0f - orthog * thickness;
+    glm::vec3 br = cent - ornt * length / 2.0f + orthog * thickness;
+
+    //std::cout << tl << std::endl;
+
+    b[0] = vpPoint(bl.x, 1.0f, bl.z);
+    b[1] = vpPoint(tl.x, 1.0f, tl.z);
+    b[2] = vpPoint(tr.x, 1.0f, tr.z);
+    b[3] = vpPoint(br.x, 1.0f, br.z);
+
+    std::cout << b[0] << std::endl;
+    std::cout << b[1] << std::endl;
+    std::cout << b[2] << std::endl;
+    std::cout << b[3] << std::endl;
+
+    int base = int(verts.size()) / 8;
+
+    // base vertices
+    v = Vector(0.0f, 0.0f, -1.0f);
+    for(int i = 0; i < 4; i++)
+    {
+        p = trm * glm::vec4(b[i].x, b[i].y, b[i].z, 1.0f);
+        n = glm::mat3(trm) * glm::normalize(glm::vec3(v.i, v.j, v.k));
+        verts.push_back(p.x); verts.push_back(p.y); verts.push_back(p.z);
+        verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
+        verts.push_back(n.x); verts.push_back(n.y); verts.push_back(n.z); // normal
+    }
+    // counterclockwise winding
+    indices.push_back(base+1); indices.push_back(base+0); indices.push_back(base+2);
+    indices.push_back(base+0); indices.push_back(base+3); indices.push_back(base+2);
+    base += 4;
+
+}
+
 ShapeDrawData Shape::getDrawParameters()
 {
     ShapeDrawData sdd;

@@ -155,7 +155,8 @@ Scene::~Scene()
 static int curr_cohortmap = 0;
 
 GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
-    : QGLWidget(format, parent)
+    : QGLWidget(format, parent), transect_vec(1.0f, 0.0f, 0.0f), mousePosIm(1.0f, 0.0f),
+      transect_pos(0.0f, 0.0f, 0.0f), transect_thickness(50.0f)
 {
     this->datadir = datadir;
 
@@ -526,6 +527,8 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     float rw, rh;
     getTerrain()->getTerrainDim(rw, rh);
 
+    transect_length = sqrt(rw * rw + rh * rh) * 2.0f;
+
     // import cohorts
 
     for (auto &tsfname : timestep_files)
@@ -811,7 +814,7 @@ void GLWidget::paintGL()
     glm::mat4 tfm, idt;
     glm::vec3 trs, rot;
     uts::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
-    Shape shape;  // geometry for focus indicator
+    Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
     std::vector<glm::vec4> cinst;
 
@@ -847,6 +850,27 @@ void GLWidget::paintGL()
             if(shape.bindInstances(getView(), &sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
             {
                 sdd = shape.getDrawParameters();
+                sdd.current = false;
+                drawParams.push_back(sdd);
+            }
+
+        }
+
+        if (focuschange)
+        {
+            ShapeDrawData sdd;
+            GLfloat planeCol[] = {0.9f, 0.1f, 0.1f, 0.2f};		// FIXME: try to make it semi-transparent
+
+            planeshape.clear();
+            planeshape.setColour(planeCol);
+
+            std::cout << "Transect vec: " << transect_vec.x << ", " << transect_vec.y << ", " << transect_vec.z << std::endl;
+
+            idt = glm::mat4(1.0f);
+            planeshape.genPlane(transect_vec, transect_pos, transect_thickness, transect_length, idt);
+            if (planeshape.bindInstances(getView(), &sinst, &cinst))
+            {
+                sdd = planeshape.getDrawParameters();
                 sdd.current = false;
                 drawParams.push_back(sdd);
             }
@@ -890,10 +914,45 @@ void GLWidget::resizeGL(int width, int height)
 
 void GLWidget::keyPressEvent(QKeyEvent *event)
 {
+    if(event->key() == Qt::Key_Right)
+    {
+        float v1 = 1.0f;
+        float v2 = 0.0f;
+        vpPoint movepnt(v1, 0.0f, v2);
+        vpPoint currfocus = getView()->getFocus();
+        currfocus.x += movepnt.x;
+        currfocus.y += movepnt.y;
+        currfocus.z += movepnt.z;
+        getView()->setForcedFocus(currfocus);
+        update();
+    }
+    if(event->key() == Qt::Key_Left)
+    {
+        float v1 = 1.0f;
+        float v2 = 0.0f;
+        vpPoint movepnt(v1, 0.0f, v2);
+        vpPoint currfocus = getView()->getFocus();
+        currfocus.x -= movepnt.x;
+        currfocus.y -= movepnt.y;
+        currfocus.z -= movepnt.z;
+        getView()->setForcedFocus(currfocus);
+        update();
+    }
+    if(event->key() == Qt::Key_Up)
+    {
+    }
+    if(event->key() == Qt::Key_Down)
+    {
+    }
+
     if(event->key() == Qt::Key_A) // 'A' for animated spin around center point of terrain
     {
-        getView()->startSpin();
-        rtimer->start(20);
+        getView()->setForcedFocus(vpPoint(500.0f, 0.0f, 50.0f));
+
+        //getView()->startSpin();
+        //rtimer->start(20);
+        getView()->flatview();
+        update();
     }
     if(event->key() == Qt::Key_C) // 'C' to show canopy height model texture overlay
     {
@@ -1187,7 +1246,25 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     viewing = false;
 
-    if(event->button() == Qt::LeftButton && cmode == ControlMode::VIEW) // info on terrain cell
+    if (event->button() == Qt::LeftButton && event->modifiers() == Qt::ControlModifier)
+    {
+        vpPoint pnt;
+        int sx, sy;
+
+        sx = event->x(); sy = event->y();
+
+        if(getTerrain()->pick(sx, sy, getView(), pnt))
+        {
+            std::cout << "pnt: " << pnt.x << ", " << pnt.y << ", " << pnt.z << std::endl;
+            int x, y;
+            getTerrain()->toGrid(pnt, x, y);
+            transect_pos.x = x;
+            transect_pos.z = y;
+            std::cout << "transect pos after repositioning: " << transect_pos.x << ", " << transect_pos.z << std::endl;
+            update();
+        }
+    }
+    else if(event->button() == Qt::LeftButton && cmode == ControlMode::VIEW) // info on terrain cell
     {
         vpPoint pnt;
         int sx, sy;
@@ -1201,6 +1278,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
             pickInfo(x, y);
         }
     }
+
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
@@ -1223,6 +1301,24 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         update();
         lastPos = event->pos();
     }
+    else if (event->modifiers() == Qt::ControlModifier)
+    {
+        if (mouseprevx > -1)
+        {
+            mousePosIm.x += x - mouseprevx;
+            mousePosIm.y += y - mouseprevy;
+
+            transect_vec.x = mousePosIm.x;
+            transect_vec.z = mousePosIm.y;
+
+            float dist = sqrt((transect_vec.x * transect_vec.x) + (transect_vec.z * transect_vec.z));
+            transect_vec.x /= dist * 5.0f;
+            transect_vec.z /= dist * 5.0f;
+        }
+        mouseprevx = x;
+        mouseprevy = y;
+        update();
+    }
 }
 
 void GLWidget::wheelEvent(QWheelEvent * wheel)
@@ -1232,7 +1328,13 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     QPoint pix = wheel->pixelDelta();
     QPoint deg = wheel->angleDelta();
 
-    if(!viewlock)
+    if (wheel->modifiers() == Qt::ControlModifier)
+    {
+        del = (float) deg.y() * 0.1f;
+        transect_thickness += del;
+        update();
+    }
+    else if(!viewlock)
     {
         if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
         {
@@ -1243,7 +1345,7 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         }
         else if(!deg.isNull()) // mouse wheel instead
         {
-            del = (float) -deg.y() * 2.5f;
+            del = (float) -deg.y() * 5.0f;
             getView()->incrZoom(del);
             update();
         }
@@ -1262,21 +1364,83 @@ void GLWidget::rotateUpdate()
         update();
 }
 
+std::vector<bool> GLWidget::set_active_trees(const std::vector<basic_tree> &trees, float x1, float x2, float y1, float y2)
+{
+    std::vector<bool> active;
+
+    for (auto &tr : trees)
+    {
+        if (tr.x >= x1 && tr.x <= x2 && tr.y >= y1 && tr.y <= y2)
+            active.push_back(true);
+        else
+            active.push_back(false);
+    }
+    return active;
+}
+
 void GLWidget::set_timestep(int tstep)
 {
     curr_cohortmap = tstep - initstep;
     if (curr_cohortmap >= cohort_plantcountmaps.size())
         curr_cohortmap = cohort_plantcountmaps.size() - 1;
     loadTypeMap(cohort_plantcountmaps.at(curr_cohortmap), TypeMapType::COHORT);
-    setOverlay(TypeMapType::COHORT);
+    //setOverlay(TypeMapType::COHORT);
+
+    glm::vec3 cent = glm::vec3(transect_pos.x, transect_pos.y, transect_pos.z);
+    glm::vec3 ornt = glm::vec3(transect_vec.x, transect_vec.y, transect_vec.z);
+    ornt = glm::normalize(ornt);
+    glm::vec3 orthog = glm::cross(glm::vec3(0.0f, -1.0f, 0.0f), ornt) * transect_thickness;
+
+    glm::vec3 top3d = cent + orthog;
+    glm::vec3 bot3d = cent - orthog;
+    glm::vec2 top = glm::vec2(top3d.z, top3d.x);
+    glm::vec2 bot = glm::vec2(bot3d.z, bot3d.x);
+
+    float m = NAN;
+    float c1 = NAN, c2 = NAN;
+    if (fabs(transect_vec.z) > 1e-5f)
+    {
+        m = transect_vec.x / transect_vec.z;
+        c1 = top.y - m * top.x;
+        c2 = bot.y - m * bot.x;
+    }
+    else
+    {
+        c1 = top.x;
+        c2 = bot.x;
+    }
 
     tstep_scrollwindow->set_labelvalue(tstep);
 
     auto trees = sampler->sample(cohortmaps.at(curr_cohortmap));
     for (auto &t : trees)
         t.species = t.species % 6;
+
+    std::vector<bool> active;
+    for (auto &tr : trees)
+    {
+        if (!isnan(m))
+        {
+            float y1 = tr.x * m + c1;
+            float y2 = tr.x * m + c2;
+            if ((tr.y > y1 && tr.y < y2) || (tr.y < y1 && tr.y > y2))
+            {
+                active.push_back(true);
+            }
+            else
+                active.push_back(false);
+        }
+        else if ((tr.x > c1 && tr.x < c2) || (tr.x < c1 && tr.x > c2))
+        {
+            active.push_back(true);
+        }
+        else
+            active.push_back(false);
+    }
+    //active = set_active_trees(trees, 0.0f, 100.0f, 0.0f, 1024.0f);
+
     getEcoSys()->clear();
-    getEcoSys()->placeManyPlants(getTerrain(), trees);
+    getEcoSys()->placeManyPlants(getTerrain(), trees, active);
     getEcoSys()->redrawPlants();
 
     std::cout << "Timestep changed to " << tstep << std::endl;

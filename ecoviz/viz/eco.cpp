@@ -1003,10 +1003,11 @@ void EcoSystem::placePlant(Terrain *ter, const basic_tree &tree)
     esys.placePlant(ter, ((int)tree.species) * 3, plnt);		// FIXME, XXX: I don't think we should be multiplying by 3 here...
 }
 
-void EcoSystem::placeManyPlants(Terrain *ter, const std::vector<basic_tree> &trees)
+void EcoSystem::placeManyPlants(Terrain *ter, const std::vector<basic_tree> &trees, const std::vector<bool> active_trees)
 {
-    for (auto &tr : trees)
+    for (int i = 0; i < trees.size(); i++)
     {
-        placePlant(ter, tr);
+        if (active_trees.size() != trees.size() || active_trees[i])
+            placePlant(ter, trees[i]);
     }
 }

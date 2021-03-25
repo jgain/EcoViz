@@ -508,6 +508,17 @@ bool View::spin()
     return false;
 }
 
+void View::flatview()
+{
+    float a[3];
+    a[0] = 0.0f; a[1] = 1.0; a[2] = 0.0;
+    axis_to_quat(a, 0.0f, curquat);
+
+    //trackball(lastquat, 0.0f, 0.0f, 0.0f, 0.0f);
+    //add_quats(lastquat, curquat, curquat);
+    updateDir();
+}
+
 bool View::save(const char * filename)
 {
     ofstream outfile;

@@ -302,5 +302,6 @@ public:
 
     /// print view stats to cerr
     void print();
+    void flatview();
 };
 # endif // _INC_VIEW

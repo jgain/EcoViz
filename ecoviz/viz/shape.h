@@ -189,6 +189,8 @@ public:
      */
     void genSphereCurve(std::vector<vpPoint> &curve, float thickness);
 
+    void genPlane(const vpPoint &orient, const vpPoint &center, float thickness, float length, glm::mat4x4 trm);
+
     /**
      * test case for creating geomatry. In this case a single triangle in the x-z plane
      */

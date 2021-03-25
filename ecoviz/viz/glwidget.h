@@ -326,6 +326,8 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent * wheel);
 
+    std::vector<bool> set_active_trees(const std::vector<basic_tree> &trees, float x1, float x2, float y1, float y2);
+
 private:
 
      QGLFormat glformat; //< format for OpenGL
@@ -368,6 +370,18 @@ private:
     int initstep;
 
     std::unique_ptr<cohortsampler> sampler;
+
+    std::vector<bool> active_trees;
+
+    float curr_arcx = 0.0f;
+    float curr_arcy = 0.0f;
+    vpPoint transect_vec;
+    vpPoint transect_pos;
+    glm::vec2 mousePosIm;
+    float transect_thickness;
+    float transect_length;
+
+    int mouseprevx = -1, mouseprevy = -1;
 
     /**
      * @brief pickInfo  write information about a terrain cell to the console
