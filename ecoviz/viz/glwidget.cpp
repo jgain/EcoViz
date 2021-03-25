@@ -920,9 +920,9 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         float v2 = 0.0f;
         vpPoint movepnt(v1, 0.0f, v2);
         vpPoint currfocus = getView()->getFocus();
-        currfocus.x += movepnt.x;
-        currfocus.y += movepnt.y;
-        currfocus.z += movepnt.z;
+        currfocus.x += transect_vec.x * 5.0f;
+        currfocus.y += transect_vec.y * 5.0f;
+        currfocus.z += transect_vec.z * 5.0f;
         getView()->setForcedFocus(currfocus);
         update();
     }
@@ -932,9 +932,9 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         float v2 = 0.0f;
         vpPoint movepnt(v1, 0.0f, v2);
         vpPoint currfocus = getView()->getFocus();
-        currfocus.x -= movepnt.x;
-        currfocus.y -= movepnt.y;
-        currfocus.z -= movepnt.z;
+        currfocus.x -= transect_vec.x * 5.0f;
+        currfocus.y -= transect_vec.y * 5.0f;
+        currfocus.z -= transect_vec.z * 5.0f;
         getView()->setForcedFocus(currfocus);
         update();
     }
@@ -951,14 +951,20 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         getView()->setZoomdist(150.0f);
 
         glm::vec3 trvec(transect_vec.x, 0.0f, transect_vec.z);
+        trvec = glm::normalize(trvec);
         glm::vec3 baseorthog(0.0f, 0.0f, 1.0f);
-        glm::vec3 orthog = glm::cross(trvec, glm::vec3(0.0f, -1.0f, 0.0f));
+        glm::vec3 orthog = glm::cross(trvec, glm::vec3(0.0f, 1.0f, 0.0f));
+        std::cout << "Orthogonal vec: " << orthog.x << ", " << orthog.y << ", " << orthog.z << std::endl;
         float rad = acos(glm::dot(baseorthog, orthog) / (glm::length(baseorthog) * glm::length(orthog)));
 
-
+        glm::vec3 crossback = glm::cross(orthog, baseorthog);
+        std::cout << "Crossback: " << crossback.x << ", " << crossback.y << ", " << crossback.z << std::endl;
         //getView()->startSpin();
         //rtimer->start(20);
-        getView()->flatview(-rad);
+        if (crossback.y < 0.0f)
+            getView()->flatview(rad);
+        else
+            getView()->flatview(-rad);
         update();
     }
     if (event->key() == Qt::Key_B)
