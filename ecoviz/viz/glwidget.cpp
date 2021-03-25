@@ -1471,6 +1471,7 @@ void GLWidget::set_timestep(int tstep)
     getEcoSys()->clear();
     getEcoSys()->placeManyPlants(getTerrain(), trees, active);
     getEcoSys()->redrawPlants();
+    update();
 
     std::cout << "Timestep changed to " << tstep << std::endl;
 }
