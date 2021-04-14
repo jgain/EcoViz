@@ -547,6 +547,12 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
         }
     }
 
+    //
+    //std::cout << "Smoothing cohort maps..." << std::endl;
+    //for (int i = 0; i < 10; i++)
+    //    smooth_cohortmaps();
+    //std::cout << "Done";
+
     int gw, gh;
     if (cohortmaps.size() > 0)
         cohortmaps[0].getDim(gw, gh);
@@ -582,6 +588,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     if (cohortmaps.size() > 0)
     {
         sampler = std::unique_ptr<cohortsampler>(new cohortsampler(rw, rh, gw, gh, 10, 3));
+        //sampler->fix_cohortmaps(cohortmaps);
 
         //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
         //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
@@ -1263,11 +1270,12 @@ void GLWidget::pickInfo(int x, int y)
    cerr << endl;
    cerr << "*** PICK INFO ***" << endl;
    cerr << "location: " << x << ", " << y << endl;
+   cerr << "Elevation: " << getTerrain()->getHeight(y, x) << endl;
    // getSim()->pickInfo(x, y);
-   cerr << "Canopy Height (m): " << getCanopyHeightModel()->get(x, y) * 0.3048f  << endl;
-   cerr << "Canopy Density: " << getCanopyDensityModel()->get(x, y) << endl;
-   cerr << "Sunlight: " << getSunlight(sun_mth)->get(x,y) << endl;
-   cerr << "Moisture: " << getMoisture(wet_mth)->get(x,y) << endl;
+   //cerr << "Canopy Height (m): " << getCanopyHeightModel()->get(x, y) * 0.3048f  << endl;
+   //cerr << "Canopy Density: " << getCanopyDensityModel()->get(x, y) << endl;
+   //cerr << "Sunlight: " << getSunlight(sun_mth)->get(x,y) << endl;
+   //cerr << "Moisture: " << getMoisture(wet_mth)->get(x,y) << endl;
 }
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -1404,6 +1412,64 @@ std::vector<bool> GLWidget::set_active_trees(const std::vector<basic_tree> &tree
             active.push_back(false);
     }
     return active;
+}
+
+void GLWidget::smooth_cohortmaps()
+{
+    auto in_bound = [](int gw, int gh, int x, int y){
+        return x < gw && x >= 0 && y < gh && y >= 0;
+    };
+
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> unif;
+    for (auto &m : cohortmaps)
+    {
+        int gw, gh;
+        m.getDim(gw, gh);
+        for (int y = 0; y < gh; y++)
+        {
+            for (int x = 0; x < gw; x++)
+            {
+                for (auto &thiscohort : m.get(x, y))
+                {
+                    if (unif(gen) < 0.1f) continue;
+                    int specidx = thiscohort.specidx;
+                    int nplants = thiscohort.nplants;
+                    int donate_lim = 1;
+                    int donate_count = 0;
+                    for (int cy = y - 1; cy <= y + 1; cy++)
+                    {
+                        for (int cx = x - 1; cx <= x + 1; cx++)
+                        {
+                            if (cx == x && cy == y || !in_bound(gw, gh, cx, cy))
+                                continue;
+                            bool found = false;
+                            for (auto &c : m.get(cx, cy))
+                            {
+                                if (c.specidx == specidx)
+                                {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found && unif(gen) < 0.5f)
+                            {
+                                int newx, newy;
+                                newx = thiscohort.xs + (cx - x) * 2;
+                                newy = thiscohort.ys + (cy - y) * 2;
+                                data_importer::ilanddata::cohort newcrt(newx, newy, specidx, thiscohort.dbh * 1.0f, thiscohort.height * 1.0f, nplants);
+                                thiscohort.nplants = 0;
+                                m.get(cx, cy).push_back(newcrt);
+                                donate_count++;
+                            }
+                            if (donate_count >= donate_lim) break;
+                        }
+                        if (donate_count >= donate_lim) break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void GLWidget::set_timestep(int tstep)

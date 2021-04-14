@@ -80,7 +80,10 @@ data_importer::ilanddata::params::params(std::string filename)
 
 data_importer::ilanddata::cohort::cohort(int xs, int ys, int specidx, float dbh, float height, int nplants)
 		: xs(xs), ys(ys), specidx(specidx), dbh(dbh), height(height), nplants(nplants)
-{}
+{
+    xe = xs + 2;
+    ye = ys + 2;
+}
 
 data_importer::ilanddata::cohort::cohort(std::stringstream &ss)
 {
@@ -89,7 +92,10 @@ data_importer::ilanddata::cohort::cohort(std::stringstream &ss)
 	ss >> specidx;
 	ss >> dbh;
 	ss >> height;
-	ss >> nplants;
+    ss >> nplants;
+
+    xe = xs + 2;
+    ye = ys + 2;
 }
 
 bool data_importer::ilanddata::fileversion_gteq(std::string v1, std::string v2)

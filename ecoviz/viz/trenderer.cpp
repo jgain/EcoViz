@@ -629,6 +629,20 @@ void TRenderer::generateNormalTexture(void)
     glBindVertexArray(0);  CE();
     glUseProgram(0);  CE();
 
+    std::vector<unsigned int> texdata(width * height);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, texdata.data());
+
+    std::ofstream ofs("/home/konrad/normtex.txt");
+    ofs << width << " " << height << " " << 1.0 << std::endl;
+    for (auto &t : texdata)
+    {
+        unsigned int mask = 0x0000FF00;
+        unsigned int outint = mask & t;
+        outint = outint >> 0;
+        ofs << outint << " ";
+    }
+    ofs << std::endl;
+
     // reset viewport
     glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 }

@@ -208,8 +208,119 @@ void cohortsampler::generate_tiles(int ntiles, int tilesize)
 }
 
 
-std::vector<basic_tree> cohortsampler::sample(const ValueMap< std::vector<cohort> > &cohortmap)
+void cohortsampler::fix_cohortmaps(std::vector<ValueMap<std::vector<cohort> > > &cohortmaps)
 {
+    float base = 0.2f;
+    float scale = (1.0f - base) / 3.0f;
+    int extent = 20;
+    float unitp = 0.2f;
+    int placediv = 10;
+    std::uniform_real_distribution<float> unif;
+    std::normal_distribution<float> normd;
+    for (int cidx = 0; cidx < gw * gh; cidx++)
+    {
+        //std::cout << "Cell index: " << cidx << std::endl;
+        int cx = cidx % gw;
+        int cy = cidx / gw;
+        float nsimplants = 0;
+        int mapidx = 0;
+        for (auto &cohortmap : cohortmaps)
+        {
+            std::vector<cohort> &crts = cohortmap.get(cx, cy);
+            nsimplants = std::accumulate(crts.begin(), crts.end(), 0, [](int value, const cohort &c1) { return value + c1.nplants; });
+            nsimplants = std::min(float(maxpercell), nsimplants / placediv);
+            if (nsimplants > 0)
+                break;
+            mapidx++;
+        }
+
+
+        if (nsimplants > 0)
+        {
+            auto &refmap = cohortmaps.at(mapidx);
+            if (unif(gen) < 0.5f)
+            {
+                int neg = -1;
+                int neghigh = max(-extent, -cx);
+                for (; neg > neghigh; neg--)
+                {
+                    if (cx + neg >= gw || refmap.get(cx + neg, cy).size() > 0)
+                        break;
+                }
+                int pos = 1;
+                for (; pos < extent; pos++)
+                {
+                    if (cx + pos >= gw || refmap.get(cx + pos, cy).size() > 0)
+                        break;
+                }
+                if (unif(gen) < (pos - neg) * unitp)
+                {
+                    int nresize_pos = ceil(abs(normd(gen)) * pos * scale + pos * base);
+                    nresize_pos = std::min(extent, nresize_pos);
+                    if (pos == 1)
+                        nresize_pos = 1;
+                    int nresize_neg = ceil(abs(normd(gen)) * neg * scale + neg * base);
+                    nresize_neg = std::max(-extent, nresize_neg);
+                    if (neg == -1)
+                        nresize_neg = -1;
+                    for (auto &currmap : cohortmaps)
+                    {
+                        auto &crts = currmap.get(cx, cy);
+                        for (auto &c : crts)
+                        {
+                            c.xs += (nresize_neg + 1) * 2;
+                            c.xe = c.xs + (nresize_pos - nresize_neg) * 2;
+                            //std::cout << "new xs, xe: " << c.xs << ", " << c.xe << std::endl;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                int neg = -1;
+                int neghigh = max(-extent, -cy);
+                for (; neg > neghigh; neg--)
+                {
+                    if (cy + neg < 0 || refmap.get(cx, cy + neg).size() > 0)
+                        break;
+                }
+                int pos = 1;
+                for (; pos < extent; pos++)
+                {
+                    if (cy + pos >= gh || refmap.get(cx, cy + pos).size() > 0)
+                        break;
+                }
+                if (unif(gen) < (pos - neg) * unitp)
+                {
+                    int nresize_pos = ceil(abs(normd(gen)) * pos * scale + pos * base);
+                    nresize_pos = std::min(extent, nresize_pos);
+                    if (pos == 1)
+                        nresize_pos = 1;
+                    int nresize_neg = ceil(abs(normd(gen)) * neg * scale + neg * base);
+                    nresize_neg = std::max(-extent, nresize_neg);
+                    if (neg == -1)
+                        nresize_neg = -1;
+                    for (auto &currmap : cohortmaps)
+                    {
+                        auto &crts = currmap.get(cx, cy);
+                        for (auto &c : crts)
+                        {
+                            c.ys += (nresize_neg + 1) * 2;
+                            c.ye = c.ys + (nresize_pos - nresize_neg) * 2;
+                            //std::cout << "new ys, ye: " << c.ys << ", " << c.ye << std::endl;
+                            //std::cout << "Resize neg: " << nresize_neg << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+std::vector<basic_tree> cohortsampler::sample(ValueMap< std::vector<cohort> > &cohortmap)
+{
+
     int placediv = 10;
 
     using namespace data_importer;
@@ -221,9 +332,9 @@ std::vector<basic_tree> cohortsampler::sample(const ValueMap< std::vector<cohort
 	{
         //std::cout << "Cell index: " << cidx << std::endl;
 		int cx = cidx % gw;
-		int cy = cidx / gw;
+        int cy = cidx / gw;
 		int tileidx = tileidxes.get(cx, cy);
-        const std::vector<cohort> &crts = cohortmap.get(cx, cy);
+        std::vector<cohort> &crts = cohortmap.get(cx, cy);
         float nsimplants = std::accumulate(crts.begin(), crts.end(), 0, [](int value, const cohort &c1) { return value + c1.nplants; });
         nsimplants = std::min(float(maxpercell), nsimplants / placediv);
 
@@ -241,8 +352,15 @@ std::vector<basic_tree> cohortsampler::sample(const ValueMap< std::vector<cohort
             int species = -1;
             int specidx = 0;
 
+            int sx, sy;
+            int ex, ey;
             for (const cohort &crt : crts)
             {
+                sx = crt.xs;
+                sy = crt.ys;
+                ex = crt.xe;
+                ey = crt.ye;
+                //printf("sx: %d, sy: %d, ex: %d, ey: %d\n", sx, sy, ex, ey);
                 probsum += (crt.nplants / placediv) / float(nplants);
                 if (cprob < probsum)
                 {
@@ -260,9 +378,24 @@ std::vector<basic_tree> cohortsampler::sample(const ValueMap< std::vector<cohort
                 }
 				else if (nplants > 0)
 					throw std::runtime_error("Species cannot be null");
-			}
-			int x = cx * 200 + i % 200;		// XXX: the number of cm per cell is hardcoded here...
-			int y = cy * 200 + i / 200;
+            }
+            int crtw = int(ex - sx);
+            int crth = int(ey - sy);
+            //if (crtw > 2 || crth > 2)
+            //    printf("crtw %d, crth: %d\n", crtw, crth);
+            int cohortx = i % 200;
+            int cohorty = i / 200;
+            float cxf = cohortx / 200.0f;
+            float cyf = cohorty / 200.0f;
+            //printf("cxf: %f, cyf: %f, i: %d, crtw: %d\n", cxf, cyf, i, crtw);
+            cxf = cxf * float(crtw) * 100.0f;
+            cyf = cyf * float(crth) * 100.0f;
+            //int x = cx * 200 + i % 200;		// XXX: the number of cm per cell is hardcoded here...
+            //int y = cy * 200 + i / 200;
+            //printf("cxf: %f, cyf: %f, i: %d, crtw: %d\n", cxf, cyf, i, crtw);
+            //printf("-----------------------------------\n");
+            int x = sx * 100 + int(cxf);		// XXX: the number of cm per cell is hardcoded here...
+            int y = sy * 100 + int(cyf);
 
             basic_tree tree(x / 100.0f, y / 100.0f, crts.at(specidx).height * 0.5f, crts.at(specidx).height);
 			tree.species = species;

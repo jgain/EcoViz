@@ -56,7 +56,8 @@ namespace data_importer
 
 				cohort(std::stringstream &ss);
 
-				int xs, ys;
+                                int xs, ys;
+                                int xe, ye;
 				int specidx;
 				float dbh, height;
                                 float nplants;

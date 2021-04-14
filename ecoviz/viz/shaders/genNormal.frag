@@ -24,6 +24,8 @@ void main(void)
 
     delta.x = 1.0f/imgSize.x;
     delta.y = 1.0f/imgSize.y;
+    //delta.x = 1.0f/imgSize.x * 0.99f;
+    //delta.y = 1.0f/imgSize.y * 0.99f;
 
     pos = (gl_FragCoord.xy + 0.5 ) / imgSize.xy;
 
@@ -47,6 +49,6 @@ void main(void)
 
     vec3 n = -cross(dfdx, dfdy);
 
-//  n = vec3(0.0, 1.0, 0.0);
+  //n = vec3(dfdx.y, dfdy.y, 0.0);
     norm = vec4(normalize(n), 0.0);
 }

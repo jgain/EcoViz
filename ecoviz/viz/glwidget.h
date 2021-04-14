@@ -315,6 +315,7 @@ public slots:
 
     std::string get_dirprefix();
 
+    void smooth_cohortmaps();
 protected:
     void initializeGL();
     void paintGL();
