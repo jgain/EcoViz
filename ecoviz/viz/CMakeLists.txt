@@ -30,6 +30,8 @@ if (BUILD_GUI)
        ${BASE_ALL_DIR}/common/basic_types.h
        scrollwindow.cpp
        cohortsampler.cpp
+       cohortmaps.cpp
+
 )
 
    #set(CMAKE_BUILD_TYPE Debug)

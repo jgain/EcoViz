@@ -5,6 +5,7 @@
 #include <sstream>
 #include <random>
 #include "../../common/basic_types.h"
+#include "cohortmaps.h"
 
 namespace data_importer
 {
@@ -17,12 +18,12 @@ namespace data_importer
 class cohortsampler
 {
 public:
-        cohortsampler(float width, float height, int gw, int gh, int maxpercell, int samplemult);
+        cohortsampler(float tw, float th, float rw, float rh, float xoff, float yoff, int maxpercell, int samplemult);
 
         std::vector<basic_tree> sample_all(bool soft);
         std::deque<int> gen_poisson_list(int sqsize, int nplants, std::deque<int> *dists, std::default_random_engine &gen);
 
-        std::vector<basic_tree> sample(ValueMap<std::vector<data_importer::ilanddata::cohort> > &cohortmap);
+        std::vector<basic_tree> sample(const ValueGridMap<std::vector<data_importer::ilanddata::cohort> > &cohortmap);
         void fix_cohortmaps(std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > &cohortmaps);
 private:
         std::vector<basic_tree> sample_one_soft(data_importer::ilanddata::cohort chrt, std::default_random_engine &gen);

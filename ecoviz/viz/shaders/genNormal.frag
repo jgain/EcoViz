@@ -22,10 +22,10 @@ void main(void)
     vec3 dfdx = vec3(1.0, 0.0, 0.0), // df/dx and df/dy used to define normal
          dfdy = vec3(0.0, 0.0, 1.0); // y component filled in below
 
-    delta.x = 1.0f/imgSize.x;
-    delta.y = 1.0f/imgSize.y;
-    //delta.x = 1.0f/imgSize.x * 0.99f;
-    //delta.y = 1.0f/imgSize.y * 0.99f;
+    //delta.x = 1.0f/imgSize.x;
+    //delta.y = 1.0f/imgSize.y;
+    delta.x = 1.0f/imgSize.x * 0.99f;
+    delta.y = 1.0f/imgSize.y * 0.99f;
 
     pos = (gl_FragCoord.xy + 0.5 ) / imgSize.xy;
 

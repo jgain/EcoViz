@@ -314,8 +314,6 @@ public slots:
     void set_timestep(int tstep);
 
     std::string get_dirprefix();
-
-    void smooth_cohortmaps();
 protected:
     void initializeGL();
     void paintGL();
@@ -366,11 +364,12 @@ private:
 
     scrollwindow *tstep_scrollwindow;
 
-    std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > cohortmaps;
+    //std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > cohortmaps;
     std::vector<ValueMap<float> > cohort_plantcountmaps;
     int initstep;
 
     std::unique_ptr<cohortsampler> sampler;
+    std::unique_ptr<CohortMaps> cohortmaps;
 
     std::vector<bool> active_trees;
 

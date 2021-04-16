@@ -54,7 +54,9 @@ namespace data_importer
 			{
 				cohort(int xs, int ys, int specidx, float dbh, float height, int nplants);
 
-				cohort(std::stringstream &ss);
+                                cohort(std::stringstream &ss);
+
+                                xy<float> get_middle() const;
 
                                 int xs, ys;
                                 int xe, ye;
@@ -68,12 +70,16 @@ namespace data_importer
 				int timestep;
 				std::string version;
 				std::vector<cohort> cohorts;
-				std::vector<basic_tree> trees;
+                                std::vector<basic_tree> trees;
+                                float dx, dy;
+                                float minx, miny;
+                                float maxx, maxy;
 			};
 
 			bool fileversion_gteq(std::string v1, std::string v2);
 
-                        filedata read(std::string filename, std::string minversion);
+                        filedata read(std::string filename, std::string minversion, bool timestep_only = false);
+                        std::vector<filedata> read_many(const std::vector<std::string> &filename, std::string minversion);
 
                         void trim_filedata_spatial(filedata &data, int width, int height);
 		}

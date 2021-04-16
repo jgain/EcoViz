@@ -410,7 +410,7 @@ Window::Window(string datadir)
 
 void Window::run_viewer()
 {
-    perspectiveView->loadFinScene(15, 25);
+    perspectiveView->loadFinScene(20, 25);
     repaintAllGL();
 }
 

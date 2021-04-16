@@ -98,6 +98,11 @@ data_importer::ilanddata::cohort::cohort(std::stringstream &ss)
     ye = ys + 2;
 }
 
+xy<float> data_importer::ilanddata::cohort::get_middle() const
+{
+    return xy<float>(xe - xs, ye - ys);
+}
+
 bool data_importer::ilanddata::fileversion_gteq(std::string v1, std::string v2)
 {
 	std::stringstream sstr1(v1);
@@ -121,7 +126,17 @@ bool data_importer::ilanddata::fileversion_gteq(std::string v1, std::string v2)
 	return true;		// in this case, they should be equal
 }
 
-data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string filename, std::string minversion)
+std::vector<data_importer::ilanddata::filedata> data_importer::ilanddata::read_many(const std::vector<std::string> &filenames, std::string minversion)
+{
+    std::vector<data_importer::ilanddata::filedata> fdatas;
+    for (auto &fname : filenames)
+    {
+        fdatas.push_back(read(fname, minversion, false));
+    }
+    return fdatas;
+}
+
+data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string filename, std::string minversion, bool timestep_only)
 {
 	using namespace data_importer::ilanddata;
 
@@ -142,7 +157,10 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 	fdata.version = lstr;
 
 	std::getline(ifs, lstr);
-	fdata.timestep = std::stoi(lstr);
+    fdata.timestep = std::stoi(lstr);
+
+    if (timestep_only)
+        return fdata;
 
 	std::getline(ifs, lstr);
 	int ntrees_expected = std::stoi(lstr);		// can use this integer to check that the file and import are consistent by comparing to tree vector size
@@ -177,20 +195,64 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 
 	std::getline(ifs, lstr);
 	int ncohorts_expected = std::stoi(lstr);
-	std::cout << "Reading " << ncohorts_expected << " cohorts..." << std::endl;
+    std::cout << "Reading " << ncohorts_expected << " cohorts..." << std::endl;
+
+    float minx = std::numeric_limits<float>::max() , miny = std::numeric_limits<float>::max();
+    float maxx = -std::numeric_limits<float>::max() , maxy = -std::numeric_limits<float>::max();
+    float dx = -1.0f, dy = -1.0f;
 
 	for (int i = 0; i < ncohorts_expected; i++)
 	{
 		std::getline(ifs, lstr);
 		std::stringstream ss(lstr);
-		if (!ifs.eof())
-			fdata.cohorts.emplace_back(ss);
+        if (!ifs.eof())
+        {
+            fdata.cohorts.emplace_back(ss);
+            auto &crt = fdata.cohorts.back();
+            if (crt.xs < minx)
+            {
+                minx = crt.xs;
+            }
+            if (crt.ys < miny)
+            {
+                miny = crt.ys;
+            }
+            if (crt.xe > maxx)
+            {
+                maxx = crt.xe;
+            }
+            if (crt.ye > maxy)
+            {
+                maxy = crt.ye;
+            }
+            float xdiff = crt.xe - crt.xs;
+            float ydiff = crt.ye - crt.ys;
+            if (dy < 0.0f && dx < 0.0f)
+            {
+                dy = ydiff;
+                dx = xdiff;
+            }
+            else
+            {
+                if (fabs(dy - ydiff) > 1e-5f || fabs(dx - xdiff) > 1e-5f)
+                {
+                    throw std::invalid_argument("Input cohorts have inconsistent sizes in file " + filename);
+                }
+            }
+        }
 		else
 		{
 			std::cout << "Warning: Read only " << i << " cohorts out of an expected " << ncohorts_expected << std::endl;
 			break;
 		}
-	}
+    }
+
+    fdata.minx = minx;
+    fdata.miny = miny;
+    fdata.maxx = maxx;
+    fdata.maxy = maxy;
+    fdata.dx = dx;
+    fdata.dy = dy;
 
 	std::cout << "Done. Returning file data for timestep " << fdata.timestep << std::endl;
 

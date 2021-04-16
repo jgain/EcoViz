@@ -78,6 +78,7 @@
 #include <fstream>
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
+#include "cohortmaps.h"
 
 using namespace std;
 
@@ -531,64 +532,16 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
 
     // import cohorts
 
-    for (auto &tsfname : timestep_files)
-    {
-        auto fdata = ilanddata::read(tsfname, "2.0");
-        ilanddata::trim_filedata_spatial(fdata, int(rw), int(rh));
-
-        cohortmaps.push_back(ValueMap<std::vector<ilanddata::cohort> >());
-        cohortmaps.back().setDim(int(ceil(rw / 2)), int(ceil(rh / 2)));
-
-        for (auto &crt : fdata.cohorts)
-        {
-            int gx = (crt.xs - 1) / 2;
-            int gy = (crt.ys - 1) / 2;
-            cohortmaps.back().get(gx, gy).push_back(crt);
-        }
-    }
-
-    //
-    //std::cout << "Smoothing cohort maps..." << std::endl;
-    //for (int i = 0; i < 10; i++)
-    //    smooth_cohortmaps();
-    //std::cout << "Done";
+    cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0"));
 
     int gw, gh;
-    if (cohortmaps.size() > 0)
-        cohortmaps[0].getDim(gw, gh);
-    for (auto &tscmap : cohortmaps)
+    cohortmaps->get_grid_dims(gw, gh);
+    float tw, th;
+    cohortmaps->get_cohort_dims(tw, th);
+
+    if (cohortmaps->get_nmaps() > 0)
     {
-
-        int tgw = ceil(rw), tgh = ceil(rh);
-
-        cohort_plantcountmaps.emplace_back(tgw, tgh);
-
-        for (int y = 0; y < gh; y++)
-        {
-            for (int x = 0; x < gw; x++)
-            {
-                auto &crts = tscmap.get(x, y);
-                float count = 0.0f;
-                for (auto &crt : crts)
-                {
-                    count += float(crt.nplants);		// nplants should be float...?
-                }
-                for (int i = 0; i < 2; i++)
-                    for (int j = 0; j < 2; j++)
-                    {
-                        int xloc = x * 2 + 1 + i;
-                        int yloc = y * 2 + 1 + j;
-                        if (xloc < tgw && yloc < tgh)
-                            cohort_plantcountmaps.back().set(yloc, xloc, count);
-                    }
-            }
-        }
-    }
-
-    if (cohortmaps.size() > 0)
-    {
-        sampler = std::unique_ptr<cohortsampler>(new cohortsampler(rw, rh, gw, gh, 10, 3));
-        //sampler->fix_cohortmaps(cohortmaps);
+        sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, 10, 3));
 
         //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
         //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
@@ -1015,7 +968,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         {
             QMessageBox(QMessageBox::Warning, "Typemap Error", "Type map for cohorts does not have a valid colour table").exec();
         }
-        else if (cohort_plantcountmaps.size() > 0)
+        else if (cohortmaps->get_nmaps() > 0)
         {
             tstep_scrollwindow->setVisible(true);
             if (tstep_scrollwindow->isVisible())
@@ -1414,70 +1367,12 @@ std::vector<bool> GLWidget::set_active_trees(const std::vector<basic_tree> &tree
     return active;
 }
 
-void GLWidget::smooth_cohortmaps()
-{
-    auto in_bound = [](int gw, int gh, int x, int y){
-        return x < gw && x >= 0 && y < gh && y >= 0;
-    };
-
-    std::default_random_engine gen;
-    std::uniform_real_distribution<float> unif;
-    for (auto &m : cohortmaps)
-    {
-        int gw, gh;
-        m.getDim(gw, gh);
-        for (int y = 0; y < gh; y++)
-        {
-            for (int x = 0; x < gw; x++)
-            {
-                for (auto &thiscohort : m.get(x, y))
-                {
-                    if (unif(gen) < 0.1f) continue;
-                    int specidx = thiscohort.specidx;
-                    int nplants = thiscohort.nplants;
-                    int donate_lim = 1;
-                    int donate_count = 0;
-                    for (int cy = y - 1; cy <= y + 1; cy++)
-                    {
-                        for (int cx = x - 1; cx <= x + 1; cx++)
-                        {
-                            if (cx == x && cy == y || !in_bound(gw, gh, cx, cy))
-                                continue;
-                            bool found = false;
-                            for (auto &c : m.get(cx, cy))
-                            {
-                                if (c.specidx == specidx)
-                                {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (!found && unif(gen) < 0.5f)
-                            {
-                                int newx, newy;
-                                newx = thiscohort.xs + (cx - x) * 2;
-                                newy = thiscohort.ys + (cy - y) * 2;
-                                data_importer::ilanddata::cohort newcrt(newx, newy, specidx, thiscohort.dbh * 1.0f, thiscohort.height * 1.0f, nplants);
-                                thiscohort.nplants = 0;
-                                m.get(cx, cy).push_back(newcrt);
-                                donate_count++;
-                            }
-                            if (donate_count >= donate_lim) break;
-                        }
-                        if (donate_count >= donate_lim) break;
-                    }
-                }
-            }
-        }
-    }
-}
-
 void GLWidget::set_timestep(int tstep)
 {
     curr_cohortmap = tstep - initstep;
-    if (curr_cohortmap >= cohort_plantcountmaps.size())
-        curr_cohortmap = cohort_plantcountmaps.size() - 1;
-    loadTypeMap(cohort_plantcountmaps.at(curr_cohortmap), TypeMapType::COHORT);
+    if (curr_cohortmap >= cohortmaps->get_nmaps())
+        curr_cohortmap = cohortmaps->get_nmaps() - 1;
+    //loadTypeMap(cohort_plantcountmaps.at(curr_cohortmap), TypeMapType::COHORT);
     //setOverlay(TypeMapType::COHORT);
 
     glm::vec3 cent = glm::vec3(transect_pos.x, transect_pos.y, transect_pos.z);
@@ -1506,7 +1401,7 @@ void GLWidget::set_timestep(int tstep)
 
     tstep_scrollwindow->set_labelvalue(tstep);
 
-    auto trees = sampler->sample(cohortmaps.at(curr_cohortmap));
+    auto trees = sampler->sample(cohortmaps->get_map(curr_cohortmap));
     for (auto &t : trees)
         t.species = t.species % 6;
 

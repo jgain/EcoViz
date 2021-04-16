@@ -564,13 +564,13 @@ public:
     void fill(T *ptr) {fmap.clear(); fmap.resize(gx*gy); memcpy(fmap.data(), ptr, sizeof(T) * gx * gy);}
 
     /// getter and setter for map elements
-    T get(int x, int y) const
-    { return fmap.at(flatten(x, y)); }
-
     T &get(int x, int y)
     { return fmap.at(flatten(x, y)); }
 
-    T get(int idx) const
+    const T &get(int x, int y) const
+    { return fmap.at(flatten(x, y)); }
+
+    const T &get(int idx) const
     { return fmap.at(idx); }
 
     T &get(int idx)
@@ -648,26 +648,35 @@ public:
 protected:
     float rx = 0.0f, ry = 0.0f;
     xy<float> togrid_conv, toreal_conv;
+    float xoff, yoff;
 public:
-    ValueGridMap(int gw, int gh, float rw, float rh)
-        : rx(rw), ry(rh)
+
+    explicit ValueGridMap(int gw, int gh, float rw, float rh, float xoff, float yoff)
+        : rx(rw), ry(rh), xoff(xoff), yoff(yoff)
     {
         gx = gw;
         gy = gh;
         setDim(gx, gy);
-        //reset_convs();
+    }
+
+    explicit ValueGridMap(float dx, float dy, float rw, float rh, float xoff, float yoff)
+        : ValueGridMap(int(ceil(rw / dx)), int(ceil(rh / dy)), rw, rh, xoff, yoff)
+    {
+    }
+
+    ValueGridMap(int gw, int gh, float rw, float rh)
+        : ValueGridMap(gw, gh, rw, rh, 0.0f, 0.0f)
+    {
     }
 
     ValueGridMap()
+        : ValueGridMap(0, 0, 0.0f, 0.0f, 0.0f, 0.0f)
     {
-        setDim(0, 0);
-        initMap();
     }
 
     ValueGridMap(const ValueGridMap<T> &other)
         : ValueMap<T>(other.gx, other.gy), rx(other.rx), ry(other.ry)
     {
-        setDim(gx, gy);
         setDimReal(other);
         fmap = other.fmap;
     }
@@ -678,6 +687,7 @@ public:
         obj.getDim(gx, gy);
         ValueGridMap<T> newmap(gx, gy, rw, rh);
         memcpy(newmap.data(), obj.data(), sizeof(T) * gx * gy);
+        newmap.xoff = newmap.yoff = 0.0f;
 
         return newmap;
     }
@@ -751,12 +761,12 @@ public:
 
     xy<int> togrid(float x, float y) const
     {
-        return xy<int>(floor(togrid_conv.x * x), floor(togrid_conv.y * y));
+        return xy<int>(floor(togrid_conv.x * (x - xoff)), floor(togrid_conv.y * (y - yoff)));
     }
 
     xy<int> togrid_safe(float x, float y) const
     {
-        auto val = xy<int>(floor(togrid_conv.x * x), floor(togrid_conv.y * y));
+        auto val = xy<int>(floor(togrid_conv.x * (x - xoff)), floor(togrid_conv.y * (y - yoff)));
         if (val.x >= gx) val.x = gx - 1;
         if (val.y >= gy) val.y = gy - 1;
         if (val.x < 0) val.x = 0;
@@ -766,9 +776,10 @@ public:
 
     xy<float> toreal(int x, int y) const
     {
-        return xy<float>(toreal_conv.x * x, toreal_conv.y * y);
+        return xy<float>(toreal_conv.x * x + xoff, toreal_conv.y * y + yoff);
     }
 
+    /*
     xy<float> get_togrid_conv() const
     {
         return togrid_conv;
@@ -778,8 +789,19 @@ public:
     {
         return toreal_conv;
     }
+    */
 
-    T get_fromreal(float real_x, float real_y) const
+    const T &get_fromreal(float real_x, float real_y) const
+    {
+        xy<int> coords = togrid(real_x, real_y);
+        if (coords.x < 0 || coords.x >= gx || coords.y < 0 || coords.y >= gy)
+        {
+            throw std::runtime_error("Grid coordinates outside range");
+        }
+        return get(coords.x, coords.y);
+    }
+
+    T &get_fromreal(float real_x, float real_y)
     {
         xy<int> coords = togrid(real_x, real_y);
         if (coords.x < 0 || coords.x >= gx || coords.y < 0 || coords.y >= gy)
