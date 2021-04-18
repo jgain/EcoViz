@@ -100,7 +100,7 @@ data_importer::ilanddata::cohort::cohort(std::stringstream &ss)
 
 xy<float> data_importer::ilanddata::cohort::get_middle() const
 {
-    return xy<float>(xe - xs, ye - ys);
+    return xy<float>((xe + xs) / 2.0f, (ye + ys) / 2.0f);
 }
 
 bool data_importer::ilanddata::fileversion_gteq(std::string v1, std::string v2)
@@ -985,6 +985,7 @@ static int sql_callback_common_data_models(void *write_info, int argc, char ** a
     }
     common->modelsamplers[tree_id].add_model(model);
 
+    return 0;
 }
 
 static int sql_callback_common_data_species(void *write_info, int argc, char ** argv, char **colnames)

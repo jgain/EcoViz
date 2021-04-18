@@ -612,6 +612,7 @@ void GLWidget::addScene()
 
     plantvis.clear();
     scenes.push_back(scene);
+    std::cout << "scenes size: " << scenes.size() << std::endl;
     currscene = static_cast<int>(scenes.size()) - 1;
 }
 

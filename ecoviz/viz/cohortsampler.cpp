@@ -217,6 +217,8 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
     int cgw, cgh;
     cohortmap.getDim(cgw, cgh);
 
+    printf("Cohortmap dimensions %d, %d\n", cgw, cgh);
+
 	std::uniform_real_distribution<float> unif;
     for (int cidx = 0; cidx < cgw * cgh; cidx++)
 	{
@@ -296,7 +298,7 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
             int y = sy + int(cyf);
 
             basic_tree tree(x, y, crts.at(specidx).height * 0.5f, crts.at(specidx).height);
-			tree.species = species;
+            tree.species = species % 8;
 			trees.push_back(tree);
 			//ofs << x << " " << y << " " << species << std::endl;
 			count++;
