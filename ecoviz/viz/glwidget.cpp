@@ -533,6 +533,8 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     // import cohorts
 
     cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0"));
+    before_mod_map = cohortmaps->get_map(0);
+    cohortmaps->do_adjustments(1);
 
     int gw, gh;
     cohortmaps->get_grid_dims(gw, gh);
@@ -1402,7 +1404,14 @@ void GLWidget::set_timestep(int tstep)
 
     tstep_scrollwindow->set_labelvalue(tstep);
 
-    auto trees = sampler->sample(cohortmaps->get_map(curr_cohortmap));
+    std::vector<basic_tree> trees;
+    //trees = sampler->sample(cohortmaps->get_map(curr_cohortmap));
+
+    if (curr_cohortmap > 0)
+        trees = sampler->sample(cohortmaps->get_map(0));
+    else
+        trees = sampler->sample(before_mod_map);
+
     for (auto &t : trees)
         t.species = t.species % 6;
 

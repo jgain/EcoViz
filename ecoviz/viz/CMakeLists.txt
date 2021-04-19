@@ -34,8 +34,8 @@ if (BUILD_GUI)
 
 )
 
-   #set(CMAKE_BUILD_TYPE Debug)
-   set(CMAKE_BUILD_TYPE Release)
+   set(CMAKE_BUILD_TYPE Debug)
+   #set(CMAKE_BUILD_TYPE Release)
     add_library(vgui ${GUI_SOURCES})
     target_include_directories(vgui PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(vgui common

@@ -31,9 +31,11 @@ public:
     void get_grid_dims(int &gw, int &gh);
     const ValueGridMap<std::vector<data_importer::ilanddata::cohort> > &get_map(int timestep_idx) const;
     void get_cohort_dims(float &w, float &h);
+    void do_adjustments(int times);
+private:
     void apply_actionmap();
     void determine_actionmap();
-private:
+
     std::vector<ValueGridMap<std::vector< data_importer::ilanddata::cohort > > > timestep_maps;
     std::vector<ValueGridMap<int> > plantcountmaps;
     ValueGridMap<DonateAction> actionmap;

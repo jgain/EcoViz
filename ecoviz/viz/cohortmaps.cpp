@@ -1,6 +1,7 @@
 #include "data_importer/data_importer.h"
 #include "cohortmaps.h"
 #include <random>
+#include <chrono>
 
 #define TIMESTEP_ONLY true
 #define ALL_FILEDATA false
@@ -86,8 +87,16 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
     //fix_cohortmaps();
 
-    determine_actionmap();
-    apply_actionmap();
+}
+
+void CohortMaps::do_adjustments(int times)
+{
+    for (int i = 0; i < times; i++)
+    {
+        determine_actionmap();
+        apply_actionmap();
+    }
+
 }
 
 void CohortMaps::fix_cohortmaps()
@@ -192,68 +201,89 @@ void CohortMaps::determine_actionmap()
     if (timestep_maps.size() == 0)
         return;
 
+    std::default_random_engine gen(std::chrono::steady_clock::now().time_since_epoch().count());
+    std::uniform_real_distribution<float> unif;
+
     auto in_bound = [](int gw, int gh, int x, int y){
         return x < gw && x >= 0 && y < gh && y >= 0;
     };
 
-    auto determine_action = [this, &in_bound](int x, int y, ValueGridMap<std::vector< data_importer::ilanddata::cohort > > &m)
+    auto determine_action = [this, &in_bound, &unif, &gen](int x, int y, ValueGridMap<std::vector< data_importer::ilanddata::cohort > > &m)
     {
+        std::vector<std::pair<int, int> > dirs;
         for (int cy = y - 1; cy <= y + 1; cy++)
         {
             for (int cx = x - 1; cx <= x + 1; cx++)
             {
                 int xdiff = cx - x;
                 int ydiff = cy - y;
-                if ((cy == y && cx == x) || (cy != y && cx != x) && !in_bound(gw, gh, x, y))
+                if ((cy == y && cx == x) || (cy != y && cx != x) || !in_bound(gw, gh, cx, cy) || actionmap.get(cx, cy).dir != DonateDir::NONE)
                     continue;
-                auto &thisc = m.get(x, y);
-                auto &otherc = m.get(cx, cy);
-                for (auto citer = thisc.begin(); citer != thisc.end(); advance(citer, 1))
+                dirs.push_back({xdiff, ydiff});
+            }
+        }
+        std::random_shuffle(dirs.begin(), dirs.end());
+
+        for (auto &dxdy : dirs)
+        {
+            int xdiff = dxdy.first;
+            int ydiff = dxdy.second;
+            int cy = y + ydiff;
+            int cx = x + xdiff;
+
+            auto &thisc = m.get(x, y);
+            auto &otherc = m.get(cx, cy);
+            for (auto citer = thisc.begin(); citer != thisc.end(); advance(citer, 1))
+            {
+                if (unif(gen) > 0.5f)
+                    continue;
+                int specidx = citer->specidx;
+                //if (citer->nplants > 2.0f)
+                //    continue;
+                auto iter = std::find_if(otherc.begin(), otherc.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
+                //if (iter == otherc.end())
+                if (otherc.size() == 0)
                 {
-                    int specidx = citer->specidx;
-                    auto iter = std::find_if(otherc.begin(), otherc.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
-                    if (iter == otherc.end())
+                    /*
+                    if (otherc.size() > 0)
                     {
-                        /*
-                        if (otherc.size() > 0)
-                        {
-                            auto remiter = std::next(otherc.end(), -1);		// this is the cohort we will exchange with that of the donor's
-                            auto temp = *citer;		// make a backup and use it instead of iterator directly, since the push_backs below might invalidate citer
-                            thisc.erase(citer);		// we erase first, since iterator might be invalidated when we push_back below
-                            thisc.push_back(*remiter);
-                            otherc.erase(remiter);
-                            otherc.push_back(temp);
-                        }
-                        */
-                        int giveback_idx = thisc.size() > 0 ? thisc.back().specidx : -1;
-                        DonateDir dir;
-                        DonateDir opdir;
-                        if (xdiff > 0)
-                        {
-                            dir = DonateDir::EAST;
-                            opdir = DonateDir::WEST;
-                        }
-                        else if (xdiff < 0)
-                        {
-                            dir = DonateDir::WEST;
-                            opdir = DonateDir::EAST;
-                        }
-                        else if (ydiff > 0)
-                        {
-                            dir = DonateDir::SOUTH;
-                            opdir = DonateDir::NORTH;
-                        }
-                        else if (ydiff < 0)
-                        {
-                            dir = DonateDir::NORTH;
-                            opdir = DonateDir::SOUTH;
-                        }
-                        DonateAction action_donor = {dir, specidx};
-                        DonateAction action_rec = {opdir, giveback_idx};
-                        this->actionmap.get(x, y) = action_donor;
-                        this->actionmap.get(cx, cy) = action_rec;
-                        break;
+                        auto remiter = std::next(otherc.end(), -1);		// this is the cohort we will exchange with that of the donor's
+                        auto temp = *citer;		// make a backup and use it instead of iterator directly, since the push_backs below might invalidate citer
+                        thisc.erase(citer);		// we erase first, since iterator might be invalidated when we push_back below
+                        thisc.push_back(*remiter);
+                        otherc.erase(remiter);
+                        otherc.push_back(temp);
                     }
+                    */
+                    int giveback_idx = thisc.size() > 0 ? thisc.back().specidx : -1;
+                    DonateDir dir;
+                    DonateDir opdir;
+                    if (xdiff > 0)
+                    {
+                        dir = DonateDir::EAST;
+                        opdir = DonateDir::WEST;
+                    }
+                    else if (xdiff < 0)
+                    {
+                        dir = DonateDir::WEST;
+                        opdir = DonateDir::EAST;
+                    }
+                    else if (ydiff > 0)
+                    {
+                        dir = DonateDir::SOUTH;
+                        opdir = DonateDir::NORTH;
+                    }
+                    else if (ydiff < 0)
+                    {
+                        dir = DonateDir::NORTH;
+                        opdir = DonateDir::SOUTH;
+                    }
+                    DonateAction action_donor = {dir, specidx};
+                    //DonateAction action_rec = {opdir, giveback_idx};
+                    DonateAction action_rec = {DonateDir::RECEIVE, giveback_idx};
+                    this->actionmap.get(x, y) = action_donor;
+                    this->actionmap.get(cx, cy) = action_rec;
+                    break;
                 }
             }
         }
@@ -261,6 +291,7 @@ void CohortMaps::determine_actionmap()
 
     actionmap.setDim(timestep_maps.at(0));
     actionmap.setDimReal(timestep_maps.at(0));
+    actionmap.fill({DonateDir::NONE, -1});
 
     for (auto &m : timestep_maps)
     {
@@ -273,7 +304,8 @@ void CohortMaps::determine_actionmap()
                 auto action = actionmap.get(x, y);
                 if (action.dir == DonateDir::NONE)
                 {
-                    determine_action(x, y, m);
+                    if (unif(gen) < 1.0f)
+                        determine_action(x, y, m);
                 }
             }
         }
@@ -288,13 +320,17 @@ void CohortMaps::apply_actionmap()
     std::default_random_engine gen;
     std::uniform_real_distribution<float> unif;
 
-    auto move_cohort = [](std::vector<ilanddata::cohort> &cvec_origin, std::vector<ilanddata::cohort> &cvec_dest, int specidx)
+    int movecount = 0;
+
+    auto move_cohort = [&movecount](std::vector<ilanddata::cohort> &cvec_origin, std::vector<ilanddata::cohort> &cvec_dest, int specidx)
     {
         auto iter = std::find_if(cvec_origin.begin(), cvec_origin.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
         if (iter != cvec_origin.end())
         {
             cvec_dest.push_back(*iter);
             cvec_origin.erase(iter);
+            if (cvec_dest.size() == 1)
+                movecount++;
         }
     };
 
@@ -314,21 +350,26 @@ void CohortMaps::apply_actionmap()
                 switch (action.dir)
                 {
                     case DonateDir::NORTH:
-                        move_cohort(m.get(x, y), m.get(x, y - 1), action.specidx);
+                        if (y > 0)
+                            move_cohort(m.get(x, y), m.get(x, y - 1), action.specidx);
                         break;
                     case DonateDir::WEST:
-                        move_cohort(m.get(x, y), m.get(x - 1, y), action.specidx);
+                        if (x > 0)
+                            move_cohort(m.get(x, y), m.get(x - 1, y), action.specidx);
                         break;
                     case DonateDir::SOUTH:
-                        move_cohort(m.get(x, y), m.get(x, y + 1), action.specidx);
+                        if (y < gh - 1)
+                            move_cohort(m.get(x, y), m.get(x, y + 1), action.specidx);
                         break;
                     case DonateDir::EAST:
-                        move_cohort(m.get(x, y), m.get(x + 1, y), action.specidx);
+                        if (x < gw - 1)
+                            move_cohort(m.get(x, y), m.get(x + 1, y), action.specidx);
                         break;
                 }
             }
         }
     }
+    std::cout << movecount << " cohorts moved to empty tiles" << std::endl;
 }
 
 int CohortMaps::get_nmaps()

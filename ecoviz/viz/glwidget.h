@@ -370,6 +370,7 @@ private:
 
     std::unique_ptr<cohortsampler> sampler;
     std::unique_ptr<CohortMaps> cohortmaps;
+    ValueGridMap<std::vector<data_importer::ilanddata::cohort> > before_mod_map;
 
     std::vector<bool> active_trees;
 
