@@ -23,6 +23,7 @@
 // TypeMap
 //
 
+#include "cohortmaps.h"
 #include "typemap.h"
 #include "vecpnt.h"
 #include "grass.h"
@@ -646,6 +647,19 @@ int TypeMap::convert(MapFloat * map, TypeMapType purpose, float range)
                     if(val > range) val = range;
                     tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
                     break;
+                case TypeMapType::SMOOTHING_ACTION:
+                    val = map->get(x, y);
+                    if(val > maxval)
+                        maxval = val;
+                    // discretise into ranges of illumination values
+                    // clamp values to range
+                    if(val < 0.0f) val = 0.0f;
+                    if(val > range) val = range;
+                    //std::cout << "numSamples smoothing action: " << numSamples << std::endl;
+                    //std::cout << "val: " << val << std::endl;
+                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
+                    //std::cout << "tp: " << tp << std::endl;
+                    break;
                 default:
                     break;
             }
@@ -780,6 +794,9 @@ void TypeMap::setPurpose(TypeMapType purpose)
             initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
             // replace 0 with natural terrain colour
             colmap[1][0] = 0.7f; colmap[1][1] = 0.6f; colmap[1][2] = 0.5f;
+        case TypeMapType::SMOOTHING_ACTION:
+            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
+            break;
         default:
             break;
     }

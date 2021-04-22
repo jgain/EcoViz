@@ -206,7 +206,7 @@ void cohortsampler::generate_tiles(int ntiles, int tilesize)
 	}
 }
 
-std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap)
+std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, const ValueGridMap<CohortMaps::DonateAction> &actionmap, bool reconly)
 {
     int placediv = 10;
 
@@ -224,7 +224,10 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
 	{
         //std::cout << "Cell index: " << cidx << std::endl;
         const std::vector<cohort> &crts = cohortmap.get(cidx);
+        const CohortMaps::DonateAction action = actionmap.get(cidx);
         if (crts.size() == 0)
+            continue;
+        if (reconly && action.dir != CohortMaps::DonateDir::RECEIVE)		// REMOVEME: reconly is only temporary for debugging of "cohort movement"
             continue;
         xy<float> middle = crts.front().get_middle();
         int tileidx = tileidxes.get_fromreal(middle.x, middle.y);
@@ -273,6 +276,8 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
 				else if (nplants > 0)
 					throw std::runtime_error("Species cannot be null");
             }
+            //species = crts.at(0).specidx;			// REMOVEME: this is temporary to just make species simpler
+            //specidx = 0;		// REMOVEME: same as above
             int crtw = int(ex - sx);
             int crth = int(ey - sy);
             //if (crtw > 2 || crth > 2)
@@ -294,15 +299,47 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
             //printf("-----------------------------------\n");
 
             // add to world coordinates of cohort (top left corner)
-            int x = sx + int(cxf);		// XXX: the number of cm per cell is hardcoded here...
-            int y = sy + int(cyf);
+            float x = float(sx) + cxf;		// XXX: the number of cm per cell is hardcoded here...
+            float y = float(sy) + cyf;
 
-            basic_tree tree(x, y, crts.at(specidx).height * 0.5f, crts.at(specidx).height);
+            /*
+            if (action.dir == CohortMaps::DonateDir::RECEIVE)
+            {
+                printf("cxf: %f, cyf: %f, i: %d, crtw: %d, tree x: %f, tree y: %f\n", cxf, cyf, i, crtw, x, y);
+                printf("-----------------------------------\n");
+            }
+            */
+
+            /*
+            if (fabs(x - 580.219971f) < 1e-3f && fabs(y - 647.140015f) < 1e-3f)
+            {
+                printf("Tree sampled at %f, %f\n", x, y);
+                if (action.dir == CohortMaps::DonateDir::RECEIVE)
+                {
+                    std::cout << "Action is RECEIVE" << std::endl;
+                }
+                else if (action.dir == CohortMaps::DonateDir::NONE)
+                {
+                    std::cout << "Action is NONE" << std::endl;
+                }
+                else
+                {
+                    std::cout << "Action is a direction" << std::endl;
+                }
+                std::cout << "---------------------------" << std::endl;
+            }
+            */
+
+            basic_tree tree(x, y, crts.at(specidx).height * 0.5f, crts.at(specidx).height);			// REPLACEME: radius = crts.at(specidx).height * 0.5f is temporary
             tree.species = species % 8;
 			trees.push_back(tree);
 			//ofs << x << " " << y << " " << species << std::endl;
 			count++;
-		}
+        }
+        if (action.dir == CohortMaps::DonateDir::RECEIVE)
+        {
+            //std::cout << "Number of trees sampled for a RECEIVE tile: " << count << std::endl;
+        }
 	}
 
 	return trees;

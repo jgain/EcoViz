@@ -299,6 +299,10 @@ public:
             case TypeMapType::COHORT:
                 numClusters = getTypeMap(purpose)->convert(map, purpose, 60.0f);
                 break;
+            case TypeMapType::SMOOTHING_ACTION:
+                std::cout << "Loading typemap SMOOTHING_ACTION..." << std::endl;
+                numClusters = getTypeMap(purpose)->convert(map, purpose, 2.0f);
+                break;
             default:
                 break;
         }

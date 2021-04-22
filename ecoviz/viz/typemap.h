@@ -44,6 +44,7 @@ enum class TypeMapType
     CDM,            //< canopy density model for ground visibility
     SUITABILITY,    //< shows discrepancy between terrain and user painted distributions
     COHORT,			//< shows plant counts/densities for cohorts over landscape
+    SMOOTHING_ACTION,
     TMTEND
 };
 //const std::array<TypeMapType, 10> all_typemaps = {TypeMapType::EMPTY, TypeMapType::PAINT, TypeMapType::CATEGORY, TypeMapType::SLOPE, TypeMapType::WATER, TypeMapType::SUNLIGHT, TypeMapType::TEMPERATURE, TypeMapType::CHM, TypeMapType::CDM, TypeMapType::SUITABILITY}; // to allow iteration over the typemaps
@@ -333,6 +334,25 @@ public:
                         if(val < 0.0f) val = 0.0f;
                         if(val > range) val = range;
                         tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        break;
+                    case TypeMapType::SMOOTHING_ACTION:
+                        val = map.get(x, y);
+                        if(val > maxval)
+                            maxval = val;
+                        // discretise into ranges of illumination values
+                        // clamp values to range
+                        if(val < 0.0f) val = 0.0f;
+                        if(val > range) val = range;
+                        //std::cout << "numSamples smoothing action: " << numSamples << std::endl;
+                        //std::cout << "val: " << val << std::endl;
+                        tp = (int) (val / (range+_pluszero) * (numSamples-2)) + 1;
+                        if (val == 0.0f)
+                            tp = 0;
+                        else if (val == 1.0f)
+                            tp = numSamples / 2;
+                        else if (val == 2.0f)
+                            tp = numSamples - 2;
+                        //std::cout << "tp: " << tp << std::endl;
                         break;
 
                     default:

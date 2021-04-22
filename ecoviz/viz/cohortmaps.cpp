@@ -201,7 +201,8 @@ void CohortMaps::determine_actionmap()
     if (timestep_maps.size() == 0)
         return;
 
-    std::default_random_engine gen(std::chrono::steady_clock::now().time_since_epoch().count());
+    //std::default_random_engine gen(std::chrono::steady_clock::now().time_since_epoch().count());
+    std::default_random_engine gen;
     std::uniform_real_distribution<float> unif;
 
     auto in_bound = [](int gw, int gh, int x, int y){
@@ -210,10 +211,11 @@ void CohortMaps::determine_actionmap()
 
     auto determine_action = [this, &in_bound, &unif, &gen](int x, int y, ValueGridMap<std::vector< data_importer::ilanddata::cohort > > &m)
     {
+        int distance = unif(gen) * 4 + 1;		// [1, 4] inclusive
         std::vector<std::pair<int, int> > dirs;
-        for (int cy = y - 1; cy <= y + 1; cy++)
+        for (int cy = y - distance; cy <= y + distance; cy += distance)
         {
-            for (int cx = x - 1; cx <= x + 1; cx++)
+            for (int cx = x - distance; cx <= x + distance; cx += distance)
             {
                 int xdiff = cx - x;
                 int ydiff = cy - y;
@@ -226,10 +228,12 @@ void CohortMaps::determine_actionmap()
 
         for (auto &dxdy : dirs)
         {
+            bool done = false;
             int xdiff = dxdy.first;
             int ydiff = dxdy.second;
             int cy = y + ydiff;
             int cx = x + xdiff;
+            int distance = std::max(abs(xdiff), abs(ydiff));
 
             auto &thisc = m.get(x, y);
             auto &otherc = m.get(cx, cy);
@@ -242,7 +246,7 @@ void CohortMaps::determine_actionmap()
                 //    continue;
                 auto iter = std::find_if(otherc.begin(), otherc.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
                 //if (iter == otherc.end())
-                if (otherc.size() == 0)
+                if (otherc.size() == 0)		// REMOVEME: We should also be able to send cohorts to non-empty tiles
                 {
                     /*
                     if (otherc.size() > 0)
@@ -278,14 +282,16 @@ void CohortMaps::determine_actionmap()
                         dir = DonateDir::NORTH;
                         opdir = DonateDir::SOUTH;
                     }
-                    DonateAction action_donor = {dir, specidx};
+                    DonateAction action_donor = {dir, specidx, distance};
                     //DonateAction action_rec = {opdir, giveback_idx};
-                    DonateAction action_rec = {DonateDir::RECEIVE, giveback_idx};
+                    DonateAction action_rec = {DonateDir::RECEIVE, -1, distance};
                     this->actionmap.get(x, y) = action_donor;
                     this->actionmap.get(cx, cy) = action_rec;
+                    done = true;
                     break;
                 }
             }
+            if (done) break;
         }
     };
 
@@ -304,12 +310,70 @@ void CohortMaps::determine_actionmap()
                 auto action = actionmap.get(x, y);
                 if (action.dir == DonateDir::NONE)
                 {
-                    if (unif(gen) < 1.0f)
+                    if (unif(gen) < 0.5f)
                         determine_action(x, y, m);
                 }
             }
         }
+        //break;		// REMOVEME
     }
+}
+
+ValueGridMap<CohortMaps::DonateDir> CohortMaps::get_actionmap_actions(int gw, int gh, float rw, float rh)
+{
+    ValueGridMap<CohortMaps::DonateDir> map;
+    map.setDim(gw, gh);
+    map.setDimReal(rw, rh);
+
+    float cw = rw / gw;
+    float ch = rh / gh;
+
+    for (int y = 0; y < gh; y++)
+    {
+        for (int x = 0; x < gw; x++)
+        {
+            float rx = x * cw + cw / 2.0f;
+            float ry = y * ch + ch / 2.0f;
+            if (actionmap.in_landscape(rx, ry))
+                map.set_fromreal(rx, ry, actionmap.get_fromreal(rx, ry).dir);
+        }
+    }
+    return map;
+}
+
+ValueGridMap<float> CohortMaps::get_actionmap_floats(int gw, int gh, float rw, float rh)
+{
+    auto tempmap = get_actionmap_actions(gw, gh, rw, rh);
+    ValueGridMap<float> map;
+    map.setDim(tempmap);
+    map.setDimReal(tempmap);
+
+    for (int y = 0; y < gh; y++)
+    {
+        for (int x = 0; x < gw; x++)
+        {
+            switch (tempmap.get(x, y))
+            {
+                case DonateDir::NORTH:
+                case DonateDir::EAST:
+                case DonateDir::SOUTH:
+                case DonateDir::WEST:
+                    map.set(y, x, 2.0);
+                    break;
+                case DonateDir::RECEIVE:
+                    map.set(y, x, 1.0f);
+                    break;
+                default:
+                    map.set(y, x, 0.0f);
+            }
+        }
+    }
+    return map;
+}
+
+ValueGridMap<CohortMaps::DonateAction> CohortMaps::get_actionmap()
+{
+    return actionmap;
 }
 
 void CohortMaps::apply_actionmap()
@@ -322,15 +386,32 @@ void CohortMaps::apply_actionmap()
 
     int movecount = 0;
 
-    auto move_cohort = [&movecount](std::vector<ilanddata::cohort> &cvec_origin, std::vector<ilanddata::cohort> &cvec_dest, int specidx)
+    auto move_cohort = [&movecount, this](std::vector<ilanddata::cohort> &cvec_origin, std::vector<ilanddata::cohort> &cvec_dest, int specidx, float xmod, float ymod)
     {
+        if (specidx < 0)
+            return;
         auto iter = std::find_if(cvec_origin.begin(), cvec_origin.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
         if (iter != cvec_origin.end())
         {
             cvec_dest.push_back(*iter);
+            cvec_dest.back().xs += xmod;
+            cvec_dest.back().xe += xmod;
+            cvec_dest.back().ys += ymod;
+            cvec_dest.back().ye += ymod;
+
+            ilanddata::cohort &c = cvec_dest.back();
+
+            if (c.ys < 0.0f) c.ys = 1e-3f;
+            if (c.ye >= rw) c.ye = rw - 1e-3f;
+            if (c.xs < 0.0f) c.xs = 1e-3f;
+            if (c.xe >= rh) c.xe = rh - 1e-3f;
+
             cvec_origin.erase(iter);
             if (cvec_dest.size() == 1)
+            {
+                std::cout << "Cohort with " << cvec_dest.back().nplants << " plants moved to empty cell" << std::endl;
                 movecount++;
+            }
         }
     };
 
@@ -345,25 +426,26 @@ void CohortMaps::apply_actionmap()
             {
                 auto &cellcohorts = m.get(x, y);
                 auto action = actionmap.get(x, y);
+                int d = action.distance;
                 if (action.dir == DonateDir::NONE)
                     continue;
                 switch (action.dir)
                 {
                     case DonateDir::NORTH:
-                        if (y > 0)
-                            move_cohort(m.get(x, y), m.get(x, y - 1), action.specidx);
+                        if (y > d)
+                            move_cohort(m.get(x, y), m.get(x, y - d), action.specidx, 0.0f, -2.0f * action.distance);
                         break;
                     case DonateDir::WEST:
-                        if (x > 0)
-                            move_cohort(m.get(x, y), m.get(x - 1, y), action.specidx);
+                        if (x > d)
+                            move_cohort(m.get(x, y), m.get(x - d, y), action.specidx, -2.0f * action.distance, 0.0f);
                         break;
                     case DonateDir::SOUTH:
-                        if (y < gh - 1)
-                            move_cohort(m.get(x, y), m.get(x, y + 1), action.specidx);
+                        if (y < gh - d)
+                            move_cohort(m.get(x, y), m.get(x, y + d), action.specidx, 0.0f, 2.0f * action.distance);
                         break;
                     case DonateDir::EAST:
-                        if (x < gw - 1)
-                            move_cohort(m.get(x, y), m.get(x + 1, y), action.specidx);
+                        if (x < gw - d)
+                            move_cohort(m.get(x, y), m.get(x + d, y), action.specidx, 2.0f * action.distance, 0.0f);
                         break;
                 }
             }

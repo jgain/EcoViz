@@ -973,6 +973,17 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         }
         else if (cohortmaps->get_nmaps() > 0)
         {
+            int gw, gh;
+            float rw, rh;
+            getTerrain()->getGridDim(gw, gh);
+            getTerrain()->getTerrainDim(rw, rh);
+
+            auto amap = cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
+            //int nclusters = loadTypeMap(amap, TypeMapType::SMOOTHING_ACTION);
+            //setOverlay(TypeMapType::SMOOTHING_ACTION);
+
+            //data_importer::write_txt<ValueGridMap<float> > ("/home/konrad/actionmap.txt", &amap, 0.9144f);
+
             tstep_scrollwindow->setVisible(true);
             if (tstep_scrollwindow->isVisible())
                 set_timestep(tstep_scrollwindow->get_sliderval());
@@ -1407,10 +1418,20 @@ void GLWidget::set_timestep(int tstep)
     std::vector<basic_tree> trees;
     //trees = sampler->sample(cohortmaps->get_map(curr_cohortmap));
 
+    trees = sampler->sample(cohortmaps->get_map(curr_cohortmap), cohortmaps->get_actionmap(), false);
+
+    /*
     if (curr_cohortmap > 0)
-        trees = sampler->sample(cohortmaps->get_map(0));
+    {
+        std::cout << "Setting cohort map to modded map" << std::endl;
+        trees = sampler->sample(cohortmaps->get_map(0), cohortmaps->get_actionmap(), false);
+    }
     else
-        trees = sampler->sample(before_mod_map);
+    {
+        std::cout << "Setting cohort map to map before mod" << std::endl;
+        trees = sampler->sample(before_mod_map, cohortmaps->get_actionmap(), false);
+    }
+    */
 
     for (auto &t : trees)
         t.species = t.species % 6;
