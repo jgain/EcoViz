@@ -98,9 +98,24 @@ data_importer::ilanddata::cohort::cohort(std::stringstream &ss)
     ye = ys + 2;
 }
 
+std::ostream &data_importer::ilanddata::cohort::operator >>(std::ostream &ostr) const
+{
+    ostr << "coordinates: (" << xs << ", " << xe << "), " << ys << ", " << ye << ")" << std::endl;
+    ostr << "dbh: " << dbh << std::endl;
+    ostr << "height: " << height << std::endl;
+    ostr << "specidx: " << specidx << std::endl;
+    ostr << "nplants: " << nplants << std::endl;
+    return ostr;
+}
+
 xy<float> data_importer::ilanddata::cohort::get_middle() const
 {
     return xy<float>((xe + xs) / 2.0f, (ye + ys) / 2.0f);
+}
+
+float data_importer::ilanddata::cohort::get_size() const
+{
+    return (xe - xs) * (ye - ys);
 }
 
 bool data_importer::ilanddata::fileversion_gteq(std::string v1, std::string v2)

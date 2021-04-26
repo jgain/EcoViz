@@ -391,6 +391,11 @@ private:
     bool show_transect_control = false;
     bool transect_filter = false;
 
+    std::vector< std::vector<basic_tree> > allcells_trees1;
+    std::vector< std::vector<basic_tree> > allcells_trees2;
+    int ts1 = 0, ts2 = 0;
+    int stepchange = 0;
+
     /**
      * @brief pickInfo  write information about a terrain cell to the console
      * @param x         x-coord on terrain grid

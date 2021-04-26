@@ -23,13 +23,15 @@ public:
         std::vector<basic_tree> sample_all(bool soft);
         std::deque<int> gen_poisson_list(int sqsize, int nplants, std::deque<int> *dists, std::default_random_engine &gen);
 
-        std::vector<basic_tree> sample(const ValueGridMap<std::vector<data_importer::ilanddata::cohort> > &cohortmap, const ValueGridMap<CohortMaps::DonateAction> &actionmap, bool reconly);
+        std::vector<basic_tree> sample(const ValueGridMap<std::vector<data_importer::ilanddata::cohort> > &cohortmap, const ValueGridMap<CohortMaps::DonateAction> &actionmap, bool reconly, std::vector<std::vector<basic_tree> > &allcells_trees);
         void fix_cohortmaps(std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > &cohortmaps);
+        void set_spectoidx_map(std::unique_ptr<ValueGridMap<std::vector<int> > > spectoidx_map_ptr);
 private:
         std::vector<basic_tree> sample_one_soft(data_importer::ilanddata::cohort chrt, std::default_random_engine &gen);
         std::vector<basic_tree> sample_one_hard(data_importer::ilanddata::cohort chrt, std::default_random_engine &gen);
 
         ValueGridMap<int> tileidxes;
+        std::unique_ptr<ValueGridMap<std::vector<int> > > spectoidx_map;
 
         void generate_tiles(int ntiles, int tilesize);
 

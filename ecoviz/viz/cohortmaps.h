@@ -4,6 +4,8 @@
 #include "data_importer/data_importer.h"
 #include "common/basic_types.h"
 
+#include <memory>
+
 class CohortMaps
 {
 public:
@@ -37,6 +39,10 @@ public:
     ValueGridMap<CohortMaps::DonateDir> get_actionmap_actions(int gw, int gh, float rw, float rh);
     ValueGridMap<float> get_actionmap_floats(int gw, int gh, float rw, float rh);
     ValueGridMap<CohortMaps::DonateAction> get_actionmap();
+
+    void compute_specset_map();
+    std::unique_ptr<ValueGridMap<std::set<int> > > move_specset_map();
+    std::unique_ptr<ValueGridMap<std::vector<int> > > compute_spectoidx_map();
 private:
     void apply_actionmap();
     void determine_actionmap();
@@ -44,6 +50,7 @@ private:
     std::vector<ValueGridMap<std::vector< data_importer::ilanddata::cohort > > > timestep_maps;
     std::vector<ValueGridMap<int> > plantcountmaps;
     ValueGridMap<DonateAction> actionmap;
+    std::unique_ptr<ValueGridMap<std::set<int> > > specset_map;
 
     float rw, rh;
     int gw, gh;

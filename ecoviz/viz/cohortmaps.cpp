@@ -319,6 +319,71 @@ void CohortMaps::determine_actionmap()
     }
 }
 
+void CohortMaps::compute_specset_map()
+{
+    specset_map = std::unique_ptr<ValueGridMap<std::set<int> > >(new ValueGridMap<std::set<int> >(gw, gh, rw, rh, 1.0f, 1.0f));
+
+    for (auto &ts: timestep_maps)
+    {
+        for (int y = 0; y < gh; y++)
+        {
+            for (int x = 0; x < gw; x++)
+            {
+                for (const ilanddata::cohort &c : ts.get(x, y))
+                {
+                    specset_map->get(x, y).insert(c.specidx);
+                }
+            }
+        }
+    }
+}
+
+std::unique_ptr<ValueGridMap<std::vector<int> > > CohortMaps::compute_spectoidx_map()
+{
+    if (!specset_map)
+        compute_specset_map();
+
+    std::unique_ptr<ValueGridMap<std::vector<int> > > spectoidx_map = std::unique_ptr<ValueGridMap<std::vector<int> > >(new ValueGridMap<std::vector<int> >());
+    spectoidx_map->setDim(*specset_map);
+    spectoidx_map->setDimReal(*specset_map);
+    spectoidx_map->setOffsets(*specset_map);
+
+    for (int y = 0; y < gh; y++)
+    {
+        for (int x = 0; x < gw; x++)
+        {
+            auto &set = specset_map->get(x, y);
+            std::vector<int> toidx;
+            int idx = 0;
+            for (auto &id : set)
+            {
+                if (id + 1 > toidx.size())
+                {
+                    toidx.resize(id + 1, -1);
+                }
+                toidx[id] = idx;
+                idx++;
+            }
+            spectoidx_map->set(x, y, toidx);
+        }
+    }
+
+    return std::move(spectoidx_map);
+
+}
+
+std::unique_ptr<ValueGridMap<std::set<int> > > CohortMaps::move_specset_map()
+{
+    //std::unique_ptr<ValueGridMap<std::set<int> > > ptr(specset_map);
+
+    if (!specset_map)
+        throw std::logic_error("specset_map not computed yet");
+
+    return std::move(specset_map);
+
+    //return ptr;
+}
+
 ValueGridMap<CohortMaps::DonateDir> CohortMaps::get_actionmap_actions(int gw, int gh, float rw, float rh)
 {
     ValueGridMap<CohortMaps::DonateDir> map;
@@ -409,7 +474,6 @@ void CohortMaps::apply_actionmap()
             cvec_origin.erase(iter);
             if (cvec_dest.size() == 1)
             {
-                std::cout << "Cohort with " << cvec_dest.back().nplants << " plants moved to empty cell" << std::endl;
                 movecount++;
             }
         }

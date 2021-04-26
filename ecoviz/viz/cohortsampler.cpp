@@ -206,7 +206,12 @@ void cohortsampler::generate_tiles(int ntiles, int tilesize)
 	}
 }
 
-std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, const ValueGridMap<CohortMaps::DonateAction> &actionmap, bool reconly)
+void cohortsampler::set_spectoidx_map(std::unique_ptr<ValueGridMap<std::vector<int> > > spectoidx_map_ptr)
+{
+    spectoidx_map = std::move(spectoidx_map_ptr);
+}
+
+std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, const ValueGridMap<CohortMaps::DonateAction> &actionmap, bool reconly, std::vector< std::vector<basic_tree> > &allcells_trees)
 {
     int placediv = 10;
 
@@ -217,6 +222,7 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
     int cgw, cgh;
     cohortmap.getDim(cgw, cgh);
 
+
     printf("Cohortmap dimensions %d, %d\n", cgw, cgh);
 
 	std::uniform_real_distribution<float> unif;
@@ -224,68 +230,139 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
 	{
         //std::cout << "Cell index: " << cidx << std::endl;
         const std::vector<cohort> &crts = cohortmap.get(cidx);
-        const CohortMaps::DonateAction action = actionmap.get(cidx);
+
+        CohortMaps::DonateAction action;
+        if (reconly)
+            action = actionmap.get(cidx);
         if (crts.size() == 0)
+        {
+            allcells_trees.push_back({});
             continue;
+        }
         if (reconly && action.dir != CohortMaps::DonateDir::RECEIVE)		// REMOVEME: reconly is only temporary for debugging of "cohort movement"
             continue;
+        if (cidx == 181391)
+        {
+            std::cout << "Cohorts: " << std::endl;
+            for (auto &c : crts)
+            {
+                c >> std::cout;
+                std::cout << "---------" << std::endl;
+            }
+        }
         xy<float> middle = crts.front().get_middle();
         int tileidx = tileidxes.get_fromreal(middle.x, middle.y);
+        xy<int> gxy = tileidxes.togrid(middle.x, middle.y);
 
-        float nsimplants = std::accumulate(crts.begin(), crts.end(), 0, [](int value, const cohort &c1) { return value + c1.nplants; });
+        float nsimplants = std::accumulate(crts.begin(), crts.end(), 0.0f, [](float value, const cohort &c1) { return value + c1.nplants; });
         nsimplants = std::min(float(maxpercell), nsimplants / placediv);
+        nsimplants = std::max(nsimplants, float(crts.size()));
+        if (cidx == 181391)
+        {
+            std::cout << "Tileidx: " << tileidx << std::endl;
+        }
+
+        int specincr;
+        if (spectoidx_map)
+        {
+            const auto &vec = spectoidx_map->get(gxy.x, gxy.y);
+            specincr = std::count_if(vec.begin(), vec.end(), [](int v) { return v >= 0; });
+            //specincr = spectoidx_map->get(gxy.x, gxy.y).size();
+            //specincr = spectoidx_map->get(cidx).size();
+            xy<float> xyreal = spectoidx_map->toreal(cidx);
+            xyreal.x += 1.0f;
+            xyreal.y += 1.0f;
+            if (&cohortmap.get_fromreal(xyreal.x, xyreal.y) != &crts)
+            {
+                throw std::logic_error("Mismatch between spectoidx_map and cohortmap");
+            }
+        }
+        else
+            specincr = 1;
+
+
+        int species = -1;
 
         // XXX: we round up to the nearest integer when we sample plants (especially for the cases where we have less than one plant in the cohort)
         // 		we could also consider sampling with a certain probability, if num plants < 1
         int nplants = ceil(nsimplants);
 		auto &idxes = randtiles.at(tileidx);
         int count = 0;
-		for (auto &i : idxes)
-		{
-			if (count >= nplants)
-				break;
-            float cprob = count / float(nplants);
-			float probsum = 0.0f;
-            int species = -1;
-            int specidx = 0;
-
-            int sx, sy;
-            int ex, ey;
-            for (const cohort &crt : crts)
+        if (nplants == 0 && crts.size() > 0)
+        {
+            for (const auto &c : crts)
             {
-                sx = crt.xs;
-                sy = crt.ys;
-                ex = crt.xe;
-                ey = crt.ye;
-                //printf("sx: %d, sy: %d, ex: %d, ey: %d\n", sx, sy, ex, ey);
-                probsum += (crt.nplants / placediv) / float(nplants);
-                if (cprob < probsum)
+                c >> std::cout;
+                std::cout << "---------------" << std::endl;
+            }
+            throw std::logic_error("Number of plants to be sampled zero but number of cohorts nonzero!");
+        }
+        std::vector<basic_tree> celltrees;
+        int cohortidx = 0;
+        std::vector<int> cohortcounts(crts.size(), 0);
+        std::vector<int> maxcounts;
+        nplants = 0;		// recompute nplants, due to rounding issues (we round each float individually to get max count for each cohort, instead of summing then
+                            // rounding up as done above. The former method results in a higher sum, which we compute here)
+        for (const auto &crt : crts)
+        {
+            maxcounts.push_back(ceil(crt.nplants / placediv));
+            nplants += maxcounts.back();
+        }
+        while (true)
+        {
+            if (count > nplants)
+				break;
+
+            int origidx = cohortidx;
+            bool finished = false;
+            while (cohortcounts.at(cohortidx) >= maxcounts.at(cohortidx))
+            {
+                cohortidx++;
+                cohortidx = cohortidx % crts.size();
+                if (cohortidx == origidx)
                 {
-                    species = crt.specidx;
+                    finished = true;
                     break;
                 }
-                specidx++;
             }
-			if (species == -1)
-			{
-                if (crts.size() > 0)
-                {
-                    species = crts.rbegin()->specidx;
-                    specidx = crts.size() - 1;
-                }
-				else if (nplants > 0)
-					throw std::runtime_error("Species cannot be null");
+            if (finished) break;
+
+            cohortcounts.at(cohortidx)++;
+
+            const auto &crt = crts.at(cohortidx);
+
+            int i = spectoidx_map->get(cidx).at(crt.specidx) + specincr * cohortcounts.at(cohortidx);
+
+            if (i >= idxes.size())
+            {
+                cohortcounts.at(cohortidx) = maxcounts.at(cohortidx);
+                continue;
             }
+
+            int idx = idxes.at(i);
+
+            if (cidx == 181391)
+            {
+                std::cout << "idx: " << idx << std::endl;
+            }
+
+            int specidx = cohortidx;
+
+            species = crt.specidx;
+
+            int sx = crt.xs;
+            int sy = crt.ys;
+            int ex = crt.xe;
+            int ey = crt.ye;
+
             //species = crts.at(0).specidx;			// REMOVEME: this is temporary to just make species simpler
             //specidx = 0;		// REMOVEME: same as above
             int crtw = int(ex - sx);
             int crth = int(ey - sy);
-            //if (crtw > 2 || crth > 2)
-            //    printf("crtw %d, crth: %d\n", crtw, crth);
 
             // get x, y indices from single index
-            int cohortx = i % 200;
-            int cohorty = i / 200;
+            int cohortx = idx % 200;
+            int cohorty = idx / 200;
 
             // normalize to [0, 1] in relative to cohort size in each dimension
             float cxf = cohortx / 200.0f;
@@ -295,51 +372,43 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
             cxf = cxf * float(crtw);
             cyf = cyf * float(crth);
 
-            //printf("cxf: %f, cyf: %f, i: %d, crtw: %d\n", cxf, cyf, i, crtw);
-            //printf("-----------------------------------\n");
-
             // add to world coordinates of cohort (top left corner)
             float x = float(sx) + cxf;		// XXX: the number of cm per cell is hardcoded here...
             float y = float(sy) + cyf;
 
-            /*
-            if (action.dir == CohortMaps::DonateDir::RECEIVE)
-            {
-                printf("cxf: %f, cyf: %f, i: %d, crtw: %d, tree x: %f, tree y: %f\n", cxf, cyf, i, crtw, x, y);
-                printf("-----------------------------------\n");
-            }
-            */
-
-            /*
-            if (fabs(x - 580.219971f) < 1e-3f && fabs(y - 647.140015f) < 1e-3f)
-            {
-                printf("Tree sampled at %f, %f\n", x, y);
-                if (action.dir == CohortMaps::DonateDir::RECEIVE)
-                {
-                    std::cout << "Action is RECEIVE" << std::endl;
-                }
-                else if (action.dir == CohortMaps::DonateDir::NONE)
-                {
-                    std::cout << "Action is NONE" << std::endl;
-                }
-                else
-                {
-                    std::cout << "Action is a direction" << std::endl;
-                }
-                std::cout << "---------------------------" << std::endl;
-            }
-            */
-
             basic_tree tree(x, y, crts.at(specidx).height * 0.5f, crts.at(specidx).height);			// REPLACEME: radius = crts.at(specidx).height * 0.5f is temporary
-            tree.species = species % 8;
-			trees.push_back(tree);
+            tree.species = species % 15;
+            trees.push_back(tree);
+            celltrees.push_back(tree);
 			//ofs << x << " " << y << " " << species << std::endl;
-			count++;
+            count++;
         }
-        if (action.dir == CohortMaps::DonateDir::RECEIVE)
+        /*
+        for (const auto &c : crts)
         {
-            //std::cout << "Number of trees sampled for a RECEIVE tile: " << count << std::endl;
+            auto iter = std::find_if(celltrees.begin(), celltrees.end(), [&c](const basic_tree &tree) { return tree.species == (c.specidx % 15); });
+            if (iter == celltrees.end())
+            {
+                for (const auto &c2 : crts)
+                {
+                    c2 >> std::cout;
+                    std::cout << "------------------" << std::endl;
+                }
+
+                std::cout << "maxcounts: " << std::endl;
+                for (auto &m : maxcounts)
+                    std::cout << m << " ";
+                std::cout << std::endl;
+                std::cout << "cohortcounts: " << std::endl;
+                for (auto &m : cohortcounts)
+                    std::cout << m << " ";
+                std::cout << std::endl;
+                throw std::logic_error("at least one species in cohorts not sampled!");
+            }
         }
+        */
+
+        allcells_trees.push_back(celltrees);
 	}
 
 	return trees;

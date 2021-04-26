@@ -56,7 +56,10 @@ namespace data_importer
 
                                 cohort(std::stringstream &ss);
 
+                                std::ostream &operator >>(std::ostream &ostr) const;
+
                                 xy<float> get_middle() const;
+                                float get_size() const;
 
                                 int xs, ys;
                                 int xe, ye;

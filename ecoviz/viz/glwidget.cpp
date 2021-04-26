@@ -534,7 +534,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
 
     cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0"));
     before_mod_map = cohortmaps->get_map(0);
-    cohortmaps->do_adjustments(1);
+    //cohortmaps->do_adjustments(1);
 
     int gw, gh;
     cohortmaps->get_grid_dims(gw, gh);
@@ -544,6 +544,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     if (cohortmaps->get_nmaps() > 0)
     {
         sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, 10, 3));
+        sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
 
         //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
         //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
@@ -1418,7 +1419,94 @@ void GLWidget::set_timestep(int tstep)
     std::vector<basic_tree> trees;
     //trees = sampler->sample(cohortmaps->get_map(curr_cohortmap));
 
-    trees = sampler->sample(cohortmaps->get_map(curr_cohortmap), cohortmaps->get_actionmap(), false);
+    auto &celltrees = stepchange % 2 == 0 ? allcells_trees1 : allcells_trees2;
+    if (stepchange % 2 == 0)
+        ts1 = curr_cohortmap;		// ts1 is timestep associated with allcells_trees1
+    else
+        ts2 = curr_cohortmap;		// ts2 is timestep - - allcells_trees2
+
+    celltrees.clear();
+
+    trees = sampler->sample(cohortmaps->get_map(curr_cohortmap), cohortmaps->get_actionmap(), false, celltrees);
+
+    stepchange++;
+
+    /*
+    if (stepchange > 1 && allcells_trees1.size() == allcells_trees2.size())
+    {
+        for (int i = 0; i < allcells_trees1.size(); i++)
+        {
+            auto &c1 = (ts1 > ts2 ? allcells_trees2 : allcells_trees1).at(i);
+            auto &c2 = (ts1 > ts2 ? allcells_trees1 : allcells_trees2).at(i);
+
+            for (auto &t : c2)
+            {
+                bool found = false;
+                for (auto &t_first : c1)
+                {
+                    if (t.x == t_first.x && t.y == t_first.y)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    if (t.height > 1.0f)
+                    {
+                        int higher_ts = std::max(ts1, ts2);
+                        int lower_ts = std::min(ts1, ts2);
+                        auto &crts1 = cohortmaps->get_map(lower_ts).get(i);
+                        auto &crts2 = cohortmaps->get_map(higher_ts).get(i);
+                        bool ignore = false;
+                        for (auto &c1 : crts1)
+                        {
+                            int spidx = c1.specidx;
+                            for (auto &c2 : crts2)
+                            {
+                                if (c2.specidx == c1.specidx && c2.nplants > c1.nplants)
+                                {
+                                    ignore = true;
+                                    break;
+                                }
+                            }
+                            if (ignore) break;
+                        }
+                        if (!ignore)
+                        {
+                            std::cout << "Faulty cohorts: " << std::endl;
+                            std::cout << "Cohort 1: " << std::endl;
+                            for (auto &c : crts1)
+                            {
+                                c >> std::cout;
+                            }
+                            std::cout << "Cohort 2: " << std::endl;
+                            for (auto &c : crts2)
+                            {
+                                c >> std::cout;
+                            }
+                            std::cout << "Trees set 1: " << std::endl;
+                            for (auto &t : c1)
+                            {
+                                std::cout << t.x << ", " << t.y << std::endl;
+                            }
+                            std::cout << "Trees set 2: " << std::endl;
+                            for (auto &t : c2)
+                            {
+                                std::cout << t.x << ", " << t.y << std::endl;
+                            }
+                            throw std::logic_error("Large tree suddenly appeared in cell " + std::to_string(i));
+                        }
+                    }
+                    else
+                    {
+                        //std::cout << "new tree appeared with height " << t.height << " in cell " << std::to_string(i) << std::endl;
+                    }
+                }
+            }
+        }
+    }
+    */
 
     /*
     if (curr_cohortmap > 0)

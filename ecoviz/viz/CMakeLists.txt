@@ -35,7 +35,9 @@ if (BUILD_GUI)
 )
 
    #set(CMAKE_BUILD_TYPE Debug)
-   set(CMAKE_BUILD_TYPE Release)
+   #set(CMAKE_BUILD_TYPE Release)
+   #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/build-ecoviz-Qt_5_10_0_GCC_64bit-Debug)
+   #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/build-ecoviz-Qt_5_10_0_GCC_64bit-Default)
     add_library(vgui ${GUI_SOURCES})
     target_include_directories(vgui PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(vgui common
@@ -46,6 +48,9 @@ if (BUILD_GUI)
     add_executable(ecoviz main.cpp)
     target_include_directories(ecoviz PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(ecoviz vgui sqlite3)
+    add_executable(analyse_cohortmap analyse_cohortmap_main.cpp)
+    target_include_directories(analyse_cohortmap PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
+    target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
 
     ADD_DEFINITIONS(-DSONOMA_DB_FILEPATH="${PROJECT_SOURCE_DIR}/../sonoma.db")
 

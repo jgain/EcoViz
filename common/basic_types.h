@@ -779,6 +779,14 @@ public:
         return xy<float>(toreal_conv.x * x + xoff, toreal_conv.y * y + yoff);
     }
 
+    xy<float> toreal(int idx) const
+    {
+        int x = idx % gx;
+        int y = idx / gy;
+
+        return xy<float>(toreal_conv.x * x + xoff, toreal_conv.y * y + yoff);
+    }
+
     /*
     xy<float> get_togrid_conv() const
     {
@@ -831,6 +839,26 @@ public:
     {
         rw = this->rx;
         rh = this->ry;
+    }
+
+    void getOffsets(float &xoff, float &yoff) const
+    {
+        xoff = this->xoff;
+        yoff = this->yoff;
+    }
+
+    void setOffsets(float xoff, float yoff)
+    {
+        this->xoff = xoff;
+        this->yoff = yoff;
+    }
+
+    template<typename U>
+    void setOffsets(const ValueGridMap<U> &other)
+    {
+        float xoff_arg, yoff_arg;
+        other.getOffsets(xoff_arg, yoff_arg);
+        this->setOffsets(xoff_arg, yoff_arg);
     }
 };
 
