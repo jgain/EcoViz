@@ -96,12 +96,12 @@ void CohortMaps::do_adjustments(int max_distance)
         undo_actionmap();
         action_applied = false;
     }
-    if (max_distance > 0)
-    {
+    //if (max_distance > 0)
+    //{
         determine_actionmap(max_distance);
-        apply_actionmap();
-        specset_map.reset();
-    }
+    //}
+    apply_actionmap();
+    specset_map.reset();
 }
 
 void CohortMaps::fix_cohortmaps()
@@ -300,10 +300,16 @@ void CohortMaps::determine_actionmap(int max_distance)
         }
     };
 
+    if (progress_label_function)
+        progress_label_function("Setting up actionmap...");
+    if (progress_function)
+        progress_function(0);
+
     actionmap.setDim(timestep_maps.at(0));
     actionmap.setDimReal(timestep_maps.at(0));
     actionmap.fill({DonateDir::NONE, -1});
 
+    int iteri = 0;
     for (auto &m : timestep_maps)
     {
         int gw, gh;
@@ -320,6 +326,9 @@ void CohortMaps::determine_actionmap(int max_distance)
                 }
             }
         }
+        iteri++;
+        if (progress_function)
+            progress_function(int(float(iteri) / timestep_maps.size() * 100));
         //break;		// REMOVEME
     }
 }
@@ -494,7 +503,12 @@ void CohortMaps::apply_actionmap()
         }
     };
 
+    if (progress_label_function)
+        progress_label_function("Applying actionmap...");
+    if (progress_function)
+        progress_function(0);
 
+    int iteri = 0;
     for (auto &m : timestep_maps)
     {
         int gw, gh;
@@ -529,6 +543,9 @@ void CohortMaps::apply_actionmap()
                 }
             }
         }
+        iteri++;
+        if (progress_function)
+            progress_function(int(float(iteri) / timestep_maps.size() * 100));
     }
     std::cout << movecount_empty << " cohorts moved to empty tiles" << std::endl;
     std::cout << movecount_total << " cohorts moved in total" << std::endl;
@@ -548,6 +565,12 @@ void CohortMaps::undo_actionmap()
 
     using namespace data_importer;
 
+    if (progress_label_function)
+        progress_label_function("Undoing actionmap...");
+    if (progress_function)
+        progress_function(0);
+
+    int iternum = 0;
     for (auto &m : timestep_maps)
     {
         int gw, gh;
@@ -623,9 +646,22 @@ void CohortMaps::undo_actionmap()
                 }
             }
         }
+        iternum++;
+        if (progress_function)
+            progress_function(int(float(iternum) / timestep_maps.size() * 100));
     }
     std::cout << movecount << " cohorts moved to original tiles" << std::endl;
 
+}
+
+void CohortMaps::set_progress_function(std::function<void (int)> func)
+{
+    progress_function = func;
+}
+
+void CohortMaps::set_progress_label_function(std::function<void (std::string)> func)
+{
+    progress_label_function = func;
 }
 
 int CohortMaps::get_nmaps()

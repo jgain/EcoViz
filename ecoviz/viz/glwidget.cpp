@@ -75,11 +75,14 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QLineEdit>
+#include <QRunnable>
+#include <QThreadPool>
 
 #include <fstream>
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include "cohortmaps.h"
+#include "progressbar_window.h"
 
 using namespace std;
 
@@ -216,6 +219,9 @@ GLWidget::~GLWidget()
         delete scenes[i];
 
     if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
+
+    if (prog)
+        delete prog;
 }
 
 QSize GLWidget::minimumSizeHint() const
@@ -1384,22 +1390,78 @@ std::vector<bool> GLWidget::set_active_trees(const std::vector<basic_tree> &tree
     return active;
 }
 
+class AdjustmentRunnable : public QRunnable
+{
+public:
+    AdjustmentRunnable(GLWidget *parent, CohortMaps *cohortmaps, int distance, cohortsampler *sampler, int tstep)
+        : QRunnable(), parent(parent), maps(cohortmaps), distance(distance), sampler(sampler), tstep(tstep)
+    {
+    }
+
+    void run()
+    {
+        if (maps)
+            maps->do_adjustments(distance);
+        if (sampler && maps)
+            sampler->set_spectoidx_map(maps->compute_spectoidx_map());
+        if (tstep >= 0)
+            parent->set_timestep(tstep);
+    }
+private:
+    GLWidget *parent;
+    CohortMaps *maps;
+    cohortsampler *sampler;
+    int distance, tstep;
+};
+
 void GLWidget::set_smoothing_distance()
 {
     QLineEdit *sender = dynamic_cast<QLineEdit *>(this->sender());
     if (sender)
     {
+        if (!prog)
+            prog = new progressbar_window(400, 100);
+        prog->show();
+        //prog->update();
+
+        auto update_bar = [this](int value){
+            prog->update_bar(value);
+        };
+
+        auto update_label = [this](std::string label){
+            prog->update_label(label);
+        };
+        cohortmaps->set_progress_function(update_bar);
+        cohortmaps->set_progress_label_function(update_label);
+
         QString qtext = sender->text();
         int distance = std::stoi(qtext.toStdString());
-        cohortmaps->do_adjustments(distance);
-        sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
 
-        set_timestep(curr_tstep);
+        // ---
+        //cohortmaps->do_adjustments(distance);
+        // ---
+        AdjustmentRunnable *runnable = new AdjustmentRunnable(this, cohortmaps.get(), distance, sampler.get(), curr_tstep);
+        runnable->setAutoDelete(true);
+        QThreadPool::globalInstance()->start(runnable);
+        // ---
+
+        // --- what must come after the runnable is finished - add to the AdjustmentRunnable class?
+        //sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
+        //set_timestep(curr_tstep);
     }
+
+}
+
+void GLWidget::do_adjustments(int distance)
+{
+    cohortmaps->do_adjustments(distance);
+    sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
 }
 
 void GLWidget::set_timestep(int tstep)
 {
+
+
     curr_tstep = tstep;
     curr_cohortmap = tstep - initstep;
     if (curr_cohortmap >= cohortmaps->get_nmaps())

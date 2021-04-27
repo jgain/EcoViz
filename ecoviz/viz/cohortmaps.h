@@ -5,6 +5,7 @@
 #include "common/basic_types.h"
 
 #include <memory>
+#include <functional>
 
 class CohortMaps
 {
@@ -45,6 +46,9 @@ public:
     std::unique_ptr<ValueGridMap<std::vector<int> > > compute_spectoidx_map();
     void move_cohort(std::vector<data_importer::ilanddata::cohort> &destvec, std::vector<data_importer::ilanddata::cohort> &srcvec, std::vector<data_importer::ilanddata::cohort>::iterator &srciter, float xmod, float ymod);
     void undo_actionmap();
+
+    void set_progress_function(std::function<void(int)> func);
+    void set_progress_label_function(std::function<void(std::string)> func);
 private:
     void apply_actionmap();
     void determine_actionmap(int max_distance);
@@ -60,6 +64,9 @@ private:
     int maxpercell = 10;
 
     bool action_applied = false;
+
+    std::function<void (int) > progress_function;
+    std::function<void (std::string) > progress_label_function;
 };
 
 #endif

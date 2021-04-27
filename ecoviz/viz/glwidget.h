@@ -83,7 +83,7 @@
 #include "shape.h"
 #include "scrollwindow.h"
 #include "cohortsampler.h"
-
+#include "progressbar_window.h"
 
 
 //! [0]
@@ -311,12 +311,15 @@ public:
 
 signals:
     void signalRepaintAllGL();
+    void doCohortMapsAdjustments(int);
+    void setTimestepAndSample(int);
     
 public slots:
     void animUpdate(); // animation step for change of focus
     void rotateUpdate(); // animation step for rotating around terrain center
     void set_timestep(int tstep);
     void set_smoothing_distance();
+    void do_adjustments(int distance);
 
     std::string get_dirprefix();
 protected:
@@ -376,6 +379,7 @@ private:
     std::unique_ptr<cohortsampler> sampler;
     std::unique_ptr<CohortMaps> cohortmaps;
     ValueGridMap<std::vector<data_importer::ilanddata::cohort> > before_mod_map;
+    progressbar_window *prog = nullptr;
 
     std::vector<bool> active_trees;
 

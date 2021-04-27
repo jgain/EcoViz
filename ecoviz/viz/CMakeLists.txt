@@ -31,6 +31,7 @@ if (BUILD_GUI)
        scrollwindow.cpp
        cohortsampler.cpp
        cohortmaps.cpp
+       progressbar_window.cpp
 
 )
 
