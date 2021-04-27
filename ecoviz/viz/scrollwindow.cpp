@@ -2,6 +2,7 @@
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QIntValidator>
 
 #include "glwidget.h"
 
@@ -21,7 +22,20 @@ scrollwindow::scrollwindow(QWidget *parent, int step_start, int step_end, int wi
     tstep_slider->setTickInterval((step_end - step_start) / nticks);
     tstep_slider->setTickPosition(QSlider::TicksBelow);
 
+    /*
+    smooth_slider = new QSlider(Qt::Horizontal, this);
+    smooth_slider->setMinimum(0);
+    smooth_slider->setMaximum(10);
+    smooth_slider->setTickInterval(1);
+    smooth_slider->setTickPosition(QSlider::TicksBelow);
+    */
+
+    QIntValidator *intvalidate = new QIntValidator(this);
+    smooth_textfield = new QLineEdit("0", this);
+    smooth_textfield->setValidator(intvalidate);
+
     QLabel *scroll_label = new QLabel("Time step", this);
+    smooth_label = new QLabel("Smoothing distance", this);
     QLabel *set_label = new QLabel("Current step: ", this);
     value_label = new QLabel(std::to_string(step_start).c_str(), this);
     value_label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
@@ -40,8 +54,14 @@ scrollwindow::scrollwindow(QWidget *parent, int step_start, int step_end, int wi
     hbox = new QHBoxLayout;
     hbox->addWidget(scroll_label);
     hbox->addWidget(tstep_slider);
-
     vbox->addLayout(hbox);
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(smooth_label);
+    //hbox->addWidget(smooth_slider);
+    hbox->addWidget(smooth_textfield);
+    vbox->addLayout(hbox);
+
     vbox->addStretch();
 
     setLayout(vbox);
@@ -51,6 +71,8 @@ scrollwindow::scrollwindow(QWidget *parent, int step_start, int step_end, int wi
     if (p)
     {
         connect(tstep_slider, SIGNAL(sliderMoved(int)), p, SLOT(set_timestep(int)));
+        //connect(smooth_slider, SIGNAL(sliderMoved(int)), p, SLOT(set_smoothing_distance(int)));
+        connect(smooth_textfield, SIGNAL(returnPressed()), p, SLOT(set_smoothing_distance()));
     }
 }
 

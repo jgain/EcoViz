@@ -316,6 +316,7 @@ public slots:
     void animUpdate(); // animation step for change of focus
     void rotateUpdate(); // animation step for rotating around terrain center
     void set_timestep(int tstep);
+    void set_smoothing_distance();
 
     std::string get_dirprefix();
 protected:

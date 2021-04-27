@@ -35,7 +35,7 @@ public:
     void get_grid_dims(int &gw, int &gh);
     const ValueGridMap<std::vector<data_importer::ilanddata::cohort> > &get_map(int timestep_idx) const;
     void get_cohort_dims(float &w, float &h);
-    void do_adjustments(int times);
+    void do_adjustments(int max_distance);
     ValueGridMap<CohortMaps::DonateDir> get_actionmap_actions(int gw, int gh, float rw, float rh);
     ValueGridMap<float> get_actionmap_floats(int gw, int gh, float rw, float rh);
     ValueGridMap<CohortMaps::DonateAction> get_actionmap();
@@ -47,7 +47,7 @@ public:
     void undo_actionmap();
 private:
     void apply_actionmap();
-    void determine_actionmap();
+    void determine_actionmap(int max_distance);
 
     std::vector<ValueGridMap<std::vector< data_importer::ilanddata::cohort > > > timestep_maps;
     std::vector<ValueGridMap<int> > plantcountmaps;
@@ -58,6 +58,8 @@ private:
     int gw, gh;
     float dx, dy;
     int maxpercell = 10;
+
+    bool action_applied = false;
 };
 
 #endif

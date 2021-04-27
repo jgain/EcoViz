@@ -346,7 +346,7 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
 
     }
 
-    std::default_random_engine gen;
+    std::default_random_engine gen(25);
     std::uniform_real_distribution<float> unif;
     for (int i = 0; i < 48; i++)
     {

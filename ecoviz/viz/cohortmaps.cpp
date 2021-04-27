@@ -89,14 +89,19 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
 }
 
-void CohortMaps::do_adjustments(int times)
+void CohortMaps::do_adjustments(int max_distance)
 {
-    for (int i = 0; i < times; i++)
+    if (action_applied)
     {
-        determine_actionmap();
-        apply_actionmap();
+        undo_actionmap();
+        action_applied = false;
     }
-
+    if (max_distance > 0)
+    {
+        determine_actionmap(max_distance);
+        apply_actionmap();
+        specset_map.reset();
+    }
 }
 
 void CohortMaps::fix_cohortmaps()
@@ -196,7 +201,7 @@ void CohortMaps::fix_cohortmaps()
     }
 }
 
-void CohortMaps::determine_actionmap()
+void CohortMaps::determine_actionmap(int max_distance)
 {
     if (timestep_maps.size() == 0)
         return;
@@ -209,9 +214,9 @@ void CohortMaps::determine_actionmap()
         return x < gw && x >= 0 && y < gh && y >= 0;
     };
 
-    auto determine_action = [this, &in_bound, &unif, &gen](int x, int y, ValueGridMap<std::vector< data_importer::ilanddata::cohort > > &m)
+    auto determine_action = [this, &in_bound, &unif, &gen, &max_distance](int x, int y, ValueGridMap<std::vector< data_importer::ilanddata::cohort > > &m)
     {
-        int distance = unif(gen) * 4 + 1;		// [1, 4] inclusive
+        int distance = unif(gen) * max_distance + 1;		// [1, max_distance] inclusive
         std::vector<std::pair<int, int> > dirs;
         for (int cy = y - distance; cy <= y + distance; cy += distance)
         {
@@ -527,6 +532,8 @@ void CohortMaps::apply_actionmap()
     }
     std::cout << movecount_empty << " cohorts moved to empty tiles" << std::endl;
     std::cout << movecount_total << " cohorts moved in total" << std::endl;
+
+    action_applied = true;
 }
 
 void CohortMaps::undo_actionmap()

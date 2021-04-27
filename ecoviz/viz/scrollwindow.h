@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QSlider>
 #include <QLabel>
+#include <QLineEdit>
 
 class scrollwindow : public QWidget
 {
@@ -14,6 +15,9 @@ public:
 
     QSlider *tstep_slider;
     QLabel *value_label;
+    QSlider *smooth_slider;
+    QLabel *smooth_label;
+    QLineEdit *smooth_textfield;
     void set_labelvalue(int value);
     int get_sliderval();
 };

@@ -74,6 +74,7 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QLineEdit>
 
 #include <fstream>
 #include "data_importer/data_importer.h"
@@ -154,6 +155,7 @@ Scene::~Scene()
 ////
 
 static int curr_cohortmap = 0;
+static int curr_tstep = 1;
 
 GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
     : QGLWidget(format, parent), transect_vec(1.0f, 0.0f, 0.0f), mousePosIm(1.0f, 0.0f),
@@ -534,7 +536,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
 
     cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0"));
     before_mod_map = cohortmaps->get_map(0);
-    cohortmaps->do_adjustments(1);
+    cohortmaps->do_adjustments(2);
 
     int gw, gh;
     cohortmaps->get_grid_dims(gw, gh);
@@ -1382,8 +1384,23 @@ std::vector<bool> GLWidget::set_active_trees(const std::vector<basic_tree> &tree
     return active;
 }
 
+void GLWidget::set_smoothing_distance()
+{
+    QLineEdit *sender = dynamic_cast<QLineEdit *>(this->sender());
+    if (sender)
+    {
+        QString qtext = sender->text();
+        int distance = std::stoi(qtext.toStdString());
+        cohortmaps->do_adjustments(distance);
+        sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
+
+        set_timestep(curr_tstep);
+    }
+}
+
 void GLWidget::set_timestep(int tstep)
 {
+    curr_tstep = tstep;
     curr_cohortmap = tstep - initstep;
     if (curr_cohortmap >= cohortmaps->get_nmaps())
         curr_cohortmap = cohortmaps->get_nmaps() - 1;
