@@ -214,7 +214,7 @@ void cohortsampler::set_spectoidx_map(std::unique_ptr<ValueGridMap<std::vector<i
 std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, std::vector< std::vector<basic_tree> > *allcells_trees)
 {
     int placediv = 10;
-    int specmodulo = 16;
+    int specmodulo = 64;
 
     using namespace data_importer;
 

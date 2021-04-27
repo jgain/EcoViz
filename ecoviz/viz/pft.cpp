@@ -26,6 +26,8 @@
 // #include <fstream>
 #include "pft.h"
 
+#include <random>
+
 ////
 // Viability
 ///
@@ -343,6 +345,71 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
             maxspec_id = sppair.first;
 
     }
+
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> unif;
+    for (int i = 0; i < 48; i++)
+    {
+        pft.code = "i" + std::to_string(i);
+        for (int i = 0; i < 3; i++)
+            pft.basecol[i] = unif(gen);
+        pft.draw_hght = 0.1f;
+        pft.draw_radius = 0.1f;
+        pft.draw_box1 = 1.0f;
+        pft.draw_box2 = 1.0f;
+        int shapeint = unif(gen) * 4;
+        switch (shapeint)
+        {
+            case 0:
+                pft.shapetype = TreeShapeType::BOX;
+                break;
+            case 1:
+                pft.shapetype = TreeShapeType::CONE;
+                break;
+            case 2:
+                pft.shapetype = TreeShapeType::SPHR;
+                break;
+            case 3:
+                pft.shapetype = TreeShapeType::INVCONE;
+                break;
+            default:
+                assert(false);
+                break;
+        }
+        // cerr << "PFT " << pft.code << " shape type = " << pft.shapetype << endl;
+        pft.maxage = 100;
+        pft.maxhght = 100;
+        pft.alpha = 0.5f;
+
+
+        pft.sun.setValues(' ', ' ', 7.0, 1.0);
+        pft.wet.setValues(' ', ' ', 15.0, 5.0);
+        pft.temp.setValues(' ', ' ', 10.0, 10.0);
+        pft.slope.setValues(' ', ' ', 20.0, 10.0);
+
+        /*
+        cerr << pft.code << " " << "sun (" << spec.sun.c << ", " << spec.sun.r << ")" << " wet (" << spec.wet.c << ", " << spec.wet.r << ") ";
+        cerr << "slope (" << spec.slope.c << ", " << spec.slope.r << endl;
+        cerr << "alpha = " << pft.alpha << endl;
+        cerr << "age = " << pft.maxage << endl;
+        */
+
+        pft.grow_start = 1;
+        pft.grow_end = 5;
+        pft.grow_months = 5;
+
+        pft.alm_a = 1.0f;
+        pft.alm_b = 1.0f;
+        pft.alm_rootmult = 1.0f;
+        pft.grow_m = 0.5f;
+        pft.grow_c1 = 0.0f;
+        pft.grow_c2 = 0.0f;
+        pft.minhght = 0.1f;
+
+        pftypes.push_back(pft);
+
+    }
+
 
     slopethresh = cdata.soil_info.slopethresh;
     slopemax = cdata.soil_info.slopemax;

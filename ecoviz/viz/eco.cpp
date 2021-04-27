@@ -1000,7 +1000,7 @@ void EcoSystem::placePlant(Terrain *ter, const basic_tree &tree)
 
 
     Plant plnt = {pos, tree.height, tree.radius * 2, colour};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
-    esys.placePlant(ter, ((int)tree.species) * 3, plnt);		// FIXME, XXX: I don't think we should be multiplying by 3 here...
+    esys.placePlant(ter, ((int)tree.species), plnt);		// FIXME, XXX: I don't think we should be multiplying by 3 here...
 }
 
 void EcoSystem::placeManyPlants(Terrain *ter, const std::vector<basic_tree> &trees, const std::vector<bool> active_trees)
