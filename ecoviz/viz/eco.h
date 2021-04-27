@@ -34,7 +34,7 @@
 #include "boost/functional/hash.hpp"
 
 const int maxNiches = 10;  //< maximum number of initial terrain niches from HL system
-const int maxSpecies = 16; // multiplier is for three age categories
+const int maxSpecies = 16 * 3; // multiplier is for three age categories
 const int pgdim = 50;
 
 struct Plant

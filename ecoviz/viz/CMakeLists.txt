@@ -51,6 +51,9 @@ if (BUILD_GUI)
     add_executable(analyse_cohortmap analyse_cohortmap_main.cpp)
     target_include_directories(analyse_cohortmap PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
+    add_executable(test_sampler ${PROJECT_SOURCE_DIR}/unittests/test_sampler.cpp)
+    target_include_directories(test_sampler PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
+    target_link_libraries(test_sampler vgui sqlite3 stdc++fs cppunit)
 
     ADD_DEFINITIONS(-DSONOMA_DB_FILEPATH="${PROJECT_SOURCE_DIR}/../sonoma.db")
 

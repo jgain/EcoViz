@@ -211,9 +211,10 @@ void cohortsampler::set_spectoidx_map(std::unique_ptr<ValueGridMap<std::vector<i
     spectoidx_map = std::move(spectoidx_map_ptr);
 }
 
-std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, const ValueGridMap<CohortMaps::DonateAction> &actionmap, bool reconly, std::vector< std::vector<basic_tree> > &allcells_trees)
+std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, std::vector< std::vector<basic_tree> > *allcells_trees)
 {
     int placediv = 10;
+    int specmodulo = 16;
 
     using namespace data_importer;
 
@@ -228,27 +229,13 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
 	std::uniform_real_distribution<float> unif;
     for (int cidx = 0; cidx < cgw * cgh; cidx++)
 	{
-        //std::cout << "Cell index: " << cidx << std::endl;
         const std::vector<cohort> &crts = cohortmap.get(cidx);
 
-        CohortMaps::DonateAction action;
-        if (reconly)
-            action = actionmap.get(cidx);
         if (crts.size() == 0)
         {
-            allcells_trees.push_back({});
+            if (allcells_trees)
+                allcells_trees->push_back({});
             continue;
-        }
-        if (reconly && action.dir != CohortMaps::DonateDir::RECEIVE)		// REMOVEME: reconly is only temporary for debugging of "cohort movement"
-            continue;
-        if (cidx == 181391)
-        {
-            std::cout << "Cohorts: " << std::endl;
-            for (auto &c : crts)
-            {
-                c >> std::cout;
-                std::cout << "---------" << std::endl;
-            }
         }
         xy<float> middle = crts.front().get_middle();
         int tileidx = tileidxes.get_fromreal(middle.x, middle.y);
@@ -257,18 +244,12 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
         float nsimplants = std::accumulate(crts.begin(), crts.end(), 0.0f, [](float value, const cohort &c1) { return value + c1.nplants; });
         nsimplants = std::min(float(maxpercell), nsimplants / placediv);
         nsimplants = std::max(nsimplants, float(crts.size()));
-        if (cidx == 181391)
-        {
-            std::cout << "Tileidx: " << tileidx << std::endl;
-        }
 
         int specincr;
         if (spectoidx_map)
         {
             const auto &vec = spectoidx_map->get(gxy.x, gxy.y);
             specincr = std::count_if(vec.begin(), vec.end(), [](int v) { return v >= 0; });
-            //specincr = spectoidx_map->get(gxy.x, gxy.y).size();
-            //specincr = spectoidx_map->get(cidx).size();
             xy<float> xyreal = spectoidx_map->toreal(cidx);
             xyreal.x += 1.0f;
             xyreal.y += 1.0f;
@@ -341,11 +322,6 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
 
             int idx = idxes.at(i);
 
-            if (cidx == 181391)
-            {
-                std::cout << "idx: " << idx << std::endl;
-            }
-
             int specidx = cohortidx;
 
             species = crt.specidx;
@@ -355,8 +331,6 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
             int ex = crt.xe;
             int ey = crt.ye;
 
-            //species = crts.at(0).specidx;			// REMOVEME: this is temporary to just make species simpler
-            //specidx = 0;		// REMOVEME: same as above
             int crtw = int(ex - sx);
             int crth = int(ey - sy);
 
@@ -377,16 +351,16 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
             float y = float(sy) + cyf;
 
             basic_tree tree(x, y, crts.at(specidx).height * 0.5f, crts.at(specidx).height);			// REPLACEME: radius = crts.at(specidx).height * 0.5f is temporary
-            tree.species = species % 15;
+            tree.species = species % specmodulo;
             trees.push_back(tree);
-            celltrees.push_back(tree);
-			//ofs << x << " " << y << " " << species << std::endl;
+            if (allcells_trees)
+                celltrees.push_back(tree);
             count++;
         }
         /*
         for (const auto &c : crts)
         {
-            auto iter = std::find_if(celltrees.begin(), celltrees.end(), [&c](const basic_tree &tree) { return tree.species == (c.specidx % 15); });
+            auto iter = std::find_if(celltrees.begin(), celltrees.end(), [&c](const basic_tree &tree) { return tree.species == (c.specidx % specmodulo); });
             if (iter == celltrees.end())
             {
                 for (const auto &c2 : crts)
@@ -407,8 +381,8 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
             }
         }
         */
-
-        allcells_trees.push_back(celltrees);
+        if (allcells_trees)
+            allcells_trees->push_back(celltrees);
 	}
 
 	return trees;
