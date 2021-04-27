@@ -43,6 +43,8 @@ public:
     void compute_specset_map();
     std::unique_ptr<ValueGridMap<std::set<int> > > move_specset_map();
     std::unique_ptr<ValueGridMap<std::vector<int> > > compute_spectoidx_map();
+    void move_cohort(std::vector<data_importer::ilanddata::cohort> &destvec, std::vector<data_importer::ilanddata::cohort> &srcvec, std::vector<data_importer::ilanddata::cohort>::iterator &srciter, float xmod, float ymod);
+    void undo_actionmap();
 private:
     void apply_actionmap();
     void determine_actionmap();

@@ -108,6 +108,23 @@ std::ostream &data_importer::ilanddata::cohort::operator >>(std::ostream &ostr) 
     return ostr;
 }
 
+bool data_importer::ilanddata::cohort::operator ==(const data_importer::ilanddata::cohort &other) const
+{
+    return fabs(this->xs - other.xs) < 1e-3f
+            && fabs(this->xe - other.xe) < 1e-3f
+            && fabs(this->ys - other.ys) < 1e-3f
+            && fabs(this->ye - other.ye) < 1e-3f
+            && fabs(this->dbh - other.dbh) < 1e-3f
+            && fabs(this->height - other.height) < 1e-3f
+            && fabs(this->nplants - other.nplants) < 1e-3f
+            && this->specidx == other.specidx;
+}
+
+bool data_importer::ilanddata::cohort::operator !=(const data_importer::ilanddata::cohort &other) const
+{
+    return !(*this == other);
+}
+
 xy<float> data_importer::ilanddata::cohort::get_middle() const
 {
     return xy<float>((xe + xs) / 2.0f, (ye + ys) / 2.0f);

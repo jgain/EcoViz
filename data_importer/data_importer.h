@@ -58,6 +58,9 @@ namespace data_importer
 
                                 std::ostream &operator >>(std::ostream &ostr) const;
 
+                                bool operator ==(const cohort &other) const;
+                                bool operator !=(const cohort &other) const;
+
                                 xy<float> get_middle() const;
                                 float get_size() const;
 
@@ -66,6 +69,8 @@ namespace data_importer
 				int specidx;
 				float dbh, height;
                                 float nplants;
+
+                                bool modified = false;
 			};
 
 			struct filedata

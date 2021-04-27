@@ -441,6 +441,25 @@ ValueGridMap<CohortMaps::DonateAction> CohortMaps::get_actionmap()
     return actionmap;
 }
 
+void CohortMaps::move_cohort(std::vector<ilanddata::cohort> &destvec, std::vector<ilanddata::cohort> &srcvec, std::vector<ilanddata::cohort>::iterator &srciter, float xmod, float ymod)
+{
+    destvec.push_back(*srciter);
+    srcvec.erase(srciter);
+
+    auto &crt = destvec.back();
+    crt.xs += xmod;
+    crt.xe += xmod;
+    crt.ys += ymod;
+    crt.ye += ymod;
+
+    if (crt.ys < 0.0f) crt.ys = 1e-3f;
+    if (crt.ye >= rw) crt.ye = rw - 1e-3f;
+    if (crt.xs < 0.0f) crt.xs = 1e-3f;
+    if (crt.xe >= rh) crt.xe = rh - 1e-3f;
+
+
+}
+
 void CohortMaps::apply_actionmap()
 {
     if (timestep_maps.size() == 0)
@@ -449,33 +468,24 @@ void CohortMaps::apply_actionmap()
     std::default_random_engine gen;
     std::uniform_real_distribution<float> unif;
 
-    int movecount = 0;
+    int movecount_empty = 0;
+    int movecount_total = 0;
 
-    auto move_cohort = [&movecount, this](std::vector<ilanddata::cohort> &cvec_origin, std::vector<ilanddata::cohort> &cvec_dest, int specidx, float xmod, float ymod)
+    auto move_cohort_species = [&movecount_empty, &movecount_total, this](std::vector<ilanddata::cohort> &cvec_origin, std::vector<ilanddata::cohort> &cvec_dest, int specidx, float xmod, float ymod)
     {
         if (specidx < 0)
             return;
         auto iter = std::find_if(cvec_origin.begin(), cvec_origin.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
         if (iter != cvec_origin.end())
         {
-            cvec_dest.push_back(*iter);
-            cvec_dest.back().xs += xmod;
-            cvec_dest.back().xe += xmod;
-            cvec_dest.back().ys += ymod;
-            cvec_dest.back().ye += ymod;
+            move_cohort(cvec_dest, cvec_origin, iter, xmod, ymod);
+            cvec_dest.back().modified = true;
 
-            ilanddata::cohort &c = cvec_dest.back();
-
-            if (c.ys < 0.0f) c.ys = 1e-3f;
-            if (c.ye >= rw) c.ye = rw - 1e-3f;
-            if (c.xs < 0.0f) c.xs = 1e-3f;
-            if (c.xe >= rh) c.xe = rh - 1e-3f;
-
-            cvec_origin.erase(iter);
             if (cvec_dest.size() == 1)
             {
-                movecount++;
+                movecount_empty++;
             }
+            movecount_total++;
         }
     };
 
@@ -496,26 +506,119 @@ void CohortMaps::apply_actionmap()
                 switch (action.dir)
                 {
                     case DonateDir::NORTH:
-                        if (y > d)
-                            move_cohort(m.get(x, y), m.get(x, y - d), action.specidx, 0.0f, -2.0f * action.distance);
+                        if (y > d + 1)
+                            move_cohort_species(m.get(x, y), m.get(x, y - d), action.specidx, 0.0f, -2.0f * action.distance);
                         break;
                     case DonateDir::WEST:
-                        if (x > d)
-                            move_cohort(m.get(x, y), m.get(x - d, y), action.specidx, -2.0f * action.distance, 0.0f);
+                        if (x > d + 1)
+                            move_cohort_species(m.get(x, y), m.get(x - d, y), action.specidx, -2.0f * action.distance, 0.0f);
                         break;
                     case DonateDir::SOUTH:
-                        if (y < gh - d)
-                            move_cohort(m.get(x, y), m.get(x, y + d), action.specidx, 0.0f, 2.0f * action.distance);
+                        if (y < gh - d - 1)
+                            move_cohort_species(m.get(x, y), m.get(x, y + d), action.specidx, 0.0f, 2.0f * action.distance);
                         break;
                     case DonateDir::EAST:
-                        if (x < gw - d)
-                            move_cohort(m.get(x, y), m.get(x + d, y), action.specidx, 2.0f * action.distance, 0.0f);
+                        if (x < gw - d - 1)
+                            move_cohort_species(m.get(x, y), m.get(x + d, y), action.specidx, 2.0f * action.distance, 0.0f);
                         break;
                 }
             }
         }
     }
-    std::cout << movecount << " cohorts moved to empty tiles" << std::endl;
+    std::cout << movecount_empty << " cohorts moved to empty tiles" << std::endl;
+    std::cout << movecount_total << " cohorts moved in total" << std::endl;
+}
+
+void CohortMaps::undo_actionmap()
+{
+    if (timestep_maps.size() == 0)
+        return;
+
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> unif;
+
+    int movecount = 0;
+
+    using namespace data_importer;
+
+    for (auto &m : timestep_maps)
+    {
+        int gw, gh;
+        m.getDim(gw, gh);
+        for (int y = 0; y < gh; y++)
+        {
+            for (int x = 0; x < gw; x++)
+            {
+                auto &cellcohorts = m.get(x, y);
+                auto action = actionmap.get(x, y);
+                int d = action.distance;
+                if (action.dir == DonateDir::NONE)
+                    continue;
+                switch (action.dir)
+                {
+                    case DonateDir::NORTH:
+                        if (y > d + 1)
+                        {
+                            auto &crts = m.get(x, y - d);
+                            auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
+                            if (iter != crts.end())
+                            {
+                                iter->modified = false;
+                                float xmod = 0.0f, ymod = -2.0f * d;
+                                move_cohort(m.get(x, y), m.get(x, y - d), iter, -xmod, -ymod);
+                                movecount++;
+                            }
+                        }
+                        break;
+                    case DonateDir::WEST:
+                        if (x > d + 1)
+                        {
+                            auto &crts = m.get(x - d, y);
+                            auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
+                            if (iter != crts.end())
+                            {
+                                iter->modified = false;
+                                float xmod = -2.0f * d, ymod = 0.0f;
+                                move_cohort(m.get(x, y), m.get(x - d, y), iter, -xmod, -ymod);
+                                movecount++;
+                            }
+                        }
+                        break;
+                    case DonateDir::SOUTH:
+                        if (y < gh - d - 1)
+                        {
+                            auto &crts = m.get(x, y + d);
+                            auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
+                            if (iter != crts.end())
+                            {
+                                iter->modified = false;
+                                float xmod = 0.0f, ymod = 2.0f * d;
+                                move_cohort(m.get(x, y), m.get(x, y + d), iter, -xmod, -ymod);
+                                movecount++;
+                            }
+
+                        }
+                        break;
+                    case DonateDir::EAST:
+                        if (x < gw - d - 1)
+                        {
+                            auto &crts = m.get(x + d, y);
+                            auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
+                            if (iter != crts.end())
+                            {
+                                iter->modified = false;
+                                float xmod = 2.0f * d, ymod = 0.0f;
+                                move_cohort(m.get(x, y), m.get(x + d, y), iter, -xmod, -ymod);
+                                movecount++;
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+    }
+    std::cout << movecount << " cohorts moved to original tiles" << std::endl;
+
 }
 
 int CohortMaps::get_nmaps()
