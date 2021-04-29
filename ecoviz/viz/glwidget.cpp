@@ -542,7 +542,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
 
     cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0"));
     before_mod_map = cohortmaps->get_map(0);
-    cohortmaps->do_adjustments(2);
+    //cohortmaps->do_adjustments(2);
 
     int gw, gh;
     cohortmaps->get_grid_dims(gw, gh);
@@ -1400,12 +1400,14 @@ public:
 
     void run()
     {
+        parent->show_progwindow();
         if (maps)
             maps->do_adjustments(distance);
         if (sampler && maps)
             sampler->set_spectoidx_map(maps->compute_spectoidx_map());
         if (tstep >= 0)
             parent->set_timestep(tstep);
+        parent->hide_progwindow();
     }
 private:
     GLWidget *parent;
@@ -1413,6 +1415,18 @@ private:
     cohortsampler *sampler;
     int distance, tstep;
 };
+
+void GLWidget::hide_progwindow()
+{
+    if (prog)
+        prog->hide();
+}
+
+void GLWidget::show_progwindow()
+{
+    if (prog)
+        prog->show();
+}
 
 void GLWidget::set_smoothing_distance()
 {

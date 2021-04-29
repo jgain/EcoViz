@@ -89,18 +89,178 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
 }
 
+void CohortMaps::determine_cohort_startidxes()
+{
+    if (timestep_maps.size() == 0)
+        return;
+
+    unsigned char maxidx = 0;
+
+    auto assign_newcohorts = [this, &maxidx](std::vector<ilanddata::cohort> &crts) {
+        unsigned char currindex = 0;
+        for (ilanddata::cohort &c : crts)
+        {
+            c.startidx = currindex;
+            currindex += (unsigned char)(int(ceil(c.nplants / nplant_div)));
+            if (currindex > maxidx) maxidx = currindex;
+        }
+    };
+
+
+    for (int y = 0; y < gh; y++)
+    {
+        for (int x = 0; x < gw; x++)
+        {
+            auto &crts = timestep_maps.at(0).get(x, y);
+            std::sort(crts.begin(), crts.end(), [](ilanddata::cohort &c1, ilanddata::cohort &c2) { if (c1.specidx < c2.specidx) return true; else if (c1.specidx == c2.specidx) return c1.height > c2.height; else return false; });
+            assign_newcohorts(crts);
+
+            for (int i = 1; i < timestep_maps.size(); i++)
+            {
+
+                auto &crts2 = timestep_maps.at(i).get(x, y);
+                auto &crts1 = timestep_maps.at(i - 1).get(x, y);
+
+                if (crts2.size() == 0)
+                    continue;
+
+                std::sort(crts2.begin(), crts2.end(), [](ilanddata::cohort &c1, ilanddata::cohort &c2) { if (c1.specidx < c2.specidx) return true; else if (c1.specidx == c2.specidx) return c1.height > c2.height; else return false; });
+
+                if (crts1.size() == 0)
+                {
+                    assign_newcohorts(crts2);
+                    auto iter = std::find_if(crts2.begin(), crts2.end(), [](const ilanddata::cohort &crt) { return crt.startidx >= 250; });
+                    if (iter != crts2.end())
+                    {
+                        throw std::logic_error("Mistake");
+                    }
+                    continue;
+                }
+
+                std::vector<ilanddata::cohort *> unassigned;
+                std::vector<std::pair<int, int> > edges;
+
+                // TODO: what if a cohort is new? what if we cannot find a spot to fit it into?
+
+                int prev_idx = -1;
+                int skip = 0;
+                for (auto &c2 : crts2)
+                {
+                    c2.startidx = 255;
+                    if (c2.specidx == prev_idx)
+                    {
+                        skip++;
+                    }
+                    else
+                    {
+                        prev_idx = c2.specidx;
+                        skip = 0;
+                    }
+                    int idx = 0;
+                    // XXX: loop below can be optimized, since we sorted the cohorts beforehand according to species index
+                    for (auto &c1 : crts1)
+                    {
+                        if (c1.specidx == c2.specidx)
+                        {
+                            if (idx < skip)
+                            {
+                                idx++;
+                                continue;
+                            }
+                            if (c2.height > c1.height)
+                            {
+                                c2.startidx = c1.startidx;
+                                edges.push_back({c2.startidx, int(ceil(float(c2.startidx) + c2.nplants / nplant_div)) - 1});
+                                int backedge = edges.back().second;
+                                break;
+                            }
+                            else
+                                continue;
+                        }
+                    }
+                    if (c2.startidx == 255)
+                        unassigned.push_back(&c2);
+                }
+                if (edges.size() == 0)		// if edges size is zero, then it means we could not find any matching species from previous cohort, so we create new index borders
+                {
+                    assign_newcohorts(crts2);
+                    continue;
+                }
+
+                // sort edges of point indices list where different cohorts will be placed
+                std::sort(edges.begin(), edges.end(), [](const std::pair<int, int> &p1, const std::pair<int, int> &p2) { return p1.first < p2.first; });
+                std::vector<std::pair<int, int> > openslots;
+                std::pair<int, int> dummyfirst = {0, 0};
+                std::pair<int, int> *lastpair = &dummyfirst;		// last pair of slots, so that we can get the first index of the current one we are lookng at in loop below
+
+                // check each consecutive pair of slots to see if there is an open slot between them, and add it if so
+                for (auto &e : edges)
+                {
+                    // if there is a gap between the first index of the current slot and the last index of a previous one, add an open slot
+                    if (e.first > lastpair->second + 1)
+                        openslots.push_back({lastpair->second + 1, e.first - 1});
+                    lastpair = &e;
+                }
+                if (edges.back().second < maxpercell - 1)
+                {
+                    openslots.push_back({edges.back().second + 1, maxpercell - 1});
+                }
+
+                /*
+                std::cout << "Edges: ";
+                for (auto &e : edges)
+                    std::cout << "(" << e.first << ", " << e.second << ") ";
+                std::cout << std::endl;
+                */
+
+                // now, for all cohorts that we still have to find a slot for, we go throught all open slots and try to find one large enough to accommodate it
+                for (auto iter = unassigned.begin(); iter != unassigned.end(); advance(iter, 1))
+                {
+                    bool foundslot = false;
+                    ilanddata::cohort *unas = *iter;
+                    int nplants = int(ceil(unas->nplants / nplant_div));
+                    for (auto slotiter = openslots.begin(); slotiter != openslots.end(); advance(slotiter, 1))
+                    {
+                        auto &slot = *slotiter;
+                        int slotsize = slot.second - slot.first + 1;
+                        if (nplants <= slotsize)
+                        {
+                            unas->startidx = (unsigned char)slot.first;
+                            int nextslot_startidx = slot.first + int(ceil(unas->nplants / nplant_div));		// first index of next slot, after the one we inserted or are 'using' now
+                            auto nextiter = openslots.erase(slotiter);
+                            int nextslot_endidx = nextslot_startidx + (slotsize - nplants - 1);
+                            if (nextslot_endidx >= nextslot_startidx)		// if the newly used slot does not use up all the space in the previously unused slot, then add new ununsed slot in remaining space
+                                openslots.insert(nextiter, {nextslot_startidx, nextslot_endidx});
+                            foundslot = true;
+                            if ((unsigned char)(nextslot_startidx - 1) > maxidx) maxidx = (unsigned char)(nextslot_startidx - 1);
+                            //std::cout << "Slot found: " << unas->startidx << ", " << nextslot_startidx - 1 << std::endl;
+                            break;
+                        }
+                    }
+                    if (!foundslot)
+                    {
+                        std::cout << "Slot not found for cohort!" << std::endl;
+                        throw std::logic_error("Slot not found for cohort");
+                    }
+                }
+            }
+        }
+    }
+    std::cout << "Maximum index: " << int(maxidx) << std::endl;
+}
+
 void CohortMaps::do_adjustments(int max_distance)
 {
-    if (action_applied)
+    undo_actionmap();
+    if (max_distance > 0)
     {
-        undo_actionmap();
-        action_applied = false;
-    }
-    //if (max_distance > 0)
-    //{
         determine_actionmap(max_distance);
-    //}
-    apply_actionmap();
+        apply_actionmap();
+    }
+    else
+    {
+        actionmap.fill({DonateDir::NONE, -1, 0});
+    }
     specset_map.reset();
 }
 
@@ -229,7 +389,7 @@ void CohortMaps::determine_actionmap(int max_distance)
                 dirs.push_back({xdiff, ydiff});
             }
         }
-        std::random_shuffle(dirs.begin(), dirs.end());
+        std::shuffle(dirs.begin(), dirs.end(), gen);
 
         for (auto &dxdy : dirs)
         {
@@ -240,7 +400,8 @@ void CohortMaps::determine_actionmap(int max_distance)
             int cx = x + xdiff;
             int distance = std::max(abs(xdiff), abs(ydiff));
 
-            auto &thisc = m.get(x, y);
+            auto thisc = m.get(x, y);
+            std::sort(thisc.begin(), thisc.end(), [](ilanddata::cohort &crt1, ilanddata::cohort &crt2) { return crt1.specidx < crt2.specidx; });
             auto &otherc = m.get(cx, cy);
             for (auto citer = thisc.begin(); citer != thisc.end(); advance(citer, 1))
             {
@@ -250,8 +411,8 @@ void CohortMaps::determine_actionmap(int max_distance)
                 //if (citer->nplants > 2.0f)
                 //    continue;
                 auto iter = std::find_if(otherc.begin(), otherc.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
-                //if (iter == otherc.end())
-                if (otherc.size() == 0)		// REMOVEME: We should also be able to send cohorts to non-empty tiles
+                if (iter == otherc.end())
+                //if (otherc.size() == 0)		// REMOVEME: We should also be able to send cohorts to non-empty tiles
                 {
                     /*
                     if (otherc.size() > 0)
@@ -558,6 +719,9 @@ void CohortMaps::undo_actionmap()
     if (timestep_maps.size() == 0)
         return;
 
+    if (!action_applied)
+        return;
+
     std::default_random_engine gen;
     std::uniform_real_distribution<float> unif;
 
@@ -650,6 +814,7 @@ void CohortMaps::undo_actionmap()
         if (progress_function)
             progress_function(int(float(iternum) / timestep_maps.size() * 100));
     }
+    action_applied = false;
     std::cout << movecount << " cohorts moved to original tiles" << std::endl;
 
 }

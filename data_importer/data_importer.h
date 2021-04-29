@@ -69,6 +69,7 @@ namespace data_importer
 				int specidx;
 				float dbh, height;
                                 float nplants;
+                                unsigned char startidx;
 
                                 bool modified = false;
 			};

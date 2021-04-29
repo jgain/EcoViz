@@ -322,6 +322,8 @@ public slots:
     void do_adjustments(int distance);
 
     std::string get_dirprefix();
+    void hide_progwindow();
+    void show_progwindow();
 protected:
     void initializeGL();
     void paintGL();
