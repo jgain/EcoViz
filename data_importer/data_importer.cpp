@@ -104,7 +104,8 @@ std::ostream &data_importer::ilanddata::cohort::operator >>(std::ostream &ostr) 
     ostr << "dbh: " << dbh << std::endl;
     ostr << "height: " << height << std::endl;
     ostr << "specidx: " << specidx << std::endl;
-    ostr << "nplants: " << nplants << std::endl;
+    ostr << "nplants: " << int(nplants + 1e-3f) << std::endl;
+    ostr << "startidx: " << int(startidx) << std::endl;
     return ostr;
 }
 

@@ -213,7 +213,127 @@ void cohortsampler::set_spectoidx_map(std::unique_ptr<ValueGridMap<std::vector<i
 
 std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, std::vector< std::vector<basic_tree> > *allcells_trees)
 {
-    int placediv = 10;
+    int specmodulo = 64;
+
+    using namespace data_importer;
+
+    std::vector<basic_tree> trees;
+
+    int cgw, cgh;
+    cohortmap.getDim(cgw, cgh);
+
+
+    printf("Cohortmap dimensions %d, %d\n", cgw, cgh);
+
+    std::uniform_real_distribution<float> unif;
+    for (int cidx = 0; cidx < cgw * cgh; cidx++)
+    {
+        const std::vector<cohort> &crts = cohortmap.get(cidx);
+
+        if (crts.size() == 0)
+        {
+            if (allcells_trees)
+                allcells_trees->push_back({});
+            continue;
+        }
+        xy<float> middle = crts.front().get_middle();
+        int tileidx = tileidxes.get_fromreal(middle.x, middle.y);
+
+        float nsimplants = int(ceil(std::accumulate(crts.begin(), crts.end(), 0.0f, [](float value, const cohort &c1) { return value + c1.nplants; })) + 1e-3f);
+        nsimplants = std::min(float(maxpercell), nsimplants);
+        nsimplants = std::max(nsimplants, float(crts.size()));
+
+        // XXX: we round up to the nearest integer when we sample plants (especially for the cases where we have less than one plant in the cohort)
+        // 		we could also consider sampling with a certain probability, if num plants < 1
+        int nplants = ceil(nsimplants);
+        auto &idxes = randtiles.at(tileidx);
+        int count = 0;
+        if (nplants == 0 && crts.size() > 0)
+        {
+            for (const auto &c : crts)
+            {
+                c >> std::cout;
+                std::cout << "---------------" << std::endl;
+            }
+            throw std::logic_error("Number of plants to be sampled zero but number of cohorts nonzero!");
+        }
+        std::vector<basic_tree> celltrees;
+        for (const ilanddata::cohort &crt : crts)
+        {
+
+            int nplants = int(crt.nplants + 1e-3f);
+            for (int i = 0; i < nplants; i++)
+            {
+                int pointidx = int(crt.startidx) + i;
+
+                int idx = idxes.at(pointidx);
+
+                int sx = crt.xs;
+                int sy = crt.ys;
+                int ex = crt.xe;
+                int ey = crt.ye;
+
+                int crtw = int(ex - sx);
+                int crth = int(ey - sy);
+
+                // get x, y indices from single index
+                int cohortx = idx % 200;
+                int cohorty = idx / 200;
+
+                // normalize to [0, 1] in relative to cohort size in each dimension
+                float cxf = cohortx / 200.0f;
+                float cyf = cohorty / 200.0f;
+
+                // scale by cohort size in meters
+                cxf = cxf * float(crtw);
+                cyf = cyf * float(crth);
+
+                // add to world coordinates of cohort (top left corner)
+                float x = float(sx) + cxf;		// XXX: the number of cm per cell is hardcoded here...
+                float y = float(sy) + cyf;
+
+                basic_tree tree(x, y, crt.height * 0.5f, crt.height);			// REPLACEME: radius = crts.at(specidx).height * 0.5f is temporary
+                tree.species = crt.specidx % specmodulo;
+                trees.push_back(tree);
+                if (allcells_trees)
+                    celltrees.push_back(tree);
+                count++;
+            }
+        }
+        /*
+        for (const auto &c : crts)
+        {
+            auto iter = std::find_if(celltrees.begin(), celltrees.end(), [&c](const basic_tree &tree) { return tree.species == (c.specidx % specmodulo); });
+            if (iter == celltrees.end())
+            {
+                for (const auto &c2 : crts)
+                {
+                    c2 >> std::cout;
+                    std::cout << "------------------" << std::endl;
+                }
+
+                std::cout << "maxcounts: " << std::endl;
+                for (auto &m : maxcounts)
+                    std::cout << m << " ";
+                std::cout << std::endl;
+                std::cout << "cohortcounts: " << std::endl;
+                for (auto &m : cohortcounts)
+                    std::cout << m << " ";
+                std::cout << std::endl;
+                throw std::logic_error("at least one species in cohorts not sampled!");
+            }
+        }
+        */
+        if (allcells_trees)
+            allcells_trees->push_back(celltrees);
+    }
+
+    return trees;
+}
+
+/*
+std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<cohort> > &cohortmap, std::vector< std::vector<basic_tree> > *allcells_trees)
+{
     int specmodulo = 64;
 
     using namespace data_importer;
@@ -242,7 +362,7 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
         xy<int> gxy = tileidxes.togrid(middle.x, middle.y);
 
         float nsimplants = std::accumulate(crts.begin(), crts.end(), 0.0f, [](float value, const cohort &c1) { return value + c1.nplants; });
-        nsimplants = std::min(float(maxpercell), nsimplants / placediv);
+        nsimplants = std::min(float(maxpercell), nsimplants);
         nsimplants = std::max(nsimplants, float(crts.size()));
 
         int specincr;
@@ -286,7 +406,7 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
                             // rounding up as done above. The former method results in a higher sum, which we compute here)
         for (const auto &crt : crts)
         {
-            maxcounts.push_back(ceil(crt.nplants / placediv));
+            maxcounts.push_back(int(crt.nplants + 1e-3f));
             nplants += maxcounts.back();
         }
         while (true)
@@ -357,33 +477,10 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
                 celltrees.push_back(tree);
             count++;
         }
-        /*
-        for (const auto &c : crts)
-        {
-            auto iter = std::find_if(celltrees.begin(), celltrees.end(), [&c](const basic_tree &tree) { return tree.species == (c.specidx % specmodulo); });
-            if (iter == celltrees.end())
-            {
-                for (const auto &c2 : crts)
-                {
-                    c2 >> std::cout;
-                    std::cout << "------------------" << std::endl;
-                }
-
-                std::cout << "maxcounts: " << std::endl;
-                for (auto &m : maxcounts)
-                    std::cout << m << " ";
-                std::cout << std::endl;
-                std::cout << "cohortcounts: " << std::endl;
-                for (auto &m : cohortcounts)
-                    std::cout << m << " ";
-                std::cout << std::endl;
-                throw std::logic_error("at least one species in cohorts not sampled!");
-            }
-        }
-        */
         if (allcells_trees)
             allcells_trees->push_back(celltrees);
 	}
 
 	return trees;
 }
+*/

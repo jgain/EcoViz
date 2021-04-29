@@ -551,7 +551,7 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
 
     if (cohortmaps->get_nmaps() > 0)
     {
-        sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, 10, 3));
+        sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, cohortmaps->get_maxpercell() + 10, 3));
         sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
 
         //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);

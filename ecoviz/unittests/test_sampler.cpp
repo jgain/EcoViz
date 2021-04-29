@@ -87,7 +87,7 @@ void TestCohortSampler::set_up()
     float tw, th;
     cmaps->get_cohort_dims(tw, th);
 
-    sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, maxpercell, samplemult));
+    sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, cmaps->get_maxpercell() + 10, samplemult));
     sampler->set_spectoidx_map(cmaps->compute_spectoidx_map());
 }
 
@@ -120,7 +120,7 @@ void TestCohortSampler::test_undo_actionmap()
 
                 for (int i = 0; i < c1.size(); i++)
                 {
-                    bool found = false;
+                    bool found1 = false;
                     const ilanddata::cohort &crt1 = c1.at(i);
                     //std::cout << "Comparing " << std::endl;
                     //crt1 >> std::cout;
@@ -132,11 +132,31 @@ void TestCohortSampler::test_undo_actionmap()
                         if (crt1 == crt2)
                         {
                             //std::cout << "Found" << std::endl;
-                            found = true;
+                            found1 = true;
                             break;
                         }
                     }
-                    CPPUNIT_ASSERT(found);
+                    CPPUNIT_ASSERT(found1);
+                }
+                for (int i = 0; i < c2.size(); i++)
+                {
+                    bool found2 = false;
+                    const ilanddata::cohort &crt2 = c2.at(i);
+                    //std::cout << "Comparing " << std::endl;
+                    //crt1 >> std::cout;
+                    //std::cout << ": " << std::endl;
+                    for (int j = 0; j < c1.size(); j++)
+                    {
+                        const ilanddata::cohort &crt1 = c1.at(j);
+                        //crt2 >> std::cout;
+                        if (crt1 == crt2)
+                        {
+                            //std::cout << "Found" << std::endl;
+                            found2 = true;
+                            break;
+                        }
+                    }
+                    CPPUNIT_ASSERT(found2);
                 }
 
             }
@@ -201,6 +221,7 @@ void TestCohortSampler::test_temporal_consistency()
                         }
                         if (!ignore)
                         {
+                            std::cout << "Timesteps " << ts << " and " << ts + 1 << " not temporally consistent" << std::endl;
                             std::cout << "Cohorts from which sampling faults occurred: " << std::endl;
                             std::cout << "====================" << std::endl;
                             std::cout << "Timestep 1 cohorts: " << std::endl;
@@ -220,13 +241,13 @@ void TestCohortSampler::test_temporal_consistency()
                             std::cout << "Trees set 1 (from timestep 1): " << std::endl;
                             for (auto &t : c1)
                             {
-                                std::cout << t.x << ", " << t.y << std::endl;
+                                std::cout << t.x << ", " << t.y << ", height: " << t.height << std::endl;
                             }
                             std::cout << "====================" << std::endl;
                             std::cout << "Trees set 2 (from timestep 2): " << std::endl;
                             for (auto &t : c2)
                             {
-                                std::cout << t.x << ", " << t.y << std::endl;
+                                std::cout << t.x << ", " << t.y << ", height: " << t.height << std::endl;
                             }
                             CPPUNIT_ASSERT(false);
                             //throw std::logic_error("Large tree suddenly appeared in cell " + std::to_string(i));

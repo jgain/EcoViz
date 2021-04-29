@@ -49,7 +49,9 @@ public:
 
     void set_progress_function(std::function<void(int)> func);
     void set_progress_label_function(std::function<void(std::string)> func);
-    void determine_cohort_startidxes();
+    int determine_cohort_startidxes();
+    int get_maxpercell();
+    void set_nplants_each();
 private:
     void apply_actionmap();
     void determine_actionmap(int max_distance);
@@ -62,13 +64,14 @@ private:
     float rw, rh;
     int gw, gh;
     float dx, dy;
-    int maxpercell = 100;
-    int nplant_div = 10;
 
     bool action_applied = false;
 
     std::function<void (int) > progress_function;
     std::function<void (std::string) > progress_label_function;
+
+    int maxpercell;
+    int nplant_div;
 };
 
 #endif

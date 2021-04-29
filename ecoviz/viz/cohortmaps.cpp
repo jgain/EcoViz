@@ -9,7 +9,7 @@
 using namespace data_importer;
 
 CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, float rh, std::string minversion)
-    : rw(rw), rh(rh), gw(-1), gh(-1), dx(-1.0f), dy(-1.0f)
+    : rw(rw), rh(rh), gw(-1), gh(-1), dx(-1.0f), dy(-1.0f), nplant_div(10)
 {
     std::vector<int> timesteps;
     std::vector<int> timestep_indices;
@@ -85,27 +85,62 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         }
     }
 
+    set_nplants_each();
+
+    maxpercell = determine_cohort_startidxes();
+
+    actionmap.setDim(timestep_maps.at(0));
+    actionmap.setDimReal(timestep_maps.at(0));
+    actionmap.fill({DonateDir::NONE, -1, 0});
+
     //fix_cohortmaps();
 
 }
 
-void CohortMaps::determine_cohort_startidxes()
+int CohortMaps::get_maxpercell()
+{
+    return maxpercell;
+}
+
+void CohortMaps::set_nplants_each()
+{
+    auto set_nplants_crtlist = [this](std::vector<ilanddata::cohort> &crts) {
+        for (auto &c : crts)
+            c.nplants = ceil(c.nplants / nplant_div);
+    };
+
+    for (auto &m : timestep_maps)
+    {
+        int gw, gh;
+        m.getDim(gw, gh);
+        for (int y = 0; y < gh; y++)
+        {
+            for (int x = 0; x < gw; x++)
+            {
+                set_nplants_crtlist(m.get(x, y));
+            }
+        }
+    }
+}
+
+int CohortMaps::determine_cohort_startidxes()
 {
     if (timestep_maps.size() == 0)
-        return;
+        return 0;
+
+    int maxpercell = 100000;		// just make this a big number, since we don't impose a limit on the maximum index for now. We determine it here
 
     unsigned char maxidx = 0;
 
-    auto assign_newcohorts = [this, &maxidx](std::vector<ilanddata::cohort> &crts) {
+    auto assign_newcohorts = [&maxidx](std::vector<ilanddata::cohort> &crts) {
         unsigned char currindex = 0;
         for (ilanddata::cohort &c : crts)
         {
             c.startidx = currindex;
-            currindex += (unsigned char)(int(ceil(c.nplants / nplant_div)));
+            currindex += (unsigned char)(int(c.nplants));
             if (currindex > maxidx) maxidx = currindex;
         }
     };
-
 
     for (int y = 0; y < gh; y++)
     {
@@ -167,10 +202,10 @@ void CohortMaps::determine_cohort_startidxes()
                                 idx++;
                                 continue;
                             }
-                            if (c2.height > c1.height)
+                            if (c2.height >= c1.height)
                             {
                                 c2.startidx = c1.startidx;
-                                edges.push_back({c2.startidx, int(ceil(float(c2.startidx) + c2.nplants / nplant_div)) - 1});
+                                edges.push_back({c2.startidx, int(c2.startidx) + int(round(c2.nplants) + 1e-3f) - 1});
                                 int backedge = edges.back().second;
                                 break;
                             }
@@ -218,7 +253,7 @@ void CohortMaps::determine_cohort_startidxes()
                 {
                     bool foundslot = false;
                     ilanddata::cohort *unas = *iter;
-                    int nplants = int(ceil(unas->nplants / nplant_div));
+                    int nplants = int(round(unas->nplants) + 1e-3f);
                     for (auto slotiter = openslots.begin(); slotiter != openslots.end(); advance(slotiter, 1))
                     {
                         auto &slot = *slotiter;
@@ -226,7 +261,7 @@ void CohortMaps::determine_cohort_startidxes()
                         if (nplants <= slotsize)
                         {
                             unas->startidx = (unsigned char)slot.first;
-                            int nextslot_startidx = slot.first + int(ceil(unas->nplants / nplant_div));		// first index of next slot, after the one we inserted or are 'using' now
+                            int nextslot_startidx = slot.first + int(round(unas->nplants) + 1e-3f);		// first index of next slot, after the one we inserted or are 'using' now
                             auto nextiter = openslots.erase(slotiter);
                             int nextslot_endidx = nextslot_startidx + (slotsize - nplants - 1);
                             if (nextslot_endidx >= nextslot_startidx)		// if the newly used slot does not use up all the space in the previously unused slot, then add new ununsed slot in remaining space
@@ -247,6 +282,8 @@ void CohortMaps::determine_cohort_startidxes()
         }
     }
     std::cout << "Maximum index: " << int(maxidx) << std::endl;
+
+    return int(maxidx);
 }
 
 void CohortMaps::do_adjustments(int max_distance)
@@ -261,6 +298,7 @@ void CohortMaps::do_adjustments(int max_distance)
     {
         actionmap.fill({DonateDir::NONE, -1, 0});
     }
+    maxpercell = determine_cohort_startidxes();
     specset_map.reset();
 }
 
@@ -468,7 +506,7 @@ void CohortMaps::determine_actionmap(int max_distance)
 
     actionmap.setDim(timestep_maps.at(0));
     actionmap.setDimReal(timestep_maps.at(0));
-    actionmap.fill({DonateDir::NONE, -1});
+    actionmap.fill({DonateDir::NONE, -1, 0});
 
     int iteri = 0;
     for (auto &m : timestep_maps)
@@ -650,8 +688,9 @@ void CohortMaps::apply_actionmap()
     {
         if (specidx < 0)
             return;
-        auto iter = std::find_if(cvec_origin.begin(), cvec_origin.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
-        if (iter != cvec_origin.end())
+        auto iter = cvec_origin.end();
+        iter = std::find_if(cvec_origin.begin(), cvec_origin.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
+        while (iter != cvec_origin.end())
         {
             move_cohort(cvec_dest, cvec_origin, iter, xmod, ymod);
             cvec_dest.back().modified = true;
@@ -661,6 +700,7 @@ void CohortMaps::apply_actionmap()
                 movecount_empty++;
             }
             movecount_total++;
+            iter = std::find_if(cvec_origin.begin(), cvec_origin.end(), [specidx](ilanddata::cohort &c) { return c.specidx == specidx; });
         }
     };
 
@@ -755,12 +795,13 @@ void CohortMaps::undo_actionmap()
                         {
                             auto &crts = m.get(x, y - d);
                             auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
-                            if (iter != crts.end())
+                            while (iter != crts.end())
                             {
                                 iter->modified = false;
                                 float xmod = 0.0f, ymod = -2.0f * d;
                                 move_cohort(m.get(x, y), m.get(x, y - d), iter, -xmod, -ymod);
                                 movecount++;
+                                iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
                             }
                         }
                         break;
@@ -769,12 +810,13 @@ void CohortMaps::undo_actionmap()
                         {
                             auto &crts = m.get(x - d, y);
                             auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
-                            if (iter != crts.end())
+                            while (iter != crts.end())
                             {
                                 iter->modified = false;
                                 float xmod = -2.0f * d, ymod = 0.0f;
                                 move_cohort(m.get(x, y), m.get(x - d, y), iter, -xmod, -ymod);
                                 movecount++;
+                                iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
                             }
                         }
                         break;
@@ -783,12 +825,13 @@ void CohortMaps::undo_actionmap()
                         {
                             auto &crts = m.get(x, y + d);
                             auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
-                            if (iter != crts.end())
+                            while (iter != crts.end())
                             {
                                 iter->modified = false;
                                 float xmod = 0.0f, ymod = 2.0f * d;
                                 move_cohort(m.get(x, y), m.get(x, y + d), iter, -xmod, -ymod);
                                 movecount++;
+                                iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
                             }
 
                         }
@@ -798,12 +841,13 @@ void CohortMaps::undo_actionmap()
                         {
                             auto &crts = m.get(x + d, y);
                             auto iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
-                            if (iter != crts.end())
+                            while (iter != crts.end())
                             {
                                 iter->modified = false;
                                 float xmod = 2.0f * d, ymod = 0.0f;
                                 move_cohort(m.get(x, y), m.get(x + d, y), iter, -xmod, -ymod);
                                 movecount++;
+                                iter = std::find_if(crts.begin(), crts.end(), [](const ilanddata::cohort &crt) { return crt.modified; });
                             }
                         }
                         break;
