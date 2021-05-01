@@ -353,6 +353,7 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
         pft.code = "i" + std::to_string(i);
         for (int i = 0; i < 3; i++)
             pft.basecol[i] = unif(gen);
+        pft.basecol[3] = 1.0f;
         pft.draw_hght = 0.1f;
         pft.draw_radius = 0.1f;
         pft.draw_box1 = 1.0f;
