@@ -1474,7 +1474,7 @@ void GLWidget::do_adjustments(int distance)
 
 void GLWidget::set_timestep(int tstep)
 {
-
+    auto bt_master = std::chrono::steady_clock::now().time_since_epoch();
 
     curr_tstep = tstep;
     curr_cohortmap = tstep - initstep;
@@ -1509,7 +1509,9 @@ void GLWidget::set_timestep(int tstep)
 
     tstep_scrollwindow->set_labelvalue(tstep);
 
+    auto bt_sample = std::chrono::steady_clock::now().time_since_epoch();
     std::vector<basic_tree> trees(sampler->sample(cohortmaps->get_map(curr_cohortmap), nullptr));
+    auto et_sample = std::chrono::steady_clock::now().time_since_epoch();
 
     std::vector<bool> active;
     if (transect_filter)
@@ -1535,10 +1537,22 @@ void GLWidget::set_timestep(int tstep)
         }
     //active = set_active_trees(trees, 0.0f, 100.0f, 0.0f, 1024.0f);
 
+    auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
     getEcoSys()->clear();
     getEcoSys()->placeManyPlants(getTerrain(), trees, active);
     getEcoSys()->redrawPlants();
     update();
+    auto et_render = std::chrono::steady_clock::now().time_since_epoch();
 
     std::cout << "Timestep changed to " << tstep << std::endl;
+    auto et_master = std::chrono::steady_clock::now().time_since_epoch();
+
+    int sampletime = std::chrono::duration_cast<std::chrono::milliseconds>(et_sample - bt_sample).count();
+    int rendertime = std::chrono::duration_cast<std::chrono::milliseconds>(et_render - bt_render).count();
+    int overalltime = std::chrono::duration_cast<std::chrono::milliseconds>(et_master - bt_master).count();
+
+    std::cout << "Number of plants: " << trees.size() << std::endl;
+    std::cout << "Overall time: " << overalltime << std::endl;
+    std::cout << "Sample time: " << sampletime << std::endl;
+    std::cout << "Render time: " << rendertime << std::endl;
 }
