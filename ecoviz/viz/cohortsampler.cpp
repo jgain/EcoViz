@@ -23,7 +23,7 @@ cohortsampler::cohortsampler(float tw, float th, float rw, float rh, float xoff,
 {
     tileidxes.getDim(gw, gh);
 
-    int ntiles = 100;
+    int ntiles = 32;
 
     std::default_random_engine gen;
     std::uniform_int_distribution<int> unif(0, ntiles - 1);
@@ -84,11 +84,11 @@ std::deque<int> cohortsampler::gen_poisson_list(int sqsize, int nplants, std::de
 					int xi = i % ncent;
 					int yi = i / ncent;
 					int sidedist = ncent * ncent;
-					if (unif(gen) < 1.0f)
-					{
-						sidedist = 2 *  min(min(min(xi, ncent - xi), yi), ncent - yi);
-						sidedist *= sidedist;
-					}
+                    //if (unif(gen) < 1.0f)
+                    //{
+                    //	sidedist = 2 *  min(min(min(xi, ncent - xi), yi), ncent - yi);
+                    //	sidedist *= sidedist;
+                    //}
 					if (sidedist < closest)
 					{
 						closest = sidedist;
@@ -181,12 +181,13 @@ std::deque<int> cohortsampler::gen_poisson_list(int sqsize, int nplants, std::de
 
 void cohortsampler::generate_tiles(int ntiles, int tilesize)
 {
-	std::default_random_engine gen;
 	for (int cidx = 0; cidx < ntiles; cidx++)
 	{
-		std::deque<int> dists;
+        std::default_random_engine gen(cidx);
+        std::default_random_engine shufflegen(cidx);
+        std::deque<int> dists;
 		auto idxes = gen_poisson_list(tilesize, maxpercell, &dists, gen);
-		std::random_shuffle(idxes.begin(), idxes.end());
+        std::shuffle(idxes.begin(), idxes.end(), shufflegen);
 		randtiles.push_back(idxes);
 
 		/*
