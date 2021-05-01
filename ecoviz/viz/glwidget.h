@@ -324,6 +324,7 @@ public slots:
     std::string get_dirprefix();
     void hide_progwindow();
     void show_progwindow();
+    void reset_sampler(int maxpercell);
 protected:
     void initializeGL();
     void paintGL();

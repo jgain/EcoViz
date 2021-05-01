@@ -544,15 +544,9 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     before_mod_map = cohortmaps->get_map(0);
     //cohortmaps->do_adjustments(2);
 
-    int gw, gh;
-    cohortmaps->get_grid_dims(gw, gh);
-    float tw, th;
-    cohortmaps->get_cohort_dims(tw, th);
-
     if (cohortmaps->get_nmaps() > 0)
     {
-        sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, cohortmaps->get_maxpercell() + 10, 3));
-        sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
+        reset_sampler(cohortmaps->get_maxpercell());
 
         //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
         //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
@@ -597,6 +591,21 @@ void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int times
     {
         focuschange = false;
     }
+}
+
+void GLWidget::reset_sampler(int maxpercell)
+{
+    float rw, rh;
+    getTerrain()->getTerrainDim(rw, rh);
+    int gw, gh;
+    cohortmaps->get_grid_dims(gw, gh);
+    float tw, th;
+    cohortmaps->get_cohort_dims(tw, th);
+
+    if (sampler)
+        sampler.reset();
+    sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, maxpercell + 5, 3));
+    //sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, 60, 3));
 }
 
 void GLWidget::saveScene(std::string dirprefix)
@@ -1402,9 +1411,10 @@ public:
     {
         parent->show_progwindow();
         if (maps)
+        {
             maps->do_adjustments(distance);
-        if (sampler && maps)
-            sampler->set_spectoidx_map(maps->compute_spectoidx_map());
+            parent->reset_sampler(maps->get_maxpercell());
+        }
         if (tstep >= 0)
             parent->set_timestep(tstep);
         parent->hide_progwindow();
