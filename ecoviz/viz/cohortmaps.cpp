@@ -9,7 +9,7 @@
 using namespace data_importer;
 
 CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, float rh, std::string minversion)
-    : rw(rw), rh(rh), gw(-1), gh(-1), dx(-1.0f), dy(-1.0f), nplant_div(10)
+    : rw(rw), rh(rh), gw(-1), gh(-1), dx(-1.0f), dy(-1.0f), nplant_div(1), maxpercohort(10)
 {
     std::vector<int> timesteps;
     std::vector<int> timestep_indices;
@@ -106,7 +106,7 @@ void CohortMaps::set_nplants_each()
 {
     auto set_nplants_crtlist = [this](std::vector<ilanddata::cohort> &crts) {
         for (auto &c : crts)
-            c.nplants = ceil(c.nplants / nplant_div);
+            c.nplants = std::min(double(maxpercohort), ceil(c.nplants / nplant_div)) + 1e-3f;
     };
 
     for (auto &m : timestep_maps)

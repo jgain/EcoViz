@@ -171,7 +171,10 @@ std::vector<data_importer::ilanddata::filedata> data_importer::ilanddata::read_m
 
 data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string filename, std::string minversion, bool timestep_only)
 {
-	using namespace data_importer::ilanddata;
+    using namespace data_importer::ilanddata;
+
+    std::map<int, bool> species_avail;
+    std::map<int, bool> species_avail_cohorts;
 
 	std::ifstream ifs(filename);
 
@@ -223,7 +226,9 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 		ss >> dbh;   // TODO: leaving out dbh for now, must include it later
 		ss >> lstr;		// seems like an unused zero at the end of each line? ignoring it for now
 
-		fdata.trees.push_back(tree);
+        fdata.trees.push_back(tree);
+
+        species_avail[tree.species] = true;
 	}
 
 	std::getline(ifs, lstr);
@@ -272,6 +277,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
                     throw std::invalid_argument("Input cohorts have inconsistent sizes in file " + filename);
                 }
             }
+            species_avail_cohorts[crt.specidx] = true;
         }
 		else
 		{
@@ -287,7 +293,11 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
     fdata.dx = dx;
     fdata.dy = dy;
 
-	std::cout << "Done. Returning file data for timestep " << fdata.timestep << std::endl;
+    std::cout << "Maximum species index for larger trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail.begin(), species_avail.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
+    std::cout << "Maximum species index for cohort trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail_cohorts.begin(), species_avail_cohorts.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
+    std::cout << "Number of larger tree species found in timestep " << fdata.timestep << ": " << species_avail.size() << std::endl;
+    std::cout << "Number of cohort tree species found in timestep " << fdata.timestep << ": " << species_avail_cohorts.size() << std::endl;
+    std::cout << "Done. Returning file data for timestep " << fdata.timestep << std::endl;
 
 	return fdata;
 }

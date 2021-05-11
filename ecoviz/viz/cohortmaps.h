@@ -72,6 +72,7 @@ private:
 
     int maxpercell;
     int nplant_div;
+    int maxpercohort;
 };
 
 #endif
