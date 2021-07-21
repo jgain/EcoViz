@@ -224,7 +224,7 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
     cohortmap.getDim(cgw, cgh);
 
 
-    printf("Cohortmap dimensions %d, %d\n", cgw, cgh);
+    // printf("Cohortmap dimensions %d, %d\n", cgw, cgh);
 
     std::uniform_real_distribution<float> unif;
     for (int cidx = 0; cidx < cgw * cgh; cidx++)
@@ -293,7 +293,7 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
                 float x = float(sx) + cxf;		// XXX: the number of cm per cell is hardcoded here...
                 float y = float(sy) + cyf;
 
-                basic_tree tree(x, y, crt.height * 0.5f, crt.height);			// REPLACEME: radius = crts.at(specidx).height * 0.5f is temporary
+                basic_tree tree(x, y, crt.height * 0.5f, crt.height, crt.dbh);			// REPLACEME: radius = crts.at(specidx).height * 0.5f is temporary
                 tree.species = crt.specidx % specmodulo;
                 trees.push_back(tree);
                 if (allcells_trees)

@@ -221,9 +221,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 		ss >> tree.y;
 		ss >> tree.height;
 		ss >> tree.radius;
-
-		float dbh;
-		ss >> dbh;   // TODO: leaving out dbh for now, must include it later
+        ss >> tree.dbh;
 		ss >> lstr;		// seems like an unused zero at the end of each line? ignoring it for now
 
         fdata.trees.push_back(tree);
@@ -649,7 +647,7 @@ bool data_importer::read_pdb(std::string filename, std::map<int, std::vector<Min
                 infile >> x >> y >> z;
                 infile >> height;
                 infile >> radius;
-                MinimalPlant plnt = {x, y, height, radius, false, cat};
+                MinimalPlant plnt = {x, y, height, radius, 1.0f, false, cat}; // TO DO need to fix dbh import
                 retvec[cat][plnt_idx] = plnt;
             }
         }
@@ -1258,6 +1256,14 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
             {
                 draw_shape = data_importer::treeshape::INVCONE;
             }
+            else if (valstr == "HEMISPHR")
+            {
+                draw_shape = data_importer::treeshape::HEMISPHR;
+            }
+            else if (valstr == "CYL")
+            {
+                draw_shape = data_importer::treeshape::CYL;
+            }
         }
         else if (colstr == "common_name")
         {
@@ -1488,7 +1494,7 @@ std::vector<basic_tree> data_importer::minimal_to_basic(const std::map<int, std:
             x = ctree.x;
             y = ctree.y;
             radius = ctree.r;
-            basic_tree newtree(x, y, radius, ctree.h);
+            basic_tree newtree(x, y, radius, ctree.h, 1.0f); // dbh set to 1.0f as placeholder
             newtree.species = spec;
             trees.push_back(newtree);
         }

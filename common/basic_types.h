@@ -242,13 +242,13 @@ struct veg_class_set
 struct basic_tree
 {
     CUDA_CALLABLE_MEMBER
-    basic_tree(float x, float y, float radius, float height)
-        : x(x), y(y), radius(radius), height(height)
+    basic_tree(float x, float y, float radius, float height, float dbh)
+        : x(x), y(y), radius(radius), height(height), dbh(dbh)
     {}
 
     CUDA_CALLABLE_MEMBER
     basic_tree()
-        : x(-1), y(-1), radius(-1), height(-1)
+        : x(-1), y(-1), radius(-1), height(-1), dbh(-1)
     {}
 
     bool operator == (const basic_tree &other) const
@@ -257,8 +257,9 @@ struct basic_tree
         float dy = fabs(other.y - this->y);
         float dr = fabs(other.radius - this->radius);
         float dh = fabs(other.height - this->height);
+        float dd = fabs(other.dbh - this->dbh);
         bool speq = other.species == this->species;
-        return dx < 1e-5f && dy < 1e-5f && dr < 1e-5f && dh < 1e-5f && speq;
+        return dx < 1e-5f && dy < 1e-5f && dr < 1e-5f && dh < 1e-5f && dd < 1e-5f && speq;
     }
 
     bool operator != (const basic_tree &other) const
@@ -280,7 +281,8 @@ struct basic_tree
     float x, y;
     float radius;
     float height;
-    float energy;
+    float dbh;
+    // float energy; // seems to be unused at the moment
     int species;
     //std::vector<float> velocity = std::vector<float> (2, 0.0f);
     int r, g, b, a;
@@ -288,8 +290,8 @@ struct basic_tree
 
 struct output_tree : basic_tree
 {
-    output_tree(float x, float y, float z, float radius, float height)
-        : basic_tree(x, y, radius, height), z(z)
+    output_tree(float x, float y, float z, float radius, float height, float dbh)
+        : basic_tree(x, y, radius, height, dbh), z(z)
     {}
 
     int z;
@@ -303,8 +305,8 @@ struct grid_tree : basic_tree
     {}
 
     CUDA_CALLABLE_MEMBER
-    grid_tree(float x, float y, float radius, float height)
-        : basic_tree(x, y, radius, height), valid(true)
+    grid_tree(float x, float y, float radius, float height, float dbh)
+        : basic_tree(x, y, radius, height, dbh), valid(true)
     {}
     bool valid;
 };
@@ -317,8 +319,8 @@ struct mosaic_tree : grid_tree
     {}
 
     CUDA_CALLABLE_MEMBER
-    mosaic_tree(float x, float y, float radius, float height, bool local_max)
-        : grid_tree(x, y, radius, height)
+    mosaic_tree(float x, float y, float radius, float height, float dbh, bool local_max)
+        : grid_tree(x, y, radius, height, dbh)
     {
         this->local_max = local_max;
     }
@@ -375,12 +377,13 @@ struct MinimalPlant
     float y; //< y-position in m
     float h;	// height in m
     float r; //< radius in m		(note: all these were cm, not meters, in ecolearn code originally)
+    float d; //< diameter at breast height in m
     bool s; //< shaded status for individual plant
     int species;
 
         void print() { std::cerr << "x: " << x << ", y: " << y << ", r: " << r << ", s: " << s << std::endl; }
 
-        bool operator==(const MinimalPlant &other) { return x == other.x && y == other.y && r == other.r && s == other.s; }
+        bool operator==(const MinimalPlant &other) { return x == other.x && y == other.y && r == other.r && d == other.d && s == other.s; }
         bool operator!=(const MinimalPlant &other) { return !(*this == other); }
 };
 

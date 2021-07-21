@@ -28,6 +28,7 @@
 class DiceRoller {
 public:
     DiceRoller(int from, int to);
+    DiceRoller(int from, int to, long sval);
     ~DiceRoller();
 
     int generate();

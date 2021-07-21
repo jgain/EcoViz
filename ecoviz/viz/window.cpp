@@ -59,15 +59,18 @@
 **
 ****************************************************************************/
 
-#include "glwidget.h"
 #include "window.h"
 #include "vecpnt.h"
 #include "common/str.h"
 
 #include <cmath>
 #include <string>
+#include<QtCharts/QChartView>
+
+QT_CHARTS_USE_NAMESPACE
 
 using namespace std;
+
 
 ////
 // Window
@@ -75,16 +78,11 @@ using namespace std;
 
 QSize Window::sizeHint() const
 {
-    return QSize(1000, 1000);
+    return QSize(1600, 1000);
 }
 
-Window::Window(string datadir)
+void Window::setupRenderPanel()
 {
-    QWidget *mainWidget = new QWidget;
-    QGridLayout *mainLayout = new QGridLayout;
-    int dx, dy;
-    float sx, sy;
-
     // default rendering parameters, set using text entry
     // mirrors TRenderer settings
     // grid params
@@ -92,7 +90,7 @@ Window::Window(string datadir)
     gridSepX = 2500.0f; // separation of grid lines, depends on how input data is scaled
     gridSepZ = 2500.0f; //
     gridWidth = 1.5f; // in pixels?
-    
+
     // contour params
     contourSep = 25.f; // separation (Y direction) depends on how input data is normalized
     numContours = 1.0f / contourSep;
@@ -107,11 +105,6 @@ Window::Window(string datadir)
     sunMonth = 1;
     wetMonth = 1;
     tempMonth = 1;
-
-    setCentralWidget(mainWidget);
-    mainLayout->setColumnStretch(0, 0);
-    mainLayout->setColumnStretch(1, 0);
-    mainLayout->setColumnStretch(2, 1);
 
     // render panel
     renderPanel = new QWidget;
@@ -241,6 +234,32 @@ Window::Window(string datadir)
     renderLayout->addWidget(radianceGroup);
     renderLayout->addWidget(mapGroup);
 
+    // signal to slot connections
+    connect(checkContours, SIGNAL(stateChanged(int)), this, SLOT(showContours(int)));
+    connect(checkGridLines, SIGNAL(stateChanged(int)), this, SLOT(showGridLines(int)));
+    connect(gridSepXEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(gridSepZEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(gridWidthEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(gridIntensityEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(contourSepEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(contourWidthEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(contourIntensityEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(radianceEnhanceEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(radianceEnhanceEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
+    connect(sunMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
+    connect(wetMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
+
+    // map radio buttons
+    connect(sunMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
+    connect(wetMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
+    connect(chmMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
+    connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
+
+    renderPanel->setLayout(renderLayout);
+}
+
+void Window::setupPlantPanel()
+{
     // plant panel
     plantPanel = new QWidget;
     QVBoxLayout *plantLayout = new QVBoxLayout;
@@ -248,13 +267,22 @@ Window::Window(string datadir)
     // global plant parameters
     QGroupBox *globalGroup = new QGroupBox(tr("Global"));
     QGridLayout *globalLayout = new QGridLayout;
-    checkCanopy = new QCheckBox(tr("Show Canopy Plants"));
-    checkCanopy->setChecked(true);
-    checkUndergrowth = new QCheckBox(tr("Show Undergrowth Plants"));
-    checkUndergrowth->setChecked(true);
+    // checkCanopy = new QCheckBox(tr("Show Plants"));
+    // checkCanopy->setChecked(true);
 
-    globalLayout->addWidget(checkCanopy, 0, 0);
-    globalLayout->addWidget(checkUndergrowth, 1, 0);
+    // checkUndergrowth = new QCheckBox(tr("Show Undergrowth Plants"));
+    // checkUndergrowth->setChecked(true);
+
+    // Smoothing
+    QLabel *smoothLabel = new QLabel(tr("Smoothing Level:"));
+    QIntValidator *intvalidate = new QIntValidator(this);
+    smoothEdit = new QLineEdit("0", this);
+    smoothEdit->setValidator(intvalidate);
+    smoothEdit->setFixedWidth(30);
+
+    // globalLayout->addWidget(checkCanopy, 0, 0);
+    globalLayout->addWidget(smoothLabel, 0, 0);
+    globalLayout->addWidget(smoothEdit, 0, 1);
     globalGroup->setLayout(globalLayout);
 
     // per species plant parameters
@@ -318,56 +346,11 @@ Window::Window(string datadir)
     plantLayout->addWidget(globalGroup);
     plantLayout->addWidget(speciesGroup);
 
-    // OpenGL widget
-    // Specify an OpenGL 3.2 format.
-
-    QGLFormat glFormat;
-    glFormat.setVersion( 4, 1 );
-    glFormat.setProfile( QGLFormat::CoreProfile );
-    glFormat.setSampleBuffers( false );
-
-    perspectiveView = new GLWidget(glFormat, datadir);
-    getView().setForcedFocus(getTerrain().getFocus());
-    getView().setViewScale(getTerrain().longEdgeDist());
-
-    getTerrain().getGridDim(dx, dy);
-    getTerrain().getTerrainDim(sx, sy);
-
-    // perspectiveView->getGLSun()->setScene(&getTerrain(), NULL, NULL);
-
-    numGridX = 1.0f / gridSepX;
-    numGridZ = 1.0f / gridSepZ;
-
-    std::cout << "PerspectiveView address: " << perspectiveView << std::endl;
-
     // signal to slot connections
-    connect(perspectiveView, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-    connect(gridSepXEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(gridSepZEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(gridWidthEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(gridIntensityEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(contourSepEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(contourWidthEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(contourIntensityEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(radianceEnhanceEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(radianceEnhanceEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
-    connect(sunMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
-    connect(wetMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
-
-    // map radio buttons
-    connect(sunMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
-    connect(wetMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
-    connect(chmMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
-    connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
-
-    // display switches
     connect(plantsOn, SIGNAL(clicked()), this, SLOT(allPlantsOn()));
     connect(plantsOff, SIGNAL(clicked()), this, SLOT(allPlantsOff()));
-    connect(checkContours, SIGNAL(stateChanged(int)), this, SLOT(showContours(int)));
-    connect(checkGridLines, SIGNAL(stateChanged(int)), this, SLOT(showGridLines(int)));
-
-    connect(checkCanopy, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkUndergrowth, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
+    // connect(checkCanopy, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
+    // connect(checkUndergrowth, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
     connect(checkS0, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
     connect(checkS1, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
     connect(checkS2, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
@@ -384,13 +367,138 @@ Window::Window(string datadir)
     connect(checkS13, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
     connect(checkS14, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
     connect(checkS15, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
+    connect(smoothEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
 
-    renderPanel->setLayout(renderLayout);
     plantPanel->setLayout(plantLayout);
+}
+
+void Window::setupVizPanel()
+{
+    vizPanel = new QWidget;
+    QGridLayout *vizLayout = new QGridLayout;
+    vizLayout->setSpacing(3);
+    // vizLayout->setMargin(1);
+    vizLayout->setContentsMargins(3, 3, 3, 3);
+
+    // OpenGL widget
+    // Specify an OpenGL 3.2 format.
+    QGLFormat glFormat;
+    glFormat.setVersion( 4, 1 );
+    glFormat.setProfile( QGLFormat::CoreProfile );
+    glFormat.setSampleBuffers( false );
+
+    vizLayout->setRowStretch(0, 6);
+    vizLayout->setRowStretch(1, 24);
+    vizLayout->setRowStretch(2, 1);
+    vizLayout->setRowStretch(3, 8);
+
+    // transect views
+    for(int i = 0; i < 2; i++)
+    {
+        GLTransect * tview = new GLTransect(glFormat, scenes[i], transectControls[i]);
+        tview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+
+        // signal to slot connections
+        connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+        transectViews.push_back(tview);
+
+        vizLayout->addWidget(tview, 0, i);
+    }
+
+    // main perspective views
+    for(int i = 0; i < 2; i++)
+    {
+        GLWidget * pview = new GLWidget(glFormat, scenes[i], transectControls[i]);
+
+        numGridX = 1.0f / gridSepX;
+        numGridZ = 1.0f / gridSepZ;
+        pview->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
+        pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
+        pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+
+        // signal to slot connections
+        connect(pview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+        connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
+
+        perspectiveViews.push_back(pview);
+        vizLayout->addWidget(pview, 1, i);
+    }
+
+    // chart views
+    for(int i = 0; i < 2; i++)
+    {
+        ChartWindow * cview = new ChartWindow(this, 800, 200);
+        TimelineGraph * gmodel = new TimelineGraph();
+
+        // signal to slot connections
+        // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+
+        chartViews.push_back(cview);
+        graphModels.push_back(gmodel);
+        vizLayout->addWidget(cview, 3, i);
+    }
+
+    // timeline views
+    for(int i = 0; i < 2; i++)
+    {
+        TimeWindow * tview = new TimeWindow(this, 1, 1, 800, 50);
+
+        // signal to slot connections
+        connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+        connect(tview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
+        connect(tview, SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
+        connect(tview, SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
+
+        timelineViews.push_back(tview);
+        vizLayout->addWidget(tview, 2, i);
+    }
+
+    vizPanel->setLayout(vizLayout);
+    vizPanel->setStyleSheet("background-color:grey;");
+    /*
+    vizPanel->setStyleSheet(QString::fromUtf8("ChartWindow\n"
+    "{\n"
+    "     background-color: red;\n"
+    "}\n"
+    ""));*/
+}
+
+Window::Window(string datadir)
+{
+    QWidget *mainWidget = new QWidget;
+    QGridLayout *mainLayout = new QGridLayout();
+
+    mainLayout->setSpacing(1);
+    // mainLayout->setMargin(1);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    setCentralWidget(mainWidget);
+
+    mainLayout->setColumnStretch(0, 0);
+    mainLayout->setColumnStretch(1, 0);
+    mainLayout->setColumnStretch(2, 1);
+
+    setupRenderPanel();
+    setupPlantPanel();
+
+    // load scenes
+    for(int i = 0; i < 2; i++)
+    {
+        Scene * s = new Scene(datadir);
+        scenes.push_back(s);
+    }
+
+    for(int i = 0; i < 2; i++)
+    {
+        Transect * t = new Transect(scenes[i]->getTerrain());
+        transectControls.push_back(t);
+    }
+
+    setupVizPanel();
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(plantPanel, 0, 1, Qt::AlignTop);
-    mainLayout->addWidget(perspectiveView, 0, 2);
+    mainLayout->addWidget(vizPanel, 0, 2);
 
     createActions();
     createMenus();
@@ -402,15 +510,32 @@ Window::Window(string datadir)
 
     renderPanel->hide();
     plantPanel->hide();
+}
 
-    perspectiveView->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
-    perspectiveView->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
-    perspectiveView->getRenderer()->setRadianceScalingParams(radianceEnhance);
+Window::~Window()
+{
+    // delete transect controllers
+    for(auto &it: transectControls)
+        delete(it);
 }
 
 void Window::run_viewer()
 {
-    perspectiveView->loadFinScene(1, 25);
+    for(int i = 0; i < 2; i++)
+    {
+        scenes[i]->loadScene(1, 25);
+        transectControls[i]->init();
+        transectViews[i]->setScene(scenes[i]);
+        perspectiveViews[i]->setScene(scenes[i]);
+        timelineViews[i]->setScene(scenes[i]);
+        transectViews[i]->setVisible(false);
+        graphModels[i]->setTimeLine(scenes[i]->getTimeline());
+        graphModels[i]->extractDBHSums(scenes[i]);
+        graphModels[i]->setVertScale(400000);
+        chartViews[i]->setScene(scenes[i]);
+        chartViews[i]->setData(graphModels[i]);
+    }
+
     repaintAllGL();
 }
 
@@ -427,15 +552,19 @@ void Window::scaleRenderParams(float scale)
     numContours = 1.0f / contourSep;
     contourSepEdit->setText(QString::number(contourSep, 'g', 2));
 
-    perspectiveView->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
-    perspectiveView->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
-    perspectiveView->getRenderer()->setRadianceScalingParams(radianceEnhance);
+    for(auto pview: perspectiveViews)
+    {
+        pview->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
+        pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
+        pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+    }
 }
 
 void Window::keyPressEvent(QKeyEvent *e)
 {
-    // pass to render window
-    perspectiveView->keyPressEvent(e);
+    // pass to render windows
+    for(auto pview: perspectiveViews)
+        pview->keyPressEvent(e);
 }
 
 void Window::mouseMoveEvent(QMouseEvent *event)
@@ -450,7 +579,14 @@ void Window::mouseMoveEvent(QMouseEvent *event)
 
 void Window::repaintAllGL()
 {
-    perspectiveView->repaint();
+    for(auto pview: perspectiveViews)
+        pview->repaint();
+    for(auto tview: transectViews)
+        tview->repaint();
+    for(auto mview: timelineViews)
+        mview->repaint();
+    for(auto cview: chartViews)
+        cview->repaint();
 }
 
 void Window::showRenderOptions()
@@ -465,19 +601,31 @@ void Window::showPlantOptions()
 
 void Window::showContours(int show)
 {
-    perspectiveView->getRenderer()->drawContours(show == Qt::Checked);
+    for(auto pview: perspectiveViews)
+        pview->getRenderer()->drawContours(show == Qt::Checked);
     repaintAllGL();
+}
+
+void Window::showTransectViews()
+{
+    for(int i = 0; i < 2; i++)
+    {
+        if(transectControls[i]->getValidFlag())
+            transectViews[i]->setVisible(true);
+    }
 }
 
 void Window::showGridLines(int show)
 {
-    perspectiveView->getRenderer()->drawGridlines(show == Qt::Checked);
+    for(auto pview: perspectiveViews)
+        pview->getRenderer()->drawGridlines(show == Qt::Checked);
     repaintAllGL();
 }
 
 void Window::allPlantsOn()
 {
-    perspectiveView->setAllSpecies(true);
+    for(auto pview: perspectiveViews)
+        pview->setAllSpecies(true);
     checkS0->setChecked(true);
     checkS1->setChecked(true);
     checkS2->setChecked(true);
@@ -498,7 +646,8 @@ void Window::allPlantsOn()
 
 void Window::allPlantsOff()
 {
-    perspectiveView->setAllSpecies(false);
+    for(auto pview: perspectiveViews)
+        pview->setAllSpecies(false);
     checkS0->setChecked(false);
     checkS1->setChecked(false);
     checkS2->setChecked(false);
@@ -521,42 +670,45 @@ void Window::plantChange(int show)
 {
     bool vis = (bool) show;
 
-    if(sender() == checkCanopy)
-        perspectiveView->setCanopyVis(vis);
-    if(sender() == checkUndergrowth)
-        perspectiveView->setUndergrowthVis(vis);
-    if(sender() == checkS0)
-        perspectiveView->toggleSpecies(0, vis);
-    if(sender() == checkS1)
-        perspectiveView->toggleSpecies(1, vis);
-    if(sender() == checkS2)
-        perspectiveView->toggleSpecies(2, vis);
-    if(sender() == checkS3)
-        perspectiveView->toggleSpecies(3, vis);
-    if(sender() == checkS4)
-        perspectiveView->toggleSpecies(4, vis);
-    if(sender() == checkS5)
-        perspectiveView->toggleSpecies(5, vis);
-    if(sender() == checkS6)
-        perspectiveView->toggleSpecies(6, vis);
-    if(sender() == checkS7)
-        perspectiveView->toggleSpecies(7, vis);
-    if(sender() == checkS8)
-        perspectiveView->toggleSpecies(8, vis);
-    if(sender() == checkS9)
-        perspectiveView->toggleSpecies(9, vis);
-    if(sender() == checkS10)
-        perspectiveView->toggleSpecies(10, vis);
-    if(sender() == checkS11)
-        perspectiveView->toggleSpecies(11, vis);
-    if(sender() == checkS12)
-        perspectiveView->toggleSpecies(12, vis);
-    if(sender() == checkS13)
-        perspectiveView->toggleSpecies(13, vis);
-    if(sender() == checkS14)
-        perspectiveView->toggleSpecies(14, vis);
-    if(sender() == checkS15)
-        perspectiveView->toggleSpecies(15, vis);
+    for(auto pview: perspectiveViews)
+    {
+        if(sender() == checkCanopy)
+            pview->setCanopyVis(vis);
+        if(sender() == checkUndergrowth)
+            pview->setUndergrowthVis(vis);
+        if(sender() == checkS0)
+            pview->toggleSpecies(0, vis);
+        if(sender() == checkS1)
+            pview->toggleSpecies(1, vis);
+        if(sender() == checkS2)
+            pview->toggleSpecies(2, vis);
+        if(sender() == checkS3)
+            pview->toggleSpecies(3, vis);
+        if(sender() == checkS4)
+            pview->toggleSpecies(4, vis);
+        if(sender() == checkS5)
+            pview->toggleSpecies(5, vis);
+        if(sender() == checkS6)
+            pview->toggleSpecies(6, vis);
+        if(sender() == checkS7)
+            pview->toggleSpecies(7, vis);
+        if(sender() == checkS8)
+            pview->toggleSpecies(8, vis);
+        if(sender() == checkS9)
+            pview->toggleSpecies(9, vis);
+        if(sender() == checkS10)
+            pview->toggleSpecies(10, vis);
+        if(sender() == checkS11)
+            pview->toggleSpecies(11, vis);
+        if(sender() == checkS12)
+            pview->toggleSpecies(12, vis);
+        if(sender() == checkS13)
+            pview->toggleSpecies(13, vis);
+        if(sender() == checkS14)
+            pview->toggleSpecies(14, vis);
+        if(sender() == checkS15)
+            pview->toggleSpecies(15, vis);
+    }
 }
 
 void Window::lineEditChange()
@@ -648,7 +800,8 @@ void Window::lineEditChange()
                 sunMonth = 12;
         }
         if(sunMapRadio->isChecked())
-            perspectiveView->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
+            for(auto pview: perspectiveViews)
+                pview->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
     }
     if(sender() == wetMapEdit)
     {
@@ -662,28 +815,41 @@ void Window::lineEditChange()
                 wetMonth = 12;
         }
         if(wetMapRadio->isChecked())
-            perspectiveView->setMap(TypeMapType::WATER, wetMonth-1);
+            for(auto pview: perspectiveViews)
+                pview->setMap(TypeMapType::WATER, wetMonth-1);
+    }
+    if(sender() == smoothEdit)
+    {
+        ival = smoothEdit->text().toInt(&ok);
+        if(ok)
+            setSmoothing(ival);
     }
 
     // cerr << "val entered " << val << endl;
 
     // without this the renderer defaults back to factory settings at certain stages - very wierd bug
-    perspectiveView->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
-    perspectiveView->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
-    perspectiveView->getRenderer()->setRadianceScalingParams(radianceEnhance);
+    for(auto pview: perspectiveViews)
+    {
+        pview->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
+        pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
+        pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+    }
     repaintAllGL();
 }
 
 void Window::mapChange(bool on)
 {
-    if(sunMapRadio->isChecked() && on)
-        perspectiveView->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
-    if(wetMapRadio->isChecked() && on)
-        perspectiveView->setMap(TypeMapType::WATER, wetMonth-1);
-    if(chmMapRadio->isChecked() && on)
-        perspectiveView->setOverlay(TypeMapType::CHM);
-    if(noMapRadio->isChecked() && on)
-        perspectiveView->setOverlay(TypeMapType::EMPTY);
+    for(auto pview: perspectiveViews)
+    {
+        if(sunMapRadio->isChecked() && on)
+            pview->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
+        if(wetMapRadio->isChecked() && on)
+            pview->setMap(TypeMapType::WATER, wetMonth-1);
+        if(chmMapRadio->isChecked() && on)
+            pview->setOverlay(TypeMapType::CHM);
+        if(noMapRadio->isChecked() && on)
+            pview->setOverlay(TypeMapType::EMPTY);
+    }
 }
 
 void Window::createActions()
@@ -707,3 +873,40 @@ void Window::createMenus()
     viewMenu->addAction(showRenderAct);
     viewMenu->addAction(showPlantAct);
 }
+
+class AdjustmentRunnable : public QRunnable
+{
+public:
+    AdjustmentRunnable(TimeWindow * tview, Scene * scene, int distance, int tstep)
+        : QRunnable(), tview(tview), scene(scene), distance(distance), tstep(tstep)
+    {
+    }
+
+    void run()
+    {
+        CohortMaps * maps = scene->cohortmaps.get();
+
+        if (maps)
+        {
+            maps->do_adjustments(distance);
+            scene->reset_sampler(maps->get_maxpercell());
+        }
+        if (tstep >= 0)
+            tview->updateScene(tstep);
+    }
+private:
+    TimeWindow * tview;
+    Scene * scene;
+    int distance, tstep;
+};
+
+void Window::setSmoothing(int d)
+{
+    for(int i = 0; i < 2; i++)
+    {
+        AdjustmentRunnable *runnable = new AdjustmentRunnable(timelineViews[i], scenes[i], d, scenes[i]->getTimeline()->getNow());
+        runnable->setAutoDelete(true);
+        QThreadPool::globalInstance()->start(runnable);
+    }
+}
+

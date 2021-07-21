@@ -30,6 +30,8 @@
 
 #include "pft.h"
 #include "grass.h"
+#include "dice_roller.h"
+#include "common/basic_types.h"
 #include "unordered_map"
 #include "boost/functional/hash.hpp"
 
@@ -54,6 +56,34 @@ struct SubSpecies
 struct PlantPopulation
 {
     std::vector<std::vector<Plant>> pop;    //< list of all plants in an ecosystem by type
+};
+
+class NoiseField
+{
+private:
+    long seed;      //< random number initialization to ensure a Noisefield can be reproduced
+    Terrain * terrain;  //< underlying terrain
+    int dimx, dimy; //< dimsions of the noisefield (a multiplicative factor of the terrain)
+    MapFloat * nmap;  //< field of noise values
+    DiceRoller * dice; //< random number generator
+
+public:
+
+    /**
+     * @brief NoiseField initializer
+     * @param ter   underlying terrain
+     * @param dstep number of sub-cells per terrain cell (basically a multiplication factor)
+     * @param sval  seed value
+     */
+    NoiseField(Terrain * ter, int dstep, long sval);
+
+    ~NoiseField(){ delete dice; }
+
+    /// initialize the noisemap
+    void init();
+
+    /// recover a random value in [0, 1] at a point on the terrain
+    float getNoise(vpPoint p);
 };
 
 class PlantGrid
@@ -117,6 +147,13 @@ public:
 
     /// Check whether the grid contains any plants
     bool isEmpty();
+
+    /**
+     * @brief initRnd Set up the underlying noise field
+     * @param ter   Corresponding terrain
+     * @param steps Number of steps in each terrain cell
+     */
+    void initRnd(Terrain * ter, int steps);
 
     /**
      * @brief clearCell Clear all plants in a specified grid cell
@@ -299,6 +336,22 @@ private:
       */
     void genUmbrellaPlant(float trunkheight, float trunkradius, Shape &shape);
 
+    /**
+      * Create geometry for PFT with hemisphere top
+      * @param trunkheight  proportion of height devoted to bare trunk
+      * @param trunkradius  radius of main trunk
+      * @param shape        geometry for PFT
+      */
+    void genHemispherePlant(float trunkheight, float trunkradius, Shape &shape);
+
+    /**
+      * Create geometry for PFT with cylindrical top
+      * @param trunkheight  proportion of height devoted to bare trunk
+      * @param trunkradius  radius of main trunk
+      * @param shape        geometry for PFT
+      */
+    void genCylinderPlant(float trunkheight, float trunkradius, Shape &shape);
+
 public:
 
     ShapeGrid(){ gx = 0; gy = 0; }
@@ -371,8 +424,6 @@ private:
     std::vector<PlantGrid> niches;    //< individual ecosystems for each niche
                                       //< the purpose of niches is to allow a coarse form of selection and rendering
                                       //< by default only the first niche is used
-    bool dirtyPlants;                       //< flag that the plant positions have changed since last binding
-    bool drawPlants;                        //< flag that plants are ready to draw
     float maxtreehght;                      //< largest tree height among all loaded species
     PlantGrid esys;                   //< combined output ecosystem
     Biome * biome;                      //< biome matching ecosystem
@@ -390,9 +441,6 @@ public:
 
     /// Remove all plants and reset ecosystem
     void clear();
-
-    /// Set flag to rebind plants
-    void redrawPlants(){ dirtyPlants = true; }
 
     /// Getter for maximum tree height
     float getMaxTreeHeight(){ return maxtreehght; }
@@ -412,6 +460,7 @@ public:
        * @param niche     particular layer for which plants are active, 0 means all layers
        * @retval true  if load succeeds,
        * @retval false otherwise.
+       * NB: this will require that plants are rebound.
        */
     bool loadNichePDB(string filename, Terrain * ter, int niche = 0);
 
@@ -436,6 +485,7 @@ public:
      * Pick plants from different niche ecosystems based on the cluster map to form a final ecosystem
      * @param ter       terrain onto which the plants will be placed
      * @param clusters  resource cluster texture map
+     * NB: this will require that plants are rebound
      */
     void pickPlants(Terrain * ter, TypeMap * clusters);
 
@@ -444,21 +494,20 @@ public:
      * @param ter       terrain onto which the plants will be placed
      * @param canopyOn  display the canopy in niche 0 if true
      * @param underStoreyOn display the understorey in niches > 0 if true
+     * NB: this will require that plants are rebound
      */
     void pickAllPlants(Terrain * ter, bool canopyOn = true, bool underStoreyOn = true);
 
     /**
      * Position plants instances on terrain for subsequent rendering. Needs to be run after plant positions have changed.
-     * @param view          current viewpoint
      * @param ter           terrain onto which plants will be placed
-     * @param clusters      resource cluster texture map
      * @param plantvis      boolean array of which plant species are to be rendered and which not
      * @param drawParams    parameters for drawing plant species, appended to the current drawing parameters
+     * @param bind          whether or not the plants need to be recreated after a change
      */
-    void bindPlants(View * view, Terrain * ter, TypeMap * clusters, std::vector<bool> * plantvis, std::vector<ShapeDrawData> &drawParams);
-    void bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis);
-    void placePlant(Terrain *ter, const basic_tree &tree);
-    void placeManyPlants(Terrain *ter, const std::vector<basic_tree> &trees, const std::vector<bool> active_trees);
+    void bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool bind=false);
+    void placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree);
+    void placeManyPlants(Terrain *ter, NoiseField * nfield, const std::vector<basic_tree> &trees);
 };
 
 #endif

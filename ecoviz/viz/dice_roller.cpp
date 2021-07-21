@@ -27,6 +27,12 @@ DiceRoller::DiceRoller(int from, int to) :
 {
 }
 
+DiceRoller::DiceRoller(int from, int to, long sval) :
+    generator(std::default_random_engine(sval)),
+    distribution(std::uniform_int_distribution<int>(from,to))
+{
+}
+
 DiceRoller::~DiceRoller()
 {
 //    delete generator;

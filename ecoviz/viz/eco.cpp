@@ -30,6 +30,47 @@
 #include <algorithm>
 #include <QDir>
 
+
+/// NoiseField
+
+NoiseField::NoiseField(Terrain * ter, int dstep, long sval)
+{
+    int tx, ty;
+
+    terrain = ter;
+    terrain->getGridDim(tx, ty);
+    dimx = tx * dstep;
+    dimy = tx * dstep;
+    nmap = new MapFloat();
+    nmap->setDim(dimx, dimy);
+    nmap->fill(0.0f);
+    seed = sval;
+    dice = new DiceRoller(0, 1000, sval);
+    init();
+}
+
+void NoiseField::init()
+{
+    for(int x = 0; x < dimx; x++)
+        for(int y = 0; y < dimy; y++)
+        {
+            nmap->set(x, y, (float) dice->generate() / 1000.0f);
+        }
+}
+
+float NoiseField::getNoise(vpPoint p)
+{
+    float tx, ty, convx, convy;
+    int x, y;
+
+    terrain->getTerrainDim(tx, ty);
+    convx = (float) (dimx-1) / tx;
+    convy = (float) (dimy-1) / ty;
+    x = (int) (p.x * convx);
+    y = (int) (p.z * convy);
+    return nmap->get(x, y);
+}
+
 /// PlantGrid
 
 void PlantGrid::initSpeciesTable()
@@ -584,6 +625,66 @@ void ShapeGrid::genUmbrellaPlant(float trunkheight, float trunkradius, Shape &sh
 
 }
 
+void ShapeGrid::genHemispherePlant(float trunkheight, float trunkradius, Shape &shape)
+{
+    glm::mat4 idt, tfm;
+    glm::vec3 trs, rotx;
+    float canopyheight;
+
+    rotx = glm::vec3(1.0f, 0.0f, 0.0f);
+    canopyheight = 1.0f - trunkheight;
+
+    // trunk - cylinder
+    idt = glm::mat4(1.0f);
+    tfm = glm::rotate(idt, glm::radians(-90.0f), rotx);
+    // extra 0.1 to trunk is to ensure that trunk joins tree properly
+    shape.genCappedCylinder(trunkradius, trunkradius, trunkheight+0.1f, 3, 1, tfm, false);
+
+    // canopy - sphere
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(0.0f, trunkheight, 0.0f);
+    tfm = glm::translate(idt, trs);
+    tfm = glm::scale(tfm, glm::vec3(1.0, canopyheight*2.0f, 1.0f)); // make sure tree fills 1.0f on a side bounding box
+    tfm = glm::rotate(tfm, glm::radians(90.0f), rotx);
+
+#ifdef HIGHRES
+    shape.genHemisphere(0.5f, 20, 20, tfm);
+#endif
+#ifdef LOWRES
+    shape.genHemisphere(0.5f, 6, 6, tfm);
+#endif
+
+}
+
+void ShapeGrid::genCylinderPlant(float trunkheight, float trunkradius, Shape &shape)
+{
+    glm::mat4 idt, tfm;
+    glm::vec3 trs, rotx;
+    float canopyheight;
+
+    rotx = glm::vec3(1.0f, 0.0f, 0.0f);
+    canopyheight = 1.0f - trunkheight;
+
+    // trunk - cylinder
+    idt = glm::mat4(1.0f);
+    tfm = glm::rotate(idt, glm::radians(-90.0f), rotx);
+    // extra 0.1 to trunk is to ensure that trunk joins tree properly
+    shape.genCappedCylinder(trunkradius, trunkradius, trunkheight+0.1f, 3, 1, tfm, false);
+
+    // canopy - cylinder
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(0.0f, trunkheight, 0.0f);
+    tfm = glm::translate(idt, trs);
+    tfm = glm::rotate(tfm, glm::radians(-90.0f), rotx);
+
+#ifdef HIGHRES
+    shape.genCappedCylinder(0.5f, 0.5f, canopyheight, 20, 1, tfm, false);
+#endif
+#ifdef LOWRES
+   shape.genCappedCylinder(0.5f, 0.5f, canopyheight, 6, 1, tfm, false);
+#endif
+}
+
 void ShapeGrid::delGrid()
 {
     int i, j;
@@ -642,13 +743,18 @@ void ShapeGrid::genPlants()
         case TreeShapeType::INVCONE:
             genInvConePlant(trunkheight, trunkradius, currshape);
             break;
+        case TreeShapeType::HEMISPHR:
+            genHemispherePlant(trunkheight, trunkradius, currshape);
+            break;
+        case TreeShapeType::CYL:
+            genCylinderPlant(trunkheight, trunkradius, currshape);
+            break;
         default:
             break;
         }
         shapes[0][s] = currshape;
     }
 }
-
 
 
 void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<bool> * plantvis)
@@ -733,7 +839,7 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
     for (int i = 0; i < xforms.size(); i++)
     {
         shapes[0][i].removeAllInstances();
-        shapes[0][i].bindInstances(nullptr, &xforms[i], &colvars[i]);
+        shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
     }
 }
 
@@ -820,12 +926,10 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
     {
         cerr << i << endl;
         shapes[0][i].removeAllInstances();
-        shapes[0][i].bindInstances(nullptr, &xforms[i], &colvars[i]);
+        shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
     }
     cerr << "num bound plants = " << bndplants << endl;
     cerr << "num culled plants = " << culledplants << endl;
-
-
 }
 
 void ShapeGrid::drawPlants(std::vector<ShapeDrawData> &drawParams)
@@ -879,8 +983,6 @@ void EcoSystem::init()
         niches.push_back(pgrid);
     }
     clear();
-    dirtyPlants = true;
-    drawPlants = false;
     maxtreehght = 0.0f;
     srand (time(NULL));
 }
@@ -903,7 +1005,6 @@ bool EcoSystem::loadNichePDB(string filename, Terrain * ter, int niche)
     success = niches[niche].readPDB(filename, biome, ter, maxtreehght);
     if(success)
     {
-        dirtyPlants = true; drawPlants = true;
         cerr << "plants loaded for Niche " << niche << endl;
     }
     return success;
@@ -922,7 +1023,7 @@ void EcoSystem::pickPlants(Terrain * ter, TypeMap * clusters)
     {
         niches[n].pickPlants(ter, clusters, n, esys);
     }
-    dirtyPlants = true;
+    // dirtyPlants = true;
 }
 
 void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
@@ -935,7 +1036,7 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
         if(n > 0 && underStoreyOn)
             niches[n].pickAllPlants(ter, 0.0f, 0.0f, 1.0f, esys);
     }
-    dirtyPlants = true;
+    // dirtyPlants = true;
 }
 
 void EcoSystem::sunSeeding(Terrain * ter, Biome * biome, MapFloat * alpha)
@@ -946,46 +1047,26 @@ void EcoSystem::sunSeeding(Terrain * ter, Biome * biome, MapFloat * alpha)
     }
 }
 
-void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis)
+void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool rebind)
 {
-    if(dirtyPlants) // plant positions have been updated since the last bindPlants
-    {
-        drawPlants = true;
-        dirtyPlants = false;
+    if(rebind) // plant positions have been updated since the last bindPlants
         eshapes.bindPlantsSimplified(ter, &esys, plantvis);
-    }
 
-    if(drawPlants)
-        eshapes.drawPlants(drawParams);
+    eshapes.drawPlants(drawParams);
 }
 
-void EcoSystem::bindPlants(View * view, Terrain * ter, TypeMap * clusters, std::vector<bool> * plantvis, std::vector<ShapeDrawData> &drawParams)
+void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree)
 {
-    cerr << "ecosys bind" << endl;
-    if(dirtyPlants) // plant positions have been updated since the last bindPlants
-    {
-        // t.start();
-        drawPlants = true;
-        dirtyPlants = false;
-        eshapes.bindPlants(view, ter, plantvis, &esys, clusters->getRegion());
-    }
-
-    if(drawPlants)
-        eshapes.drawPlants(drawParams);
-
-    cerr << "end ecosys bind" << endl;
-}
-
-void EcoSystem::placePlant(Terrain *ter, const basic_tree &tree)
-{
-    //float h = ter->getHeight(tree.x, tree.y);
     float h = ter->getHeightFromReal(tree.x, tree.y);
-    //vpPoint pos = ter->toWorld(tree.y, tree.x, h);	// h is not affected by this function
     vpPoint pos(tree.y, h, tree.x);
-    //const GLfloat *coldata = colours[(int)tree.species];
-    const GLfloat *coldata;
-    coldata = biome->getSpeciesColour(tree.species);		// XXX: have to make sure that this is the species id, not the index...
-    glm::vec4 colour(coldata[0], coldata[1], coldata[2], coldata[3]);
+
+    int spc = tree.species; // TO DO: needs to be removed when out of species bounds error is fixed
+    if(spc > 15)
+        spc = 15;
+
+    // introduce small random variation in colour
+    float rndoff = nfield->getNoise(pos)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
+    glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
 
     /*
     if (canopy && (fmod(pos.x / 0.9144f, 0.5f) < 1e-4 || fmod(pos.z / 0.9144f, 0.5f) < 1e-4))
@@ -999,15 +1080,12 @@ void EcoSystem::placePlant(Terrain *ter, const basic_tree &tree)
     */
 
 
-    Plant plnt = {pos, tree.height, tree.radius * 2, colour};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
-    esys.placePlant(ter, ((int)tree.species), plnt);		// FIXME, XXX: I don't think we should be multiplying by 3 here...
+    Plant plnt = {pos, tree.height, tree.radius, coldata};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
+    esys.placePlant(ter, spc, plnt);
 }
 
-void EcoSystem::placeManyPlants(Terrain *ter, const std::vector<basic_tree> &trees, const std::vector<bool> active_trees)
+void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, const std::vector<basic_tree> &trees)
 {
     for (int i = 0; i < trees.size(); i++)
-    {
-        if (active_trees.size() != trees.size() || active_trees[i])
-            placePlant(ter, trees[i]);
-    }
+        placePlant(ter, nfield, trees[i]);
 }
