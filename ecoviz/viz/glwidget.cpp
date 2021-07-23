@@ -72,17 +72,14 @@
 #include <QGLFramebufferObject>
 #include <QImage>
 #include <QCoreApplication>
-#include <QMessageBox>
 #include <QInputDialog>
 #include <QLineEdit>
-#include <QRunnable>
-#include <QThreadPool>
+
 
 #include <fstream>
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include "cohortmaps.h"
-#include "progressbar_window.h"
 
 using namespace std;
 
@@ -90,82 +87,12 @@ using namespace std;
 #define GL_MULTISAMPLE  0x809D
 #endif
 
-////
-// Scene
-////
-
-Scene::Scene()
-{
-    view = new View();
-    terrain = new Terrain();
-    terrain->initGrid(1024, 1024, 10000.0f, 10000.0f);
-    view->setForcedFocus(terrain->getFocus());
-    view->setViewScale(terrain->longEdgeDist());
-    eco = new EcoSystem();
-    biome = new Biome();
-
-    int dx, dy;
-    terrain->getGridDim(dx, dy);
-
-    // instantiate typemaps for all possible typemaps		(XXX: this could lead to memory issues for larger landscapes?)
-    for (int t = 0; t < int(TypeMapType::TMTEND); t++)
-        maps[t] = new TypeMap(dx, dy, (TypeMapType)t);
-    maps[2]->setRegion(terrain->coverRegion());		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
-
-    for(int m = 0; m < 12; m++)
-    {
-        moisture.push_back(new MapFloat());
-        sunlight.push_back(new MapFloat());
-        temperature.push_back(0.0f);
-    }
-    slope = new MapFloat();
-    chm = new MapFloat();
-    cdm = new MapFloat();
-    overlay = TypeMapType::EMPTY;
-}
-
-Scene::~Scene()
-{
-    delete view;
-    delete terrain;
-
-    // cycle through all typemaps, and if exists, delete and assign nullptr to indicate empty
-    for (int t = 0; t < int(TypeMapType::TMTEND); t++)
-    {
-        if (maps[int(t)] != nullptr)
-        {
-            delete maps[int(t)];
-            maps[int(t)] = nullptr;
-        }
-    }
-
-    // delete sim;
-    delete eco;
-    delete biome;
-    for(int m = 0; m < 12; m++)
-    {
-        delete sunlight[static_cast<int>(m)];
-        delete moisture[static_cast<int>(m)];
-    }
-    temperature.clear();
-    delete chm;
-    delete cdm;
-}
-
-
-////
-// GLWidget
-////
-
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
-    : QGLWidget(format, parent), transect_vec(1.0f, 0.0f, 0.0f), mousePosIm(1.0f, 0.0f),
-      transect_pos(0.0f, 0.0f, 0.0f), transect_thickness(50.0f)
+GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent)
+    : QGLWidget(format, parent)
 {
-    this->datadir = datadir;
-
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     vizpopup = new QLabel();
     atimer = new QTimer(this);
@@ -175,28 +102,21 @@ GLWidget::GLWidget(const QGLFormat& format, string datadir, QWidget *parent)
     connect(rtimer, SIGNAL(timeout()), this, SLOT(rotateUpdate()));
     glformat = format;
 
-    // main design scene
-    addScene();
-
-    // database display and picking scene
-    addScene();
-
-    currscene = 0;
-
+    trx = trans;
+    setScene(scn);
     renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
-    cmode = ControlMode::VIEW;
-    viewing = false;
     viewlock = false;
     decalsbound = false;
     focuschange = false;
     focusviz = false;
     timeron = false;
-    dbloaded = false;
-    ecoloaded = false;
-    // inclcanopy = true;
     active = true;
+    showtransect = true;
+    rebindplants = true;
     scf = 10000.0f;
     decalTexture = 0;
+    trxstate = -1;
+    overlay = TypeMapType::EMPTY;
 
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
@@ -214,24 +134,17 @@ GLWidget::~GLWidget()
 
     if (renderer) delete renderer;
 
-    // delete views
-    for(int i = 0; i < static_cast<int>(scenes.size()); i++)
-        delete scenes[i];
-
     if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
-
-    if (prog)
-        delete prog;
 }
 
 QSize GLWidget::minimumSizeHint() const
 {
-    return QSize(50, 50);
+    return QSize(80, 60);
 }
 
 QSize GLWidget::sizeHint() const
 {
-    return QSize(1000, 800);
+    return QSize(800, 600);
 }
 
 
@@ -244,417 +157,87 @@ void GLWidget::screenCapture(QImage * capImg, QSize capSize)
     (* capImg) = capImg->scaled(capSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }
 
-View * GLWidget::getView()
-{
-     if(!scenes.empty())
-        return scenes[currscene]->view;
-    else
-        return nullptr;
-}
-
-Terrain * GLWidget::getTerrain()
-{
-    if(!scenes.empty())
-        return scenes[currscene]->terrain;
-    else
-        return nullptr;
-}
-
-TypeMap * GLWidget::getTypeMap(TypeMapType purpose)
-{
-    if(!scenes.empty())
-        return scenes[currscene]->maps[static_cast<int>(purpose)];
-    else
-        return nullptr;
-}
-
-MapFloat * GLWidget::getSunlight(int month)
-{
-     if(!scenes.empty())
-        return scenes[currscene]->sunlight[month];
-    else
-        return nullptr;
-}
-
-MapFloat * GLWidget::getSlope()
-{
-    if(!scenes.empty())
-        return scenes[currscene]->slope;
-    else
-        return nullptr;
-}
-
-MapFloat * GLWidget::getMoisture(int month)
-{
-   if(!scenes.empty())
-        return scenes[currscene]->moisture[month];
-    else
-        return nullptr;
-}
-
-MapFloat * GLWidget::getCanopyHeightModel()
-{
-    if(!scenes.empty())
-        return scenes[currscene]->chm;
-    else
-        return nullptr;
-}
-
-MapFloat * GLWidget::getCanopyDensityModel()
-{
-    if(!scenes.empty())
-        return scenes[currscene]->cdm;
-    else
-        return nullptr;
-}
-
 PMrender::TRenderer * GLWidget::getRenderer()
 {
     return renderer;
 }
 
-EcoSystem * GLWidget::getEcoSys()
-{
-    if(!scenes.empty())
-        return scenes[currscene]->eco;
-    else
-        return nullptr;
-}
-
-Biome * GLWidget::getBiome()
-{
-    if(!scenes.empty())
-        return scenes[currscene]->biome;
-    else
-        return nullptr;
-}
-
-bool GLWidget::readMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly)
-{
-    float val;
-    ifstream infile;
-    int gx, gy, dx, dy;
-
-    infile.open((char *) filename.c_str(), ios_base::in);
-    if(infile.is_open())
-    {
-        infile >> gx >> gy;
-#ifdef STEPFILE
-        float step;
-        infile >> step; // new format
-#endif
-        getTerrain()->getGridDim(dx, dy);
-        if((gx != dx) || (gy != dy))
-            cerr << "Error Simulation::readMonthlyMap: map dimensions do not match terrain" << endl;
-
-        for(int m = 0; m < 12; m++)
-            monthly[m]->setDim(gx, gy);
-
-        for (int y = 0; y < gy; y++)
-            for (int x = 0; x < gx; x++)
-                for(int m = 0; m < 12; m++)
-                {
-                    infile >> val;
-                    monthly[m]->set(x, y, val);
-                }
-        infile.close();
-        return true;
-    }
-    else
-    {
-        cerr << "Error Simulation::readMonthlyMap: unable to open file" << filename << endl;
-        return false;
-    }
-}
-
-bool GLWidget::writeMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly)
-{
-    int gx, gy;
-    ofstream outfile;
-    monthly[0]->getDim(gx, gy);
-
-    outfile.open((char *) filename.c_str(), ios_base::out);
-    if(outfile.is_open())
-    {
-        outfile << gx << " " << gy;
-#ifdef STEPFILE
-        outfile << " 0.9144"; // hardcoded step
-#endif
-        outfile << endl;
-        for (int y = 0; y < gy; y++)
-            for (int x = 0; x < gx; x++)
-                for(int m = 0; m < 12; m++)
-                    outfile << monthly[m]->get(x, y) << " ";
-
-        outfile << endl;
-        outfile.close();
-        return true;
-    }
-    else
-    {
-        cerr << "Error Simulation::writeMonthlyMap:unable to open file " << filename << endl;
-        return true;
-    }
-
-}
-
-bool GLWidget::readSun(std::string filename)
-{
-    return readMonthlyMap(filename, scenes[currscene]->sunlight);
-}
-
-bool GLWidget::writeSun(std::string filename)
-{
-    return writeMonthlyMap(filename, scenes[currscene]->sunlight);
-}
-
-bool GLWidget::readMoisture(std::string filename)
-{
-    return readMonthlyMap(filename, scenes[currscene]->moisture);
-}
-
-bool GLWidget::writeMoisture(std::string filename)
-{
-    return writeMonthlyMap(filename, scenes[currscene]->moisture);
-}
-
-void GLWidget::calcSlope()
-{
-    int dx, dy;
-    Vector up, n;
-
-    // slope is dot product of terrain normal and up vector
-    up = Vector(0.0f, 1.0f, 0.0f);
-    getTerrain()->getGridDim(dx, dy);
-    getSlope()->setDim(dx, dy);
-    getSlope()->fill(0.0f);
-    for(int x = 0; x < dx; x++)
-        for(int y = 0; y < dy; y++)
-        {
-            getTerrain()->getNormal(x, y, n);
-            float rad = acos(up.dot(n));
-            float deg = RAD2DEG * rad;
-            getSlope()->set(y, x, deg);
-        }
-}
-
 void GLWidget::refreshOverlay()
 {
-    renderer->updateTypeMapTexture(getTypeMap(scenes[currscene]->overlay), PMrender::TRenderer::typeMapInfo::PAINT, false);
+    renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, false);
     update();
 }
 
 void GLWidget::setOverlay(TypeMapType purpose)
 {
-    scenes[currscene]->overlay = purpose;
-    renderer->updateTypeMapTexture(getTypeMap(scenes[currscene]->overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
+    overlay = purpose;
+    renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
     update();
 }
 
 TypeMapType GLWidget::getOverlay()
 {
-    return scenes[currscene]->overlay;
+    return overlay;
 }
 
 void GLWidget::bandCanopyHeightTexture(float mint, float maxt)
 {
-    getTypeMap(TypeMapType::CHM)->bandCHMMap(getCanopyHeightModel(), mint*mtoft, maxt*mtoft);
+    scene->getTypeMap(TypeMapType::CHM)->bandCHMMap(scene->getCanopyHeightModel(), mint*mtoft, maxt*mtoft);
     focuschange = true;
-}
-
-std::string GLWidget::get_dirprefix()
-{
-    std::cout << "Datadir before fixing: " << datadir << std::endl;
-    while (datadir.back() == '/')
-        datadir.pop_back();
-
-    std::cout << "Datadir after fixing: " << datadir << std::endl;
-
-    int slash_idx = datadir.find_last_of("/");
-    std::string setname = datadir.substr(slash_idx + 1);
-    std::string dirprefix = datadir + "/" + setname;
-    return dirprefix;
-}
-
-void GLWidget::loadFinScene(int timestep_start, int timestep_end)
-{
-    tstep_scrollwindow = new scrollwindow(this, timestep_start, timestep_end, 300, 100);
-    tstep_scrollwindow->setVisible(false);
-
-    std::cout << "Datadir before fixing: " << datadir << std::endl;
-    while (datadir.back() == '/')
-        datadir.pop_back();
-
-    std::cout << "Datadir after fixing: " << datadir << std::endl;
-
-    int slash_idx = datadir.find_last_of("/");
-    std::string setname = datadir.substr(slash_idx + 1);
-    std::string dirprefix = get_dirprefix();
-
-    loadFinScene(dirprefix, timestep_start, timestep_end);
-}
-
-void GLWidget::loadFinScene(std::string dirprefix, int timestep_start, int timestep_end)
-{
-    using namespace data_importer;
-
-    std::vector<std::string> timestep_files;
-    std::string terfile = datadir+"/dem.elv";
-
-    initstep = timestep_start;
-    for (int ts = timestep_start; ts <= timestep_end; ts++)
-    {
-        timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
-    }
-
-
-    /*
-    std::string cpdbfile = dirprefix + "_canopy";
-    std::string updbfile = dirprefix + "_undergrowth";
-    cpdbfile += std::to_string(curr_canopy) + ".pdb";
-    updbfile += std::to_string(curr_canopy) + ".pdb";
-    */
-
-    // load terrain
-    currscene = 0;
-    getTerrain()->loadElv(terfile);
-    cerr << "Elevation file loaded" << endl;
-    scf = getTerrain()->getMaxExtent();
-    getView()->setForcedFocus(getTerrain()->getFocus());
-    getView()->setViewScale(getTerrain()->longEdgeDist());
-    getView()->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
-    getTerrain()->calcMeanHeight();
-
-    // match dimensions for empty overlay
-    int dx, dy;
-    getTerrain()->getGridDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::PAINT)->fill(0);
-    getTypeMap(TypeMapType::EMPTY)->matchDim(dx, dy);
-    getTypeMap(TypeMapType::EMPTY)->clear();
-
-    float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
-
-    transect_length = sqrt(rw * rw + rh * rh) * 2.0f;
-
-    // import cohorts
-
-    cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0"));
-    before_mod_map = cohortmaps->get_map(0);
-    //cohortmaps->do_adjustments(2);
-
-    if (cohortmaps->get_nmaps() > 0)
-    {
-        reset_sampler(cohortmaps->get_maxpercell());
-
-        //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
-        //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
-    }
-
-    if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
-    {
-        if (static_cast<int>(plantvis.size()) < getBiome()->numPFTypes())
-            plantvis.resize(getBiome()->numPFTypes());
-        cerr << "Biome file load" << endl;
-        for(int t = 0; t < getBiome()->numPFTypes(); t++)
-            plantvis[t] = true;
-
-        canopyvis = true;
-        undervis = true;
-
-        // loading plant distribution
-        getEcoSys()->setBiome(getBiome());
-
-        /*
-        if(!getEcoSys()->loadNichePDB(cpdbfile, getTerrain()))
-             std::cerr << "Plant distribution file " << cpdbfile << "does not exist" << endl; // just report but not really an issue
-        else
-            std::cerr << "Plant canopy distribution file loaded" << std::endl;
-
-
-        if(!getEcoSys()->loadNichePDB(updbfile, getTerrain(), 1))
-             std::cerr << "Undergrowth distribution file " << updbfile << " does not exist" << endl; // just report but not really an issue
-        else
-            std::cerr << "Plant undergrowth distribution file loaded" << std::endl;
-        */
-
-        setAllPlantsVis();
-        focuschange = !focuschange;
-        getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
-        getEcoSys()->redrawPlants();
-        update();
-
-        loadTypeMap(getSlope(), TypeMapType::SLOPE);
-    }
-    else
-    {
-        focuschange = false;
-    }
-}
-
-void GLWidget::reset_sampler(int maxpercell)
-{
-    float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
-    int gw, gh;
-    cohortmaps->get_grid_dims(gw, gh);
-    float tw, th;
-    cohortmaps->get_cohort_dims(tw, th);
-
-    if (sampler)
-        sampler.reset();
-    sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, maxpercell + 5, 3));
-    //sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, 60, 3));
-}
-
-void GLWidget::saveScene(std::string dirprefix)
-{
-    std::string terfile = dirprefix+".elv";
-    std::string pdbfile = dirprefix+".pdb";
-
-    // load terrain
-    getTerrain()->saveElv(terfile);
-
-    if(!getEcoSys()->saveNichePDB(pdbfile))
-        cerr << "Error GLWidget::saveScene: saving plane file " << pdbfile << " failed" << endl;
 }
 
 void GLWidget::writePaintMap(std::string paintfile)
 {
-    getTypeMap(TypeMapType::PAINT)->saveToPaintImage(paintfile);
+    scene->getTypeMap(TypeMapType::TRANSECT)->saveToPaintImage(paintfile);
 }
 
-void GLWidget::addScene()
+void GLWidget::setScene(Scene * s)
 {
-    Scene * scene = new Scene();
-    scene->view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
+    scene = s;
+    view = new View();
+    view->setForcedFocus(scene->getTerrain()->getFocus());
+    view->setViewScale(scene->getTerrain()->longEdgeDist());
+    view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
+    scf = scene->getTerrain()->getMaxExtent();
+    scene->getTerrain()->setBufferToDirty();
+
+    // transect setup
+    float rw, rh;
+    scene->getTerrain()->getTerrainDim(rw, rh);
 
     plantvis.clear();
-    scenes.push_back(scene);
-    std::cout << "scenes size: " << scenes.size() << std::endl;
-    currscene = static_cast<int>(scenes.size()) - 1;
-}
+    plantvis.resize(scene->getBiome()->numPFTypes());
+    for(int t = 0; t < scene->getBiome()->numPFTypes(); t++)
+        plantvis[t] = true;
 
-void GLWidget::setScene(int s)
-{
-    if(s >= 0 && s < static_cast<int>(scenes.size()))
-    {
-        currscene = s;
-        getTerrain()->setBufferToDirty();
-        refreshOverlay();
-        update();
-    }
-}
+    canopyvis = true;
+    undervis = true;
 
+    setAllPlantsVis();
+    focuschange = !focuschange;
+    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+    rebindplants = true;
+
+    loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+    // loadTypeMap(scene->getSlope(), TypeMapType::SLOPE);
+    update();
+
+    /*
+    cerr << "Pre refreshOverlay" << endl;
+    scene->getTerrain()->setBufferToDirty();
+    refreshOverlay();
+    cerr << "Post refreshOverlay" << endl;
+    update();
+    cerr << "Post update" << endl;*/
+}
 
 void GLWidget::loadDecals()
 {
     QImage decalImg, t;
 
     // load image
-    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../common/Icons/manipDecals.png"))
-        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../common/Icons/manipDecals.png" << " not found" << endl;
+    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../../common/Icons/manipDecals.png"))
+        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../../common/Icons/manipDecals.png" << " not found" << endl;
 
     // Qt prep image for OpenGL
     QImage fixedImage(decalImg.width(), decalImg.height(), QImage::Format_ARGB32);
@@ -669,6 +252,7 @@ void GLWidget::loadDecals()
 
     renderer->bindDecals(t.width(), t.height(), t.bits());
     decalsbound = true;
+    cerr << "decals bound" << endl;
 }
 
 int GLWidget::loadTypeMap(MapFloat * map, TypeMapType purpose)
@@ -679,27 +263,28 @@ int GLWidget::loadTypeMap(MapFloat * map, TypeMapType purpose)
     {
         case TypeMapType::EMPTY:
             break;
-        case TypeMapType::PAINT:
+        case TypeMapType::TRANSECT:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
             break;
         case TypeMapType::CATEGORY:
             break;
         case TypeMapType::SLOPE:
-            numClusters = getTypeMap(purpose)->convert(map, purpose, 90.0f);
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 90.0f);
             break;
         case TypeMapType::WATER:
-            numClusters = getTypeMap(purpose)->convert(map, purpose, 100.0); // 1000.0f);
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 100.0); // 1000.0f);
             break;
         case TypeMapType::SUNLIGHT:
-             numClusters = getTypeMap(purpose)->convert(map, purpose, 13.0f);
+             numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 13.0f);
              break;
         case TypeMapType::TEMPERATURE:
-            numClusters = getTypeMap(purpose)->convert(map, purpose, 20.0f);
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 20.0f);
             break;
         case TypeMapType::CHM:
-            numClusters = getTypeMap(purpose)->convert(map, purpose, mtoft*initmaxt);
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, mtoft*initmaxt);
             break;
         case TypeMapType::CDM:
-            numClusters = getTypeMap(purpose)->convert(map, purpose, 1.0f);
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
             break;
         default:
             break;
@@ -710,9 +295,9 @@ int GLWidget::loadTypeMap(MapFloat * map, TypeMapType purpose)
 void GLWidget::setMap(TypeMapType type, int mth)
 {
     if(type == TypeMapType::SUNLIGHT)
-        loadTypeMap(getSunlight(mth), type);
+        loadTypeMap(scene->getSunlight(mth), type);
     if(type == TypeMapType::WATER)
-        loadTypeMap(getMoisture(mth), type);
+        loadTypeMap(scene->getMoisture(mth), type);
     setOverlay(type);
 }
 
@@ -789,20 +374,149 @@ void GLWidget::initializeGL()
     paintGL();
 }
 
-void GLWidget::paintGL()
+void GLWidget::paintCyl(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams)
 {
-    vpPoint mo;
+    ShapeDrawData sdd;
+    float scale;
+    Shape shape;
     glm::mat4 tfm, idt;
     glm::vec3 trs, rot;
-    uts::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
-    Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
     std::vector<glm::vec4> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    // place vertical cylinder
+    scale = view->getScaleFactor();
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(p.x, p.y, p.z);
+    rot = glm::vec3(1.0f, 0.0f, 0.0f);
+    tfm = glm::translate(idt, trs);
+    tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
+    shape.genCappedCylinder(scale*armradius, 1.5f*scale*armradius, scale*(manipheight-manipradius), 40, 10, tfm, false);
+    if(shape.bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawParams.push_back(sdd);
+    }
+}
+
+void GLWidget::paintSphere(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams)
+{
+    ShapeDrawData sdd;
+    float scale;
+    Shape shape;
+    glm::mat4 tfm, idt;
+    glm::vec3 trs, rot;
+    std::vector<glm::mat4> sinst;
+    std::vector<glm::vec4> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    // place vertical cylinder
+    scale = view->getScaleFactor();
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(p.x, p.y, p.z);
+    rot = glm::vec3(1.0f, 0.0f, 0.0f);
+    tfm = glm::translate(idt, trs);
+    // tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
+    shape.genSphere(scale * transectradius, 40, 40, tfm);
+    if(shape.bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawParams.push_back(sdd);
+    }
+}
+
+void GLWidget::createLine(vector<vpPoint> * line, vpPoint start, vpPoint end, float hghtoffset)
+{
+    vpPoint pnt;
+    Vector del;
+    float tx, ty;
+
+    scene->getTerrain()->getTerrainDim(tx, ty);
+    int steps = 200;
+    del.diff(start, end);
+
+    del.mult(1.0f / (float) steps);
+    pnt = start;
+    line->push_back(pnt);
+    for(int j = 0; j < steps; j++)
+    {
+        del.pntplusvec(pnt, &pnt);
+        if(pnt.x >= tx-tolzero) pnt.x = tx-tolzero;
+        if(pnt.x <= tolzero) pnt.x = tolzero;
+        pnt.y = 1.0f;
+        if(pnt.z >= ty-tolzero) pnt.z = ty-tolzero;
+        if(pnt.z <= tolzero) pnt.z = tolzero;
+        line->push_back(pnt);
+    }
+
+    drapeProject(line, line, scene->getTerrain());
+
+    // add height offset to all line positions
+    for(int j = 0; j < (int) line->size(); j++)
+        (* line)[j].y += hghtoffset;
+}
+
+void GLWidget::createTransectShape(float hghtoffset)
+{
+    vector<vpPoint> line[3];
+    float tol, tx, ty;
+
+    for(int i = 0; i < 3; i++)
+        trxshape[i].clear();
+    scene->getTerrain()->getTerrainDim(tx, ty);
+    tol = 0.001f * std::max(tx, ty);
+
+    // generate vertices for the line and drop onto terrain
+    if(active)
+    {
+        createLine(&line[0], trx->getBoundStart(), trx->getClampedInnerStart(), hghtoffset);
+        trxshape[0].genDashedCylinderCurve(line[0], transectradius * 0.5f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
+        createLine(&line[1], trx->getClampedInnerStart(), trx->getClampedInnerEnd(), hghtoffset);
+        trxshape[1].genCylinderCurve(line[1], transectradius * 0.5f * view->getScaleFactor(), tol, 10);
+        createLine(&line[2], trx->getClampedInnerEnd(), trx->getBoundEnd(), hghtoffset);
+        trxshape[2].genDashedCylinderCurve(line[2], transectradius * 0.5f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
+    }
+}
+
+void GLWidget::paintTransect(GLfloat * col, uts::vector<ShapeDrawData> &drawParams)
+{
+    // assumes that the transect shape has already been created
+    ShapeDrawData sdd[3];
+    std::vector<glm::mat4> sinst;
+    std::vector<glm::vec4> cinst;
+
+    // update and bind shapes
+    for(int i = 0; i < 3; i++)
+    {
+        trxshape[i].setColour(col);
+
+        if(trxshape[i].bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+        {
+            sdd[i] = trxshape[i].getDrawParameters();
+            sdd[i].current = false;
+            drawParams.push_back(sdd[i]);
+        }
+    }
+}
+
+void GLWidget::paintGL()
+{
+    uts::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
 
     Timer t;
 
     if(active)
     {
+        drawParams.clear();
         t.start();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -810,38 +524,41 @@ void GLWidget::paintGL()
 
         if(focuschange && focusviz)
         {
-            ShapeDrawData sdd;
-            float scale;
-
             GLfloat manipCol[] = {0.325f, 0.235f, 1.0f, 1.0f};
-
-            // create shape
-            shape.clear();
-            shape.setColour(manipCol);
-
-            // place vertical cylinder at view focus
-            mo = getView()->getFocus();
-            scale = getView()->getScaleFactor();
-            idt = glm::mat4(1.0f);
-            trs = glm::vec3(mo.x, mo.y, mo.z);
-            rot = glm::vec3(1.0f, 0.0f, 0.0f);
-            tfm = glm::translate(idt, trs);
-            tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
-            shape.genCappedCylinder(scale*armradius, 1.5f*scale*armradius, scale*(manipheight-manipradius), 40, 10, tfm, false);
-            if(shape.bindInstances(getView(), &sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
-            {
-                sdd = shape.getDrawParameters();
-                sdd.current = false;
-                drawParams.push_back(sdd);
-            }
-
+            paintCyl(view->getFocus(), manipCol, drawParams);
         }
 
-        if (focuschange && show_transect_control)
+        if (focuschange && showtransect)
         {
             ShapeDrawData sdd;
-            GLfloat planeCol[] = {0.9f, 0.1f, 0.1f, 0.2f};		// FIXME: try to make it semi-transparent
 
+            GLfloat transectCol[] = {0.9f, 0.1f, 0.1f, 0.2f};
+
+            if(trx->getChangeFlag()) // only update the transect line when inner point positions or thickness has changed
+            {
+                createTransectShape(0.0f);
+                loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+                refreshOverlay();
+                trx->clearChangeFlag();
+            }
+
+            if(trxstate == 0)
+            {
+                // paintCyl(t1, transectCol, drawParams);
+                // paintCyl(t2, transectCol, drawParams);
+                paintSphere(trx->getClampedInnerStart(), transectCol, drawParams);
+                paintSphere(trx->getClampedInnerEnd(), transectCol, drawParams);
+                paintTransect(transectCol, drawParams);
+                // paintCyl(trx->getCenter(), transectCol, drawParams);
+            }
+            if(trxstate == 1)
+            {
+                // paintCyl(t1, transectCol, drawParams);
+                paintSphere(t1, transectCol, drawParams);
+            }
+
+
+            /*
             planeshape.clear();
             planeshape.setColour(planeCol);
 
@@ -849,27 +566,30 @@ void GLWidget::paintGL()
 
             idt = glm::mat4(1.0f);
             planeshape.genPlane(transect_vec, transect_pos, transect_thickness, transect_length, idt);
-            if (planeshape.bindInstances(getView(), &sinst, &cinst))
+            if (planeshape.bindInstances(&sinst, &cinst))
             {
                 sdd = planeshape.getDrawParameters();
                 sdd.current = false;
                 drawParams.push_back(sdd);
-            }
+            }*/
         }
 
         // prepare plants for rendering
         if(focuschange)
-            getEcoSys()->bindPlantsSimplified(getTerrain(), drawParams, &plantvis);
+        {
+            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants);
+            rebindplants = false;
+        }
 
         // pass in draw params for objects
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
-        getTerrain()->updateBuffers(renderer); 
+        scene->getTerrain()->updateBuffers(renderer);
 
         if(focuschange)
-            renderer->updateTypeMapTexture(getTypeMap(getOverlay())); // only necessary if the texture is changing dynamically
-        renderer->draw(getView());
+            renderer->updateTypeMapTexture(scene->getTypeMap(getOverlay())); // only necessary if the texture is changing dynamically
+        renderer->draw(view);
 
         t.stop();
 
@@ -881,15 +601,12 @@ void GLWidget::paintGL()
 void GLWidget::resizeGL(int width, int height)
 {
     // TO DO: fix resizing
-    int side = qMin(width, height);
-    glViewport((width - side) / 2, (height - side) / 2, width, height);
+    // int side = qMin(width, height);
+    // glViewport((width - side) / 2, (height - side) / 2, width, height);
+    glViewport(0, 0, width, height);
 
-    // apply to all views
-    for(int i = 0; i < static_cast<int>(scenes.size()); i++)
-    {
-        scenes[i]->view->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
-        scenes[i]->view->apply();
-    }
+    view->setDim(0.0f, 0.0f, (float) this->width(), (float) this->height());
+    view->apply();
 }
 
 
@@ -897,67 +614,15 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Right)
     {
-        float v1 = 1.0f;
-        float v2 = 0.0f;
-        vpPoint movepnt(v1, 0.0f, v2);
-        vpPoint currfocus = getView()->getFocus();
-        currfocus.x += transect_vec.x * 5.0f;
-        currfocus.y += transect_vec.y * 5.0f;
-        currfocus.z += transect_vec.z * 5.0f;
-        getView()->setForcedFocus(currfocus);
-        update();
     }
     if(event->key() == Qt::Key_Left)
     {
-        float v1 = 1.0f;
-        float v2 = 0.0f;
-        vpPoint movepnt(v1, 0.0f, v2);
-        vpPoint currfocus = getView()->getFocus();
-        currfocus.x -= transect_vec.x * 5.0f;
-        currfocus.y -= transect_vec.y * 5.0f;
-        currfocus.z -= transect_vec.z * 5.0f;
-        getView()->setForcedFocus(currfocus);
-        update();
     }
     if(event->key() == Qt::Key_Up)
     {
     }
     if(event->key() == Qt::Key_Down)
     {
-    }
-
-    if(event->key() == Qt::Key_A) // 'A' for animated spin around center point of terrain
-    {
-        getView()->setForcedFocus(vpPoint(transect_pos.x, 0.0f, transect_pos.z));
-        getView()->setZoomdist(150.0f);
-
-        glm::vec3 trvec(transect_vec.x, 0.0f, transect_vec.z);
-        trvec = glm::normalize(trvec);
-        glm::vec3 baseorthog(0.0f, 0.0f, 1.0f);
-        glm::vec3 orthog = glm::cross(trvec, glm::vec3(0.0f, 1.0f, 0.0f));
-        std::cout << "Orthogonal vec: " << orthog.x << ", " << orthog.y << ", " << orthog.z << std::endl;
-        float rad = acos(glm::dot(baseorthog, orthog) / (glm::length(baseorthog) * glm::length(orthog)));
-
-        glm::vec3 crossback = glm::cross(orthog, baseorthog);
-        std::cout << "Crossback: " << crossback.x << ", " << crossback.y << ", " << crossback.z << std::endl;
-        //getView()->startSpin();
-        //rtimer->start(20);
-        if (crossback.y < 0.0f)
-            getView()->flatview(rad);
-        else
-            getView()->flatview(-rad);
-        update();
-    }
-    if (event->key() == Qt::Key_B)
-    {
-        show_transect_control = !show_transect_control;
-        if (!(event->modifiers() == Qt::ShiftModifier))
-        {
-            transect_filter = !transect_filter;
-        }
-        else if (!transect_filter)
-            transect_filter = true;
-        update();
     }
     if(event->key() == Qt::Key_C) // 'C' to show canopy height model texture overlay
     {
@@ -980,54 +645,17 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         cerr << "canopy visibility toggled" << endl;
         setAllPlantsVis();
         canopyvis = !canopyvis; // toggle canopy visibility
-        getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+        rebindplants = true;
         update();
-    }
-    if(event->key() == Qt::Key_O) // 'O' to toggle timestep slider
-    {
-        if (getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
-        {
-            QMessageBox(QMessageBox::Warning, "Typemap Error", "Type map for cohorts does not have a valid colour table").exec();
-        }
-        else if (cohortmaps->get_nmaps() > 0)
-        {
-            int gw, gh;
-            float rw, rh;
-            getTerrain()->getGridDim(gw, gh);
-            getTerrain()->getTerrainDim(rw, rh);
-
-            auto amap = cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
-            //int nclusters = loadTypeMap(amap, TypeMapType::SMOOTHING_ACTION);
-            //setOverlay(TypeMapType::SMOOTHING_ACTION);
-
-            //data_importer::write_txt<ValueGridMap<float> > ("/home/konrad/actionmap.txt", &amap, 0.9144f);
-
-            tstep_scrollwindow->setVisible(true);
-            if (tstep_scrollwindow->isVisible())
-                set_timestep(tstep_scrollwindow->get_sliderval());
-            else
-                set_timestep(initstep);
-            update();
-            //curr_cohortmap++;
-            //getTypeMap(TypeMapType::COHORT)->save("/home/konrad/cohorttypemap.txt");
-        }
-        else
-            QMessageBox(QMessageBox::Warning, "Typemap Error", "No cohort plant count maps available").exec();
-
-        /*
-        cerr << "unit test on ascii grid load" << endl;
-        ValueGridMap<float> map;
-        map = data_importer::load_esri<ValueGridMap<float>>("./test.txt");
-        cerr << map.get(0, 0) << " " << map.get(1, 2) << endl;
-        // possible order issue on reads
-        */
     }
     if(event->key() == Qt::Key_P) // 'P' to toggle plant visibility
     {
         cerr << "plant visibility toggled" << endl;
         setAllPlantsVis();
         focuschange = !focuschange;
-        getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+        rebindplants = true;
         update();
     }
     if(event->key() == Qt::Key_R) // 'R' to show temperature texture overlay
@@ -1039,26 +667,36 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         sun_mth++;
         if(sun_mth >= 12)
             sun_mth = 0;
-        loadTypeMap(getSunlight(sun_mth), TypeMapType::SUNLIGHT);
+        loadTypeMap(scene->getSunlight(sun_mth), TypeMapType::SUNLIGHT);
         setOverlay(TypeMapType::SUNLIGHT);
     }
-    if(event->key() == Qt::Key_T) // 'T' to show slope texture overlay
+    if(event->key() == Qt::Key_T) // 'T' to toggle transect display onn/off
     {
-        loadTypeMap(getSlope(), TypeMapType::SLOPE);
-        setOverlay(TypeMapType::SLOPE);
+        showtransect = !showtransect;
+        if(showtransect && trxstate == 0)
+        {
+            loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+            setOverlay(TypeMapType::TRANSECT);
+        }
+        else
+        {
+            setOverlay(TypeMapType::EMPTY);
+        }
+        update();
     }
     if(event->key() == Qt::Key_U) // 'U' toggle undergrowth display on/off
     {
         setAllPlantsVis();
         undervis = !undervis; // toggle canopy visibility
-        getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+        rebindplants = true;
         update();
     }
     if(event->key() == Qt::Key_V) // 'V' for top-down view
     {
-        getTerrain()->setMidFocus();
-        getView()->setForcedFocus(getTerrain()->getFocus());
-        getView()->topdown();
+        scene->getTerrain()->setMidFocus();
+        view->setForcedFocus(scene->getTerrain()->getFocus());
+        view->topdown();
         update();
     }
     if(event->key() == Qt::Key_W) // 'W' to show water texture overlay
@@ -1067,7 +705,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 
         if(wet_mth >= 12)
             wet_mth = 0;
-        loadTypeMap(getMoisture(wet_mth), TypeMapType::WATER);
+        loadTypeMap(scene->getMoisture(wet_mth), TypeMapType::WATER);
         setOverlay(TypeMapType::WATER);
     }
     // '1'-'9' make it so that only plants of that functional type are visible
@@ -1145,7 +783,8 @@ void GLWidget::setCanopyVis(bool vis)
 {
     setAllPlantsVis();
     canopyvis = vis; // toggle canopy visibility
-    getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+    rebindplants = true;
     update();
 }
 
@@ -1153,7 +792,8 @@ void GLWidget::setUndergrowthVis(bool vis)
 {
     setAllPlantsVis();
     undervis = vis;
-    getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+    rebindplants = true;
     update();
 }
 
@@ -1161,7 +801,8 @@ void GLWidget::setAllSpecies(bool vis)
 {
     for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
         plantvis[i] = vis;
-    getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+    rebindplants = true;
     update();
 }
 
@@ -1172,7 +813,8 @@ void GLWidget::setSinglePlantVis(int p)
         for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
             plantvis[i] = false;
         plantvis[p] = true;
-        getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+        rebindplants = true;
         update();
     }
     else
@@ -1186,13 +828,58 @@ void GLWidget::toggleSpecies(int p, bool vis)
     if(p < static_cast<int>(plantvis.size()))
     {
         plantvis[p] = vis;
-        getEcoSys()->pickAllPlants(getTerrain(), canopyvis, undervis);
+        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
+        rebindplants = true;
         update();
     }
     else
     {
         cerr << "non-valid pft and so unable to toggle visibility" << endl;
     }
+}
+
+template<typename T> int GLWidget::loadTypeMap(const T &map, TypeMapType purpose)
+{
+    int numClusters = 0;
+
+    switch(purpose)
+    {
+        case TypeMapType::EMPTY:
+            break;
+        case TypeMapType::TRANSECT:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
+            break;
+        case TypeMapType::CATEGORY:
+            break;
+        case TypeMapType::SLOPE:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 90.0f);
+            break;
+        case TypeMapType::WATER:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 100.0); // 1000.0f);
+            break;
+        case TypeMapType::SUNLIGHT:
+             numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 13.0f);
+             break;
+        case TypeMapType::TEMPERATURE:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 20.0f);
+            break;
+        case TypeMapType::CHM:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, mtoft*initmaxt);
+            break;
+        case TypeMapType::CDM:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
+            break;
+        case TypeMapType::COHORT:
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 60.0f);
+            break;
+        case TypeMapType::SMOOTHING_ACTION:
+            std::cout << "Loading typemap SMOOTHING_ACTION..." << std::endl;
+            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 2.0f);
+            break;
+        default:
+            break;
+    }
+    return numClusters;
 }
 
 
@@ -1215,8 +902,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         nx = (2.0f * (float) x - W) / W;
         ny = (H - 2.0f * (float) y) / H;
         lastPos = event->pos();
-        getView()->startArcRotate(nx, ny);
-        viewing = true;
+        view->startArcRotate(nx, ny);
     }
 
     lastPos = event->pos();
@@ -1232,14 +918,14 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     sx = event->x(); sy = event->y();
     if(!viewlock && ((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton))
     {
-        getView()->apply();
-        if(getTerrain()->pick(sx, sy, getView(), pnt))
+        view->apply();
+        if(scene->getTerrain()->pick(sx, sy, view, pnt))
         {
             if(!decalsbound)
                 loadDecals();
             vpPoint pickpnt = pnt;
-            getView()->setAnimFocus(pickpnt);
-            getTerrain()->setFocus(pickpnt);
+            view->setAnimFocus(pickpnt);
+            scene->getTerrain()->setFocus(pickpnt);
             cerr << "Pick Point = " << pickpnt.x << ", " << pickpnt.y << ", " << pickpnt.z << endl;
             focuschange = true; focusviz = true;
             atimer->start(10);
@@ -1255,7 +941,7 @@ void GLWidget::pickInfo(int x, int y)
    cerr << endl;
    cerr << "*** PICK INFO ***" << endl;
    cerr << "location: " << x << ", " << y << endl;
-   cerr << "Elevation: " << getTerrain()->getHeight(y, x) << endl;
+   cerr << "Elevation: " << scene->getTerrain()->getHeight(y, x) << endl;
    // getSim()->pickInfo(x, y);
    //cerr << "Canopy Height (m): " << getCanopyHeightModel()->get(x, y) * 0.3048f  << endl;
    //cerr << "Canopy Density: " << getCanopyDensityModel()->get(x, y) << endl;
@@ -1265,39 +951,56 @@ void GLWidget::pickInfo(int x, int y)
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    viewing = false;
-
-    if (event->button() == Qt::LeftButton && event->modifiers() == Qt::ControlModifier)
+    if(event->button() == Qt::LeftButton && event->modifiers() == Qt::ControlModifier) // place transect point
     {
         vpPoint pnt;
         int sx, sy;
 
         sx = event->x(); sy = event->y();
-
-        if(getTerrain()->pick(sx, sy, getView(), pnt))
+        showtransect = true;
+        switch(trxstate)
         {
-            std::cout << "pnt: " << pnt.x << ", " << pnt.y << ", " << pnt.z << std::endl;
-            int x, y;
-            getTerrain()->toGrid(pnt, x, y);
-            transect_pos.x = x;
-            transect_pos.z = y;
-            std::cout << "transect pos after repositioning: " << transect_pos.x << ", " << transect_pos.z << std::endl;
-            update();
+        case -1:
+        case 0: // placement of initial point
+            if(scene->getTerrain()->pick(sx, sy, view, pnt))
+            {
+                t1 = pnt;
+                trxstate = 1;
+
+                // int x, y;
+                // scene->getTerrain()->toGrid(pnt, x, y);
+                // pickInfo(x, y);
+            }
+            setOverlay(TypeMapType::EMPTY);
+            break;
+        case 1: // placement of final point
+            if(scene->getTerrain()->pick(sx, sy, view, pnt))
+            {
+                t2 = pnt;
+                trxstate = 0;
+
+                trx->derive(t1, t2);
+                createTransectShape(0.0f);
+                loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+                setOverlay(TypeMapType::TRANSECT);
+                signalShowTransectView();
+                signalRepaintAllGL(); // need to also update transect view
+                /*
+                int x, y;
+                scene->getTerrain()->toGrid(pnt, x, y);
+                pickInfo(x, y);*/
+            }
+            break;
         }
-    }
-    else if(event->button() == Qt::LeftButton && cmode == ControlMode::VIEW) // info on terrain cell
-    {
-        vpPoint pnt;
-        int sx, sy;
-
-        sx = event->x(); sy = event->y();
-
-        if(getTerrain()->pick(sx, sy, getView(), pnt))
+        /*
+        if(scene->getTerrain()->pick(sx, sy, view, pnt))
         {
             int x, y;
-            getTerrain()->toGrid(pnt, x, y);
+            scene->getTerrain()->toGrid(pnt, x, y);
             pickInfo(x, y);
         }
+        */
+        update();
     }
 
 }
@@ -1313,33 +1016,16 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     H = (float) height();
 
     // control view orientation with right mouse button or ctrl modifier key and left mouse
-    if(!viewlock && ((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton))
-    {
-        // convert to [0,1] X [0,1] domain
-        nx = (2.0f * (float) x - W) / W;
-        ny = (H - 2.0f * (float) y) / H;
-        getView()->arcRotate(nx, ny);
-        update();
-        lastPos = event->pos();
-    }
-    else if (event->modifiers() == Qt::ControlModifier)
-    {
-        if (mouseprevx > -1)
+    if(!viewlock)
+        if(event->buttons() == Qt::RightButton)
         {
-            mousePosIm.x += x - mouseprevx;
-            mousePosIm.y += y - mouseprevy;
-
-            transect_vec.x = mousePosIm.x;
-            transect_vec.z = mousePosIm.y;
-
-            float dist = sqrt((transect_vec.x * transect_vec.x) + (transect_vec.z * transect_vec.z));
-            transect_vec.x /= dist * 5.0f;
-            transect_vec.z /= dist * 5.0f;
+            // convert to [0,1] X [0,1] domain
+            nx = (2.0f * (float) x - W) / W;
+            ny = (H - 2.0f * (float) y) / H;
+            view->arcRotate(nx, ny);
+            update();
+            lastPos = event->pos();
         }
-        mouseprevx = x;
-        mouseprevy = y;
-        update();
-    }
 }
 
 void GLWidget::wheelEvent(QWheelEvent * wheel)
@@ -1349,220 +1035,42 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     QPoint pix = wheel->pixelDelta();
     QPoint deg = wheel->angleDelta();
 
-    if (wheel->modifiers() == Qt::ControlModifier)
-    {
-        del = (float) deg.y() * 0.1f;
-        transect_thickness += del;
-        update();
-    }
-    else if(!viewlock)
+    if(!viewlock)
     {
         if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
         {
             del = (float) pix.y() * 10.0f;
-            getView()->incrZoom(del);
-            update();
-
         }
         else if(!deg.isNull()) // mouse wheel instead
         {
             del = (float) -deg.y() * 5.0f;
-            getView()->incrZoom(del);
-            update();
         }
+        // cerr << "del = " << del << endl;
+        if(wheel->modifiers() == Qt::ControlModifier) // adjust transect width
+        {
+            del /= 60.0f;
+            trx->setThickness(trx->getThickness()+del);
+        }
+        else // otherwise adjust view zoom
+            view->incrZoom(del);
+        update();
+
     }
 }
 
 void GLWidget::animUpdate()
 {
-    if(getView()->animate())
+    if(view->animate())
         update();
 }
 
 void GLWidget::rotateUpdate()
 {
-    if(getView()->spin())
+    if(view->spin())
         update();
 }
 
-std::vector<bool> GLWidget::set_active_trees(const std::vector<basic_tree> &trees, float x1, float x2, float y1, float y2)
+void GLWidget::rebindPlants()
 {
-    std::vector<bool> active;
-
-    for (auto &tr : trees)
-    {
-        if (tr.x >= x1 && tr.x <= x2 && tr.y >= y1 && tr.y <= y2)
-            active.push_back(true);
-        else
-            active.push_back(false);
-    }
-    return active;
-}
-
-class AdjustmentRunnable : public QRunnable
-{
-public:
-    AdjustmentRunnable(GLWidget *parent, CohortMaps *cohortmaps, int distance, cohortsampler *sampler, int tstep)
-        : QRunnable(), parent(parent), maps(cohortmaps), distance(distance), sampler(sampler), tstep(tstep)
-    {
-    }
-
-    void run()
-    {
-        parent->show_progwindow();
-        if (maps)
-        {
-            maps->do_adjustments(distance);
-            parent->reset_sampler(maps->get_maxpercell());
-        }
-        if (tstep >= 0)
-            parent->set_timestep(tstep);
-        parent->hide_progwindow();
-    }
-private:
-    GLWidget *parent;
-    CohortMaps *maps;
-    cohortsampler *sampler;
-    int distance, tstep;
-};
-
-void GLWidget::hide_progwindow()
-{
-    if (prog)
-        prog->hide();
-}
-
-void GLWidget::show_progwindow()
-{
-    if (prog)
-        prog->show();
-}
-
-void GLWidget::set_smoothing_distance()
-{
-    QLineEdit *sender = dynamic_cast<QLineEdit *>(this->sender());
-    if (sender)
-    {
-        if (!prog)
-            prog = new progressbar_window(400, 100);
-        prog->show();
-        //prog->update();
-
-        auto update_bar = [this](int value){
-            prog->update_bar(value);
-        };
-
-        auto update_label = [this](std::string label){
-            prog->update_label(label);
-        };
-        cohortmaps->set_progress_function(update_bar);
-        cohortmaps->set_progress_label_function(update_label);
-
-        QString qtext = sender->text();
-        int distance = std::stoi(qtext.toStdString());
-
-        // ---
-        //cohortmaps->do_adjustments(distance);
-        // ---
-        AdjustmentRunnable *runnable = new AdjustmentRunnable(this, cohortmaps.get(), distance, sampler.get(), curr_tstep);
-        runnable->setAutoDelete(true);
-        QThreadPool::globalInstance()->start(runnable);
-        // ---
-
-        // --- what must come after the runnable is finished - add to the AdjustmentRunnable class?
-        //sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
-        //set_timestep(curr_tstep);
-    }
-
-}
-
-void GLWidget::do_adjustments(int distance)
-{
-    cohortmaps->do_adjustments(distance);
-    sampler->set_spectoidx_map(cohortmaps->compute_spectoidx_map());
-}
-
-void GLWidget::set_timestep(int tstep)
-{
-    auto bt_master = std::chrono::steady_clock::now().time_since_epoch();
-
-    curr_tstep = tstep;
-    curr_cohortmap = tstep - initstep;
-    if (curr_cohortmap >= cohortmaps->get_nmaps())
-        curr_cohortmap = cohortmaps->get_nmaps() - 1;
-    //loadTypeMap(cohort_plantcountmaps.at(curr_cohortmap), TypeMapType::COHORT);
-    //setOverlay(TypeMapType::COHORT);
-
-    glm::vec3 cent = glm::vec3(transect_pos.x, transect_pos.y, transect_pos.z);
-    glm::vec3 ornt = glm::vec3(transect_vec.x, transect_vec.y, transect_vec.z);
-    ornt = glm::normalize(ornt);
-    glm::vec3 orthog = glm::cross(glm::vec3(0.0f, -1.0f, 0.0f), ornt) * transect_thickness;
-
-    glm::vec3 top3d = cent + orthog;
-    glm::vec3 bot3d = cent - orthog;
-    glm::vec2 top = glm::vec2(top3d.z, top3d.x);
-    glm::vec2 bot = glm::vec2(bot3d.z, bot3d.x);
-
-    float m = NAN;
-    float c1 = NAN, c2 = NAN;
-    if (fabs(transect_vec.z) > 1e-5f)
-    {
-        m = transect_vec.x / transect_vec.z;
-        c1 = top.y - m * top.x;
-        c2 = bot.y - m * bot.x;
-    }
-    else
-    {
-        c1 = top.x;
-        c2 = bot.x;
-    }
-
-    tstep_scrollwindow->set_labelvalue(tstep);
-
-    auto bt_sample = std::chrono::steady_clock::now().time_since_epoch();
-    std::vector<basic_tree> trees(sampler->sample(cohortmaps->get_map(curr_cohortmap), nullptr));
-    auto et_sample = std::chrono::steady_clock::now().time_since_epoch();
-
-    std::vector<bool> active;
-    if (transect_filter)
-        for (auto &tr : trees)
-        {
-            if (!isnan(m))
-            {
-                float y1 = tr.x * m + c1;
-                float y2 = tr.x * m + c2;
-                if ((tr.y > y1 && tr.y < y2) || (tr.y < y1 && tr.y > y2))
-                {
-                    active.push_back(true);
-                }
-                else
-                    active.push_back(false);
-            }
-            else if ((tr.x > c1 && tr.x < c2) || (tr.x < c1 && tr.x > c2))
-            {
-                active.push_back(true);
-            }
-            else
-                active.push_back(false);
-        }
-    //active = set_active_trees(trees, 0.0f, 100.0f, 0.0f, 1024.0f);
-
-    auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
-    getEcoSys()->clear();
-    getEcoSys()->placeManyPlants(getTerrain(), trees, active);
-    getEcoSys()->redrawPlants();
-    update();
-    auto et_render = std::chrono::steady_clock::now().time_since_epoch();
-
-    std::cout << "Timestep changed to " << tstep << std::endl;
-    auto et_master = std::chrono::steady_clock::now().time_since_epoch();
-
-    int sampletime = std::chrono::duration_cast<std::chrono::milliseconds>(et_sample - bt_sample).count();
-    int rendertime = std::chrono::duration_cast<std::chrono::milliseconds>(et_render - bt_render).count();
-    int overalltime = std::chrono::duration_cast<std::chrono::milliseconds>(et_master - bt_master).count();
-
-    std::cout << "Number of plants: " << trees.size() << std::endl;
-    std::cout << "Overall time: " << overalltime << std::endl;
-    std::cout << "Sample time: " << sampletime << std::endl;
-    std::cout << "Render time: " << rendertime << std::endl;
+    rebindplants = true;
 }

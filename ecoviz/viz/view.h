@@ -62,8 +62,6 @@ enum class ViewState {
     VSEND
 };
 
-#define orthodiv 1
-
 // information structure for view control
 class View
 {
@@ -80,7 +78,7 @@ private:
     float viewscale;            // scale adaptation to terrain size
     ViewState viewtype;          // {PERSPECTIVE, ORTHOGONAL} form of viewing
     float terextent;            // the diagonal extent of the terrain for sizing orthogonal views to fit
-    int ox, oy;               // ortho quadrant in range 0 .. orthodiv-1
+    float terdepth;             //< the depth from near to far clipping planes for orthogonal views
     Timer time;
 
     /// Recalculate viewing direction and up vector
@@ -117,7 +115,7 @@ public:
         trackball(curquat, 0.0f, 0.0f, 0.0f, -0.5f);
         cop = vpPoint(0.0f, 0.0f, 1.0f);
         terextent = 1.0f;
-        ox = 0; oy = 0;
+        terdepth = 1.0f;
         updateDir();
     }
 
@@ -184,10 +182,18 @@ public:
     /// set the extent of the orthogonal view using the terrain dimensions (tx, ty) in metres
     inline void setOrthoViewExtent(float tx, float ty)
     {
-        float dx = 1.2*tx; // allow for margin of error
-        float dy = 1.2*ty;
+        float dx = tx;
+        float dy = ty;
         terextent = sqrt(dx*dx + dy*dy);
     }
+
+    /// get and set the horizontal extent of the orthogonal view
+    inline float getOrthoViewExtent(){ return terextent; }
+    inline void setOrthoViewExtent(float extent){ terextent = extent; }
+
+    /// get and set the orthogonal view depth
+    inline float getOrthoViewDepth(){ return terdepth; }
+    inline void setOrthoViewDepth(float depth){ terdepth = depth; }
 
     /// set the form of viewing
     inline void setViewType(ViewState vs){ viewtype = vs; }
@@ -201,9 +207,6 @@ public:
 
     /// Set viewport dimensions @a width and @a height
     inline void setDim(float ox, float oy, float w, float h){ startx = ox, starty = oy; width = w; height = h;}
-
-    /// set orthogonal quadrant for rendering
-    void setOrthoQuadrant(int oqx, int oqy){ ox = oqx; oy = oqy; }
     
     /// Increment the current zoom distance by @a delta
     inline void incrZoom(float delta)

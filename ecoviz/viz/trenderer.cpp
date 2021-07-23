@@ -915,10 +915,12 @@ void TRenderer::initInstanceData(void)
 
       normalMatrix = glm::transpose(glm::inverse(glm::mat3(MVmx))); // glm::mat3(1.0f);
       //normalMatrix = glm::mat3(1.0f);
+
       if(shadModel == SUN)
          projMx = glm::ortho(-500.0f, 500.0f, -500.0f, 500.0f, -10000.0f, 10000.0f);
       else
          projMx = glm::frustum(-8.0f*ACTUAL_ASPECT, 8.0f*ACTUAL_ASPECT, -8.0f, 8.0f, 50.0f, 100000.0f);
+
 
       MVP = projMx  * MVmx;
 }
@@ -1083,6 +1085,8 @@ void TRenderer::loadTerrainData(const float* data, int wd, int ht, float scx, fl
   // width and height of terrain must match the width and height of type map buffer
 
   // assert(wd == width && ht == height);
+  if(wd != width || ht != height)
+      cerr << "TERRAIN TEXTURE mismatch" << endl;
 
   // texturing ops affect this texture unit
 
@@ -1304,7 +1308,7 @@ void TRenderer::draw(View * view)
     glDepthMask(GL_TRUE); CE();
     glDepthFunc(GL_LEQUAL); CE();
     glDepthRange(0.0f, 1.0f); CE();
-    glEnable(GL_CULL_FACE); CE();
+    // glEnable(GL_CULL_FACE); CE();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
 
     //glEnable(GL_DEPTH_CLAMP);

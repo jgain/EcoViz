@@ -40,10 +40,10 @@ void Shape::setColour(GLfloat * col)
     for(i = 0; i < 4; i++)
         diffuse[i] = col[i];
     for(i = 0; i < 3; i++)
-        ambient[i] = diffuse[i] * 0.75f;
+        ambient[i] = diffuse[i] * 0.8f; // * 0.75f
     ambient[3] = diffuse[3];
     for(i = 0; i < 3; i++)
-        specular[i] = std::min(1.0f, diffuse[i] * 1.25f);
+        specular[i] = std::min(1.0f, diffuse[i] * 0.3f); // * 1.25f
     specular[3] = diffuse[3];
 }
 
@@ -931,6 +931,62 @@ void Shape::genSphereCurve(std::vector<vpPoint> &curve, float thickness)
     }
 }
 
+void Shape::genHemisphereVert(float radius, float lat, float lon, glm::mat4x4 trm)
+{
+    float la, lo, x, y, z;
+    glm::vec4 p;
+    glm::vec3 v;
+
+    la = PI+0.5f*PI*lat;
+    lo = PI2*lon;
+    // this is unoptimized
+    x = cosf(lo)*sinf(la)*radius;
+    y = sinf(lo)*sinf(la)*radius;
+    z = cosf(la)*radius;
+
+    // apply transformation
+    p = trm * glm::vec4(x, y, z, 1.0f);
+    v = glm::mat3(trm) * glm::normalize(glm::vec3(x, y, z));
+
+    verts.push_back(p.x); verts.push_back(p.y); verts.push_back(p.z); // position
+    verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
+    verts.push_back(v.x); verts.push_back(v.y); verts.push_back(v.z); // normal
+}
+
+void Shape::genHemisphere(float radius, int slices, int stacks, glm::mat4x4 trm)
+{
+    int lat, lon, base;
+    float plat, plon;
+
+    // doesn't produce very evenly sized triangles, tend to cluster at poles
+    base = int(verts.size()) / 8;
+    for(lat = 0; lat <= stacks; lat++)
+    {
+        for(lon = 0; lon < slices; lon++)
+        {
+            plat = (float) lat / (float) stacks;
+            plon = (float) lon / (float) slices;
+            genHemisphereVert(radius, plat, plon, trm);
+
+            if(lat > 0)
+            {
+                if(lon < slices-1)
+                {
+                    indices.push_back(base-slices+lon); indices.push_back(base-slices+lon+1); indices.push_back(base+lon);
+                    indices.push_back(base-slices+lon+1); indices.push_back(base+lon+1); indices.push_back(base+lon);
+                }
+                else // wrap
+                {
+                    indices.push_back(base-slices+lon); indices.push_back(base-slices); indices.push_back(base+lon);
+                    indices.push_back(base-slices); indices.push_back(base); indices.push_back(base+lon);
+                }
+            }
+        }
+        base += slices;
+    }
+
+}
+
 static std::ostream & operator << (std::ostream &o, const vpPoint &rhs)
 {
     o << rhs.x << ", " << rhs.y << ", " << rhs.z << std::endl;
@@ -1004,7 +1060,7 @@ ShapeDrawData Shape::getDrawParameters()
     return sdd;
 }
 
-bool Shape::bindInstances(View * view, std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols)
+bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols)
 {
     if((int) indices.size() > 0 && ((int) iforms->size() == (int) icols->size()))
     {

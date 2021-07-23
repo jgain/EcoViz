@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
         window->resize(window->sizeHint());
         window->setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
-        window->getView().setForcedFocus(window->getTerrain().getFocus());
+        // window->getView().setForcedFocus(window->getTerrain().getFocus());
 
         int desktopArea = QApplication::desktop()->width() *
             QApplication::desktop()->height();

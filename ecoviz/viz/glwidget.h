@@ -74,17 +74,11 @@
 #include <common/debug_list.h>
 #include <memory>
 
+#include "scene.h"
 #include "view.h"
-#include "eco.h"
-#include "dice_roller.h"
-#include "common/basic_types.h"
-#include "stroke.h"
-#include "typemap.h"
-#include "shape.h"
-#include "scrollwindow.h"
-#include "cohortsampler.h"
+#include "timewindow.h"
 #include "progressbar_window.h"
-
+#include "gltransect.h"
 
 //! [0]
 
@@ -93,39 +87,12 @@ const float manipheight = 750.0f;
 const float armradius = manipradius / 2.5f;
 const float tolzero = 0.01f;
 
+const float transectradius = 50.0f;
+
 const float seaval = 2000.0f;
 const float initmint = 0.0f;
 const float initmaxt = 40.0f;
 const float mtoft = 3.28084f;
-
-enum class ControlMode
-{
-    VIEW,   // free viewing of scene
-    PAINTLEARN,  // painting for training
-    PAINTECO, // painting ecosystems
-    CMEND
-};
-
-class Scene
-{
-public:
-
-    View * view;
-    Terrain * terrain;
-    TypeMap * maps[(int) TypeMapType::TMTEND];
-    MapFloat * slope, * chm, * cdm; //< condition maps
-    std::vector<MapFloat *> sunlight; //< local per cell illumination for each month
-    std::vector<MapFloat *> moisture; //< local per cell moisture for each month
-    std::vector<float> temperature; //< average monthly temperature
-
-    EcoSystem * eco;
-    Biome * biome;
-    TypeMapType overlay; //< currently active overlay texture: CATEGORY, WATER, SUNLIGHT, TEMPERATURE, etc
-
-    Scene();
-
-    ~Scene();
-};
 
 class Window;
 
@@ -135,7 +102,7 @@ class GLWidget : public QGLWidget
 
 public:
 
-    GLWidget(const QGLFormat& format, std::string datadir, QWidget *parent = 0);
+    GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent = 0);
     ~GLWidget();
 
     QSize minimumSizeHint() const;
@@ -149,43 +116,7 @@ public:
     void screenCapture(QImage * capImg, QSize capSize);
 
     /// getters for currently active view, terrain, typemaps, renderer, ecosystem
-    View * getView();
-    Terrain * getTerrain();
-    TypeMap * getTypeMap(TypeMapType purpose);
     PMrender::TRenderer * getRenderer();
-    EcoSystem * getEcoSys();
-    MapFloat * getSunlight(int month);
-    MapFloat * getSlope();
-    MapFloat * getMoisture(int month);
-    MapFloat * getTemperature();
-    MapFloat * getCanopyHeightModel();
-    MapFloat * getCanopyDensityModel();
-    Biome * getBiome();
-
-    /**
-     * @brief calcSlope    Calculate per cell ground slope
-     */
-    void calcSlope();
-
-    /**
-     * @brief readMonthlyMap Read a set of 12 maps from file
-     * @param filename   name of file to be read
-     * @param monthly    content will be loaded into this vector of maps
-     */
-    bool readMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly);
-
-    /**
-     * @brief writeMonthlyMap    Write a set of 12 maps to file
-     * @param filename   name of file to be written
-     * @param monthly    map content to be written
-     */
-    bool writeMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly);
-
-    /// read and write condition maps
-    bool readSun(std::string filename);
-    bool writeSun(std::string filename);
-    bool readMoisture(std::string filename);
-    bool writeMoisture(std::string filename);
 
     /// getter and setter for brush radii
     float getRadius();
@@ -205,19 +136,6 @@ public:
     void bandCanopyHeightTexture(float mint, float maxt);
 
     /**
-     * Load scene attributes that are located in the directory specified
-     * @param dirprefix     directory path and file name prefix combined for loading a scene
-     */
-    void loadFinScene(int timestep_start, int timestep_end);
-    void loadFinScene(std::string dirprefix, int timestep_start, int timestep_end);
-
-     /**
-      * Save scene attributes to the directory specified
-      * @param dirprefix     directory path and file name prefix combined for saving a scene, directory is assumed to exist
-      */
-     void saveScene(std::string dirprefix);
-
-    /**
      * @brief writePaintMap Output image file encoding the paint texture layer. Paint codes are converted to greyscale values
      * @param paintfile image file name
      */
@@ -229,11 +147,15 @@ public:
      */
     void writeGrass(std::string grassrootfile);
 
-    /// Add an extra scene with placeholder view, terrain and typemap onto the end of the scene list
-    void addScene();
+    /**
+     * @brief setScene Change the scene being displayed and initialize a new default view
+     * @param s Scene to display
+     */
+    void setScene(Scene * s);
 
-    /// change the scene being displayed
-    void setScene(int s);
+    /// getter for scene attached to glwidget
+    Scene * getScene(){ return scene; }
+    View * getView(){ return view; }
 
     /// Prepare decal texture
     void loadDecals();
@@ -266,65 +188,17 @@ public:
     void toggleSpecies(int p, bool vis);
 
     template<typename T>
-    int loadTypeMap(const T &map, TypeMapType purpose)
-    {
-        int numClusters = 0;
-
-        switch(purpose)
-        {
-            case TypeMapType::EMPTY:
-                break;
-            case TypeMapType::PAINT:
-                break;
-            case TypeMapType::CATEGORY:
-                break;
-            case TypeMapType::SLOPE:
-                numClusters = getTypeMap(purpose)->convert(map, purpose, 90.0f);
-                break;
-            case TypeMapType::WATER:
-                numClusters = getTypeMap(purpose)->convert(map, purpose, 100.0); // 1000.0f);
-                break;
-            case TypeMapType::SUNLIGHT:
-                 numClusters = getTypeMap(purpose)->convert(map, purpose, 13.0f);
-                 break;
-            case TypeMapType::TEMPERATURE:
-                numClusters = getTypeMap(purpose)->convert(map, purpose, 20.0f);
-                break;
-            case TypeMapType::CHM:
-                numClusters = getTypeMap(purpose)->convert(map, purpose, mtoft*initmaxt);
-                break;
-            case TypeMapType::CDM:
-                numClusters = getTypeMap(purpose)->convert(map, purpose, 1.0f);
-                break;
-            case TypeMapType::COHORT:
-                numClusters = getTypeMap(purpose)->convert(map, purpose, 60.0f);
-                break;
-            case TypeMapType::SMOOTHING_ACTION:
-                std::cout << "Loading typemap SMOOTHING_ACTION..." << std::endl;
-                numClusters = getTypeMap(purpose)->convert(map, purpose, 2.0f);
-                break;
-            default:
-                break;
-        }
-        return numClusters;
-    }
+    int loadTypeMap(const T &map, TypeMapType purpose);
 
 signals:
     void signalRepaintAllGL();
-    void doCohortMapsAdjustments(int);
-    void setTimestepAndSample(int);
+    void signalShowTransectView();
     
 public slots:
     void animUpdate(); // animation step for change of focus
     void rotateUpdate(); // animation step for rotating around terrain center
-    void set_timestep(int tstep);
-    void set_smoothing_distance();
-    void do_adjustments(int distance);
+    void rebindPlants(); // set flag indicating that plants need to be re-bound
 
-    std::string get_dirprefix();
-    void hide_progwindow();
-    void show_progwindow();
-    void reset_sampler(int maxpercell);
 protected:
     void initializeGL();
     void paintGL();
@@ -336,17 +210,12 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent * wheel);
 
-    std::vector<bool> set_active_trees(const std::vector<basic_tree> &trees, float x1, float x2, float y1, float y2);
-
 private:
 
-     QGLFormat glformat; //< format for OpenGL
-    // scene control
-    uts::vector<Scene *> scenes;
+    QGLFormat glformat; //< format for OpenGL
+    Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
+    View * view;        //< viewpoint controls
     std::string datadir;
-
-    int currscene;
-    bool dbloaded, ecoloaded; // set to true once the user has opened a database and ecosystem
 
     // render variables
     PMrender::TRenderer * renderer;
@@ -354,7 +223,6 @@ private:
     GLuint decalTexture;
 
     // gui variables
-    bool viewing;
     bool viewlock;
     bool focuschange;
     bool focusviz;
@@ -363,46 +231,61 @@ private:
     std::vector<bool> plantvis;
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true
+    bool showtransect; //< display the widgets associated with the transect
+    bool rebindplants; //< flag to indicate that plants have changed and need to be rebound
     float scf;
-    ControlMode cmode;
     int sun_mth; // which month to display in the sunlight texture
     int wet_mth; // which month to display in the moisture texture
+    TypeMapType overlay; //< currently active overlay texture: CATEGORY, WATER, SUNLIGHT, TEMPERATURE, etc
 
     QPoint lastPos;
     QColor qtWhite;
     QTimer * atimer, * rtimer; // timers to control different types of animation
     QLabel * vizpopup;  //< for debug visualisation
 
-    scrollwindow *tstep_scrollwindow;
+    // transect parameters
+    vpPoint t1, t2;
+    Transect * trx;
+    int trxstate;
+    Shape trxshape[3]; //< geometry for transect line display
 
-    //std::vector<ValueMap<std::vector<data_importer::ilanddata::cohort> > > cohortmaps;
-    std::vector<ValueMap<float> > cohort_plantcountmaps;
-    int initstep;
+    /**
+     * @brief createLine    Create sub-line for part of the transect
+     * @param line          Vertices of line
+     * @param start         Starting position for line
+     * @param end           Ending position for line
+     * @param hghtoffset    amount that line is lifted above the terrain for visibility
+     */
+    void createLine(vector<vpPoint> * line, vpPoint start, vpPoint end, float hghtoffset);
 
-    std::unique_ptr<cohortsampler> sampler;
-    std::unique_ptr<CohortMaps> cohortmaps;
-    ValueGridMap<std::vector<data_importer::ilanddata::cohort> > before_mod_map;
-    progressbar_window *prog = nullptr;
+    /**
+     * @brief createTransectShape Instantiate the geometry for a transect line that crosses the terrain
+     * @param hghtoffset    amount that line is lifted above the terrain for visibility
+     */
+    void createTransectShape(float hghtoffset);
 
-    std::vector<bool> active_trees;
+    /**
+     * @brief paintCyl  called by PaintGL to display a cylinder
+     * @param p     position of base of cylinder on terrain
+     * @param col   colour of the cylinder
+     * @param drawParams accumulated rendering state
+     */
+    void paintCyl(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams);
 
-    float curr_arcx = 0.0f;
-    float curr_arcy = 0.0f;
-    vpPoint transect_vec;
-    vpPoint transect_pos;
-    glm::vec2 mousePosIm;
-    float transect_thickness;
-    float transect_length;
+    /**
+     * @brief paintCyl  called by PaintGL to display a sphere
+     * @param p     position of sphere on terrain
+     * @param col   colour of the cylinder
+     * @param drawParams accumulated rendering state
+     */
+    void paintSphere(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams);
 
-    int mouseprevx = -1, mouseprevy = -1;
-
-    bool show_transect_control = false;
-    bool transect_filter = false;
-
-    std::vector< std::vector<basic_tree> > allcells_trees1;
-    std::vector< std::vector<basic_tree> > allcells_trees2;
-    int ts1 = 0, ts2 = 0;
-    int stepchange = 0;
+    /**
+     * @brief paintTransect called by PaintGL to display the transect line
+     * @param col           colour of the line
+     * @param drawParams    accumulated rendering state
+     */
+    void paintTransect(GLfloat * col, uts::vector<ShapeDrawData> &drawParams);
 
     /**
      * @brief pickInfo  write information about a terrain cell to the console

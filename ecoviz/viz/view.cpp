@@ -198,9 +198,9 @@ void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
     int realx, realy;
     vpPoint pnt = vpPoint(0.0f, 0.0f, 0.0f);
 
-    cerr << "projecting ray" << endl;
-    cerr << "sx = " << sx << " sy = " << sy << endl;
-    cerr << "screen params: h = " << height << " w = " << width << " startx = " << startx << " starty = " << starty << endl;
+    // cerr << "projecting ray" << endl;
+    // cerr << "sx = " << sx << " sy = " << sy << endl;
+    // cerr << "screen params: h = " << height << " w = " << width << " startx = " << startx << " starty = " << starty << endl;
     // unproject screen point to derive world coordinates
     realy = height + 2.0f * starty - sy; realx = sx;
     win = glm::vec3((float) realx, (float) realy, 0.5f); // 0.5f
@@ -209,7 +209,7 @@ void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
     wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
     pnt = vpPoint(wrld.x, wrld.y, wrld.z);
     start = cop;
-    cerr << "cop = " << cop.x << ", " << cop.y << ", " << cop.z << endl;
+    // cerr << "cop = " << cop.x << ", " << cop.y << ", " << cop.z << endl;
     dirn.diff(cop, pnt); dirn.normalize();
 /*
     // pre opengl3.2
@@ -368,26 +368,29 @@ glm::mat4x4 View::getMatrix()
 glm::mat4x4 View::getProjMtx()
 {
     glm::mat4x4 projMx;
-    float minx, maxx, minex, maxex, sx, sy, ex, ey, orthostep;
+    float sx, sy, ex, ey, minx, maxx, vertextent;
     // frustum
+
+    float aspect = height / width;
 
     if(viewtype == ViewState::PERSPECTIVE)
     {
-        minx = -8.0f * ACTUAL_ASPECT;
-        maxx = 8.0f * ACTUAL_ASPECT;
+
+        minx = -8.0f / aspect;
+        maxx = 8.0f / aspect;
         projMx = glm::frustum(minx, maxx, -8.0f, 8.0f, 50.0f, 100000.0f);
     }
     else if(viewtype == ViewState::ORTHOGONAL)
     {
-        minex = -terextent/2.0f;
-        maxex = terextent/2.0f;
-        orthostep = terextent / (float) orthodiv;
-        sx = minex + (float) ox * orthostep;
-        ex = sx + orthostep;
-        sy = minex + (float) oy * orthostep;
-        ey = sy + orthostep;
-        projMx = glm::ortho(sx, ex, sy, ey, 0.0f, terextent * 4.0f);
-        zoomdist = terextent/2.0f;
+        sx = -terextent/2.0f;
+        ex = terextent/2.0f;
+        vertextent = terextent * aspect;
+        sy = -vertextent/2.0f;
+        ey = vertextent/2.0f;
+        projMx = glm::ortho(sx, ex, sy, ey, 0.01f, terdepth);
+        // zoomdist = 0.0f;
+        // cerr << "width = " << width << ", height = " << height << endl;
+        // cerr << "sx = " << sx << ", ex = " << ex << ", sy = " << sy << ", ey = " << ey << endl;
     }
 
     return projMx;

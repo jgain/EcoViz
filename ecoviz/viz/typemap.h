@@ -34,7 +34,7 @@
 enum class TypeMapType
 {
     EMPTY,          //< default colour for terrain
-    PAINT,          //< to display brush painting
+    TRANSECT,       //< to display the transect region
     CATEGORY,       //< to show terrain attribute categories
     SLOPE,          //< to capture slope information
     WATER,          //< to show water areas
@@ -47,7 +47,7 @@ enum class TypeMapType
     SMOOTHING_ACTION,
     TMTEND
 };
-//const std::array<TypeMapType, 10> all_typemaps = {TypeMapType::EMPTY, TypeMapType::PAINT, TypeMapType::CATEGORY, TypeMapType::SLOPE, TypeMapType::WATER, TypeMapType::SUNLIGHT, TypeMapType::TEMPERATURE, TypeMapType::CHM, TypeMapType::CDM, TypeMapType::SUITABILITY}; // to allow iteration over the typemaps
+//const std::array<TypeMapType, 10> all_typemaps = {TypeMapType::EMPTY, TypeMapType::TRANSECT, TypeMapType::CATEGORY, TypeMapType::SLOPE, TypeMapType::WATER, TypeMapType::SUNLIGHT, TypeMapType::TEMPERATURE, TypeMapType::CHM, TypeMapType::CDM, TypeMapType::SUITABILITY}; // to allow iteration over the typemaps
 
 class MapFloat;
 
@@ -69,6 +69,8 @@ private:
     /// Set up the colour table with colours appropriate to the initial ecosystem pallete of operations
     void initPaletteColTable();
 
+    /// Set up two tone colour to display the transect region
+    void initTransectColTable();
 
     /**
      * @brief initPerceptualColTable Set up a colour table sampled from a perceptually uniform colour map stored in a CSV file
@@ -236,7 +238,16 @@ public:
                 {
                     case TypeMapType::EMPTY: // do nothing
                         break;
-                    case TypeMapType::PAINT: // do nothing
+                    case TypeMapType::TRANSECT:
+                        val = map->get(x, y);
+                        if(val > _pluszero)
+                        {
+                            tp = 1;
+                        }
+                        else
+                        {
+                            tp = 0;
+                        }
                         break;
                     case TypeMapType::CATEGORY: // do nothing, since categories are integers not floats
                         break;

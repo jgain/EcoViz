@@ -70,7 +70,9 @@ enum TreeShapeType
     SPHR,   //< sphere shape, potentially elongated
     BOX,    //< cuboid shape
     CONE,    //< cone shape
-    INVCONE //< inverted cone
+    INVCONE, //< inverted cone
+    HEMISPHR, //< hemisphere
+    CYL       //< cylinder
 };
 
 

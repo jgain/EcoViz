@@ -95,6 +95,9 @@ float extra[] = {0.5f, 0.4f, 0.5f, 1.0f};                   // 17
 float realwater[] = {0.537f, 0.623f, 0.752f, 1.0f};         // 18
 float boulders[] = {0.671f, 0.331f, 0.221f, 1.0f};          // 19
 
+// transect colour
+float redcol[] = {1.0f, 0.5f, 0.5f, 1.0f};
+
 TypeMap::TypeMap(TypeMapType purpose)
 {
     tmap = new MemMap<int>;
@@ -141,6 +144,23 @@ void TypeMap::initPaletteColTable()
     colmap[4] = denseshrub;
     colmap[5] = densemed;
     colmap[6] = densetall;
+}
+
+void TypeMap::initTransectColTable()
+{
+    GLfloat * col;
+    for(int i = 0; i < 6; i++) // set all colours in table to black initially
+    {
+        col = new GLfloat[4];
+        col[0] = col[1] = col[2] = 0.0f; col[3] = 1.0f;
+        colmap.push_back(col);
+    }
+
+    numSamples = 6;
+
+    colmap[0] = freecol;
+    colmap[1] = freecol;
+    colmap[2] = redcol;
 }
 
 int TypeMap::getNumSamples()
@@ -388,8 +408,7 @@ int TypeMap::load(const uts::string &filename, TypeMapType purpose)
                 {
                     case TypeMapType::EMPTY: // do nothing
                         break;
-                    case TypeMapType::PAINT:
-                        infile >> tp;
+                    case TypeMapType::TRANSECT: // do nothing
                         break;
                     case TypeMapType::CATEGORY:
                         infile >> tp;
@@ -558,7 +577,13 @@ int TypeMap::convert(MapFloat * map, TypeMapType purpose, float range)
             {
                 case TypeMapType::EMPTY: // do nothing
                     break;
-                case TypeMapType::PAINT: // do nothing
+                case TypeMapType::TRANSECT: // do nothing
+                    // two values
+                    val = map->get(x, y);
+                    if(val > 0.001f)
+                        tp = 2;
+                    else
+                        tp = 0;
                     break;
                 case TypeMapType::CATEGORY: // do nothing, since categories are integers not floats
                     break;
@@ -755,8 +780,8 @@ void TypeMap::setPurpose(TypeMapType purpose)
         case TypeMapType::EMPTY:
             initPaletteColTable();
             break;
-        case TypeMapType::PAINT:
-            initPaletteColTable();
+        case TypeMapType::TRANSECT:
+            initTransectColTable();
             break;
         case TypeMapType::CATEGORY:
             initCategoryColTable();

@@ -222,6 +222,7 @@ public:
     void setTerrShadeModel(TRenderer::terrainShadingModel m)
     {
       shadModel = m;
+       cerr << "Shading Model set to " << m << endl;
     }
 
     // set terrain colour for radiance scaling:

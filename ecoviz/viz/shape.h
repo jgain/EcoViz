@@ -63,6 +63,15 @@ private:
      */
     void genSphereVert(float radius, float lat, float lon, glm::mat4x4 trm);
 
+    /**
+     * Create a hemisphere vertex at specified latitude (starting at equator) and longitude with a transformation matrix applied and append to existing geometry
+     * @param radius    radius of sphere
+     * @param lat       latitude as proportion
+     * @param lon       longitude as proportion
+     * @param trm       model transformation matrix
+     */
+    void genHemisphereVert(float radius, float lat, float lon, glm::mat4x4 trm);
+
 public:
 
     std::vector<unsigned int> indices;   // vertex indices for triangles
@@ -192,6 +201,15 @@ public:
     void genPlane(const vpPoint &orient, const vpPoint &center, float thickness, float length, glm::mat4x4 trm);
 
     /**
+     * Create a hemisphere with a transformation matrix applied and append to existing geometry
+     * @param radius    radius of sphere
+     * @param slices    number of azimuth subdivisions
+     * @param stacks    number of elevation subdivisions
+     * @param trm       model transformation matrix
+     */
+    void genHemisphere(float radius, int slices, int stacks, glm::mat4x4 trm);
+
+    /**
      * test case for creating geomatry. In this case a single triangle in the x-z plane
      */
     void genTest();
@@ -204,12 +222,11 @@ public:
     /**
      * Bind the appropriate OpenGL buffers for rendering instances. Only needs to be done if
      * the instances attributes change.
-     * @param view      current viewpoint
      * @param iforms    transformation applied to each instance. If this is empty assume a single instance with identity transformation.
      * @param icols     colour offset applied to each instance. Must match the size of iforms.
      * @retval @c true if buffers successfully bound
      */
-    bool bindInstances(View * view, std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols);
+    bool bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols);
 };
 
 #endif

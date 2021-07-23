@@ -305,6 +305,12 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
             case (data_importer::treeshape::INVCONE):
                 pft.shapetype = TreeShapeType::INVCONE;
                 break;
+            case (data_importer::treeshape::HEMISPHR):
+                pft.shapetype = TreeShapeType::HEMISPHR;
+                break;
+            case (data_importer::treeshape::CYL):
+                pft.shapetype = TreeShapeType::CYL;
+                break;
             default:
                 assert(false);
                 break;
@@ -638,6 +644,10 @@ bool Biome::read(const std::string &filename)
                 pft.shapetype = TreeShapeType::BOX;
             else if(shapestr == "CONE")
                 pft.shapetype = TreeShapeType::CONE;
+            else if(shapestr == "HEMISPHR")
+                pft.shapetype = TreeShapeType::HEMISPHR;
+            else if(shapestr == "CYL")
+                pft.shapetype = TreeShapeType::CYL;
             else
                 cerr << "Error Biome::read: malformed shape type" << endl;
             pft.basecol[3] = 1.0f;
@@ -801,6 +811,12 @@ bool Biome::write(const std::string &filename)
                 break;
             case TreeShapeType::CONE:
                 outfile << "CONE";
+                break;
+            case TreeShapeType::HEMISPHR:
+                outfile << "HEMISPHR";
+                break;
+            case TreeShapeType::CYL:
+                outfile << "CYL";
                 break;
             }
             outfile << endl;

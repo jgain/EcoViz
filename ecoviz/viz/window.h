@@ -63,6 +63,8 @@
 #define WINDOW_H
 
 #include "glwidget.h"
+#include "gltransect.h"
+#include "chartwindow.h"
 #include <QWidget>
 #include <QtWidgets>
 #include <string>
@@ -79,14 +81,9 @@ class Window : public QMainWindow
 public:
     Window(std::string datadir);
 
-    ~Window(){};
+    ~Window();
 
     QSize sizeHint() const;
-
-    /// Various getters for rendering and scene context
-    View &getView() { return *perspectiveView->getView(); }
-    Terrain &getTerrain() { return *perspectiveView->getTerrain(); }
-    GLWidget * getGLWidget(){ return perspectiveView; }
 
     /// Adjust rendering parameters, grid and contours, to accommodate current scale
     void scaleRenderParams(float scale);
@@ -111,15 +108,24 @@ public slots:
     void allPlantsOn();
     void allPlantsOff();
 
+    void showTransectViews();
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void optionsChanged();
 
 private:
-    GLWidget * perspectiveView; ///< Main OpenGL window
-    QWidget * renderPanel;      ///< Side panel to adjust various rendering style parameters
-    QWidget * plantPanel;      ///< Side panel to adjust various plant visualization parameters
+    std::vector<Scene *> scenes;                ///< scenes for each half
+    std::vector<Transect *> transectControls;   ///< Transect controls for each viewing pair
+    std::vector<GLWidget *> perspectiveViews;   ///< OpenGL perspective rendering views
+    std::vector<GLTransect *> transectViews;    ///< OpenGL transect views
+    std::vector<TimeWindow *> timelineViews;    ///< widget for timeline control
+    std::vector<ChartWindow *> chartViews;      ///< widget for displaying graphs
+    std::vector<TimelineGraph *> graphModels;   ///< Underlying graph data associated with scene
+    QWidget * vizPanel;                         ///< Central panel with visualization subwidgets
+    QWidget * renderPanel;                      ///< Side panel to adjust various rendering style parameters
+    QWidget * plantPanel;                       ///< Side panel to adjust various plant visualization parameters
 
     // rendering parameters
     float gridSepX, numGridX, gridSepZ, numGridZ, gridWidth, gridIntensity; ///< grid params
@@ -129,8 +135,6 @@ private:
     // map parameters
     int sunMonth, wetMonth, tempMonth;
 
-    // plant viz panel widgets
-
     // render panel widgets
     QLineEdit * gridSepXEdit, * gridSepZEdit, * gridWidthEdit, * gridIntensityEdit, * contourSepEdit, * contourWidthEdit, * contourIntensityEdit, * radianceEnhanceEdit;
 
@@ -139,6 +143,7 @@ private:
               * checkS10, * checkS11, * checkS12, * checkS13, * checkS14, * checkS15;
     QLineEdit * sunMapEdit, * wetMapEdit;
     QRadioButton * sunMapRadio, * wetMapRadio, * chmMapRadio, * noMapRadio;
+    QLineEdit * smoothEdit;
 
     // menu widgets and actions
     QMenu *viewMenu;
@@ -147,6 +152,27 @@ private:
 
     // file management
     std::string scenedirname;
+
+    /**
+     * @brief setupRenderPanel  Initialize GUI layout of side render panel for controlling various rendering parameters
+     */
+    void setupRenderPanel();
+
+    /**
+     * @brief setupPlantPanel  Initialize GUI layout of side plant viz panel for controlling various plant display parameters
+     */
+    void setupPlantPanel();
+
+    /**
+     * @brief setupVizPanel  Initialize GUI layout of central visualization
+     */
+    void setupVizPanel();
+
+    /**
+     * @brief setSmoothing Set smoothing distance to soften the underlying plant grid
+     * @param d smoothing distance value
+     */
+    void setSmoothing(int d);
 
     // init menu
     void createActions();

@@ -370,9 +370,13 @@ void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
       }
 
     if (bufferState == BufferState::REALLOCATE || bufferState == BufferState::DIRTY )
+    {
         renderer->updateHeightMap(width, height, scx, scy, (GLfloat*)grid.get(), true);
+    }
     else
+    {
         renderer->updateHeightMap(width, height, scx, scy, (GLfloat*)grid.get());
+    }
 
     bufferState = BufferState::CLEAN;
 }
@@ -541,10 +545,12 @@ void Terrain::loadElv(const uts::string &filename)
     {
         infile >> dx >> dy;
         infile >> step;
-        infile >> lat;
+
+        // infile >> lat;
+
         delGrid();
         init(dx, dy, (float) dx * step, (float) dy * step);
-        latitude = lat;
+        // latitude = lat;
         for (int x = 0; x < dx; x++)
         {
             for (int y = 0; y < dy; y++)
