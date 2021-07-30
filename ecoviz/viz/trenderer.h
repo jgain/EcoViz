@@ -37,8 +37,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <common/map.h>
-#include <common/debug_string.h>
 #include "shaderProgram.h"
 #include <QGLWidget>
 #include "shape.h"
@@ -206,7 +204,7 @@ public:
 
     // load in new terrain data; this will come from an grid structure. paintMap is the associated
     // terrain type map, and constrainTmap is the map with freeze constrainst etc. Both of these can be NULL.
-    void loadTerrainData(const float* data, int wd, int ht, float scx, float scy,
+    void loadTerrainData(float* data, int wd, int ht, float scx, float scy,
                          TypeMap* paintMap = NULL, TypeMap* constraintMap = NULL);
 
     void useTerrainTypeTexture(bool v)
@@ -422,7 +420,7 @@ public:
 
     // call when height data has been changed (including whenit is first generated)
     // force==true will cause everything to be rebuilt, rather than simply updated
-    void updateHeightMap(int wd, int ht, float scx, float scy, const float* data, bool force = false);
+    void updateHeightMap(int wd, int ht, float scx, float scy, float* data, bool force = false);
 
     /// load Decal texture map given an image stored in a suitable buffer (of width * height dimensions)
     void bindDecals(int width, int height, unsigned char * buffer);

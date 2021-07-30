@@ -26,7 +26,6 @@
 #include "cohortmaps.h"
 #include "typemap.h"
 #include "vecpnt.h"
-#include "grass.h"
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -100,13 +99,13 @@ float redcol[] = {1.0f, 0.5f, 0.5f, 1.0f};
 
 TypeMap::TypeMap(TypeMapType purpose)
 {
-    tmap = new MemMap<int>;
+    tmap = new basic_types::MapInt;
     setPurpose(purpose);
 }
 
 TypeMap::TypeMap(int w, int h, TypeMapType purpose)
 {
-    tmap = new MemMap<int>;
+    tmap = new basic_types::MapInt;
     matchDim(w, h);
     setPurpose(purpose);
 }
@@ -336,21 +335,21 @@ void TypeMap::matchDim(int w, int h)
     if(w != mx || h != my)
     {
         dirtyreg = Region(0, 0, w, h);
-        tmap->allocate(Region(0, 0, w, h));
+        tmap->setDim(w, h);
         tmap->fill(0); // set to empty type
     }
 }
 
-void TypeMap::replaceMap(MemMap<int> * newmap)
+void TypeMap::replaceMap(basic_types::MapInt * newmap)
 {
     assert(tmap->width() == newmap->width());
     assert(tmap->height() == newmap->height());
     for (int y = 0; y < tmap->height(); y++)
         for (int x = 0; x < tmap->width(); x++)
-            (* tmap)[y][x] = (* newmap)[y][x];
+            tmap->set(y,x, newmap->get(y,x));
 }
 
-void TypeMap::bandCHMMap(MapFloat * chm, float mint, float maxt)
+void TypeMap::bandCHMMap(basic_types::MapFloat * chm, float mint, float maxt)
 {
     int tp;
     float val;
@@ -379,14 +378,13 @@ void TypeMap::bandCHMMap(MapFloat * chm, float mint, float maxt)
                 {
                     tp = (int) ((val-mint) / (maxt-mint+pluszero) * (numSamples-1))+2;
                 }
-                (* tmap)[y][x] = tp;
+                tmap->set(y,x,tp);
             }
     }
 }
 
-int TypeMap::load(const uts::string &filename, TypeMapType purpose)
+int TypeMap::load(const std::string &filename, TypeMapType purpose)
 {
-    MemMap<mask_tag> mask;
     int tp, maxtp = 0; // mintp = 100;
     int width, height;
     ifstream infile;
@@ -493,7 +491,7 @@ int TypeMap::load(const uts::string &filename, TypeMapType purpose)
                     default:
                         break;
                 }
-                (* tmap)[y][x] = tp;
+                tmap->set(y,x,tp);
 
                 if(tp > maxtp)
                     maxtp = tp;
@@ -515,7 +513,7 @@ int TypeMap::load(const uts::string &filename, TypeMapType purpose)
     return maxtp;
 }
 
-bool TypeMap::loadCategoryImage(const uts::string &filename)
+bool TypeMap::loadCategoryImage(const std::string &filename)
 {
     int width, height;
     QImage img(QString::fromStdString(filename)); // load image from file
@@ -537,12 +535,12 @@ bool TypeMap::loadCategoryImage(const uts::string &filename)
             QColor col = img.pixelColor(x, y);
             int r, g, b;
             col.getRgb(&r, &g, &b); // all channels store the same info so just use red
-            (* tmap)[y][x] = r - 100; // convert greyscale colour to category index
+            tmap->set(y,x, r - 100); // convert greyscale colour to category index
         }
     return true;
 }
 
-void TypeMap::setWater(MapFloat * wet, float wetthresh)
+void TypeMap::setWater(basic_types::MapFloat * wet, float wetthresh)
 {
     int gx, gy;
 
@@ -552,12 +550,12 @@ void TypeMap::setWater(MapFloat * wet, float wetthresh)
         {
             if(wet->get(x, y) >= wetthresh)
             {
-                (* tmap)[y][x] = 0;
+                tmap->set(y,x,0);
             }
         }
 }
 
-int TypeMap::convert(MapFloat * map, TypeMapType purpose, float range)
+int TypeMap::convert(basic_types::MapFloat * map, TypeMapType purpose, float range)
 {
     int tp, maxtp = 0;
     int width, height;
@@ -688,7 +686,7 @@ int TypeMap::convert(MapFloat * map, TypeMapType purpose, float range)
                 default:
                     break;
             }
-            (* tmap)[y][x] = tp;
+            tmap->set(y,x,tp);
 
             if(tp > maxtp)
                 maxtp = tp;
@@ -702,7 +700,7 @@ int TypeMap::convert(MapFloat * map, TypeMapType purpose, float range)
     return maxtp;
 }
 
-void TypeMap::save(const uts::string &filename)
+void TypeMap::save(const std::string &filename)
 {
     ofstream outfile;
 
@@ -725,7 +723,7 @@ void TypeMap::save(const uts::string &filename)
     }
 }
 
-void TypeMap::saveToPaintImage(const uts::string &filename)
+void TypeMap::saveToPaintImage(const std::string &filename)
 {
     unsigned char * mask = new unsigned char[tmap->width()*tmap->height()];
     int i = 0;
@@ -736,7 +734,7 @@ void TypeMap::saveToPaintImage(const uts::string &filename)
     for (int x = 0; x < tmap->width(); x++)
         for (int y = 0; y < tmap->height(); y++)
         {
-            switch((*tmap)[x][y]) // check order
+            switch(tmap->get(x,y)) // check order
             {
             case 0:
                 mask[i] = 0;
@@ -833,8 +831,8 @@ void TypeMap::resetType(int ind)
     #pragma omp parallel for
     for(int j = 0; j < tmap->height(); j++)
         for(int i = 0; i < tmap->width(); i++)
-            if((* tmap)[j][i] == ind)
-                (* tmap)[j][i] = 0;
+            if(tmap->get(j,i) == ind)
+                tmap->set(j,i,0);
     dirtyreg.x0 = 0; dirtyreg.y0 = 0;
     dirtyreg.x1 = tmap->width(); dirtyreg.y1 = tmap->height();
 }

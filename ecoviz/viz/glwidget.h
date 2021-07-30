@@ -70,8 +70,7 @@
 #include <QKeyEvent>
 #include <QPushButton>
 #include <list>
-#include <common/debug_vector.h>
-#include <common/debug_list.h>
+#include "common/basic_types.h"
 #include <memory>
 
 #include "scene.h"
@@ -161,7 +160,7 @@ public:
     void loadDecals();
 
     /// Load from file to appropriate TypeMap depending on purpose
-    int loadTypeMap(MapFloat * map, TypeMapType purpose);
+    int loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose);
 
     /// Respond to key press events
     void keyPressEvent(QKeyEvent *event);
@@ -270,7 +269,7 @@ private:
      * @param col   colour of the cylinder
      * @param drawParams accumulated rendering state
      */
-    void paintCyl(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams);
+    void paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
 
     /**
      * @brief paintCyl  called by PaintGL to display a sphere
@@ -278,14 +277,14 @@ private:
      * @param col   colour of the cylinder
      * @param drawParams accumulated rendering state
      */
-    void paintSphere(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams);
+    void paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
 
     /**
      * @brief paintTransect called by PaintGL to display the transect line
      * @param col           colour of the line
      * @param drawParams    accumulated rendering state
      */
-    void paintTransect(GLfloat * col, uts::vector<ShapeDrawData> &drawParams);
+    void paintTransect(GLfloat * col, std::vector<ShapeDrawData> &drawParams);
 
     /**
      * @brief pickInfo  write information about a terrain cell to the console

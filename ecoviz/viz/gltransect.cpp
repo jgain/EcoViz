@@ -291,7 +291,7 @@ void GLTransect::initializeGL()
     paintGL();
 }
 
-void GLTransect::paintCyl(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams)
+void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     ShapeDrawData sdd;
     float scale;
@@ -331,7 +331,7 @@ void GLTransect::paintGL()
     vpPoint mo;
     glm::mat4 tfm, idt;
     glm::vec3 trs, rot;
-    uts::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
+    std::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
     Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
     std::vector<glm::vec4> cinst;

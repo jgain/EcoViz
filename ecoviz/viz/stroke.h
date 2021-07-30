@@ -30,30 +30,29 @@
 
 #include "terrain.h"
 #include "shape.h"
-#include <common/debug_vector.h>
 
 // general projection and fragment management routines
 
 // planeProject:    project <from> stroke onto <projPlane> from the perspective of the viewpoint <view>.
 //                  Return the projected stroke in the <to> vector
-void planeProject(View * view, uts::vector<vpPoint> * from, uts::vector<vpPoint> * to, Plane * projPlane);
+void planeProject(View * view, std::vector<vpPoint> * from, std::vector<vpPoint> * to, Plane * projPlane);
 
 // screenProject:   take a stroke, <from>, in world coordinates and embed it in the
 //                  current screen returning the resulting stroke as <to>, using <view> as the
 //                  viewing parameters
-void screenProject(View * view, uts::vector<vpPoint> * from, uts::vector<vpPoint> * to);
+void screenProject(View * view, std::vector<vpPoint> * from, std::vector<vpPoint> * to);
 
 // dropProject: project <from> stroke, in world coordinates, vertically downwards, returning as <to> stroke
-void dropProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to);
+void dropProject(std::vector<vpPoint> * from, std::vector<vpPoint> * to);
 
 // drapeProject:    vertically project a stroke <from> onto the terrain <ter>
 //                  to produce a new draped stroke <to>
-void drapeProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to, Terrain * ter);
+void drapeProject(std::vector<vpPoint> * from, std::vector<vpPoint> * to, Terrain * ter);
 
 // terrainProject:  project a stroke onto the terrain <ter> at smoothness <lvl> from the perspective of
 //                  the viewpoint <view>. return the projected stroke in the <to> vector
 //                  return true if at least some of the stroke is on the terrain.
-bool terrainProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to, View * view, Terrain * ter);
+bool terrainProject(std::vector<vpPoint> * from, std::vector<vpPoint> * to, View * view, Terrain * ter);
 bool terrainProject(vpPoint &fromPnt, vpPoint &toPnt, View * view, Terrain * ter);
 
 // testFragmentAttach:  test whether <from> stroke endpoints are within <diftol> of <to> stroke.
@@ -61,7 +60,7 @@ bool terrainProject(vpPoint &fromPnt, vpPoint &toPnt, View * view, Terrain * ter
 //                      Also return the <from> index of the start and end attachments (<inds>, <inde>) and
 //                      a closeness value for the quality of the link. <inds> and <inde> are set to -1 if
 //                      they are not within diftol
-bool testFragmentAttach(uts::vector<vpPoint> * from, uts::vector<vpPoint> * into, float diftol, bool bothends, int &inds, int &inde, float &closeness);
+bool testFragmentAttach(std::vector<vpPoint> * from, std::vector<vpPoint> * into, float diftol, bool bothends, int &inds, int &inde, float &closeness);
 
 // inFill:  merge <from> stroke into <to> stroke as long as either the beginning or end of <from>
 //          are within <diftol> of some portion of the <to> stroke. <to> stroke may have a section
@@ -69,28 +68,28 @@ bool testFragmentAttach(uts::vector<vpPoint> * from, uts::vector<vpPoint> * into
 //          beginning and end of the <from> stroke must attach to the existing <to> stroke.
 //          if <closed> is set then allow infilling across the ends.
 //          return <true> if merge takes place, otherwise <false> if <from> stroke is discarded
-bool inFill(uts::vector<vpPoint> * from, uts::vector<vpPoint> * into, float diftol, bool bothends, bool closed);
+bool inFill(std::vector<vpPoint> * from, std::vector<vpPoint> * into, float diftol, bool bothends, bool closed);
 
 // locateIntersect: return <true> and the start and end vertex indices of an overlap region,
 //                  if no self-intersection exists then return false
-bool locateIntersect(uts::vector<vpPoint> * strk, int &begin, int &end);
+bool locateIntersect(std::vector<vpPoint> * strk, int &begin, int &end);
 
 // excise: remove points in the fragment between and including the <begin> and <end> indices
-void excise(uts::vector<vpPoint> * strk, int begin, int end);
+void excise(std::vector<vpPoint> * strk, int begin, int end);
 
 // testIntersect: test to see whether the stroke intersects itself significantly, return <true> if it does
 //                  self intersection which occupy a small bounding box with diagonal less than <tol>
 //                  and are caused by sketching innacuracy are automatically excised.
-bool testIntersect(uts::vector<vpPoint> * strk, float tol);
+bool testIntersect(std::vector<vpPoint> * strk, float tol);
 
 
 class ValueCurve
 {
 private:
-    uts::vector<float> vals;  // points for piecewise segmented representation
-    uts::vector<float> params;
-    uts::vector<float> splinerep; // spline control points
-    uts::vector<float> splinetan;  // spline tangets at control points
+    std::vector<float> vals;  // points for piecewise segmented representation
+    std::vector<float> params;
+    std::vector<float> splinerep; // spline control points
+    std::vector<float> splinetan;  // spline tangets at control points
     int sampling;                   // number of samples per segment
 
     /**
@@ -107,7 +106,7 @@ public:
     ValueCurve(){}
 
     /// constructor
-    ValueCurve(uts::vector<float> * tvals, uts::vector<float> * vvals)
+    ValueCurve(std::vector<float> * tvals, std::vector<float> * vvals)
     {
         create(tvals, vvals);
     }
@@ -119,7 +118,7 @@ public:
     void clear(){ vals.clear(); params.clear(); splinerep.clear(); splinetan.clear(); }
 
     /// create a curve given parameters and values
-    void create(uts::vector<float> * tvals, uts::vector<float> * vvals);
+    void create(std::vector<float> * tvals, std::vector<float> * vvals);
 
     /// Force the tangents at the endpoints to be horizontal
     void flatCaps();
@@ -150,7 +149,7 @@ class BrushCurve
 {
 
 private:
-    uts::vector<vpPoint> vertsrep;  // points for piecewise segmented representation
+    std::vector<vpPoint> vertsrep;  // points for piecewise segmented representation
     float sampling;                 // arclength separation between vertices
     bool created;                   // has stroke data been supplied?
     BoundRect enclose, update;      // total bound for curve and bound on latest update
@@ -160,7 +159,7 @@ private:
      * Introduce extra interpolating vertices as determined by ideal point separation (sep)
      * @param[out] strk     stroke being subsampled.
      */
-    void subsample(uts::vector<vpPoint> * strk);
+    void subsample(std::vector<vpPoint> * strk);
 
     /**
      * Calculate vertices on curve separated according to sampling
@@ -205,7 +204,7 @@ public:
     void clear(){ vertsrep.clear(); created = false; }
 
     /// Return a pointer to the vertices of the curve
-    inline uts::vector<vpPoint> * getVerts(){ return &vertsrep; }
+    inline std::vector<vpPoint> * getVerts(){ return &vertsrep; }
 
     /// Return the index of the start position for recent changes to curve vertices
     inline int getStartIndex(){ return updateIndex; }
@@ -239,19 +238,19 @@ class Curve3D
 {
 
 private:
-    uts::vector<vpPoint> vertsrep;  // points for piecewise segmented representation
-    uts::vector<vpPoint> splinerep; // spline control points
-    uts::vector<Vector> splinetan;  // spline tangets at control points
+    std::vector<vpPoint> vertsrep;  // points for piecewise segmented representation
+    std::vector<vpPoint> splinerep; // spline control points
+    std::vector<Vector> splinetan;  // spline tangets at control points
     float sep;                      // arclength separation between curve control points
     float sampling;                   // arclength separation between vertices
     int highstep, leafstep;         // number of segments per box for both high and leaf hierarchy levels
     BoundRect bbox;
-    uts::vector<BoundRect> leafsegboxes; // bounding boxes for each segment of the curve
-    uts::vector<BoundRect> highsegboxes;
+    std::vector<BoundRect> leafsegboxes; // bounding boxes for each segment of the curve
+    std::vector<BoundRect> highsegboxes;
     bool created;                   // has stroke data been supplied?
     float farbound;
-    uts::vector<float> remapleft;
-    uts::vector<float> remapright;
+    std::vector<float> remapleft;
+    std::vector<float> remapright;
 
     /**
      * Return a point on the hermite curve localised to a single segment
@@ -267,7 +266,7 @@ private:
      * Introduce extra interpolating vertices as determined by ideal point separation (sep)
      * @param[out] strk     stroke being subsampled.
      */
-    void subsample(uts::vector<vpPoint> * strk);
+    void subsample(std::vector<vpPoint> * strk);
 
     /// Create hermite tangents using a finite difference on the control points
     void deriveTangents();
@@ -289,7 +288,7 @@ private:
      * @param vsep      required separation between reparametrised vertices
      * @param extend    allow curve extension to satisfy exact reparametrization
      */
-    void reparametrize(uts::vector<vpPoint> * in, uts::vector<vpPoint> * out, float vsep, bool extend);
+    void reparametrize(std::vector<vpPoint> * in, std::vector<vpPoint> * out, float vsep, bool extend);
 
     friend class boost::serialization::access;
     /// Boost serialization
@@ -313,7 +312,7 @@ public:
     Curve3D(){ created = false; }
 
     /// constructor with actual curve data supplied
-    Curve3D(uts::vector<vpPoint> * strk, View * view, Terrain * ter)
+    Curve3D(std::vector<vpPoint> * strk, View * view, Terrain * ter)
     {
         create(strk, view, ter);
     }
@@ -326,7 +325,7 @@ public:
      * @retval @c       true if the creation succeeds
      * @retval @c       false otherwise.
      */
-    bool create(uts::vector<vpPoint> * strk, View * view, Terrain * ter);
+    bool create(std::vector<vpPoint> * strk, View * view, Terrain * ter);
 
     /**
      * Generate a stroke from point inputs without requiring view-based projection
@@ -335,7 +334,7 @@ public:
      * @retval @c       true if the creation succeeds
      * @retval @c       false otherwise.
      */
-    bool nonProjCreate(uts::vector<vpPoint> * strk, Terrain * ter);
+    bool nonProjCreate(std::vector<vpPoint> * strk, Terrain * ter);
 
     /**
      * Regenerate a stroke where the vertex representation has been altered
@@ -353,7 +352,7 @@ public:
     void clear(){ vertsrep.clear(); splinerep.clear(); splinetan.clear(); created = false; }
 
     /// Return a pointer to the vertices of the curve
-    inline uts::vector<vpPoint> * getVerts(){ return &vertsrep; }
+    inline std::vector<vpPoint> * getVerts(){ return &vertsrep; }
 
     /**
      * Merge the stroke fragment with the existing curve on the terrain
@@ -366,7 +365,7 @@ public:
      * @retval @c           true  if the stroke is valid.
      * @retval @c           false otherwise.
      */
-    bool mergeStroke(uts::vector<vpPoint> * strk, uts::vector<vpPoint> * prj, View * view, Terrain * ter, bool & merge, float tol);
+    bool mergeStroke(std::vector<vpPoint> * strk, std::vector<vpPoint> * prj, View * view, Terrain * ter, bool & merge, float tol);
 
     /**
      * Generate geometry for rendering the curve.
@@ -454,7 +453,7 @@ public:
      * @retval @c           true if the two strokes intersect
      * @retval @c           false otherwise.
      */
-    bool testIntersect(Curve3D * dstcurve, uts::vector<float> &srct, uts::vector<float> &dstt);
+    bool testIntersect(Curve3D * dstcurve, std::vector<float> &srct, std::vector<float> &dstt);
 
     /**
      * Test stroke against itself to see if it intersects and return intersection parameter(s)
@@ -464,7 +463,7 @@ public:
      * @retval @c           true if the stroke self-intersects
      * @retval @c           false otherwise.
      */
-    bool testSelfIntersect(uts::vector<float> &srct, uts::vector<float> &dstt);
+    bool testSelfIntersect(std::vector<float> &srct, std::vector<float> &dstt);
 
     /**
      * Test strokes against each other to see if their endpoints approach the other curve closely
@@ -475,7 +474,7 @@ public:
      * @retval @c           true if the any endpoints approach with tol
      * @retval @c           false otherwise.
      */
-    bool closeApproach(Curve3D * dstcurve, uts::vector<float> &srct, uts::vector<float> &dstt, float tol);
+    bool closeApproach(Curve3D * dstcurve, std::vector<float> &srct, std::vector<float> &dstt, float tol);
 
     /**
      * Drag a section of the curve by interpolation with a linear fall towards a target position
@@ -532,7 +531,7 @@ class BrushStroke
 {
 private:
 
-    uts::vector<vpPoint> fragment;      /// partial stroke (in camera plane)
+    std::vector<vpPoint> fragment;      /// partial stroke (in camera plane)
 
     friend class boost::serialization::access;
     /// Boost serialization
@@ -571,12 +570,12 @@ class Fragment
 {
 private:
 
-    uts::vector<vpPoint> frag;          // partial stroke (in camera plane)
-    uts::vector<vpPoint> mouse;         // normalized mouse coordinates
+    std::vector<vpPoint> frag;          // partial stroke (in camera plane)
+    std::vector<vpPoint> mouse;         // normalized mouse coordinates
     vpPoint screenMin, screenMax;       // bounding box corners for stroke in screenspace
 
     /// calculate and store the screenspace bounding box for the given stroke. It is assumed that the stroke has already been projected into screen coordinates
-    void screenBounds(uts::vector<vpPoint> * strk);
+    void screenBounds(std::vector<vpPoint> * strk);
 
 public:
 
@@ -614,7 +613,7 @@ public:
     float screenDiag();
 
     /// getter for fragment stroke point data
-    uts::vector<vpPoint> * getFragVec(){ return &frag; }
+    std::vector<vpPoint> * getFragVec(){ return &frag; }
 
 };
 
@@ -622,9 +621,9 @@ class Stroke
 {
 private:
 
-    uts::vector<vpPoint> inscreen;      // currently complete stroke (in the camera plane)
-    uts::vector<vpPoint> draped;        // projected stroke (on the landscape)
-    uts::vector<vpPoint> projected;     // projected stroke (in a plane or ruled surface vertical to the landscape)
+    std::vector<vpPoint> inscreen;      // currently complete stroke (in the camera plane)
+    std::vector<vpPoint> draped;        // projected stroke (on the landscape)
+    std::vector<vpPoint> projected;     // projected stroke (in a plane or ruled surface vertical to the landscape)
     float sampledist;                   // optimal distance between point samples
     View currview;                      // current camera view parameters
     View featureview;                   // stored view parameters for the feature stroke
@@ -637,7 +636,7 @@ private:
     // screenBounds:    calculate and store the screenspace bounding box for
     //                  the given <strk>. It is assumed that the stroke has already been projected
     //                  into screen coordinates
-    void screenBounds(uts::vector<vpPoint> * strk);
+    void screenBounds(std::vector<vpPoint> * strk);
 
     friend class boost::serialization::access;
     /// Boost serialization
@@ -782,7 +781,7 @@ public:
     /// print out endpoints of the curve for debugging purposes
     void printEndpoints();
 
-    inline uts::vector<vpPoint> * getInscreen(){ return &inscreen; }
+    inline std::vector<vpPoint> * getInscreen(){ return &inscreen; }
 };
 
 # endif // _INC_STROKE

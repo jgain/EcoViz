@@ -41,7 +41,7 @@ NoiseField::NoiseField(Terrain * ter, int dstep, long sval)
     terrain->getGridDim(tx, ty);
     dimx = tx * dstep;
     dimy = tx * dstep;
-    nmap = new MapFloat();
+    nmap = new basic_types::MapFloat();
     nmap->setDim(dimx, dimy);
     nmap->fill(0.0f);
     seed = sval;
@@ -204,7 +204,7 @@ void PlantGrid::pickPlants(Terrain * ter, TypeMap * clusters, int niche, PlantGr
                     plnt = pgrid[f].pop[s][p];
 
                     ter->toGrid(plnt.pos, mx, my); // map plant terrain location to cluster map
-                    if((* clusters->getMap())[my][mx] == niche) // niche value on terrain matches the current plant distribution
+                    if(clusters->getMap()->get(my,mx) == niche) // niche value on terrain matches the current plant distribution
                         outgrid.placePlantExactly(ter, s, plnt, x, y);
                 }
         }
@@ -347,7 +347,7 @@ bool PlantGrid::readPDB(string filename, Biome * biome, Terrain * ter, float &ma
     return true;
 }
 
-void PlantGrid::inscribeAlpha(Terrain * ter, MapFloat * alpha, float aval, vpPoint p, float rcanopy)
+void PlantGrid::inscribeAlpha(Terrain * ter, basic_types::MapFloat * alpha, float aval, vpPoint p, float rcanopy)
 {
     int gx, gy, tx, ty, gr;
 
@@ -377,7 +377,7 @@ void PlantGrid::inscribeAlpha(Terrain * ter, MapFloat * alpha, float aval, vpPoi
         }
 }
 
-void PlantGrid::sunSeeding(Terrain * ter, Biome * biome, MapFloat * alpha)
+void PlantGrid::sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha)
 {
     int x, y, s, p, f;
     Plant plnt;
@@ -1039,7 +1039,7 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
     // dirtyPlants = true;
 }
 
-void EcoSystem::sunSeeding(Terrain * ter, Biome * biome, MapFloat * alpha)
+void EcoSystem::sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha)
 {
     for(int n = 0; n < (int) niches.size(); n++)
     {

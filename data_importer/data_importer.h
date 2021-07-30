@@ -104,7 +104,9 @@ namespace data_importer
             SPHR,
             BOX,
             CONE,
-            INVCONE
+            INVCONE,
+            HEMISPHR,
+            CYL
         };
 
         struct grass_viability

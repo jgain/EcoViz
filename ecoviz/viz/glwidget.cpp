@@ -255,7 +255,7 @@ void GLWidget::loadDecals()
     cerr << "decals bound" << endl;
 }
 
-int GLWidget::loadTypeMap(MapFloat * map, TypeMapType purpose)
+int GLWidget::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose)
 {
     int numClusters = 0;
 
@@ -374,7 +374,7 @@ void GLWidget::initializeGL()
     paintGL();
 }
 
-void GLWidget::paintCyl(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams)
+void GLWidget::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     ShapeDrawData sdd;
     float scale;
@@ -404,7 +404,7 @@ void GLWidget::paintCyl(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &dr
     }
 }
 
-void GLWidget::paintSphere(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams)
+void GLWidget::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     ShapeDrawData sdd;
     float scale;
@@ -487,7 +487,7 @@ void GLWidget::createTransectShape(float hghtoffset)
     }
 }
 
-void GLWidget::paintTransect(GLfloat * col, uts::vector<ShapeDrawData> &drawParams)
+void GLWidget::paintTransect(GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     // assumes that the transect shape has already been created
     ShapeDrawData sdd[3];
@@ -510,7 +510,7 @@ void GLWidget::paintTransect(GLfloat * col, uts::vector<ShapeDrawData> &drawPara
 
 void GLWidget::paintGL()
 {
-    uts::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
+    std::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
 
     Timer t;
 

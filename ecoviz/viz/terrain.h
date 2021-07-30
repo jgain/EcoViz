@@ -30,8 +30,7 @@
 #include "vecpnt.h"
 #include "view.h"
 #include "trenderer.h"
-#include <common/map.h>
-#include <common/debug_string.h>
+#include "common/basic_types.h"
 
 #define DEFAULT_DIMX 512
 #define DEFAULT_DIMY 512
@@ -75,14 +74,14 @@ private:
         GLfloat normal[3];
     };
 
-    MemMap<height_tag> grid;                ///< grid of height values in metres
-    MemMap<height_tag> scaledgrid;          ///< grid of height values in metres
-    MapTraits<mask_tag>::type validTypes;   ///< bit mask of allowable terrain types
+    basic_types::MapFloat * grid;           ///< grid of height values in metres
+    basic_types::MapFloat * drawgrid;       ///< inverted grid for rendering
     vpPoint focus;                          ///< focal point fo view
 
     float dimx, dimy;                       ///< dimensions of terrain in metres
     float synthx, synthy;                   ///< offset to allow for synthesis in metres
     float scfac;                            ///< artificial vertical scaling to make large terrains more discernable
+    float step;                             ///< interval between grid vertices in meters
 
     int numspx, numspy;                     ///< dimensions of accel structure
     int spherestep;                         ///< number of grid points per accel sphere
@@ -114,7 +113,6 @@ private:
     template<class Archive> void serialize(Archive & ar, const unsigned int version)
     {
         ar & grid;
-        ar & validTypes;
         ar & focus;
         ar & dimx; ar & dimy;
         ar & synthx; ar & synthy;
@@ -129,10 +127,20 @@ private:
 public:
 
     /// Constructor
-    Terrain(){glewSetupDone = false; dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0; hghtrange = 0.0f; hghtmean = 0.0f; accelValid = false; }
+    Terrain()
+    {
+        glewSetupDone = false; dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0;
+        hghtrange = 0.0f; hghtmean = 0.0f; accelValid = false;
+        grid = new basic_types::MapFloat();
+        drawgrid = new basic_types::MapFloat();
+    }
 
     /// Destructor
-    ~Terrain(){}
+    ~Terrain()
+    {
+        delete grid;
+        delete drawgrid;
+    }
 
     void setHeightMaptextureID(GLuint id) { htMapTextureId = id; }
 
@@ -149,9 +157,6 @@ public:
 
     // delGrid: deallocate grid
     void delGrid();
-
-    /// clip a Region to the dimensions of the terrain
-    void clipRegion(Region & reg);
 
     // draw: display terrain using OpenGL as a triangle mesh
     void draw(View * view, PMrender::TRenderer *renderer) const;
@@ -264,12 +269,6 @@ public:
     /// Is the point inside the synth bounds of the terrain in world coordinates
     bool inSynthBounds(vpPoint p) const;
 
-    /// Return a region that covers the entire terrain
-    Region coverRegion(){ return Region(0, 0, grid.width()-1, grid.height()-1); }
-
-    /// get grid size and pointer to underlying data
-    const float * getGridData(int & dx, int & dy);
-
     /**
      * Find the intersection of an arbitrary ray with the terrain.
      *
@@ -309,31 +308,16 @@ public:
 
     /**
        * Load a terrain from a file.
-       * @param filename   File to load (Terragen format)
-       * @see @ref MemMap for exception information
-       */
-    void loadTer(const uts::string &filename);
-
-    /**
-       * Load a terrain from a file.
        * @param filename   File to load (simple ascii elevation format)
-       * @see @ref MemMap for exception information
        */
-    void loadElv(const uts::string &filename);
-
-    /**
-       * Save a terrain to file.
-       * @param filename   File to save (Terragen format)
-       * @see @ref MemMap for exception information
-       */
-    void saveTer(const uts::string &filename);
+    void loadElv(const std::string &filename);
 
     /**
        * Save a terrain to file.
        * @param filename   File to save (simple ascii elevation format)
        * @see @ref MemMap for exception information
        */
-    void saveElv(const uts::string &filename);
+    void saveElv(const std::string &filename);
 
     /// Recalculate the mean height over the terrain
     void calcMeanHeight();

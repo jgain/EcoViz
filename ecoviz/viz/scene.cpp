@@ -346,19 +346,20 @@ Scene::Scene(string ddir)
     // instantiate typemaps for all possible typemaps		(XXX: this could lead to memory issues for larger landscapes?)
     for (int t = 0; t < int(TypeMapType::TMTEND); t++)
         maps[t] = new TypeMap(dx, dy, (TypeMapType)t);
-    maps[2]->setRegion(terrain->coverRegion());		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
+    terrain->getGridDim(dx, dy);
+    maps[2]->setRegion(Region(0, 0, dx-1, dy-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
     nfield = new NoiseField(terrain, 5, 0);
 
     for(int m = 0; m < 12; m++)
     {
-        moisture.push_back(new MapFloat());
-        sunlight.push_back(new MapFloat());
+        moisture.push_back(new basic_types::MapFloat());
+        sunlight.push_back(new basic_types::MapFloat());
         temperature.push_back(0.0f);
     }
-    slope = new MapFloat();
-    chm = new MapFloat();
-    cdm = new MapFloat();
+    slope = new basic_types::MapFloat();
+    chm = new basic_types::MapFloat();
+    cdm = new basic_types::MapFloat();
 }
 
 Scene::~Scene()
@@ -403,7 +404,7 @@ std::string Scene::get_dirprefix()
     return dirprefix;
 }
 
-bool Scene::readMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly)
+bool Scene::readMonthlyMap(std::string filename, std::vector<basic_types::MapFloat *> &monthly)
 {
     float val;
     ifstream infile;
@@ -441,7 +442,7 @@ bool Scene::readMonthlyMap(std::string filename, std::vector<MapFloat *> &monthl
     }
 }
 
-bool Scene::writeMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly)
+bool Scene::writeMonthlyMap(std::string filename, std::vector<basic_types::MapFloat *> &monthly)
 {
     int gx, gy;
     ofstream outfile;

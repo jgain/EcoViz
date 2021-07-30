@@ -29,7 +29,6 @@
 #define HIGHRES
 
 #include "pft.h"
-#include "grass.h"
 #include "dice_roller.h"
 #include "common/basic_types.h"
 #include "unordered_map"
@@ -64,7 +63,7 @@ private:
     long seed;      //< random number initialization to ensure a Noisefield can be reproduced
     Terrain * terrain;  //< underlying terrain
     int dimx, dimy; //< dimsions of the noisefield (a multiplicative factor of the terrain)
-    MapFloat * nmap;  //< field of noise values
+    basic_types::MapFloat * nmap;  //< field of noise values
     DiceRoller * dice; //< random number generator
 
 public:
@@ -128,7 +127,7 @@ private:
      * @param p     Center of disk on terrain
      * @param rcanopy   Diameter of disk in terrain coordinates
      */
-    void inscribeAlpha(Terrain * ter, MapFloat * alpha, float aval, vpPoint p, float rcanopy);
+    void inscribeAlpha(Terrain * ter, basic_types::MapFloat * alpha, float aval, vpPoint p, float rcanopy);
 
 public:
     int gx, gy;     //< grid dimensions
@@ -257,7 +256,7 @@ public:
      * @param biome biome to which the plants belong
      * @param alpha sunlight transmission map (0 = all, 1 = none)
      */
-    void sunSeeding(Terrain * ter, Biome * biome, MapFloat * alpha);
+    void sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha);
 
     /**
      * Read in plant positions from a PDB format text file
@@ -479,7 +478,7 @@ public:
      * @param biome biome to which the plants belong
      * @param alpha sunlight transmission map (0 = all, 1 = none)
      */
-    void sunSeeding(Terrain * ter, Biome * biome, MapFloat * alpha);
+    void sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha);
 
     /**
      * Pick plants from different niche ecosystems based on the cluster map to form a final ecosystem

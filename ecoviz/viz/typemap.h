@@ -27,9 +27,8 @@
 #include "glheaders.h"
 #include <vector>
 #include <memory>
-#include <common/map.h>
-#include <common/debug_string.h>
 #include <common/region.h>
+#include "common/basic_types.h"
 
 enum class TypeMapType
 {
@@ -49,12 +48,10 @@ enum class TypeMapType
 };
 //const std::array<TypeMapType, 10> all_typemaps = {TypeMapType::EMPTY, TypeMapType::TRANSECT, TypeMapType::CATEGORY, TypeMapType::SLOPE, TypeMapType::WATER, TypeMapType::SUNLIGHT, TypeMapType::TEMPERATURE, TypeMapType::CHM, TypeMapType::CDM, TypeMapType::SUITABILITY}; // to allow iteration over the typemaps
 
-class MapFloat;
-
 class TypeMap
 {
 private:
-    MemMap<int> * tmap;             ///< a map corresponding to the terrain storing integer types
+    basic_types::MapInt * tmap;      ///< a map corresponding to the terrain storing integer types
     std::vector<GLfloat *> colmap;  ///< a 32-element lookup table for converting type indices to colours
     Region dirtyreg;                ///< bounding box in terrain grid integer coordinates (e.g, x=[0-width), y=[0-hieght))
     TypeMapType usage;              ///< indicates map purpose
@@ -82,16 +79,6 @@ private:
 
     /// clip a region to the bounds of the map
     void clipRegion(Region &reg);
-
-    friend class boost::serialization::access;
-    /// Boost serialization
-    template<class Archive> void serialize(Archive & ar, const unsigned int version)
-    {
-        ar & tmap;
-        ar & colmap;
-        ar & dirtyreg;
-        ar & usage;
-    }
 
 public:
 
@@ -123,32 +110,32 @@ public:
     void clear();
 
     /// getter for underlying map
-    MemMap<int> * getMap(void){ return tmap; }
+    basic_types::MapInt * getMap(void){ return tmap; }
     
     /// getter for individual value
-    int get(int x, int y){ return (* tmap)[y][x]; }
-    void set(int x, int y, int val){ (* tmap)[y][x] = val; }
+    int get(int x, int y){ return tmap->get(y,x); }
+    void set(int x, int y, int val){ tmap->set(y,x,val); }
     
     /// replace underlying map
-    void replaceMap(MemMap<int> * newmap);
+    void replaceMap(basic_types::MapInt * newmap);
 
     /// load from file, return number of clusters
-    int load(const uts::string &filename, TypeMapType purpose);
+    int load(const std::string &filename, TypeMapType purpose);
 
     /// load from category data from PNG file, return number of clusters
-    bool loadCategoryImage(const uts::string &filename);
+    bool loadCategoryImage(const std::string &filename);
 
     /// convert a floating point map into a discretized type map
-    int convert(MapFloat * map, TypeMapType purpose, float range);
+    int convert(basic_types::MapFloat * map, TypeMapType purpose, float range);
 
     /// save a mask file version of the type map
-    void save(const uts::string &filename);
+    void save(const std::string &filename);
 
     /**
      * @brief saveToPainrImage   Save paint map out as a greyscale image
      * @param filename      Name of file to save to
      */
-    void saveToPaintImage(const uts::string &filename);
+    void saveToPaintImage(const std::string &filename);
 
     /// getter for colour table
     std::vector<GLfloat *> * getColourTable(void) { return &colmap; }
@@ -204,14 +191,14 @@ public:
      * @param mint  minimum tree height (below this black or transparent)
      * @param maxt  maximum tree height (above this red)
      */
-    void bandCHMMap(MapFloat * chm, float mint, float maxt);
+    void bandCHMMap(basic_types::MapFloat * chm, float mint, float maxt);
 
     /**
      * @brief setWater  Set areas of the map to a special water cluster based on moisture conditions
      * @param wet       Map of moisture conditions
      * @param wetthresh Moisture value above which pixel is considered as open water
      */
-    void setWater(MapFloat * wet, float wetthresh);
+    void setWater(basic_types::MapFloat * wet, float wetthresh);
 
     int getNumSamples();
 
@@ -369,7 +356,7 @@ public:
                     default:
                         break;
                 }
-                (* tmap)[y][x] = tp;
+                tmap->set(y,x,tp);
 
                 if(tp > maxtp)
                     maxtp = tp;

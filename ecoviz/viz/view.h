@@ -30,7 +30,6 @@
 
 #include "vecpnt.h"
 #include "timer.h"
-#include <common/debug_vector.h>
 
 #include <stdio.h>
 #include <iostream>

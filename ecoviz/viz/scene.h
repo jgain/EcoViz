@@ -31,7 +31,7 @@ private:
     float extent;       //< base-plane length of seperation between inner demarcating points
     bool redraw;        //< whether or not a redraw of transect manipulators is required
     bool valid;       //< true if a valid transect exists, false otherwise
-    MapFloat * mapviz; //< visualization in map form of the thickness of the transect
+    basic_types::MapFloat * mapviz; //< visualization in map form of the thickness of the transect
 
     /**
      * @brief findBoundPoints From a source point and vector direction find points on the defined line lying on the extreme edges of the terrain
@@ -59,7 +59,7 @@ public:
     Transect(Terrain * ter)
     {
         terrain = ter;
-        mapviz = new MapFloat();
+        mapviz = new basic_types::MapFloat();
         init();
         redraw = false;
         valid = false;
@@ -132,7 +132,7 @@ public:
     inline Vector getVertical(){ return vert; }
     inline bool getChangeFlag(){ return redraw; }
     inline bool getValidFlag(){ return valid; }
-    inline MapFloat * getTransectMap(){ return mapviz; }
+    inline basic_types::MapFloat * getTransectMap(){ return mapviz; }
 
     /**
      * @brief clearChangeFlag reset change flag to false
@@ -276,9 +276,9 @@ class Scene
 private:
     Terrain * terrain;                          //< underlying terrain
     TypeMap * maps[(int) TypeMapType::TMTEND];  //< underlying type map data
-    MapFloat * slope, * chm, * cdm;             //< condition maps
-    std::vector<MapFloat *> sunlight;           //< local per cell illumination for each month
-    std::vector<MapFloat *> moisture;           //< local per cell moisture for each month
+    basic_types::MapFloat * slope, * chm, * cdm;             //< condition maps
+    std::vector<basic_types::MapFloat *> sunlight;           //< local per cell illumination for each month
+    std::vector<basic_types::MapFloat *> moisture;           //< local per cell moisture for each month
     std::vector<float> temperature;             //< average monthly temperature
     string datadir;                             //< directory containing all the scene data
     Timeline * tline;                           //< timeline
@@ -306,11 +306,11 @@ public:
     Terrain * getTerrain(){ return terrain; }
     TypeMap * getTypeMap(TypeMapType purpose){ return maps[static_cast<int>(purpose)]; }
     EcoSystem * getEcoSys(){ return eco; }
-    MapFloat * getSunlight(int month){ return sunlight[month]; }
-    MapFloat * getSlope(){ return slope; }
-    MapFloat * getMoisture(int month){ return moisture[month]; }
-    MapFloat * getCanopyHeightModel(){ return chm; }
-    MapFloat * getCanopyDensityModel(){ return cdm; }
+    basic_types::MapFloat * getSunlight(int month){ return sunlight[month]; }
+    basic_types::MapFloat * getSlope(){ return slope; }
+    basic_types::MapFloat * getMoisture(int month){ return moisture[month]; }
+    basic_types::MapFloat * getCanopyHeightModel(){ return chm; }
+    basic_types::MapFloat * getCanopyDensityModel(){ return cdm; }
     Biome * getBiome(){ return biome; }
     Timeline * getTimeline(){ return tline; }
     NoiseField * getNoiseField(){ return nfield; }
@@ -325,14 +325,14 @@ public:
      * @param filename   name of file to be read
      * @param monthly    content will be loaded into this vector of maps
      */
-    bool readMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly);
+    bool readMonthlyMap(std::string filename, std::vector<basic_types::MapFloat *> &monthly);
 
     /**
      * @brief writeMonthlyMap    Write a set of 12 maps to file
      * @param filename   name of file to be written
      * @param monthly    map content to be written
      */
-    bool writeMonthlyMap(std::string filename, std::vector<MapFloat *> &monthly);
+    bool writeMonthlyMap(std::string filename, std::vector<basic_types::MapFloat *> &monthly);
 
     /// read and write condition maps
     bool readSun(std::string filename);

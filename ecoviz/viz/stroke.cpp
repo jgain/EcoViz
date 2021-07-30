@@ -41,9 +41,9 @@
 /// GENERAL PROJECTION ROUTINES
 ///
 
-void planeProject(View * view, uts::vector<vpPoint> * from, uts::vector<vpPoint> * to, Plane * projPlane)
+void planeProject(View * view, std::vector<vpPoint> * from, std::vector<vpPoint> * to, Plane * projPlane)
 {
-    uts::vector<vpPoint> copy; // <from> and <to> may be the same so this requires some care
+    std::vector<vpPoint> copy; // <from> and <to> may be the same so this requires some care
     float tval;
     Vector dirn;
     vpPoint p, cop;
@@ -65,7 +65,7 @@ void planeProject(View * view, uts::vector<vpPoint> * from, uts::vector<vpPoint>
 }
 
 // assumes <from> and <to> strokes are not the same
-void screenProject(View * view, uts::vector<vpPoint> * from, uts::vector<vpPoint> * to)
+void screenProject(View * view, std::vector<vpPoint> * from, std::vector<vpPoint> * to)
 {
     vpPoint vcop, pcop, proj;
     Vector vdir, pdir;
@@ -90,10 +90,10 @@ void screenProject(View * view, uts::vector<vpPoint> * from, uts::vector<vpPoint
     }
 }
 
-void drapeProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to, Terrain * ter)
+void drapeProject(std::vector<vpPoint> * from, std::vector<vpPoint> * to, Terrain * ter)
 {
     int i;
-    uts::vector<vpPoint> copy;
+    std::vector<vpPoint> copy;
     vpPoint dpnt;
 
     // drape onto the landscape
@@ -107,11 +107,11 @@ void drapeProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to, Terrai
     copy.clear();
 }
 
-void dropProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to)
+void dropProject(std::vector<vpPoint> * from, std::vector<vpPoint> * to)
 {
     int i;
     vpPoint dpnt;
-    uts::vector<vpPoint> copy;
+    std::vector<vpPoint> copy;
 
     // zero y-coordinate
     for(i = 0; i < (int) from->size(); i++)
@@ -125,11 +125,11 @@ void dropProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to)
     copy.clear();
 }
 
-bool terrainProject(uts::vector<vpPoint> * from, uts::vector<vpPoint> * to, View * view, Terrain * ter)
+bool terrainProject(std::vector<vpPoint> * from, std::vector<vpPoint> * to, View * view, Terrain * ter)
 {
     bool onterrain = false;
 
-    uts::vector<vpPoint> copy; // <from> and <to> may be the same so this requires some care
+    std::vector<vpPoint> copy; // <from> and <to> may be the same so this requires some care
     Vector dirn;
     vpPoint p, cop;
 
@@ -174,7 +174,7 @@ bool terrainProject(vpPoint &fromPnt, vpPoint &toPnt, View * view, Terrain * ter
 
 }
 
-bool testFragmentAttach(uts::vector<vpPoint> * from, uts::vector<vpPoint> * into, float diftol, bool bothends, int &inds, int &inde, float &closeness)
+bool testFragmentAttach(std::vector<vpPoint> * from, std::vector<vpPoint> * into, float diftol, bool bothends, int &inds, int &inde, float &closeness)
 {
     Vector sep;
     vpPoint s, e;
@@ -252,9 +252,9 @@ bool testFragmentAttach(uts::vector<vpPoint> * from, uts::vector<vpPoint> * into
     return isattached;
 }
 
-bool inFill(uts::vector<vpPoint> * from, uts::vector<vpPoint> * into, float diftol, bool bothends, bool closed)
+bool inFill(std::vector<vpPoint> * from, std::vector<vpPoint> * into, float diftol, bool bothends, bool closed)
 {
-    uts::vector<vpPoint> copy;
+    std::vector<vpPoint> copy;
     Vector vfrom, vinto;
     vpPoint s, e;
     float close;
@@ -367,7 +367,7 @@ bool inFill(uts::vector<vpPoint> * from, uts::vector<vpPoint> * into, float dift
         return false;
 }
 
-bool locateIntersect(uts::vector<vpPoint> * strk, int &begin, int &end)
+bool locateIntersect(std::vector<vpPoint> * strk, int &begin, int &end)
 {
     int i, j;
     vpPoint e1[2], e2[2];
@@ -392,9 +392,9 @@ bool locateIntersect(uts::vector<vpPoint> * strk, int &begin, int &end)
     return false;
 }
 
-void excise(uts::vector<vpPoint> * strk, int begin, int end)
+void excise(std::vector<vpPoint> * strk, int begin, int end)
 {
-    uts::vector<vpPoint>::iterator siter, eiter;
+    std::vector<vpPoint>::iterator siter, eiter;
 
     siter = strk->begin(); eiter = strk->begin();
     siter += begin; eiter += (end+1);
@@ -440,7 +440,7 @@ float ValueCurve::posOnSegment(int seg, float t) const
     }
 }
 
-void ValueCurve::create(uts::vector<float> * tvals, uts::vector<float> * vvals)
+void ValueCurve::create(std::vector<float> * tvals, std::vector<float> * vvals)
 {
     sampling = 30; // number of samples between locators
 
@@ -574,7 +574,7 @@ void BrushCurve::addPoint(View * view, Terrain * ter, vpPoint pnt)
     vpPoint start, end, pos;
     float t, len, delt;
     Vector del;
-    uts::vector<vpPoint> newverts;
+    std::vector<vpPoint> newverts;
 
     if(terrainProject(pnt, end, view, ter))
     {
@@ -694,9 +694,9 @@ bool Curve3D::posOnSegment(int seg, float t, vpPoint & p) const
     }
 }
 
-void Curve3D::subsample(uts::vector<vpPoint> * strk)
+void Curve3D::subsample(std::vector<vpPoint> * strk)
 {
-    uts::vector<vpPoint> tmp;
+    std::vector<vpPoint> tmp;
     Vector del;
     vpPoint prev, curr, pos;
     float len, t, delt;
@@ -731,7 +731,7 @@ void Curve3D::subsample(uts::vector<vpPoint> * strk)
     (* strk) = tmp;
 }
 
-bool Curve3D::create(uts::vector<vpPoint> * strk, View * view, Terrain * ter)
+bool Curve3D::create(std::vector<vpPoint> * strk, View * view, Terrain * ter)
 {
     float tx, ty;
 
@@ -764,7 +764,7 @@ bool Curve3D::create(uts::vector<vpPoint> * strk, View * view, Terrain * ter)
     return created;
 }
 
-bool Curve3D::nonProjCreate(uts::vector<vpPoint> * strk, Terrain * ter)
+bool Curve3D::nonProjCreate(std::vector<vpPoint> * strk, Terrain * ter)
 {
     float tx, ty, errbnd;
     int i;
@@ -821,9 +821,9 @@ bool Curve3D::isCreated() const
 }
 
 
-bool Curve3D::mergeStroke(uts::vector<vpPoint> * strk, uts::vector<vpPoint> * prj, View * view, Terrain * ter, bool &merge, float tol)
+bool Curve3D::mergeStroke(std::vector<vpPoint> * strk, std::vector<vpPoint> * prj, View * view, Terrain * ter, bool &merge, float tol)
 {
-    uts::vector<vpPoint> frag, tmp;
+    std::vector<vpPoint> frag, tmp;
     bool pass;
 
     // project fragment onto landscape
@@ -1088,7 +1088,7 @@ void Curve3D::closestToRay(vpPoint cop, Vector dirn, float & t, float & dist)  c
 }
 
 
-bool Curve3D::testIntersect(Curve3D * dstcurve, uts::vector<float> &srct, uts::vector<float> &dstt)
+bool Curve3D::testIntersect(Curve3D * dstcurve, std::vector<float> &srct, std::vector<float> &dstt)
 {
     int i, j, dis, die;
     vpPoint pnt, c[2], x[2];
@@ -1129,7 +1129,7 @@ bool Curve3D::testIntersect(Curve3D * dstcurve, uts::vector<float> &srct, uts::v
 }
 
 
-bool Curve3D::testSelfIntersect(uts::vector<float> &srct, uts::vector<float> &dstt)
+bool Curve3D::testSelfIntersect(std::vector<float> &srct, std::vector<float> &dstt)
 {
     int i, j, dis, die;
     vpPoint c[2], x[2];
@@ -1175,7 +1175,7 @@ bool Curve3D::testSelfIntersect(uts::vector<float> &srct, uts::vector<float> &ds
 }
 
 
-bool Curve3D::closeApproach(Curve3D * dstcurve, uts::vector<float> &srct, uts::vector<float> &dstt, float tol)
+bool Curve3D::closeApproach(Curve3D * dstcurve, std::vector<float> &srct, std::vector<float> &dstt, float tol)
 {
     int i;
     vpPoint spnt, dpnt;
@@ -1278,7 +1278,7 @@ void Curve3D::genParamRemap(ValueCurve * distleft, ValueCurve * distright)
 {
     int i, k;
     float theta, kap, slen, slensq, nval, lerp, t, dleft, dright, delt, errt = 1.0f, etol = 0.01f;
-    uts::vector<float> newmapleft, newmapright;
+    std::vector<float> newmapleft, newmapright;
     Vector prevseg, nextseg, norm, orthog;
 
     remapleft.clear(); remapright.clear();
@@ -1488,7 +1488,7 @@ void Curve3D::deriveVerts(bool extend)
     float t;
     vpPoint p;
     BoundRect lbr, hbr;
-    uts::vector<vpPoint> denserep;
+    std::vector<vpPoint> denserep;
 
     // create a densely sampled representation of the curve
     for(int i = 0; i < (int) splinerep.size()-1; i++)
@@ -1629,7 +1629,7 @@ vpPoint Curve3D::circSegIntersect(vpPoint c, float r, vpPoint f1, vpPoint f2)
     return p;
 }
 
-void Curve3D::reparametrize(uts::vector<vpPoint> * in, uts::vector<vpPoint> * out, float vsep, bool extend)
+void Curve3D::reparametrize(std::vector<vpPoint> * in, std::vector<vpPoint> * out, float vsep, bool extend)
 {
     Vector sepvec, segvec;
     vpPoint p, p1, p2, f, f1, f2;
@@ -1771,7 +1771,7 @@ bool Fragment::testLoop(float tol)
     return isclosed;
 }
 
-void Fragment::screenBounds(uts::vector<vpPoint> * strk)
+void Fragment::screenBounds(std::vector<vpPoint> * strk)
 {
     screenMin = vpPoint(10000000.0f, 10000000.0f, 0.0f);
     screenMax = vpPoint(-10000000.0f, -10000000.0f, 0.0f);
@@ -1806,7 +1806,7 @@ bool Stroke::crossing(Stroke *cross, int thresh)
     bool xoverlap, yoverlap;
     int i, j, numcrossings = 0;
     vpPoint c[2], x[2];
-    uts::vector<vpPoint> scratch;
+    std::vector<vpPoint> scratch;
 
     // naive O(n^2) test of each segment against all segments in the crossing stroke
     // but does use inscreen bounding boxes for acceleration
@@ -1874,7 +1874,7 @@ bool Stroke::crossing(Stroke *cross, int thresh)
 }
 */
 
-void Stroke::screenBounds(uts::vector<vpPoint> * strk)
+void Stroke::screenBounds(std::vector<vpPoint> * strk)
 {
     screenMin = vpPoint(10000000.0f, 10000000.0f, 0.0f);
     screenMax = vpPoint(-10000000.0f, -10000000.0f, 0.0f);

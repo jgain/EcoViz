@@ -27,7 +27,6 @@
 #define _shape_h
 
 #include "glheaders.h"
-
 #include "view.h"
 
 struct ShapeDrawData

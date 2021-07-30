@@ -71,8 +71,6 @@
 #include <QKeyEvent>
 #include <QPushButton>
 #include <list>
-#include <common/debug_vector.h>
-#include <common/debug_list.h>
 #include <memory>
 
 #include "scene.h"
@@ -189,7 +187,7 @@ private:
      * @param col   colour of the cylinder
      * @param drawParams accumulated rendering state
      */
-    void paintCyl(vpPoint p, GLfloat * col, uts::vector<ShapeDrawData> &drawParams);
+    void paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
 };
 
 #endif

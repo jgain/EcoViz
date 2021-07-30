@@ -26,17 +26,12 @@
 #include <GL/glew.h>
 #include "terrain.h"
 #include <sstream>
-#include <common/debug_string.h>
-#include <common/terragen.h>
 #include <streambuf>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <utility>
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Geometry>
-
 
 using namespace std;
 
@@ -113,7 +108,7 @@ float Terrain::getHeightFromReal(float x, float y)
 {
     int gx, gy;
     toGrid(vpPoint(x, 0, y), gx, gy);
-    return grid[gx][gy];
+    return grid->get(gx,gy);
 }
 
 float Terrain::toWorld(float gdist) const
@@ -141,14 +136,15 @@ bool Terrain::inSynthBounds(vpPoint p) const
 
 void Terrain::init(int dx, int dy, float sx, float sy)
 {
-    grid.allocate(Region(0, 0, dx, dy));
+    grid->setDim(dx, dy);
+    drawgrid->setDim(dy, dx);
     setTerrainDim(sx, sy);
-    setFocus(vpPoint(sx/2.0f, grid[dy/2-1][dx/2-1], sy/2.0f));
+    setFocus(vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f));
     scfac = 1.0f;
 
     // init accel structure
     spherestep = 8;
-    numspx = (grid.width()-1) / spherestep + 1; numspy = (grid.height()-1) / spherestep + 1;
+    numspx = (grid->width()-1) / spherestep + 1; numspy = (grid->height()-1) / spherestep + 1;
     for(int i = 0; i < numspx; i++)
     {
         std::vector<AccelSphere> sphrow;
@@ -168,12 +164,12 @@ void Terrain::init(int dx, int dy, float sx, float sy)
 void Terrain::initGrid(int dx, int dy, float sx, float sy)
 {
     init(dx, dy, sx, sy);
-    grid.fill(0.0f);
+    grid->fill(0.0f);
+    drawgrid->fill(0.0f);
 }
 
 void Terrain::delGrid()
 {
-    grid.clear();
     if(boundspheres.size() > 0)
     {
         for(int i = 0; i < (int) boundspheres.size(); i++)
@@ -185,14 +181,6 @@ void Terrain::delGrid()
     accelValid = false;
 }
 
-void Terrain::clipRegion(Region &reg)
-{
-    if(reg.x0 < 0) reg.x0 = 0;
-    if(reg.y0 < 0) reg.y0 = 0;
-    if(reg.x1 > grid.width()) reg.x1 = grid.width();
-    if(reg.y1 > grid.height()) reg.y1 = grid.height();
-}
-
 void Terrain::setMidFocus()
 {
     int dx, dy;
@@ -201,7 +189,7 @@ void Terrain::setMidFocus()
     getGridDim(dx, dy);
     getTerrainDim(sx, sy);
     if(dx > 0 && dy > 0)
-        setFocus(vpPoint(sx/2.0f, grid[dy/2-1][dx/2-1], sy/2.0f));
+        setFocus(vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f));
     else
         setFocus(vpPoint(0.0f, 0.0f, 0.0f));
 }
@@ -214,7 +202,7 @@ void Terrain::getMidPoint(vpPoint & mid)
     getGridDim(dx, dy);
     getTerrainDim(sx, sy);
     if(dx > 0 && dy > 0)
-        mid = vpPoint(sx/2.0f, grid[dy/2-1][dx/2-1], sy/2.0f);
+        mid = vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f);
     else
         mid = vpPoint(0.0f, 0.0f, 0.0f);
 
@@ -222,14 +210,14 @@ void Terrain::getMidPoint(vpPoint & mid)
 
 void Terrain::getGridDim(int & dx, int & dy) const
 {
-    dx = grid.width();
-    dy = grid.height();
+    dx = grid->width();
+    dy = grid->height();
 }
 
 void Terrain::getGridDim(uint & dx, uint & dy)
 {
-    dx = (uint) grid.width();
-    dy = (uint) grid.height();
+    dx = (uint) grid->width();
+    dy = (uint) grid->height();
 }
 
 void Terrain::getTerrainDim(float &tx, float &ty) const
@@ -270,28 +258,9 @@ float Terrain::longEdgeDist()
     return std::max(tx, ty);
 }
 
-const float * Terrain::getGridData(int & dx, int & dy)
-{
-    int i, j;
-
-    getGridDim(dx, dy);
-    if(scaleOn)
-    {
-        scaledgrid.allocate(Region(0, 0, grid.width(), grid.height()));
-        for(j = 0; j < grid.height(); j++)
-            for(i = 0; i < grid.width(); i++)
-                scaledgrid[j][i] = grid[j][i] * scfac;
-        return scaledgrid.get();
-    }
-    else
-    {
-        return grid.get();
-    }
-}
-
 float Terrain::getHeight(int x, int y)
 {
-    return grid[x][y];
+    return grid->get(x,y);
 }
 
 float Terrain::getFlatHeight(int idx)
@@ -301,7 +270,7 @@ float Terrain::getFlatHeight(int idx)
 
     x = idx % dx;
     y = idx / dx;
-    return grid[x][y];
+    return grid->get(x,y);
 }
 
 void Terrain::getNormal(int x, int y, Vector & norm)
@@ -347,13 +316,13 @@ void Terrain::getNormal(int x, int y, Vector & norm)
 
 float Terrain::getCellExtent()
 {
-    return dimx / (float) grid.width();
+    return dimx / (float) grid->width();
 }
 
 void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
 {
-    const int width = grid.width();
-    const int height = grid.height();
+    const int width = grid->width();
+    const int height = grid->height();
     float scx, scy;
 
     getTerrainDim(scx, scy);
@@ -371,11 +340,11 @@ void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
 
     if (bufferState == BufferState::REALLOCATE || bufferState == BufferState::DIRTY )
     {
-        renderer->updateHeightMap(width, height, scx, scy, (GLfloat*)grid.get(), true);
+        renderer->updateHeightMap(width, height, scx, scy, drawgrid->getPtr(), true);
     }
     else
     {
-        renderer->updateHeightMap(width, height, scx, scy, (GLfloat*)grid.get());
+        renderer->updateHeightMap(width, height, scx, scy, drawgrid->getPtr());
     }
 
     bufferState = BufferState::CLEAN;
@@ -400,13 +369,13 @@ void Terrain::buildSphereAccel()
     for(si = 0; si < numspx; si++)
         for(sj = 0; sj < numspy; sj++)
         {
-            imin = si*spherestep; imax = std::min(imin+spherestep, grid.width());
-            jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid.height());
+            imin = si*spherestep; imax = std::min(imin+spherestep, grid->width());
+            jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid->height());
             // cerr << "(" << si << ", " << sj << ") = " << "i: " << imin << " - " << imax << " j: " << jmin << " - " << jmax << endl;
 
             // center point
-            b1 = toWorld(imin, jmin, grid[jmin][imin]);
-            b2 = toWorld(imax, jmax, grid[jmax-1][imax-1]);
+            b1 = toWorld(imin, jmin, grid->get(jmin, imin));
+            b2 = toWorld(imax, jmax, grid->get(jmax-1,imax-1));
             c.affinecombine(0.5f, b1, 0.5f, b2);
 
             // update radius
@@ -414,7 +383,7 @@ void Terrain::buildSphereAccel()
             for(j = jmin; j < jmax; j++)
                 for(i = imin; i < imax; i++)
                 {
-                    p = toWorld(i, j, grid[j][i]);
+                    p = toWorld(i, j, grid->get(j,i));
                     del.diff(c, p);
                     sqlen = del.sqrdlength();
                     if(sqlen > rad)
@@ -432,7 +401,7 @@ bool Terrain::rayIntersect(vpPoint start, Vector dirn, vpPoint & p)
     vpPoint currp;
     float besttval, tval, dist;
     bool found = false;
-    float tol = dimx / (float) (grid.width()-1); // set world space detection tolerance to approx half gap between grid points
+    float tol = dimx / (float) (grid->width()-1); // set world space detection tolerance to approx half gap between grid points
 
     besttval = 100000000.0f;
 
@@ -446,13 +415,13 @@ bool Terrain::rayIntersect(vpPoint start, Vector dirn, vpPoint & p)
             rayPointDist(start, dirn, boundspheres[si][sj].center, tval, dist);
             if(dist <= boundspheres[si][sj].radius) // intersects enclosing sphere so test enclosed points
             {
-                imin = si*spherestep; imax = std::min(imin+spherestep, grid.width());
-                jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid.height());
+                imin = si*spherestep; imax = std::min(imin+spherestep, grid->width());
+                jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid->height());
                 // check ray against grid points
                 for(j = jmin; j < jmax; j++)
                     for(i = imin; i < imax; i++)
                     {
-                        currp = toWorld(i, j, grid[j][i]);
+                        currp = toWorld(i, j, grid->get(j,i));
                         rayPointDist(start, dirn, currp, tval, dist);
                         if(dist < tol)
                         {
@@ -509,8 +478,8 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
     v = (y - (float) cy);
 
     // bilinear interpolation
-    h0 = (1.0f - u) * grid[cy][cx] + u * grid[cy][cx+1];
-    h1 = (1.0f - u) * grid[cy+1][cx] + u * grid[cy+1][cx];
+    h0 = (1.0f - u) * grid->get(cy,cx) + u * grid->get(cy,cx+1);
+    h1 = (1.0f - u) * grid->get(cy+1,cx) + u * grid->get(cy+1,cx);
     drapeh = (1.0f - v) * h0 + v * h1;
     // this could be implemented using ray-triangle intersection
     // but it would be much less efficient
@@ -519,22 +488,9 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
     return true;
 }
 
-void Terrain::loadTer(const uts::string &filename)
+void Terrain::loadElv(const std::string &filename)
 {
-    float sx, sy, step;
-    int dx, dy;
-
-    grid.read(filename);
-    dx = grid.width(); dy = grid.height();
-    step = grid.step();
-    sx = (float) grid.width() * step;
-    sy = (float) grid.height() * step;
-    init(dx, dy, sx, sy);
-}
-
-void Terrain::loadElv(const uts::string &filename)
-{
-    float step, lat;
+    float lat;
     int dx, dy;
 
     float val;
@@ -556,7 +512,8 @@ void Terrain::loadElv(const uts::string &filename)
             for (int y = 0; y < dy; y++)
             {
                 infile >> val;
-                grid[x][y] = val * 0.3048f; // convert from feet to metres
+                grid->set(x,y, val * 0.3048f); // convert from feet to metres
+                drawgrid->set(y, x, val * 0.3048f);
             }
         }
         setMidFocus();
@@ -568,14 +525,8 @@ void Terrain::loadElv(const uts::string &filename)
     }
 }
 
-void Terrain::saveTer(const uts::string &filename)
+void Terrain::saveElv(const std::string &filename)
 {
-    grid.write(filename);
-}
-
-void Terrain::saveElv(const uts::string &filename)
-{
-    float step;
     int gx, gy;
 
     ofstream outfile;
@@ -584,13 +535,12 @@ void Terrain::saveElv(const uts::string &filename)
     if(outfile.is_open())
     {
         getGridDim(gx, gy);
-        step = grid.step();
         outfile << gx << " " << gy << " " << step << " " << latitude << endl;
         for (int x = 0; x < gx; x++)
         {
             for (int y = 0; y < gy; y++)
             {
-                outfile << grid[x][y] << " ";
+                outfile << grid->get(x,y) << " ";
             }
         }
         outfile << endl;
@@ -607,10 +557,10 @@ void Terrain::calcMeanHeight()
     int i, j, cnt = 0;
     hghtmean = 0.0f;
 
-    for(j = 0; j < grid.height(); j++)
-        for(i = 0; i < grid.width(); i++)
+    for(j = 0; j < grid->height(); j++)
+        for(i = 0; i < grid->width(); i++)
         {
-            hghtmean += grid[j][i];
+            hghtmean += grid->get(j,i);
             cnt++;
         }
     hghtmean /= (float) cnt;
@@ -624,10 +574,10 @@ void Terrain::getHeightBounds(float &minh, float &maxh)
     maxh = -10000000.0f;
     minh = 100000000.0;
 
-    for(j = 0; j < grid.height(); j++)
-        for(i = 0; i < grid.width(); i++)
+    for(j = 0; j < grid->height(); j++)
+        for(i = 0; i < grid->width(); i++)
         {
-            hght = grid[j][i];
+            hght = grid->get(j,i);
             if(hght < minh)
                 minh = hght;
             if(hght > maxh)

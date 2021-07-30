@@ -61,7 +61,6 @@
 
 #include "window.h"
 #include "vecpnt.h"
-#include "common/str.h"
 
 #include <cmath>
 #include <string>

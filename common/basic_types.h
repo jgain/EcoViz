@@ -458,6 +458,9 @@ namespace basic_types
         float get(int idx) const{ return fmap[idx]; }
         void set(int x, int y, float val){ fmap[flatten(x, y)] = val; }
 
+        /// get pointer to the raw map structure
+        float * getPtr(){ return &fmap[0]; }
+
         /**
          * @brief read  read a floating point data grid from file
          * @param filename  name of file to be read
@@ -477,6 +480,97 @@ namespace basic_types
             return fmap.end();
         }
 
+    };
+
+    class MapInt
+    {
+    private:
+        int gx, gy;                     //< grid dimensions
+        std::vector<int> fmap;        //< grid of floating point values
+
+
+    public:
+
+        MapInt(){ gx = 0; gy = 0; initMap(); }
+
+        ~MapInt(){ delMap(); }
+
+        /// return the row-major linearized value of a grid position
+        inline int flatten(int dx, int dy) const { return dy * gx + dx; }
+
+        inline void idx_to_xy(int idx, int &x, int &y) const
+        {
+            x = idx % gx;
+            y = idx / gx;
+        }
+
+        /// getter for grid dimensions
+        void getDim(int &dx, int &dy) const
+        { dx = gx; dy = gy; }
+
+        int height() const { return gy; }
+        int width() const{ return gx; }
+
+        /// setter for grid dimensions
+        void setDim(int dx, int dy){ gx = dx; gy = dy; initMap(); }
+        template<typename T>
+        void setDim(const T &other)
+        {
+            int w, h;
+            other.getDim(w, h);
+            this->setDim(w, h);
+        }
+
+        template<typename T>
+        void clone(const T &other)
+        {
+            setDim(other);
+            int w, h;
+            other.getDim(w, h);
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    set(x, y, other.get(x, y));
+                }
+            }
+        }
+
+        /// clear the contents of the grid to empty
+        void initMap(){ fmap.clear(); fmap.resize(gx*gy); }
+
+        /// completely delete map
+        void delMap(){ fmap.clear(); }
+
+        /// set grass heights to a uniform value
+        void fill(float h){ fmap.clear(); fmap.resize(gx*gy, h); }
+
+        /// getter and setter for map elements
+        int get(int x, int y) const { return fmap[flatten(x, y)]; }
+        int get(int idx) const{ return fmap[idx]; }
+        void set(int x, int y, int val){ fmap[flatten(x, y)] = val; }
+
+        /// get pointer to the raw map structure
+        int * getPtr(){ return &fmap[0]; }
+
+        /**
+         * @brief read  read a floating point data grid from file
+         * @param filename  name of file to be read
+         * @return true if the file is found and has the correct format, false otherwise
+         */
+        bool read(std::string filename);
+
+        int *data() { return fmap.data(); }
+
+        std::vector<int>::iterator begin()
+        {
+            return fmap.begin();
+        }
+
+        std::vector<int>::iterator end()
+        {
+            return fmap.end();
+        }
     };
 }
 

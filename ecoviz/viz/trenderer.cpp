@@ -33,7 +33,7 @@ namespace PMrender {
 // this sets the heightmap texture; if dimensions have changed, mesh+normals are rebuilt
 // if force == draw, then we a rebuild will take place - use to manage changed data from synthesis
 
-  void TRenderer::updateHeightMap(int wd, int ht, float scx, float scy, const float* data, bool force)
+  void TRenderer::updateHeightMap(int wd, int ht, float scx, float scy, float* data, bool force)
   {
     if (data == NULL)
       {
@@ -1032,7 +1032,7 @@ TRenderer::~TRenderer()
 }
 
 // load in a new heightfield with accompanying terrain type map.
-void TRenderer::loadTerrainData(const float* data, int wd, int ht, float scx, float scy,
+void TRenderer::loadTerrainData(float* data, int wd, int ht, float scx, float scy,
                                TypeMap* paintMap, TypeMap* constraintMap)
 {
     if (!shadersReady)
@@ -1062,7 +1062,7 @@ void TRenderer::loadTerrainData(const float* data, int wd, int ht, float scx, fl
       return;
     }
 
-  MemMap<int> *tm =  tmap->getMap();
+  basic_types::MapInt * tm =  tmap->getMap();
   if (tm == NULL)
     {
       // std::cerr << "TRenderer::updateTypeMapTexture - Map buffer is NULL, map ignored\n";
@@ -1072,7 +1072,7 @@ void TRenderer::loadTerrainData(const float* data, int wd, int ht, float scx, fl
   Region R = tmap->getRegion();
   int    wd = tm->width();
   int    ht = tm->height();
-  const int* ptr = (int*)tm->get();
+  const int* ptr = (int*)tm->getPtr();
   std::vector<GLfloat *> *ct = tmap->getColourTable();
   int Rwidth  = R.x1 - R.x0; // region bounds from [R.x0, R.x1)
   int Rheight = R.y1 - R.y0;
