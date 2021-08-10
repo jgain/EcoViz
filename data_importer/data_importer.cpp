@@ -1136,7 +1136,7 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
     std::string name;
     data_importer::treeshape draw_shape;
     data_importer::viability sun, temp, moisture, slope;
-    float trunkrad;
+    float trunkrad = 0;
     bool iscanopy;
     for (int i = 0; i < argc; i++)
     {

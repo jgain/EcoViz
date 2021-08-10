@@ -1244,6 +1244,15 @@ void TRenderer::initShaders(void)
       s->setShaderSources(std::string("canopy.frag"), std::string("canopy.vert"));
       shaders["canopyShader"] = s;
 
+#ifdef _WIN32
+      GLenum err = glewInit();
+      if (GLEW_OK != err)
+      {
+          /* Problem: glewInit failed, something is seriously wrong. */
+          std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
+      }
+#endif
+
     std::cout << "Compiling shaders...\n";
     std::map<std::string, shaderProgram*>::iterator it = shaders.begin();
     while (it != shaders.end() )

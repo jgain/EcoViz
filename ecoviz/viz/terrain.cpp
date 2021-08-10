@@ -23,7 +23,12 @@
 // author: James Gain
 // date: 17 December 2012
 
+#ifdef _WIN32
+#include <glew.h>
+#else
 #include <GL/glew.h>
+#endif
+
 #include "terrain.h"
 #include <sstream>
 #include <streambuf>

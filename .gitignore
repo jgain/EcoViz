@@ -18,3 +18,10 @@ cmake-build*
 
 test_binary_readwrite/main
 test_binary_readwrite/main_read
+
+packages
+packages.config
+temp
+out
+.vs
+*.vcxproj.user

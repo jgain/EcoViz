@@ -49,6 +49,10 @@
 #define Eta 0.000001f
 #define Negeta - 0.000001f
 
+#ifdef _WIN32
+#undef far
+#endif
+
 inline float sign(float n)
 {
     if(n >= 0.0f)

@@ -2,6 +2,7 @@
 #include "cohortmaps.h"
 #include <random>
 #include <chrono>
+#include <numeric>
 
 #define TIMESTEP_ONLY true
 #define ALL_FILEDATA false
@@ -106,7 +107,7 @@ void CohortMaps::set_nplants_each()
 {
     auto set_nplants_crtlist = [this](std::vector<ilanddata::cohort> &crts) {
         for (auto &c : crts)
-            c.nplants = std::min(double(maxpercohort), ceil(c.nplants / nplant_div)) + 1e-3f;
+            c.nplants = std::min(double(maxpercohort), double(ceil(c.nplants / nplant_div))) + 1e-3f;
     };
 
     for (auto &m : timestep_maps)

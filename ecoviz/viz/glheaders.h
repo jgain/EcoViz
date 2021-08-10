@@ -24,9 +24,14 @@
 
 // #include <GL/glew.h>
 
+#ifdef _WIN32
+#include <glew.h>
+#else
 #define GL3_PROTOTYPES
 #include <GL/gl3.h>
 #include <GL/glu.h>
+#endif
+
 #include <QDebug>
 #include <QString>
 

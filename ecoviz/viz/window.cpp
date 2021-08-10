@@ -440,7 +440,7 @@ void Window::setupVizPanel()
     // timeline views
     for(int i = 0; i < 2; i++)
     {
-        TimeWindow * tview = new TimeWindow(this, 1, 1, 800, 50);
+        TimeWindow * tview = new TimeWindow(this, 1, 2, 800, 50);
 
         // signal to slot connections
         connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));

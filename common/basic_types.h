@@ -29,6 +29,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <string>
 
 #ifdef __CUDACC__
 #define CUDA_CALLABLE_MEMBER __host__ __device__

@@ -6,6 +6,7 @@
 #include <random>
 #include "../../common/basic_types.h"
 #include "cohortmaps.h"
+#include <deque>
 
 namespace data_importer
 {
