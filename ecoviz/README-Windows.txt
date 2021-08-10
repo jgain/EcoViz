@@ -5,3 +5,6 @@ To use the Visual Studio projet on Windows, you must :
 	* boost
 	* boost_serialization-vc142 ("-vc142" for Visual Studio 2019)
 	* glm
+- In the project properties, go in "Debugging" and set (for both Debug and Release configuration) :
+	* "Command Arguments" to "..\..\data\test"
+	* "Working Directory" to "$(ProjectDir)\out"
