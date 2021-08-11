@@ -135,6 +135,12 @@
     <ClCompile Include="..\common\custom_exceptions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="viz\export_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_export_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common\constraint_interface.h">
@@ -341,6 +347,9 @@
     <ClInclude Include="..\common\basic_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="viz\mitsuba_model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="doc\html\graph_legend.html" />
@@ -371,6 +380,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="common\source2cpp.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="viz\export_dialog.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

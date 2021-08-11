@@ -61,6 +61,7 @@
 
 #include "window.h"
 #include "vecpnt.h"
+#include "export_dialog.h"
 
 #include <cmath>
 #include <string>
@@ -502,6 +503,8 @@ Window::Window(string datadir)
     createActions();
     createMenus();
 
+    readMitsubaExportProfiles("../../data/mitsubaExportProfiles");
+
     mainWidget->setLayout(mainLayout);
     setWindowTitle(tr("EcoViz"));
     mainWidget->setMouseTracking(true);
@@ -864,6 +867,10 @@ void Window::createActions()
     showPlantAct->setChecked(false);
     showPlantAct->setStatusTip(tr("Hide/Show Plant Options"));
     connect(showPlantAct, SIGNAL(triggered()), this, SLOT(showPlantOptions()));
+
+    // Export Mitsuba
+    exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
+    connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsuba()));
 }
 
 void Window::createMenus()
@@ -871,6 +878,9 @@ void Window::createMenus()
     viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(showRenderAct);
     viewMenu->addAction(showPlantAct);
+
+    // Export Mitsuba
+    viewMenu->addAction(exportMitsubaAct);
 }
 
 class AdjustmentRunnable : public QRunnable
@@ -909,3 +919,109 @@ void Window::setSmoothing(int d)
     }
 }
 
+void Window::readMitsubaExportProfiles(string profilesDirPath)
+{
+    QDir profilesDir(profilesDirPath.data());
+
+    QStringList csvProfiles = profilesDir.entryList(QStringList() << "*.csv" << "*.CSV", QDir::Files);
+    for (QString csvName : csvProfiles)
+    {
+        ifstream csvFile(profilesDirPath + "/" + csvName.toUtf8().data());
+
+        string profileName = csvName.remove(".csv").toUtf8().data();
+        string line;
+        string plantCode;
+        string maxHeightStr;
+        string instanceId;
+        string actualHeightStr;
+        int count = 0;
+
+        getline(csvFile, line);
+
+        while (getline(csvFile, line))
+        {
+            count++;
+
+            string delimiter = ";";
+
+            // Plant code
+            size_t pos = line.find(delimiter);
+            string token = line.substr(0, pos);
+            plantCode = token;
+            line.erase(0, pos + delimiter.length());
+
+            // Max height
+            pos = line.find(delimiter);
+            token = line.substr(0, pos);
+            maxHeightStr = token;
+            line.erase(0, pos + delimiter.length());
+
+            // Instance id
+            pos = line.find(delimiter);
+            token = line.substr(0, pos);
+            instanceId = token;
+            line.erase(0, pos + delimiter.length());
+
+            // Actual height
+            actualHeightStr = line;
+
+            if (this->profileToSpeciesMap.find(profileName) == this->profileToSpeciesMap.end())
+            {
+                this->profileToSpeciesMap.insert({ profileName , {} });
+            }
+
+            map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName);
+
+            if (itProfile->second.find(plantCode) == itProfile->second.end())
+            {
+                itProfile->second.insert({ plantCode, {} });
+            }
+
+            map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
+            itPlantCode->second.push_back({ stod(maxHeightStr), instanceId, stod(actualHeightStr) });
+        }
+    }
+
+    cout << "readMitsubaExportProfiles finished !" << endl;
+}
+
+void Window::exportMitsuba()
+{
+    QStringList allProfiles;
+
+    map<string, map<string, vector<MitsubaModel>>>::iterator it;
+    for (it = this->profileToSpeciesMap.begin(); it != this->profileToSpeciesMap.end(); it++)
+    {
+        allProfiles.append(it->first.data());
+    }
+
+    bool ok = false;
+    ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, &ok);
+
+    if (ok)
+    {
+        map<string, vector<MitsubaModel>> speciesMap = this->profileToSpeciesMap.find(exportSettings.profile)->second;
+
+        QDir().mkdir("./instances");
+
+        ofstream sceneXml;
+        sceneXml.open("./instances/instances.xml");
+
+        sceneXml << "<scene version=\"0.5.0\">\n";
+
+        if (exportSettings.transect)
+        {
+            Transect* transect = this->transectControls[exportSettings.sceneIndex];
+            this->scenes[exportSettings.sceneIndex]->exportSceneXml(speciesMap, sceneXml, transect);
+        }
+        else
+        {
+            this->scenes[exportSettings.sceneIndex]->exportSceneXml(speciesMap, sceneXml);
+        }
+
+        sceneXml << "</scene>\n";
+
+        sceneXml.close();
+        cout << "Export finished !" << endl;
+    }
+}

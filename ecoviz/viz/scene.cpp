@@ -628,3 +628,71 @@ void Scene::saveScene(std::string dirprefix)
     if(!getEcoSys()->saveNichePDB(pdbfile))
         cerr << "Error Scene::saveScene: saving plane file " << pdbfile << " failed" << endl;
 }
+
+void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect) {
+    PlantGrid* pg = this->getEcoSys()->getPlants();
+    for (int x = 0; x < pg->gx; x++)
+    {
+        for (int y = 0; y < pg->gy; y++)
+        {
+            auto ppopulation = pg->getPopulation(x, y);
+            for (int s = 0; s < (int)ppopulation->pop.size(); s++)
+            {
+                for (int p = 0; p < (int)ppopulation->pop[s].size(); p++)
+                {
+                    Plant plant = ppopulation->pop[s][p];
+
+                    if (transect)
+                    {
+                        float xStart = transect->getBoundStart().x;
+                        float zStart = transect->getBoundStart().z;
+
+                        float xEnd = transect->getBoundEnd().x;
+                        float zEnd = transect->getBoundEnd().z;
+
+                        if (xStart < 0.001 && zStart < 0.001 && xEnd < 0.001 && zEnd < 0.001)
+                        {
+                            // Transect not defined
+                            continue;
+                        }
+
+                        float distanceToTransect = abs((xEnd - xStart) * (zStart - plant.pos.z) - (xStart - plant.pos.x) * (zEnd - zStart));
+                        distanceToTransect /= sqrt((xEnd - xStart) * (xEnd - xStart) + (zEnd - zStart) * (zEnd - zStart));
+
+                        if (distanceToTransect > transect->getThickness() / 2)
+                        {
+                            continue;
+                        }
+                    }
+
+                    string code = this->biome->getPFType(s)->code;
+                    string id;
+
+                    map<string, vector<MitsubaModel>>::iterator it;
+                    if ((it = speciesMap.find(code)) != speciesMap.end())
+                    {
+                        int indexNearestHeightMax = 0;
+                        vector<MitsubaModel>& vectMitsubaModel = it->second;
+                        for (int i = 0; i < vectMitsubaModel.size(); i++)
+                        {
+                            if (vectMitsubaModel[i].maxHeight >= plant.height && vectMitsubaModel[i].maxHeight <= vectMitsubaModel[indexNearestHeightMax].maxHeight)
+                            {
+                                indexNearestHeightMax = i;
+                            }
+                        }
+
+                        id = vectMitsubaModel[indexNearestHeightMax].id;
+                    }
+
+                    xmlFile << "\t<shape type=\"instance\">\n";
+                    xmlFile << "\t\t<!-- Code=\"" << code << "\" Height=\"" << plant.height << "\" -->\n";
+                    xmlFile << "\t\t<ref id=\"" << id << "\"/>\n";
+                    xmlFile << "\t\t<transform name=\"toWorld\">\n";
+                    xmlFile << "\t\t\t<translate x=\"" << plant.pos.x << "\" y=\"" << plant.pos.y << "\" z=\"" << plant.pos.z << "\"/>\n";
+                    xmlFile << "\t\t</transform>\n";
+                    xmlFile << "\t</shape>\n\n";
+                }
+            }
+        }
+    }
+}

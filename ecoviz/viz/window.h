@@ -65,6 +65,7 @@
 #include "glwidget.h"
 #include "gltransect.h"
 #include "chartwindow.h"
+#include "mitsuba_model.h"
 #include <QWidget>
 #include <QtWidgets>
 #include <string>
@@ -98,6 +99,7 @@ public slots:
     void showPlantOptions();
     void showContours(int show);
     void showGridLines(int show);
+    void exportMitsuba();
 
     // render panel
     void lineEditChange();
@@ -149,9 +151,13 @@ private:
     QMenu *viewMenu;
     QAction *showRenderAct;
     QAction *showPlantAct;
+    QAction* exportMitsubaAct;
 
     // file management
     std::string scenedirname;
+
+    // Map containing the different export profiles (Mitsuba)
+    map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;
 
     /**
      * @brief setupRenderPanel  Initialize GUI layout of side render panel for controlling various rendering parameters
@@ -177,6 +183,12 @@ private:
     // init menu
     void createActions();
     void createMenus();
+
+    /**
+     * @brief readMitsubaExportProfiles Read the CSV files in the specified folder to fill profiles map
+     * @param profilesDirPath Path of the folder containing the export profiles
+     */
+    void readMitsubaExportProfiles(string profilesDirPath);
 };
 
 #endif

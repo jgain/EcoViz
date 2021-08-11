@@ -146,10 +146,12 @@
     <ClCompile Include="viz\descriptor.cpp" />
     <ClCompile Include="viz\dice_roller.cpp" />
     <ClCompile Include="viz\eco.cpp" />
+    <ClCompile Include="viz\export_dialog.cpp" />
     <ClCompile Include="viz\gltransect.cpp" />
     <ClCompile Include="viz\glwidget.cpp" />
     <ClCompile Include="viz\main.cpp" />
     <ClCompile Include="viz\moc_chartwindow.cpp" />
+    <ClCompile Include="viz\moc_export_dialog.cpp" />
     <ClCompile Include="viz\moc_gltransect.cpp" />
     <ClCompile Include="viz\moc_glwidget.cpp" />
     <ClCompile Include="viz\moc_progressbar_window.cpp" />
@@ -241,6 +243,16 @@
     <ClInclude Include="viz\descriptor.h" />
     <ClInclude Include="viz\dice_roller.h" />
     <ClInclude Include="viz\eco.h" />
+    <CustomBuild Include="viz\export_dialog.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension) into viz\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension) into viz\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+    </CustomBuild>
     <ClInclude Include="viz\glheaders.h" />
     <CustomBuild Include="viz\gltransect.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
@@ -262,6 +274,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
+    <ClInclude Include="viz\mitsuba_model.h" />
     <ClInclude Include="viz\pft.h" />
     <CustomBuild Include="viz\progressbar_window.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>

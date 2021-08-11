@@ -12,6 +12,7 @@
 #include "typemap.h"
 #include "shape.h"
 #include "cohortsampler.h"
+#include "mitsuba_model.h"
 
 // minimum and maximum transect thickness
 const float mintwidth = 10.0f;
@@ -360,6 +361,14 @@ public:
       * @param dirprefix     directory path and file name prefix combined for saving a scene, directory is assumed to exist
       */
      void saveScene(std::string dirprefix);
+
+     /**
+      * Export the scene (for Mitsuba) to the XML specified
+      * @param speciesMap      Correspondence map between the plant type and a vector binding a height to a mitsuba id
+      * @param xmlFile         XML file in which the scene will be exported
+      * @param transect        Transect control in case the export concerns only the transect view, nullptr instead
+      */
+     void exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect = nullptr);
 };
 
 #endif // SCENE_H
