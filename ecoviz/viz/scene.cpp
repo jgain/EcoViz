@@ -31,6 +31,7 @@
 #include <fstream>
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
+#include <QMessageBox>
 
 //// Transect
 
@@ -631,6 +632,8 @@ void Scene::saveScene(std::string dirprefix)
 }
 
 void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect) {
+    set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
+
     PlantGrid* pg = this->getEcoSys()->getPlants();
     for (int x = 0; x < pg->gx; x++)
     {
@@ -697,12 +700,21 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
                         xmlFile << "\t\t</transform>\n";
                         xmlFile << "\t</shape>\n\n";
                     }
-                    else
+                    else if (plantCodeNotFound.find(code) == plantCodeNotFound.end())
                     {
-                        // Plant code not found in the profile
+                        // Plant code was not found in the profile
+                        plantCodeNotFound.insert(code);
                     }
                 }
             }
         }
     }
+
+    QMessageBox messageBox;
+    QString warningMessage = "The following plant codes were not found and have been skipped :";
+    for (string code : plantCodeNotFound)
+    {
+        warningMessage += QString("\n - ") + code.data();
+    }
+    messageBox.warning(0, "Plant code not found", warningMessage);
 }

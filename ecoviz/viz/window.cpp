@@ -923,66 +923,92 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
 {
     QDir profilesDir(profilesDirPath.data());
 
-    QStringList csvProfiles = profilesDir.entryList(QStringList() << "*.csv" << "*.CSV", QDir::Files);
-    for (QString csvName : csvProfiles)
+    if (profilesDir.exists())
     {
-        ifstream csvFile(profilesDirPath + "/" + csvName.toUtf8().data());
-
-        string profileName = csvName.remove(".csv").toUtf8().data();
-        string line;
-        string plantCode;
-        string maxHeightStr;
-        string instanceId;
-        string actualHeightStr;
-        int count = 0;
-
-        getline(csvFile, line);
-
-        while (getline(csvFile, line))
+        QStringList csvProfiles = profilesDir.entryList(QStringList() << "*.csv" << "*.CSV", QDir::Files);
+        for (QString csvName : csvProfiles)
         {
-            count++;
+            ifstream csvFile(profilesDirPath + "/" + csvName.toUtf8().data());
 
-            string delimiter = ";";
+            string profileName = csvName.remove(".csv").toUtf8().data();
+            string line;
+            string plantCode;
+            string maxHeightStr;
+            double maxHeight;
+            string instanceId;
+            string actualHeightStr;
+            double actualHeight;
+            int count = 1;
 
-            // Plant code
-            size_t pos = line.find(delimiter);
-            string token = line.substr(0, pos);
-            plantCode = token;
-            line.erase(0, pos + delimiter.length());
+            getline(csvFile, line);
 
-            // Max height
-            pos = line.find(delimiter);
-            token = line.substr(0, pos);
-            maxHeightStr = token;
-            line.erase(0, pos + delimiter.length());
-
-            // Instance id
-            pos = line.find(delimiter);
-            token = line.substr(0, pos);
-            instanceId = token;
-            line.erase(0, pos + delimiter.length());
-
-            // Actual height
-            actualHeightStr = line;
-
-            if (this->profileToSpeciesMap.find(profileName) == this->profileToSpeciesMap.end())
+            while (getline(csvFile, line))
             {
-                this->profileToSpeciesMap.insert({ profileName , {} });
+                count++;
+
+                if (line.empty())
+                {
+                    continue;
+                }
+
+                string delimiter = ";";
+
+                // Plant code
+                size_t pos = line.find(delimiter);
+                string token = line.substr(0, pos);
+                plantCode = token;
+                line.erase(0, pos + delimiter.length());
+
+                // Max height
+                pos = line.find(delimiter);
+                token = line.substr(0, pos);
+                maxHeightStr = token;
+                line.erase(0, pos + delimiter.length());
+
+                char* end = nullptr;
+                maxHeight = strtod(maxHeightStr.c_str(), &end);
+                if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
+                {
+                    maxHeight = -1.0;
+                    cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" << endl;
+                }
+
+                // Instance id
+                pos = line.find(delimiter);
+                token = line.substr(0, pos);
+                instanceId = token;
+                line.erase(0, pos + delimiter.length());
+
+                // Actual height
+                actualHeightStr = line;
+
+                end = nullptr;
+                actualHeight = strtod(actualHeightStr.c_str(), &end);
+                if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
+                {
+                    actualHeight = -1.0;
+                    cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" << endl;
+                }
+
+                if (this->profileToSpeciesMap.find(profileName) == this->profileToSpeciesMap.end())
+                {
+                    this->profileToSpeciesMap.insert({ profileName , {} });
+                }
+
+                map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName);
+
+                if (itProfile->second.find(plantCode) == itProfile->second.end())
+                {
+                    itProfile->second.insert({ plantCode, {} });
+                }
+
+                map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
+                itPlantCode->second.push_back({ maxHeight, instanceId, actualHeight });
             }
-
-            map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName);
-
-            if (itProfile->second.find(plantCode) == itProfile->second.end())
-            {
-                itProfile->second.insert({ plantCode, {} });
-            }
-
-            map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
-            itPlantCode->second.push_back({ stod(maxHeightStr), instanceId, stod(actualHeightStr) });
         }
-    }
 
-    cout << "readMitsubaExportProfiles finished !" << endl;
+        cout << "readMitsubaExportProfiles finished !" << endl;
+    }
 }
 
 void Window::exportMitsuba()
@@ -993,6 +1019,13 @@ void Window::exportMitsuba()
     for (it = this->profileToSpeciesMap.begin(); it != this->profileToSpeciesMap.end(); it++)
     {
         allProfiles.append(it->first.data());
+    }
+
+    if (allProfiles.isEmpty())
+    {
+        QMessageBox messageBox;
+        messageBox.warning(this, "No profile found", "No export profile was found.\nPlease check that you have created at least one profile in the folder \"data/mitsubaExportProfiles\"");
+        return;
     }
 
     bool ok = false;
