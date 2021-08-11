@@ -350,6 +350,9 @@
     <ClInclude Include="viz\mitsuba_model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="viz\hash_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="doc\html\graph_legend.html" />

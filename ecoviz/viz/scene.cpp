@@ -20,6 +20,7 @@
 
 #include "scene.h"
 #include "eco.h"
+#include "hash_table.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -666,7 +667,6 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
                     }
 
                     string code = this->biome->getPFType(s)->code;
-                    string id;
 
                     map<string, vector<MitsubaModel>>::iterator it;
                     if ((it = speciesMap.find(code)) != speciesMap.end())
@@ -681,16 +681,26 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
                             }
                         }
 
-                        id = vectMitsubaModel[indexNearestHeightMax].id;
-                    }
+                        int xHash = plant.pos.x * 100;
+                        int zHash = plant.pos.z * 100;
+                        int rotate = hashTable[(int)(hashTable[(int)((xHash) & 0xfffL)] ^ ((zHash) & 0xfffL))] % 360;
 
-                    xmlFile << "\t<shape type=\"instance\">\n";
-                    xmlFile << "\t\t<!-- Code=\"" << code << "\" Height=\"" << plant.height << "\" -->\n";
-                    xmlFile << "\t\t<ref id=\"" << id << "\"/>\n";
-                    xmlFile << "\t\t<transform name=\"toWorld\">\n";
-                    xmlFile << "\t\t\t<translate x=\"" << plant.pos.x << "\" y=\"" << plant.pos.y << "\" z=\"" << plant.pos.z << "\"/>\n";
-                    xmlFile << "\t\t</transform>\n";
-                    xmlFile << "\t</shape>\n\n";
+                        xmlFile << "\t<shape type=\"instance\">\n";
+                        xmlFile << "\t\t<ref id=\"" << vectMitsubaModel[indexNearestHeightMax].id << "\"/>\n";
+                        xmlFile << "\t\t<transform name=\"toWorld\">\n";
+                        // Scale
+                        xmlFile << "\t\t\t<scale value=\"" << plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight << "\"/>\n";
+                        // Rotation
+                        xmlFile << "\t\t\t<rotate y=\"1\" angle=\"" << rotate << "\"/>\n";
+                        // Translation
+                        xmlFile << "\t\t\t<translate x=\"" << plant.pos.x << "\" y=\"" << plant.pos.y << "\" z=\"" << plant.pos.z << "\"/>\n";
+                        xmlFile << "\t\t</transform>\n";
+                        xmlFile << "\t</shape>\n\n";
+                    }
+                    else
+                    {
+                        // Plant code not found in the profile
+                    }
                 }
             }
         }

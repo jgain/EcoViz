@@ -274,6 +274,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
+    <ClInclude Include="viz\hash_table.h" />
     <ClInclude Include="viz\mitsuba_model.h" />
     <ClInclude Include="viz\pft.h" />
     <CustomBuild Include="viz\progressbar_window.h">
