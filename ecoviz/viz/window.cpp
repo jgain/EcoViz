@@ -938,15 +938,19 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
             string instanceId;
             string actualHeightStr;
             double actualHeight;
-            int count = 1;
-
-            getline(csvFile, line);
+            int count = 0;
 
             while (getline(csvFile, line))
             {
                 count++;
 
-                if (line.empty())
+                if (line.find("plant code;") == 0)
+                {
+                    // Headers line
+                    continue;
+                }
+
+                if (line.empty() || line.find_first_not_of(" ") == string::npos)
                 {
                     continue;
                 }
@@ -965,12 +969,17 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
                 maxHeightStr = token;
                 line.erase(0, pos + delimiter.length());
 
+                maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), isspace), maxHeightStr.end());
                 char* end = nullptr;
                 maxHeight = strtod(maxHeightStr.c_str(), &end);
                 if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
                 {
                     maxHeight = -1.0;
                     cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" << endl;
+                }
+                else if (maxHeight < 0.0)
+                {
+                    cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height is a negative value" << endl;
                 }
 
                 // Instance id
@@ -982,12 +991,17 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
                 // Actual height
                 actualHeightStr = line;
 
+                actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), isspace), actualHeightStr.end());
                 end = nullptr;
                 actualHeight = strtod(actualHeightStr.c_str(), &end);
                 if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
                 {
                     actualHeight = -1.0;
                     cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" << endl;
+                }
+                else if (actualHeight < 0.0)
+                {
+                    cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height is a negative value" << endl;
                 }
 
                 if (this->profileToSpeciesMap.find(profileName) == this->profileToSpeciesMap.end())
