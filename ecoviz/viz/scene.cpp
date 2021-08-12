@@ -710,11 +710,14 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
         }
     }
 
-    QMessageBox messageBox;
-    QString warningMessage = "The following plant codes were not found and have been skipped :";
-    for (string code : plantCodeNotFound)
+    if (!plantCodeNotFound.empty())
     {
-        warningMessage += QString("\n - ") + code.data();
+        QMessageBox messageBox;
+        QString warningMessage = "The following plant codes were not found and have been skipped :";
+        for (string code : plantCodeNotFound)
+        {
+            warningMessage += QString("\n - ") + code.data();
+        }
+        messageBox.warning(0, "Plant code not found", warningMessage);
     }
-    messageBox.warning(0, "Plant code not found", warningMessage);
 }
