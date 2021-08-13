@@ -31,6 +31,7 @@ if (BUILD_GUI)
        cohortsampler.cpp
        cohortmaps.cpp
        progressbar_window.cpp
+       export_dialog.cpp
 
 )
 

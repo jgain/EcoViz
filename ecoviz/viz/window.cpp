@@ -969,7 +969,10 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
                 maxHeightStr = token;
                 line.erase(0, pos + delimiter.length());
 
-                maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), isspace), maxHeightStr.end());
+                int (*fn_isspace)(int) = std::isspace;  // required because std::isspace is overloaded,
+                                                        // template argument deduction for std::isspace fails
+
+                maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
                 char* end = nullptr;
                 maxHeight = strtod(maxHeightStr.c_str(), &end);
                 if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
@@ -991,7 +994,7 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
                 // Actual height
                 actualHeightStr = line;
 
-                actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), isspace), actualHeightStr.end());
+                actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
                 end = nullptr;
                 actualHeight = strtod(actualHeightStr.c_str(), &end);
                 if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
