@@ -108,26 +108,26 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;.\khronos_headers;.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QTDIR64)\include\;$(QTDIR64)\include\QtCore;$(QTDIR64)\include\QtGui;$(QTDIR64)\include\QtOpenGL;$(QTDIR64)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;.\khronos_headers;.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QT5DIR)\include\;$(QT5DIR)\include\QtCore;$(QT5DIR)\include\QtGui;$(QT5DIR)\include\QtOpenGL;$(QT5DIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING;_USE_MATH_DEFINES;NOMINMAX;SONOMA_DB_FILEPATH="../../european.db"</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Qt5Cored.lib;Qt5OpenGLd.lib;Qt5Guid.lib;Qt5Widgetsd.lib;Qt5Chartsd.lib;glew32.lib;glu32.lib;opengl32.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QTDIR64)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QT5DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;.\khronos_headers;.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QTDIR64)\include\;$(QTDIR64)\include\QtCore;$(QTDIR64)\include\QtGui;$(QTDIR64)\include\QtOpenGL;$(QTDIR64)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;.\khronos_headers;.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QT5DIR)\include\;$(QT5DIR)\include\QtCore;$(QT5DIR)\include\QtGui;$(QT5DIR)\include\QtOpenGL;$(QT5DIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING;_USE_MATH_DEFINES;NOMINMAX;SONOMA_DB_FILEPATH="../../european.db"</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Qt5Core.lib;Qt5OpenGL.lib;Qt5Gui.lib;Qt5Widgets.lib;Qt5Charts.lib;glew32.lib;glu32.lib;opengl32.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QTDIR64)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\windows_extern_packages\glew;.\windows_extern_packages\sqlite3;$(QT5DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -233,10 +233,10 @@
     <ClInclude Include="khronos_headers\vg\vgu.h" />
     <ClInclude Include="out\build\x64-debug\cmakefiles\showincludes\foo.h" />
     <CustomBuild Include="viz\chartwindow.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\cohortmaps.h" />
     <ClInclude Include="viz\cohortsampler.h" />
@@ -244,59 +244,59 @@
     <ClInclude Include="viz\dice_roller.h" />
     <ClInclude Include="viz\eco.h" />
     <CustomBuild Include="viz\export_dialog.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension) into viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension) into viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\glheaders.h" />
     <CustomBuild Include="viz\gltransect.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="viz\glwidget.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\hash_table.h" />
     <ClInclude Include="viz\mitsuba_model.h" />
     <ClInclude Include="viz\pft.h" />
     <CustomBuild Include="viz\progressbar_window.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\scene.h" />
     <CustomBuild Include="viz\scrollwindow.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\shaderProgram.h" />
     <ClInclude Include="viz\shape.h" />
@@ -304,28 +304,28 @@
     <ClInclude Include="viz\terrain.h" />
     <ClInclude Include="viz\timer.h" />
     <CustomBuild Include="viz\timewindow.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\trenderer.h" />
     <ClInclude Include="viz\typemap.h" />
     <ClInclude Include="viz\vecpnt.h" />
     <ClInclude Include="viz\view.h" />
     <CustomBuild Include="viz\window.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR64)\bin\moc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
