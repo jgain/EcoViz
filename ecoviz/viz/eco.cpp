@@ -220,6 +220,9 @@ void PlantGrid::pickAllPlants(Terrain * ter, float offx, float offy, float scf, 
         {
             f = flatten(x, y);
             for(s = 0; s < (int) pgrid[f].pop.size(); s++)
+            {
+                //if((int) pgrid[f].pop[s].size() > 0)
+                //    cerr << "Species " << s << " Found" << endl;
                 for(p = 0; p < (int) pgrid[f].pop[s].size(); p++)
                 {
                     plnt = pgrid[f].pop[s][p];
@@ -228,6 +231,7 @@ void PlantGrid::pickAllPlants(Terrain * ter, float offx, float offy, float scf, 
                     plnt.pos.x += offy; plnt.pos.z += offx; // allows more natural layout
                     outgrid.placePlant(ter, s, plnt);
                 }
+            }
         }
 }
 
@@ -345,54 +349,6 @@ bool PlantGrid::readPDB(string filename, Biome * biome, Terrain * ter, float &ma
         return false;
     }
     return true;
-}
-
-void PlantGrid::inscribeAlpha(Terrain * ter, basic_types::MapFloat * alpha, float aval, vpPoint p, float rcanopy)
-{
-    int gx, gy, tx, ty, gr;
-
-    // convert to grid coordinates
-    ter->toGrid(p, gx, gy);
-    ter->getGridDim(tx, ty);
-    gr = (int) (ter->toGrid(rcanopy/2.0f) + 0.5f);
-
-    // bounding box around circle
-    int sx = max(gx-gr, 0);
-    int ex = min(gx+gr, tx-1);
-    int sy = max(gy-gr, 0);
-    int ey = min(gy+gr, ty-1);
-
-    // iterate over square on terrain containing the circle
-    for(int x = sx; x <= ex; x++)
-        for(int y = sy; y <= ey; y++)
-        {
-            float delx = (float) x-gx;
-            float dely = (float) y-gy;
-            float distsq = delx*delx + dely*dely;
-            if (distsq <= (float) (gr*gr)) // inside the circle
-             {
-                if(aval > alpha->get(x, y)) // max of occlusion written
-                    alpha->set(x, y, aval);
-             }
-        }
-}
-
-void PlantGrid::sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha)
-{
-    int x, y, s, p, f;
-    Plant plnt;
-
-    for(x = 0; x < gx; x++)
-        for(y = 0; y < gy; y++)
-        {
-            f = flatten(x, y);
-            for(s = 0; s < (int) pgrid[f].pop.size(); s++)
-                for(p = 0; p < (int) pgrid[f].pop[s].size(); p++)
-                {
-                    plnt = pgrid[f].pop[s][p];
-                    inscribeAlpha(ter, alpha, biome->getAlpha(s), plnt.pos, plnt.canopy);
-                }
-        }
 }
 
 bool PlantGrid::writePDB(string filename, Biome * biome)
@@ -717,7 +673,7 @@ void ShapeGrid::initGrid()
     genPlants();
 }
 
-void ShapeGrid::genPlants()
+void ShapeGrid:: genPlants()
 {
     float trunkheight, trunkradius;
     int s;
@@ -780,6 +736,9 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
             {
                 std::vector<glm::mat4> xform; // transformation to be applied to each instance
                 std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
+
+                if((int) plnts->pop[s].size() > 0)
+                    cerr << "Species " << s << " Present" << endl;
                 if((* plantvis)[s])
                     {
                     for(p = 0; p < (int) plnts->pop[s].size(); p++) // iterate over plant specimens
@@ -1039,30 +998,24 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
     // dirtyPlants = true;
 }
 
-void EcoSystem::sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha)
-{
-    for(int n = 0; n < (int) niches.size(); n++)
-    {
-        getNiche(n)->sunSeeding(ter, biome, alpha);
-    }
-}
-
 void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool rebind)
 {
+    cerr << "Bind Plants Simplified Start" << endl;
     if(rebind) // plant positions have been updated since the last bindPlants
         eshapes.bindPlantsSimplified(ter, &esys, plantvis);
 
     eshapes.drawPlants(drawParams);
+    cerr << "Bind Plants Simplified End" << endl;
 }
 
 void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree)
 {
+    // cerr << "x = " << tree.x << " y = " << tree.y << endl;
     float h = ter->getHeightFromReal(tree.x, tree.y);
     vpPoint pos(tree.y, h, tree.x);
+    // cerr << "h = " << h << endl;
 
-    int spc = tree.species; // TO DO: needs to be removed when out of species bounds error is fixed
-    if(spc > 15)
-        spc = 15;
+    int spc = tree.species;
 
     // introduce small random variation in colour
     float rndoff = nfield->getNoise(pos)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
@@ -1087,5 +1040,8 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
 void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, const std::vector<basic_tree> &trees)
 {
     for (int i = 0; i < trees.size(); i++)
+    {
+        // std::cerr << i << std::endl;
         placePlant(ter, nfield, trees[i]);
+    }
 }

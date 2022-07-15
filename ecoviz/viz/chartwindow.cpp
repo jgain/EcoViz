@@ -55,7 +55,7 @@ void ChartWindow::setData(TimelineGraph * gdata)
 {
     QLineSeries * prev;
     graphdata = gdata;
-    std::vector<int> cumulate;
+    std::vector<float> cumulate;
 
     // clear previous series
     chart->removeAllSeries();
@@ -108,7 +108,7 @@ void ChartWindow::setData(TimelineGraph * gdata)
     QLineSeries * above = new QLineSeries();
     QLineSeries * below = new QLineSeries();
     int tpos = gdata->getTimeLine()->getNow();
-    int vmax = gdata->getVertScale();
+    float vmax = gdata->getVertScale();
     if(tpos == gdata->getTimeLine()->getTimeStart())
     {
         *above << QPointF((float) tpos + 0.05, vmax) << QPointF((float) tpos + 0.1f, vmax);
@@ -151,8 +151,8 @@ void ChartWindow::setData(TimelineGraph * gdata)
     chart->setAxisX(axisX, bar);
 
     QValueAxis *axisY = new QValueAxis;
-    axisY->setRange(0, gdata->getVertScale());
-    axisY->setTitleText("Total DBH");
+    axisY->setRange(0.0f, gdata->getVertScale());
+    axisY->setTitleText("Basal Area");
     // axisX->setTickCount(5);
     axisY->setLabelFormat("%d");
     chart->setAxisY(axisY, bar);

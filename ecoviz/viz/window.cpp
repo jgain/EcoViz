@@ -455,6 +455,8 @@ void Window::setupVizPanel()
 
     vizPanel->setLayout(vizLayout);
     vizPanel->setStyleSheet("background-color:grey;");
+    viewLock = LockState::UNLOCKED;
+    transectLock = LockState::UNLOCKED;
     /*
     vizPanel->setStyleSheet(QString::fromUtf8("ChartWindow\n"
     "{\n"
@@ -526,16 +528,15 @@ void Window::run_viewer()
     for(int i = 0; i < 2; i++)
     {
         scenes[i]->loadScene(1, 25);
-        transectControls[i]->init();
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
         graphModels[i]->setTimeLine(scenes[i]->getTimeline());
-        graphModels[i]->extractDBHSums(scenes[i]);
-        graphModels[i]->setVertScale(400000);
+        graphModels[i]->extractNormalizedBasalArea(scenes[i]);
         chartViews[i]->setScene(scenes[i]);
         chartViews[i]->setData(graphModels[i]);
+        transectControls[i]->init(scenes[i]->getTerrain());
     }
 
     repaintAllGL();
@@ -599,6 +600,160 @@ void Window::showRenderOptions()
 void Window::showPlantOptions()
 {
     plantPanel->setVisible(showPlantAct->isChecked());
+}
+
+void Window::unlockViews()
+{
+    if((int) perspectiveViews.size() == 2)
+    {
+        perspectiveViews[0]->unlockView();
+        for(auto &p: perspectiveViews)
+            p->setViewLockState(false);
+    }
+    else
+    {
+        cerr << "Error Window::unlockViews: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::lockViewsFromLeft()
+{
+    if((int) perspectiveViews.size() == 2)
+    {
+        if(fromLeftViewAct->isChecked())
+        {
+            if(viewLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
+            {
+                fromRightViewAct->setChecked(false);
+                unlockViews();
+            }
+            perspectiveViews[1]->lockView(perspectiveViews[0]->getView());
+            for(auto &p: perspectiveViews)
+                p->setViewLockState(true);
+            viewLock = LockState::LOCKEDFROMLEFT;
+        }
+        else
+        {
+            unlockViews();
+            viewLock = LockState::UNLOCKED;
+        }
+    }
+    else
+    {
+        cerr << "Error Window::lockViewFromLeft: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::lockViewsFromRight()
+{
+    if((int) perspectiveViews.size() == 2)
+    {
+        if(fromRightViewAct->isChecked())
+        {
+            if(viewLock == LockState::LOCKEDFROMLEFT) // need to unlock first
+            {
+                fromLeftViewAct->setChecked(false);
+                unlockViews();
+            }
+            perspectiveViews[0]->lockView(perspectiveViews[1]->getView());
+            for(auto &p: perspectiveViews)
+                p->setViewLockState(true);
+            viewLock = LockState::LOCKEDFROMRIGHT;
+        }
+        else
+        {
+            unlockViews();
+            viewLock = LockState::UNLOCKED;
+        }
+    }
+    else
+    {
+        cerr << "Error Window::lockViewFromRight: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::unlockTransects()
+{
+    if((int) transectViews.size() == 2)
+    {
+        transectViews[0]->unlockView();
+        for(auto &t: transectViews)
+            t->setViewLockState(false);
+
+        Transect * pretrx = transectControls[0];
+        transectControls[0] = new Transect(scenes[0]->getTerrain());
+        (* transectControls[0]) = (* pretrx);
+    }
+    else
+    {
+        cerr << "Error Window::unlockTransects: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::lockTransectFromLeft()
+{
+    if((int) transectViews.size() == 2)
+    {
+        if(fromLeftTransectAct->isChecked())
+        {
+            if(transectLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
+            {
+                fromRightTransectAct->setChecked(false);
+                unlockTransects();
+            }
+            transectViews[1]->lockView(transectViews[0]->getView());
+            for(auto &t: transectViews)
+                t->setViewLockState(true);
+            delete transectControls[1];
+            transectControls[1] = transectControls[0];
+            perspectiveViews[1]->setTransect(transectControls[1]);
+            transectLock = LockState::LOCKEDFROMLEFT;
+            showTransectViews();
+        }
+        else
+        {
+            unlockTransects();
+            transectLock = LockState::UNLOCKED;
+        }
+        repaintAllGL();
+    }
+    else
+    {
+        cerr << "Error Window::lockTransectFromLeft: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::lockTransectFromRight()
+{
+    if((int) transectViews.size() == 2)
+    {
+        if(fromRightTransectAct->isChecked())
+        {
+            if(transectLock == LockState::LOCKEDFROMLEFT) // need to unlock first
+            {
+                fromLeftTransectAct->setChecked(false);
+                unlockTransects();
+            }
+            transectViews[0]->lockView(transectViews[1]->getView());
+            for(auto &t: transectViews)
+                t->setViewLockState(true);
+            delete transectControls[0];
+            transectControls[0] = transectControls[1];
+            perspectiveViews[0]->setTransect(transectControls[0]);
+            transectLock = LockState::LOCKEDFROMRIGHT;
+            showTransectViews();
+        }
+        else
+        {
+            unlockTransects();
+            transectLock = LockState::UNLOCKED;
+        }
+        repaintAllGL();
+    }
+    else
+    {
+        cerr << "Error Window::lockTransectFromRight: single panel so unlocking is not possible" << endl;
+    }
 }
 
 void Window::showContours(int show)
@@ -871,6 +1026,30 @@ void Window::createActions()
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
     connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsuba()));
+
+    fromLeftViewAct = new QAction(tr("Lock Views (left to right)"), this);
+    fromLeftViewAct->setCheckable(true);
+    fromLeftViewAct->setChecked(false);
+    fromLeftViewAct->setStatusTip(tr("Lock/Unlock Views"));
+    connect(fromLeftViewAct, SIGNAL(triggered()), this, SLOT(lockViewsFromLeft()));
+
+    fromRightViewAct = new QAction(tr("Lock Views (right to left)"), this);
+    fromRightViewAct->setCheckable(true);
+    fromRightViewAct->setChecked(false);
+    fromRightViewAct->setStatusTip(tr("Lock/Unlock Views"));
+    connect(fromRightViewAct, SIGNAL(triggered()), this, SLOT(lockViewsFromRight()));
+
+    fromLeftTransectAct = new QAction(tr("Lock Transects (left to right)"), this);
+    fromLeftTransectAct->setCheckable(true);
+    fromLeftTransectAct->setChecked(false);
+    fromLeftTransectAct->setStatusTip(tr("Lock/Unlock Transects"));
+    connect(fromLeftTransectAct, SIGNAL(triggered()), this, SLOT(lockTransectFromLeft()));
+
+    fromRightTransectAct = new QAction(tr("Lock Transects (right to left)"), this);
+    fromRightTransectAct->setCheckable(true);
+    fromRightTransectAct->setChecked(false);
+    fromRightTransectAct->setStatusTip(tr("Lock/Unlock Transects"));
+    connect(fromRightTransectAct, SIGNAL(triggered()), this, SLOT(lockTransectFromRight()));
 }
 
 void Window::createMenus()
@@ -881,6 +1060,12 @@ void Window::createMenus()
 
     // Export Mitsuba
     viewMenu->addAction(exportMitsubaAct);
+
+    viewMenu = menuBar()->addMenu(tr("&Link"));
+    viewMenu->addAction(fromLeftViewAct);
+    viewMenu->addAction(fromRightViewAct);
+    viewMenu->addAction(fromLeftTransectAct);
+    viewMenu->addAction(fromRightTransectAct);
 }
 
 class AdjustmentRunnable : public QRunnable

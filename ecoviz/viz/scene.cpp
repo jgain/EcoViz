@@ -35,14 +35,14 @@
 
 //// Transect
 
-bool Transect::inBounds(vpPoint pnt)
+bool Transect::inBounds(vpPoint pnt, Terrain * ter)
 {
     Plane b[4];
     bool inside = true;
 
     // determine bounding plane intersects
     float maxx, maxy;
-    terrain->getTerrainDim(maxx, maxy);
+    ter->getTerrainDim(maxx, maxy);
 
     b[0].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // left edge
     b[1].formPlane(vpPoint(maxx, 0.0f, 0.0f), Vector(-1.0f, 0.0f, 0.0f)); // right edge
@@ -55,7 +55,7 @@ bool Transect::inBounds(vpPoint pnt)
     return inside;
 }
 
-bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd)
+bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd, Terrain * ter)
 {
     Plane b[4];
     Vector offset;
@@ -63,7 +63,7 @@ bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd)
 
     // determine bounding plane intersects
     float maxx, maxy;
-    terrain->getTerrainDim(maxx, maxy);
+    ter->getTerrainDim(maxx, maxy);
 
     b[0].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // left edge
     b[1].formPlane(vpPoint(maxx, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // right edge
@@ -99,8 +99,8 @@ bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd)
     offset = dirn;
     offset.mult(tend - 0.1f);
     offset.pntplusvec(src, &bnd[1]);
-    terrain->drapePnt(bnd[0], bnd[0]);
-    terrain->drapePnt(bnd[1], bnd[1]);
+    ter->drapePnt(bnd[0], bnd[0]);
+    ter->drapePnt(bnd[1], bnd[1]);
 
     // check to see that both points are in bounds, return false otherwise
     for(int i = 0; i < 2; i++)
@@ -113,7 +113,7 @@ bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd)
     return true;
 }
 
-void Transect::paintThickness()
+void Transect::paintThickness(Terrain * ter)
 {
     Plane offset[2];
     Vector offvec;
@@ -134,12 +134,12 @@ void Transect::paintThickness()
     offset[1].formPlane(offpnt, offvec);
 
     // test if grid points on vizmap lie between offset planes
-    terrain->getGridDim(dx, dy);
+    ter->getGridDim(dx, dy);
     for(int x = 0; x < dx; x++)
         for(int y = 0; y < dy; y++)
         {
             // position on terrain corresponding to grid point, projected onto the base plane
-            vizpnt = terrain->toWorld(x, y, 0.0f);
+            vizpnt = ter->toWorld(y, x, 0.0f);
             if(!offset[0].side(vizpnt) && !offset[1].side(vizpnt)) // between planes so draw in red
                 mapviz->set(x, y, 1.0f);
             else
@@ -152,7 +152,7 @@ void Transect::paintThickness()
  * @param p1    first point
  * @param p2    second point
  */
-void Transect::derive(vpPoint p1, vpPoint p2)
+void Transect::derive(vpPoint p1, vpPoint p2, Terrain * ter)
 {
     Vector align, offset, pntsep;
     vpPoint np1, np2, swap;
@@ -175,10 +175,10 @@ void Transect::derive(vpPoint p1, vpPoint p2)
     align.normalize();
     normal = Vector(-align.k, 0.0f, align.i);
 
-    findBoundPoints(np1, align, bounds);
+    findBoundPoints(np1, align, bounds, ter);
 
     // calculate key parameters
-    setInnerStart(np1); setInnerEnd(np2);
+    setInnerStart(np1, ter); setInnerEnd(np2, ter);
     hori = align;
     vert = Vector(0.0f, 1.0f, 0.0f);
     align.diff(bounds[0], bounds[1]);
@@ -186,14 +186,14 @@ void Transect::derive(vpPoint p1, vpPoint p2)
     extent = pntsep.length();
     pntsep.mult(0.5f);
     pntsep.pntplusvec(np1, &center);
-    terrain->drapePnt(center, center);
-    setThickness(10.0f);
+    ter->drapePnt(center, center);
+    setThickness(10.0f, ter);
     //if(!valid) // signal to make transect visible
 
     valid = true;
 }
 
-void Transect::zoom(float zdel)
+void Transect::zoom(float zdel, Terrain * ter)
 {
     vpPoint c, i;
     Vector tostart, toend;
@@ -208,15 +208,15 @@ void Transect::zoom(float zdel)
     tostart.diff(c, i);
     tostart.mult(scf);
     tostart.pntplusvec(center, &i);
-    terrain->drapePnt(i, i);
-    setInnerStart(i);
+    ter->drapePnt(i, i);
+    setInnerStart(i, ter);
 
     // adjust inner end
     toend = tostart;
     toend.mult(-1.0f); // opposite direction
     toend.pntplusvec(center, &i);
-    terrain->drapePnt(i, i);
-    setInnerEnd(i);
+    ter->drapePnt(i, i);
+    setInnerEnd(i, ter);
 
     redraw = true;
 }
@@ -254,13 +254,13 @@ void TimelineGraph::init()
 
     for(int i = 0; i < numseries; i++)
     {
-        std::vector<int> series;
-        series.resize(hscale, 0);
+        std::vector<float> series;
+        series.resize(hscale, 0.0f);
         graphdata.push_back(series);
     }
 }
 
-void TimelineGraph::assignData(int attrib, int time, int value)
+void TimelineGraph::assignData(int attrib, int time, float value)
 {
     // check bounds
     if(attrib < 0 || attrib >= (int) graphdata.size())
@@ -288,14 +288,61 @@ void TimelineGraph::extractDBHSums(Scene * s)
         float tot = 0.0f;
 
         std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
+        std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
+        for(auto &tree: mature)
+        {
+            if(s->getTerrain()->inGridBounds(tree.x, tree.y))
+               trees.push_back(tree);
+        }
         for(int spc = 0; spc < nspecies; spc++) // iterate over species
         {
             float dbhtot = 0.0f;
             for(auto tree: trees)  // count species
                 if(tree.species == spc)
                     dbhtot += tree.dbh;
-            assignData(spc, t, (int) dbhtot);
+            assignData(spc, t, dbhtot);
             tot += dbhtot;
+        }
+        if(tot > vmax)
+            vmax = tot;
+    }
+
+    setVertScale(vmax);
+}
+
+void TimelineGraph::extractNormalizedBasalArea(Scene *s)
+{
+    float vmax = 0.0f;
+    int nspecies = s->getBiome()->numPFTypes();
+    float hectares = s->getTerrain()->getTerrainHectArea();
+    int spccnt;
+
+    setNumSeries(nspecies);
+
+    for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
+    {
+        float tot = 0.0f;
+
+        std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
+        std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
+        for(auto &tree: mature)
+        {
+            if(s->getTerrain()->inGridBounds(tree.x, tree.y))
+               trees.push_back(tree);
+        }
+        for(int spc = 0; spc < nspecies; spc++) // iterate over species
+        {
+            float basaltot = 0.0f;
+            spccnt = 0;
+            for(auto tree: trees)  // count species
+                if(tree.species == spc)
+                {
+                    basaltot += (PI * tree.dbh*tree.dbh);
+                    spccnt++;
+                }
+            basaltot /= hectares;
+            assignData(spc, t, basaltot);
+            tot += basaltot;
         }
         if(tot > vmax)
             vmax = tot;
@@ -315,13 +362,19 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
         int tot = 0;
 
         std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
+        std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
+        for(auto &tree: mature)
+        {
+            if(s->getTerrain()->inGridBounds(tree.x, tree.y))
+               trees.push_back(tree);
+        }
         for(int spc = 0; spc < nspecies; spc++) // iterate over species
         {
             int scount = 0;
             for(auto tree: trees)  // count species
                 if(tree.species == spc)
                     scount++;
-            assignData(spc, t, scount);
+            assignData(spc, t, (float) scount);
             tot += scount;
         }
         if(tot > vmax)
@@ -616,7 +669,6 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         // loading plant distribution
         getEcoSys()->setBiome(getBiome());
     }
-    cerr << "end load scene" << endl;
 }
 
 void Scene::saveScene(std::string dirprefix)

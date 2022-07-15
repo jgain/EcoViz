@@ -112,6 +112,15 @@ public:
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
 
+    /// create an independent view object with the same parameter
+    void unlockView();
+
+    /// create a locked view object by overwriting the current view
+    void lockView(View * imposedView);
+
+    /// toggle lock flag
+    void setViewLockState(bool state){ viewlock = state; }
+
     /// Prepare decal texture
     void loadDecals();
 

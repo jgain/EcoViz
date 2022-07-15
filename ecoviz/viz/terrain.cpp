@@ -40,6 +40,13 @@
 
 using namespace std;
 
+bool Terrain::inGridBounds(int x, int y)
+{
+    int gx, gy;
+    getGridDim(gx, gy);
+    return x >= 0 && x < gx && y >= 0 && y < gy;
+}
+
 void Terrain::toGrid(vpPoint p, float & x, float & y, float & h) const
 {
     int gx, gy;
@@ -317,6 +324,16 @@ void Terrain::getNormal(int x, int y, Vector & norm)
     norm.cross(dfdx, dfdy);
     norm.mult(-1.0f); // JGBUG - may be wrong direction
     norm.normalize();
+}
+
+float Terrain::getTerrainHectArea()
+{
+    float tx, ty, area;
+
+    getTerrainDim(tx, ty);
+    area = tx * ty; // sq metres
+    area /= 10000.0f; // 10,000 sq metres in a hectare
+    return area;
 }
 
 float Terrain::getCellExtent()

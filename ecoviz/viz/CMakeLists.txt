@@ -7,32 +7,31 @@ if (BUILD_GUI)
         set(BASE_ALL_DIR ${PROJECT_SOURCE_DIR}/..)
 
     set(GUI_SOURCES
-       glwidget.cpp
-       gltransect.cpp
-       timer.cpp
-       pft.cpp
-       eco.cpp
-       descriptor.cpp
-       dice_roller.cpp
-       scene.cpp
-       stroke.cpp
-       terrain.cpp
-       shape.cpp
-       typemap.cpp
-       vecpnt.cpp
-       view.cpp
-       window.cpp
+       glwidget.cpp glwidget.h
+       gltransect.cpp gltransect.h
+       timer.cpp timer.h
+       pft.cpp pft.h
+       eco.cpp eco.h
+       descriptor.cpp descriptor.h
+       dice_roller.cpp dice_roller.h
+       scene.cpp scene.h
+       stroke.cpp stroke.h
+       terrain.cpp terrain.h
+       shape.cpp shape.h
+       typemap.cpp typemap.h
+       vecpnt.cpp vecpnt.h
+       view.cpp view.h
+       window.cpp window.h
        shaderProgram.cpp
-       timewindow.cpp
-       chartwindow.cpp
-       trenderer.cpp
-       ${DATA_IMPORT_DIR}/data_importer.cpp
+       timewindow.cpp timewindow.h
+       chartwindow.cpp chartwindow.h
+       trenderer.cpp trenderer.h
+       ${DATA_IMPORT_DIR}/data_importer.cpp ${DATA_IMPORT_DIR}/data_importer.h
        ${BASE_ALL_DIR}/common/basic_types.h
-       cohortsampler.cpp
-       cohortmaps.cpp
-       progressbar_window.cpp
-       export_dialog.cpp
-
+       cohortsampler.cpp cohortsampler.h
+       cohortmaps.cpp cohortmaps.h
+       progressbar_window.cpp progressbar_window.h
+       export_dialog.cpp export_dialog.h
 )
 
    #set(CMAKE_BUILD_TYPE Debug)

@@ -40,7 +40,7 @@ To run the visualizer with test data execute: ./viz/ecoviz ../../data/test
 GUI
 ---
 The visualizer is divided horizontally into two scenes (these happen at the moment to be identical but that need not necessarily be the case). Vertically there are four panels:
-1) The transect view at the top, which is initially grey becuase no transect has been selected. Once a transect has been selected (see below) the right mouse button can be used to pan and the middle scroll wheel to zoom in and out.
+1) The transect view at the top, which is initially grey because no transect has been selected. Once a transect has been selected (see below) the right mouse button can be used to pan and the middle scroll wheel to zoom in and out.
 2) Next, a 3D scene view. This can be rotated by holding down the right mouse button and moving the cursor. Zooming is with the mouse wheel. Double click with the right mouse button to change the focal point on the terrain. In order to select a transect click using <ctrl><leftmoustbutton> on two points of the terrain. These determine the start and end point of the transect, which will now appear in the transect window. To widen and narrow the transect use <ctl><mousewheel>. 
 3) Below this is the timeline media bar with controls for backtracking a time-step, play/pause, and advancing a time-step.
 4) The final window shows a graph with a bar that corresponds to the current timestep. There are no direct interactions possible in this window at the moment.

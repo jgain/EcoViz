@@ -34,6 +34,7 @@
 #include <cassert>
 #include <cmath>
 #include <unordered_map>
+#include <limits>
 
 namespace data_importer
 {
@@ -160,35 +161,17 @@ namespace data_importer
 
         struct species
         {
-            std::string name;
-
+            std::string cname; //< common name
+            std::string sname; //< scientific name
+            std::string alpha_code; //< 4-letter species code
             int idx;
-            float a;
-            float b;
-
+           
             float basecol[4];  //< base colour for the PFT, individual plants will vary
             float draw_hght;    //< canopy height scaling
             float draw_radius;  //< canopy radius scaling
             float draw_box1;    //< box aspect ratio scaling
             float draw_box2;    //< box aspect ration scaling
             treeshape shapetype; //< shape for canopy: sphere, box, cone
-
-            viability sun, wet, temp, slope; //< viability functions for different environmental factors
-            float alpha;        //< sunlight attenuation multiplier
-            int maxage;         //< expected maximum age of the species in months
-            float maxhght;      //< expected maximum height in meters
-            float max_trunk_radius;	//< expected maximum trunk radius in meters
-
-            //< growth parameters
-            char growth_period; //< long (L) or short (S) growing season
-            int grow_months;    //< number of months of the year in the plants growing season
-            int grow_start, grow_end; //< start and stop months for growth (in range 0 to 11)
-            float grow_m, grow_c1, grow_c2; // terms in growth equation: m * (c1 + exp(c2))
-
-            //< allometry parameters
-            char allometry_code; //< allometry patterns: A, B, C, or D
-            //float alm_a, alm_b; //< terms in allometry equation to convert height to canopy radius: r = e ** (a + b ln(h))
-            float alm_rootmult = 1.0f; //< multiplier to convert canopy radius to root radius
         };
 
         struct species_encoded
@@ -204,24 +187,6 @@ namespace data_importer
             }
         };
 
-        struct sub_biome
-        {
-            int id;
-            std::string name;
-            float percentage;
-            std::set<species_encoded> species;
-
-            std::vector<int> get_specids() const
-            {
-                std::vector<int> specids;
-                for (auto &sp : species)
-                {
-                    specids.push_back(sp.id);
-                }
-                return specids;
-            }
-        };
-
         struct common_data
         {
             common_data(std::string db_filename);
@@ -232,14 +197,9 @@ namespace data_importer
             sim_info soil_info;
             float latitude;
             float temp_lapse_rate;
-            std::map<int, sub_biome> subbiomes;
-            std::map<int, sub_biome> subbiomes_all_species;
             std::map<int, species> all_species;
-            std::map<int, species> canopy_and_under_species;
-            std::map<int, int> canopyspec_to_subbiome;
-            std::map<int, data_importer::modelset> modelsamplers;
+            //std::map<int, species> canopy_and_under_species;
         };
-
         /*
          * Structure that generates required filenames for import, given a directory
          * name 'dirname_arg'
@@ -386,7 +346,6 @@ namespace data_importer
             std::vector<std::string> undergrowth_fnames;
             std::vector<std::string> circ_count_fnames;
             std::vector<std::string> seedchance_fnames;
-            std::vector<std::map<int, sub_biome> > required_simulations;
         };
 
 }
@@ -707,12 +666,7 @@ namespace data_importer
         }
 
         int num_species = 1;
-        float min_height = 100000.0f, max_height = 0.0f;
-        int species_id = 0;
-        int num_plants_of_species = trees.size();	// because we assume that all trees are of one species - this will probably change
-        float avg_radius = 0;
-        float avg_height = 0;
-        float avg_radius_over_height;
+     	// because we assume that all trees are of one species - this will probably change
 
         std::map< int, std::vector<const output_tree *> > trees_map;
         std::map< int, species_info > species_info_map;
@@ -733,7 +687,7 @@ namespace data_importer
         for (auto &keyval : trees_map)
         {
             species_info info;
-            info.max_height = -std::numeric_limits<float>::max();
+            info.max_height = std::numeric_limits<float>::min();
             info.min_height = std::numeric_limits<float>::max();
             info.average_height = 0.0f;
             info.average_radius = 0.0f;

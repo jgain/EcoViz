@@ -1244,14 +1244,14 @@ void TRenderer::initShaders(void)
       s->setShaderSources(std::string("canopy.frag"), std::string("canopy.vert"));
       shaders["canopyShader"] = s;
 
-#ifdef _WIN32
+// #ifdef _WIN32
       GLenum err = glewInit();
       if (GLEW_OK != err)
       {
           /* Problem: glewInit failed, something is seriously wrong. */
           std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
       }
-#endif
+// #endif
 
     std::cout << "Compiling shaders...\n";
     std::map<std::string, shaderProgram*>::iterator it = shaders.begin();
@@ -1317,7 +1317,7 @@ void TRenderer::draw(View * view)
     glDepthMask(GL_TRUE); CE();
     glDepthFunc(GL_LEQUAL); CE();
     glDepthRange(0.0f, 1.0f); CE();
-    // glEnable(GL_CULL_FACE); CE();
+    glEnable(GL_CULL_FACE); CE();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
 
     //glEnable(GL_DEPTH_CLAMP);
@@ -1514,6 +1514,7 @@ void TRenderer::draw(View * view)
 
     // draw second pass for manipulator transparency (not supported in BASIC mode)
 
+    /*
     if (shadModel == RADIANCE_SCALING)
       {
         programID  = (*shaders["phongRSmanip"]).getProgramID();
@@ -1521,6 +1522,7 @@ void TRenderer::draw(View * view)
         glViewport(0,0,_w, _h); CE();
         drawManipulators(programID, true);
       }
+    */
 
     // reset frame buffer buffer etc
 

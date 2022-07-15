@@ -40,6 +40,7 @@ public:
     ValueGridMap<CohortMaps::DonateDir> get_actionmap_actions(int gw, int gh, float rw, float rh);
     ValueGridMap<float> get_actionmap_floats(int gw, int gh, float rw, float rh);
     ValueGridMap<CohortMaps::DonateAction> get_actionmap();
+    const std::vector<basic_tree> &get_maturetrees(int timestep_idx) const; // get mature trees for timestep t
 
     void compute_specset_map();
     std::unique_ptr<ValueGridMap<std::set<int> > > move_specset_map();
@@ -60,6 +61,7 @@ private:
     std::vector<ValueGridMap<int> > plantcountmaps;
     ValueGridMap<DonateAction> actionmap;
     std::unique_ptr<ValueGridMap<std::set<int> > > specset_map;
+    std::vector<std::vector<basic_tree>> timestep_mature; // mature trees at each timestep
 
     float rw, rh;
     int gw, gh;

@@ -158,7 +158,6 @@ void GLTransect::updateTransectView()
     // cerr << "extent = " << trx->getExtent() << endl;
     // cerr << "thickness = " << trx->getThickness() << endl;
     // cerr << "zoomdist = " << view->getZoom() << endl;
-    update();
 }
 
 void GLTransect::setScene(Scene * s)
@@ -180,7 +179,7 @@ void GLTransect::setScene(Scene * s)
     scene->getTerrain()->getTerrainDim(rw, rh);
 
     plantvis.clear();
-    plantvis.resize(scene->getBiome()->numPFTypes());
+    plantvis.resize(scene->getBiome()->numPFTypes()*3);
     for(int t = 0; t < scene->getBiome()->numPFTypes(); t++)
         plantvis[t] = true;
 
@@ -193,7 +192,20 @@ void GLTransect::setScene(Scene * s)
     rebindplants = true;
 
     updateTransectView();
-    update();
+    signalRepaintAllGL();
+}
+
+void GLTransect::unlockView()
+{
+    View * preview = view;
+    view = new View();
+    (* view) = (* preview);
+}
+
+void GLTransect::lockView(View * imposedView)
+{
+    delete view;
+    view = imposedView;
 }
 
 void GLTransect::loadDecals()
@@ -356,6 +368,7 @@ void GLTransect::paintGL()
             }*/
 
             // prepare plants for rendering
+
         if(focuschange)
         {
             scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants);
@@ -391,79 +404,6 @@ void GLTransect::resizeGL(int width, int height)
 
 void GLTransect::keyPressEvent(QKeyEvent *event)
 {
-    if(event->key() == Qt::Key_P) // 'P' to toggle plant visibility
-    {
-        cerr << "plant visibility toggled" << endl;
-        setAllPlantsVis();
-        focuschange = !focuschange;
-        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
-        rebindplants = true;
-        update();
-    }
-
-    // '1'-'9' make it so that only plants of that functional type are visible
-    if(event->key() == Qt::Key_0)
-    {
-        cerr << "KEY 0" << endl;
-        int p = 0;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
-    {
-        int p = static_cast<int>(event->key()) - static_cast<int>(Qt::Key_1) + 1;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_ParenRight)
-    {
-         cerr << "KEY )" << endl;
-        int p = 10;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Exclam)
-    {
-         cerr << "KEY !" << endl;
-        int p = 11;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_At)
-    {
-         cerr << "KEY @" << endl;
-        int p = 12;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_NumberSign)
-    {
-         cerr << "KEY #" << endl;
-        int p = 13;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Dollar)
-    {
-         cerr << "KEY $" << endl;
-        int p = 14;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Percent)
-    {
-         cerr << "KEY %" << endl;
-        int p = 15;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Ampersand)
-    {
-         cerr << "KEY &" << endl;
-        int p = 16;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
 }
 
 void GLTransect::setAllPlantsVis()
@@ -478,7 +418,10 @@ void GLTransect::setCanopyVis(bool vis)
     canopyvis = vis; // toggle canopy visibility
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
-    update();
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 }
 
 void GLTransect::setUndergrowthVis(bool vis)
@@ -487,7 +430,10 @@ void GLTransect::setUndergrowthVis(bool vis)
     undervis = vis;
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
-    update();
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 }
 
 void GLTransect::setAllSpecies(bool vis)
@@ -496,7 +442,10 @@ void GLTransect::setAllSpecies(bool vis)
         plantvis[i] = vis;
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
-    update();
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 }
 
 void GLTransect::setSinglePlantVis(int p)
@@ -508,7 +457,10 @@ void GLTransect::setSinglePlantVis(int p)
         plantvis[p] = true;
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
-        update();
+        if(viewlock)
+            signalRepaintAllGL();
+        else
+            update();
     }
     else
     {
@@ -523,7 +475,10 @@ void GLTransect::toggleSpecies(int p, bool vis)
         plantvis[p] = vis;
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
-        update();
+        if(viewlock)
+            signalRepaintAllGL();
+        else
+            update();
     }
     else
     {
@@ -539,10 +494,13 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
 
-    update(); // ensure this viewport is current for unproject
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
-    if(!viewlock && (event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton))
+    if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
         // TO DO: translate in orthogonal view
 
@@ -568,7 +526,7 @@ void GLTransect::mouseMoveEvent(QMouseEvent *event)
     H = (float) height();
 
     // control translation of viewpoint in the plane of the transect
-    if(!viewlock && ((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton))
+    if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
     {
         // TO DO translate 
         // screen to world scaling
@@ -595,7 +553,7 @@ void GLTransect::mouseMoveEvent(QMouseEvent *event)
             // reproject onto terrain
             scene->getTerrain()->drapePnt(inner[i], inner[i]);
         }
-        trx->setInnerStart(inner[0]); trx->setInnerEnd(inner[1]);
+        trx->setInnerStart(inner[0], scene->getTerrain()); trx->setInnerEnd(inner[1], scene->getTerrain());
 
         updateTransectView();
         signalRepaintAllGL();
@@ -611,28 +569,25 @@ void GLTransect::wheelEvent(QWheelEvent * wheel)
     QPoint pix = wheel->pixelDelta();
     QPoint deg = wheel->angleDelta();
 
-    if(!viewlock)
-    {    
-        if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
-        {
-            del = (float) pix.y() * 2.0f;
-        }
-        else if(!deg.isNull()) // mouse wheel instead
-        {
-            del = (float) -deg.y() * 0.5f;
-        }
+    if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
+    {
+        del = (float) pix.y() * 2.0f;
+    }
+    else if(!deg.isNull()) // mouse wheel instead
+    {
+        del = (float) -deg.y() * 0.5f;
+    }
+
         /*
         extent = view->getOrthoViewExtent();
         extent += del;
         view->setOrthoViewExtent(extent);
         */
 
-        // also adjust inner bounds relative to center
-        trx->zoom(del);
-        updateTransectView();
-
-        signalRepaintAllGL();
-    }
+    // also adjust inner bounds relative to center
+    trx->zoom(del, scene->getTerrain());
+    updateTransectView();
+    signalRepaintAllGL();
 }
 
 void GLTransect::rebindPlants()

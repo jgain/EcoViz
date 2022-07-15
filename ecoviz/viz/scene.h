@@ -21,7 +21,7 @@ const float maxtwidth = 100.0f;
 class Transect
 {
 private:
-    Terrain * terrain;      //< underlying terrain
+    // Terrain * terrain;      //< underlying terrain
     vpPoint center;     //< center point, midway along the slicing line on the terrain surface
     vpPoint bounds[2];  //< bounding extremes of the transect where it reaches the edge of the terrain
     vpPoint inners[2];  //< demarcating points of the inner section of the transect
@@ -39,29 +39,30 @@ private:
      * @param src   starting point for line
      * @param dirn  direction of the line
      * @param bnd   bounding points
+     * @param ter   underlying terrain
      * @return      return true if the line intersects the terrain bounds, false otherwise
      */
-    bool findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd);
+    bool findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd, Terrain * ter);
 
     /**
      * @brief paintThickness Draw the transect thickness visualization into mapviz
      */
-    void paintThickness();
+    void paintThickness(Terrain * ter);
 
     /**
      * @brief inBounds Check whether a point lies within the bounds of the vertical projection of the terrain
      * @param pnt   Point being bounds checked
+     * @param ter   Underlying Terrain
      * @return      true if with the terrain bounds, false otherwise
      */
-    bool inBounds(vpPoint pnt);
+    bool inBounds(vpPoint pnt, Terrain * ter);
 
 public:
 
     Transect(Terrain * ter)
     {
-        terrain = ter;
         mapviz = new basic_types::MapFloat();
-        init();
+        init(ter);
         redraw = false;
         valid = false;
     }
@@ -72,30 +73,28 @@ public:
     }
 
     // initialize to default setting based on terrain
-    inline void init()
+    inline void init(Terrain * ter)
     {
         thickness = 20.0f;
-        terrain->getMidPoint(center);
+        ter->getMidPoint(center);
         normal = Vector(0.0f, 0.0f, 1.0f);
         float rw, rh;
-        terrain->getTerrainDim(rw, rh);
+        ter->getTerrainDim(rw, rh);
         extent = rw;
 
         int dx, dy;
-        terrain->getGridDim(dx, dy);
+        ter->getGridDim(dx, dy);
         mapviz->setDim(dx, dy);
         mapviz->fill(0.0f);
-        for(int x = 0; x < dx; x++)
-            mapviz->set(x, (int) dy/2, 5.0f);
     }
 
     // getters and setters
-    inline void setThickness(float width)
+    inline void setThickness(float width, Terrain * ter)
     {
         // ensure thickness remains within bounds
         thickness = std::max(width, mintwidth);
         thickness = std::min(thickness, maxtwidth);
-        paintThickness();
+        paintThickness(ter);
         redraw = true;
     }
 
@@ -108,20 +107,20 @@ public:
     inline vpPoint getBoundEnd(){ return bounds[1]; }
     inline vpPoint getInnerStart(){ return inners[0]; }
 
-    inline void setInnerStart(vpPoint s)
+    inline void setInnerStart(vpPoint s, Terrain * ter)
     {
         inners[0] = s;
-        if(inBounds(inners[0]))
+        if(inBounds(inners[0], ter))
             clampedinners[0] = inners[0];
         else
             clampedinners[0] = bounds[0];
         redraw = true;
     }
     inline vpPoint getInnerEnd(){ return inners[1]; }
-    inline void setInnerEnd(vpPoint e)
+    inline void setInnerEnd(vpPoint e, Terrain * ter)
     {
         inners[1] = e;
-        if(inBounds(inners[1]))
+        if(inBounds(inners[1], ter))
             clampedinners[1] = inners[1];
         else
             clampedinners[1] = bounds[1];
@@ -144,14 +143,23 @@ public:
      * @brief derive Derive a transect passing through two points on the terrain
      * @param p1    first point
      * @param p2    second point
+     * @param ter   underlying terrain
      */
-    void derive(vpPoint p1, vpPoint p2);
+    void derive(vpPoint p1, vpPoint p2, Terrain * ter);
 
     /**
      * @brief zoom  Adjust the seperation between innerpoints to simulate zooming in and out of a transect
      * @param zdel  adjustment to zoom
+     * @param ter   underlying terrain
      */
-    void zoom(float zdel);
+    void zoom(float zdel, Terrain * ter);
+};
+
+struct TransectCreation
+{
+    vpPoint t1, t2;     // endpoints on the terrain
+    int trxstate;       // current state of selecting endpoings
+    Transect * trx;     // all remaining transect state
 };
 
 class Timeline
@@ -223,9 +231,9 @@ class TimelineGraph
 {
 private:
     Timeline * timeline;    //< associated timeline for marking the current time and retrieving timeline bounds
-    std::vector<std::vector<int>> graphdata; //< per attribute (e.g., species) per timestep data
+    std::vector<std::vector<float>> graphdata; //< per attribute (e.g., species) per timestep data
     int hscale;             //< number of steps in the timeline
-    int vscale;             //< highest value on the verical axis
+    float vscale;             //< highest value on the verical axis
     int numseries;          //< number of attributes
     std::string title;      //< title for the graph
 
@@ -243,8 +251,8 @@ public:
     Timeline * getTimeLine(){ return timeline; }
     void setTimeLine(Timeline * tline){ timeline = tline; init(); }
     void setTitle(std::string name){ title = name; }
-    void setVertScale(int vertscale){ vscale = vertscale; }
-    int getVertScale(){ return vscale; }
+    void setVertScale(float vertscale){ vscale = vertscale; }
+    float getVertScale(){ return vscale; }
     void setNumSeries(int nseries){ numseries = nseries; init(); }
     int getNumSeries(){ return numseries; }
     int getHoriScale(){ return hscale; }
@@ -256,8 +264,8 @@ public:
      * @param time      time for which assignment takes place
      * @param value     value being set
      */
-    void assignData(int attrib, int time, int value);
-    int getData(int attrib, int time){ return graphdata[attrib][time]; }
+    void assignData(int attrib, int time, float value);
+    float getData(int attrib, int time){ return graphdata[attrib][time]; }
 
     /**
      * @brief extractSpeciesCounts Create a graph for the number of instances of each species over the timeline period
@@ -270,6 +278,12 @@ public:
      * @param s     Scene for extracting counts
      */
     void extractDBHSums(Scene * s);
+
+    /**
+     * @brief extractNormalizedBasalArea Create a graph for the total basal area normalized by landscape size for each species over the timeline period
+     * @param s     Scene for extracting counts
+     */
+    void extractNormalizedBasalArea(Scene * s);
 };
 
 class Scene

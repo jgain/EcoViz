@@ -35,7 +35,7 @@
 #include "boost/functional/hash.hpp"
 
 const int maxNiches = 10;  //< maximum number of initial terrain niches from HL system
-const int maxSpecies = 64; // multiplier is for three age categories
+const int maxSpecies = 96; // multiplier is for three age categories
 const int pgdim = 50;
 
 struct Plant
@@ -118,16 +118,6 @@ private:
 
     /// Initialise the list of species according to Biome
     void initSpeciesTable();
-
-    /**
-     * @brief inscribeAlpha Write the alpha value into the alpha map in a disk centered on p
-     * @param ter   Terrain onto which the ecosystem is placed
-     * @param alpha Map containing tree sunlight transmission alpha values
-     * @param aval  alpha value to be written
-     * @param p     Center of disk on terrain
-     * @param rcanopy   Diameter of disk in terrain coordinates
-     */
-    void inscribeAlpha(Terrain * ter, basic_types::MapFloat * alpha, float aval, vpPoint p, float rcanopy);
 
 public:
     int gx, gy;     //< grid dimensions
@@ -249,14 +239,6 @@ public:
      * @param pftPlnts  Vector in which to place extracted plants
      */
     void vectoriseByPFT(int pft, std::vector<Plant> &pftPlnts);
-
-    /**
-     * @brief sunSeeding Calculate alpha sunlight transmission values to ground surface passing through existing plants
-     * @param ter   terrain onto which trees are projected
-     * @param biome biome to which the plants belong
-     * @param alpha sunlight transmission map (0 = all, 1 = none)
-     */
-    void sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha);
 
     /**
      * Read in plant positions from a PDB format text file
@@ -471,14 +453,6 @@ public:
        * @retval false otherwise.
        */
     bool saveNichePDB(string filename, int niche = 0);
-
-    /**
-     * @brief sunSeeding Calculate alpha sunlight transmission values to ground surface passing through existing plants
-     * @param ter   terrain onto which trees are projected
-     * @param biome biome to which the plants belong
-     * @param alpha sunlight transmission map (0 = all, 1 = none)
-     */
-    void sunSeeding(Terrain * ter, Biome * biome, basic_types::MapFloat * alpha);
 
     /**
      * Pick plants from different niche ecosystems based on the cluster map to form a final ecosystem

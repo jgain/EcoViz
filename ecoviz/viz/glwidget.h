@@ -156,6 +156,18 @@ public:
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
 
+    /// create an independent view object with the same parameter
+    void unlockView();
+
+    /// create a locked view object by overwriting the current view
+    void lockView(View * imposedView);
+
+    /// toggle lock flag
+    void setViewLockState(bool state){ viewlock = state; }
+
+    /// set Transect
+    void setTransect(Transect * newtrx){ trc.trx = newtrx; }
+
     /// Prepare decal texture
     void loadDecals();
 
@@ -243,9 +255,7 @@ private:
     QLabel * vizpopup;  //< for debug visualisation
 
     // transect parameters
-    vpPoint t1, t2;
-    Transect * trx;
-    int trxstate;
+    TransectCreation trc;
     Shape trxshape[3]; //< geometry for transect line display
 
     /**

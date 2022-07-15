@@ -75,6 +75,13 @@ class QMenu;
 class QLineEdit;
 class GLWidget;
 
+enum LockState
+{
+    UNLOCKED,           //< panels are independent
+    LOCKEDFROMLEFT,     //< left panel dictates behaviour of right panel
+    LOCKEDFROMRIGHT     //< right panel dictates behaviour of left panel
+};
+
 class Window : public QMainWindow
 {
     Q_OBJECT
@@ -109,6 +116,14 @@ public slots:
     void plantChange(int show);
     void allPlantsOn();
     void allPlantsOff();
+
+    // locking
+    void lockViewsFromLeft();
+    void lockViewsFromRight();
+    void unlockViews();
+    void lockTransectFromLeft();
+    void lockTransectFromRight();
+    void unlockTransects();
 
     void showTransectViews();
 
@@ -151,10 +166,15 @@ private:
     QMenu *viewMenu;
     QAction *showRenderAct;
     QAction *showPlantAct;
-    QAction* exportMitsubaAct;
+    QAction *exportMitsubaAct;
+    QAction *fromLeftViewAct, *fromRightViewAct;
+    QAction *fromLeftTransectAct, *fromRightTransectAct;
 
     // file management
     std::string scenedirname;
+
+    // locking management
+    LockState viewLock, transectLock;
 
     // Map containing the different export profiles (Mitsuba)
     map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;

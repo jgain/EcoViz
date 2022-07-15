@@ -183,6 +183,9 @@ public:
     /// calculate the minimum and maximum height over the terrain
     void getHeightBounds(float &minh, float &maxh);
 
+    /// Get terrain area in hectares
+    float getTerrainHectArea();
+
     /// getter for extent of individual grid cell in world coordinates
     float getCellExtent();
 
@@ -207,6 +210,9 @@ public:
 
     /// Return a world-space normal given a grid position
     void getNormal(int x, int y, Vector & norm);
+
+    /// check if a point is within the grid dimensions, return true if it is
+    bool inGridBounds(int x, int y);
 
     /// Obtain grid size @a dx and @a dy
     void getGridDim(int & dx, int & dy) const;

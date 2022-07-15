@@ -102,7 +102,7 @@ GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidg
     connect(rtimer, SIGNAL(timeout()), this, SLOT(rotateUpdate()));
     glformat = format;
 
-    trx = trans;
+    trc.trx = trans;
     setScene(scn);
     renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
     viewlock = false;
@@ -115,7 +115,7 @@ GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidg
     rebindplants = true;
     scf = 10000.0f;
     decalTexture = 0;
-    trxstate = -1;
+    trc.trxstate = -1;
     overlay = TypeMapType::EMPTY;
 
     setMouseTracking(true);
@@ -165,14 +165,20 @@ PMrender::TRenderer * GLWidget::getRenderer()
 void GLWidget::refreshOverlay()
 {
     renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, false);
-    update();
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 }
 
 void GLWidget::setOverlay(TypeMapType purpose)
 {
     overlay = purpose;
     renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
-    update();
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 }
 
 TypeMapType GLWidget::getOverlay()
@@ -206,7 +212,7 @@ void GLWidget::setScene(Scene * s)
     scene->getTerrain()->getTerrainDim(rw, rh);
 
     plantvis.clear();
-    plantvis.resize(scene->getBiome()->numPFTypes());
+    plantvis.resize(scene->getBiome()->numPFTypes()*3);
     for(int t = 0; t < scene->getBiome()->numPFTypes(); t++)
         plantvis[t] = true;
 
@@ -218,9 +224,12 @@ void GLWidget::setScene(Scene * s)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
 
-    loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+    loadTypeMap(trc.trx->getTransectMap(), TypeMapType::TRANSECT);
     // loadTypeMap(scene->getSlope(), TypeMapType::SLOPE);
-    update();
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 
     /*
     cerr << "Pre refreshOverlay" << endl;
@@ -229,6 +238,19 @@ void GLWidget::setScene(Scene * s)
     cerr << "Post refreshOverlay" << endl;
     update();
     cerr << "Post update" << endl;*/
+}
+
+void GLWidget::unlockView()
+{
+    View * preview = view;
+    view = new View();
+    (* view) = (* preview);
+}
+
+void GLWidget::lockView(View * imposedView)
+{
+    delete view;
+    view = imposedView;
 }
 
 void GLWidget::loadDecals()
@@ -478,11 +500,11 @@ void GLWidget::createTransectShape(float hghtoffset)
     // generate vertices for the line and drop onto terrain
     if(active)
     {
-        createLine(&line[0], trx->getBoundStart(), trx->getClampedInnerStart(), hghtoffset);
+        createLine(&line[0], trc.trx->getBoundStart(), trc.trx->getClampedInnerStart(), hghtoffset);
         trxshape[0].genDashedCylinderCurve(line[0], transectradius * 0.5f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
-        createLine(&line[1], trx->getClampedInnerStart(), trx->getClampedInnerEnd(), hghtoffset);
+        createLine(&line[1], trc.trx->getClampedInnerStart(), trc.trx->getClampedInnerEnd(), hghtoffset);
         trxshape[1].genCylinderCurve(line[1], transectradius * 0.5f * view->getScaleFactor(), tol, 10);
-        createLine(&line[2], trx->getClampedInnerEnd(), trx->getBoundEnd(), hghtoffset);
+        createLine(&line[2], trc.trx->getClampedInnerEnd(), trc.trx->getBoundEnd(), hghtoffset);
         trxshape[2].genDashedCylinderCurve(line[2], transectradius * 0.5f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
     }
 }
@@ -534,27 +556,27 @@ void GLWidget::paintGL()
 
             GLfloat transectCol[] = {0.9f, 0.1f, 0.1f, 0.2f};
 
-            if(trx->getChangeFlag()) // only update the transect line when inner point positions or thickness has changed
+            if(trc.trx->getChangeFlag()) // only update the transect line when inner point positions or thickness has changed
             {
                 createTransectShape(0.0f);
-                loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+                loadTypeMap(trc.trx->getTransectMap(), TypeMapType::TRANSECT);
                 refreshOverlay();
-                trx->clearChangeFlag();
+                trc.trx->clearChangeFlag();
             }
 
-            if(trxstate == 0)
+            if(trc.trxstate == 0)
             {
                 // paintCyl(t1, transectCol, drawParams);
                 // paintCyl(t2, transectCol, drawParams);
-                paintSphere(trx->getClampedInnerStart(), transectCol, drawParams);
-                paintSphere(trx->getClampedInnerEnd(), transectCol, drawParams);
+                paintSphere(trc.trx->getClampedInnerStart(), transectCol, drawParams);
+                paintSphere(trc.trx->getClampedInnerEnd(), transectCol, drawParams);
                 paintTransect(transectCol, drawParams);
                 // paintCyl(trx->getCenter(), transectCol, drawParams);
             }
-            if(trxstate == 1)
+            if(trc.trxstate == 1)
             {
                 // paintCyl(t1, transectCol, drawParams);
-                paintSphere(t1, transectCol, drawParams);
+                paintSphere(trc.t1, transectCol, drawParams);
             }
 
 
@@ -624,6 +646,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_Down)
     {
     }
+    /*
     if(event->key() == Qt::Key_C) // 'C' to show canopy height model texture overlay
     {
         setOverlay(TypeMapType::CHM);
@@ -631,7 +654,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_E) // 'E' to remove all texture overlays
     {
         setOverlay(TypeMapType::EMPTY);
-    }
+    }*/
     if(event->key() == Qt::Key_F) // 'F' to toggle focus stick visibility
     {
         if(focusviz)
@@ -640,6 +663,8 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
             focusviz = true;
         update();
     }
+
+    /*
     if(event->key() == Qt::Key_N) // 'N' to toggle display of canopy trees on or off
     {
         cerr << "canopy visibility toggled" << endl;
@@ -658,6 +683,8 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         rebindplants = true;
         update();
     }
+    */
+    /*
     if(event->key() == Qt::Key_R) // 'R' to show temperature texture overlay
     {
         setOverlay(TypeMapType::TEMPERATURE);
@@ -669,21 +696,25 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
             sun_mth = 0;
         loadTypeMap(scene->getSunlight(sun_mth), TypeMapType::SUNLIGHT);
         setOverlay(TypeMapType::SUNLIGHT);
-    }
-    if(event->key() == Qt::Key_T) // 'T' to toggle transect display onn/off
+    }*/
+    if(event->key() == Qt::Key_T) // 'T' to toggle transect display on/off
     {
         showtransect = !showtransect;
-        if(showtransect && trxstate == 0)
+        if(showtransect && trc.trxstate == 0)
         {
-            loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+            loadTypeMap(trc.trx->getTransectMap(), TypeMapType::TRANSECT);
             setOverlay(TypeMapType::TRANSECT);
         }
         else
         {
             setOverlay(TypeMapType::EMPTY);
         }
-        update();
+        if(viewlock)
+            signalRepaintAllGL();
+        else
+            update();
     }
+    /*
     if(event->key() == Qt::Key_U) // 'U' toggle undergrowth display on/off
     {
         setAllPlantsVis();
@@ -691,14 +722,18 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         update();
-    }
+    }*/
     if(event->key() == Qt::Key_V) // 'V' for top-down view
     {
         scene->getTerrain()->setMidFocus();
         view->setForcedFocus(scene->getTerrain()->getFocus());
         view->topdown();
-        update();
+        if(viewlock)
+            signalRepaintAllGL();
+        else
+            update();
     }
+    /*
     if(event->key() == Qt::Key_W) // 'W' to show water texture overlay
     {
         wet_mth++;
@@ -707,70 +742,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
             wet_mth = 0;
         loadTypeMap(scene->getMoisture(wet_mth), TypeMapType::WATER);
         setOverlay(TypeMapType::WATER);
-    }
-    // '1'-'9' make it so that only plants of that functional type are visible
-    if(event->key() == Qt::Key_0)
-    {
-        cerr << "KEY 0" << endl;
-        int p = 0;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
-    {
-        int p = static_cast<int>(event->key()) - static_cast<int>(Qt::Key_1) + 1;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_ParenRight)
-    {
-         cerr << "KEY )" << endl;
-        int p = 10;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Exclam)
-    {
-         cerr << "KEY !" << endl;
-        int p = 11;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_At)
-    {
-         cerr << "KEY @" << endl;
-        int p = 12;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_NumberSign)
-    {
-         cerr << "KEY #" << endl;
-        int p = 13;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Dollar)
-    {
-         cerr << "KEY $" << endl;
-        int p = 14;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Percent)
-    {
-         cerr << "KEY %" << endl;
-        int p = 15;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
-    if(event->key() == Qt::Key_Ampersand)
-    {
-         cerr << "KEY &" << endl;
-        int p = 16;
-        setSinglePlantVis(p);
-        cerr << "single species visibility " << p << endl;
-    }
+    }*/
 }
 
 void GLWidget::setAllPlantsVis()
@@ -891,10 +863,14 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
 
-    update(); // ensure this viewport is current for unproject
+    // ensure this viewport is current for unproject
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
-    if(!viewlock && (event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton))
+    if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
         // arc rotate in perspective mode
   
@@ -916,7 +892,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     int sx, sy;
     
     sx = event->x(); sy = event->y();
-    if(!viewlock && ((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton))
+    if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
     {
         view->apply();
         if(scene->getTerrain()->pick(sx, sy, view, pnt))
@@ -958,14 +934,14 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 
         sx = event->x(); sy = event->y();
         showtransect = true;
-        switch(trxstate)
+        switch(trc.trxstate)
         {
         case -1:
         case 0: // placement of initial point
             if(scene->getTerrain()->pick(sx, sy, view, pnt))
             {
-                t1 = pnt;
-                trxstate = 1;
+                trc.t1 = pnt;
+                trc.trxstate = 1;
 
                 // int x, y;
                 // scene->getTerrain()->toGrid(pnt, x, y);
@@ -976,12 +952,12 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         case 1: // placement of final point
             if(scene->getTerrain()->pick(sx, sy, view, pnt))
             {
-                t2 = pnt;
-                trxstate = 0;
+                trc.t2 = pnt;
+                trc.trxstate = 0;
 
-                trx->derive(t1, t2);
+                trc.trx->derive(trc.t1, trc.t2, scene->getTerrain());
                 createTransectShape(0.0f);
-                loadTypeMap(trx->getTransectMap(), TypeMapType::TRANSECT);
+                loadTypeMap(trc.trx->getTransectMap(), TypeMapType::TRANSECT);
                 setOverlay(TypeMapType::TRANSECT);
                 signalShowTransectView();
                 signalRepaintAllGL(); // need to also update transect view
@@ -1000,9 +976,11 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
             pickInfo(x, y);
         }
         */
-        update();
+        if(viewlock)
+            signalRepaintAllGL();
+        else
+            update();
     }
-
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
@@ -1016,16 +994,18 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     H = (float) height();
 
     // control view orientation with right mouse button or ctrl modifier key and left mouse
-    if(!viewlock)
-        if(event->buttons() == Qt::RightButton)
-        {
-            // convert to [0,1] X [0,1] domain
-            nx = (2.0f * (float) x - W) / W;
-            ny = (H - 2.0f * (float) y) / H;
-            view->arcRotate(nx, ny);
+    if(event->buttons() == Qt::RightButton)
+    {
+        // convert to [0,1] X [0,1] domain
+        nx = (2.0f * (float) x - W) / W;
+        ny = (H - 2.0f * (float) y) / H;
+        view->arcRotate(nx, ny);
+        lastPos = event->pos();
+        if(viewlock)
+            signalRepaintAllGL();
+        else
             update();
-            lastPos = event->pos();
-        }
+    }
 }
 
 void GLWidget::wheelEvent(QWheelEvent * wheel)
@@ -1035,39 +1015,48 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     QPoint pix = wheel->pixelDelta();
     QPoint deg = wheel->angleDelta();
 
-    if(!viewlock)
+    if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
     {
-        if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
-        {
-            del = (float) pix.y() * 10.0f;
-        }
-        else if(!deg.isNull()) // mouse wheel instead
-        {
-            del = (float) -deg.y() * 5.0f;
-        }
-        // cerr << "del = " << del << endl;
-        if(wheel->modifiers() == Qt::ControlModifier) // adjust transect width
-        {
-            del /= 60.0f;
-            trx->setThickness(trx->getThickness()+del);
-        }
-        else // otherwise adjust view zoom
-            view->incrZoom(del);
-        update();
-
+        del = (float) pix.y() * 10.0f;
     }
+    else if(!deg.isNull()) // mouse wheel instead
+    {
+        del = (float) -deg.y() * 5.0f;
+    }
+    // cerr << "del = " << del << endl;
+    if(wheel->modifiers() == Qt::ControlModifier) // adjust transect width
+    {
+        del /= 60.0f;
+        trc.trx->setThickness(trc.trx->getThickness()+del, scene->getTerrain());
+    }
+    else // otherwise adjust view zoom
+        view->incrZoom(del);
+    if(viewlock)
+        signalRepaintAllGL();
+    else
+        update();
 }
 
 void GLWidget::animUpdate()
 {
     if(view->animate())
-        update();
+    {
+        if(viewlock)
+            signalRepaintAllGL();
+        else
+            update();
+    }
 }
 
 void GLWidget::rotateUpdate()
 {
     if(view->spin())
-        update();
+    {
+        if(viewlock)
+            signalRepaintAllGL();
+        else
+            update();
+    }
 }
 
 void GLWidget::rebindPlants()

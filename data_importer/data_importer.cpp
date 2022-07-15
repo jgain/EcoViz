@@ -195,17 +195,14 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 	std::getline(ifs, lstr);
     fdata.timestep = std::stoi(lstr);
 
-    if (timestep_only)
+    if(timestep_only)
         return fdata;
 
 	std::getline(ifs, lstr);
 	int ntrees_expected = std::stoi(lstr);		// can use this integer to check that the file and import are consistent by comparing to tree vector size
 
-	int lidx = 3;
-
 	std::cout << "Reading " << ntrees_expected << " trees..." << std::endl;
 
-	int ntokens;
 	for (int i = 0; i < ntrees_expected; i++)
 	{
 		std::getline(ifs, lstr);
@@ -334,7 +331,7 @@ void data_importer::ilanddata::trim_filedata_spatial(data_importer::ilanddata::f
 std::map<std::string, int> make_monthmap()
 {
     std::map<std::string, int> monthmap;
-    for (int i = 0; i < months_arr.size(); i++)
+    for (int i = 0; i < (int) months_arr.size(); i++)
     {
         monthmap[months_arr[i]] = i;
     }
@@ -359,7 +356,7 @@ void data_importer::modelset::add_model(treemodel model)
     //models.push_back(model);		// if we return, instead of break above, use this code
 
     // if we break, instead of return above, use this code
-    if (count == models.size())
+    if (count == (int) models.size())
     {
         models.push_back(model);
     }
@@ -374,7 +371,7 @@ void data_importer::modelset::setup_ranges()
     ranges.clear();
     selections.clear();
     samplemap.clear();
-    for (int i = 0; i < models.size(); i++)
+    for (int i = 0; i < (int) models.size(); i++)
     {
         add_to_ranges(i);
     }
@@ -382,7 +379,7 @@ void data_importer::modelset::setup_ranges()
 
     // setup samplemap
 
-    for (int i = 1; i < ranges.size(); i++)
+    for (int i = 1; i < (int) ranges.size(); i++)
     {
         float cand;
         if ((cand = ranges[i] - ranges[i - 1]) < minrange)
@@ -441,12 +438,12 @@ int data_importer::modelset::sample_selection_robust(float height)
     std::vector<int> *sel;
     //binsize = (ranges.back() - ranges.front()) / nbins;
     int idx = height / binsize;
-    if (idx >= samplemap.size() || height > ranges.back())
+    if (idx >= (int) samplemap.size() || height > ranges.back())
     {
         throw std::runtime_error("height out of range in modelset::sample_selection");
     }
     int selidx = -1;
-    if (idx < samplemap.size() - 1)
+    if (idx < (int) samplemap.size() - 1)
     {
         if (samplemap.at(idx) != samplemap.at(idx + 1))
         {
@@ -476,7 +473,7 @@ int data_importer::modelset::sample_selection_fast(float height)
     std::vector<int> *sel;
     //float binsize = (ranges.back() - ranges.front()) / nbins;
     int idx = height - ranges.front();
-    if (idx >= samplemap.size() || height > ranges.back())
+    if (idx >= (int) samplemap.size() || height > ranges.back())
     {
         throw std::runtime_error("height out of range in modelset::sample_selection");
     }
@@ -493,7 +490,7 @@ int data_importer::modelset::sample_selection_simple(float height)
     throw std::runtime_error("modelset::sample_selection_simple not implemented");
 
     int selidx = -1;
-    for (int i = 1; i < ranges.size(); i++)
+    for (int i = 1; i < (int) ranges.size(); i++)
     {
         if (height < ranges.at(i))
         {
@@ -514,7 +511,7 @@ void data_importer::modelset::add_to_ranges(int midx)
 {
     auto &m = models.at(midx);
     int minidx = -1;
-    for (int i = 0; i < ranges.size(); i++)
+    for (int i = 0; i < (int) ranges.size(); i++)
     {
         if (fabs(ranges[i] - m.hmin) < 1e-4f)
         {
@@ -541,7 +538,7 @@ void data_importer::modelset::add_to_ranges(int midx)
     else
     {
        int maxidx = -1;
-       for (int i = minidx + 1; i < ranges.size(); i++)
+       for (int i = minidx + 1; i < (int) ranges.size(); i++)
        {
            bool found = false;
             if (fabs(ranges[i] - m.hmax) < 1e-4f)
@@ -572,7 +569,7 @@ void data_importer::modelset::add_to_ranges(int midx)
 void data_importer::modelset::setup_selections()
 {
     selections.clear();
-    for (int i = 0; i < ranges.size() - 1; i++)
+    for (int i = 0; i < (int) ranges.size() - 1; i++)
     {
         selections.push_back({});
         float min = ranges[i];
@@ -622,7 +619,7 @@ bool data_importer::read_pdb(std::string filename, std::map<int, std::vector<Min
 {
     //std::vector< std::vector<basic_plant> > retvec;
     std::ifstream infile;
-    int numcat, skip;
+    int numcat;
 
     infile.open(filename, std::ios_base::in);
     if(infile.is_open())
@@ -716,319 +713,6 @@ static species_params parse_species_line(std::string line, std::string name)
     return species_params(name, a, b, locs, width_scales, perc);
 }
 
-
-
-static void assign_viability(data_importer::viability &sp_vb, const data_importer::viability &vb)
-{
-    sp_vb.cmax = vb.cmax;
-    sp_vb.cmin = vb.cmin;
-    sp_vb.c = (vb.cmax + vb.cmin) / 2.0f;
-    sp_vb.r = vb.cmax - vb.cmin;
-}
-
-static int sql_callback_common_data_monthlies(void *write_info, int argc, char **argv, char **colnames)
-{
-    data_importer::common_data *common = (data_importer::common_data *)write_info;
-    int monthidx;
-    float rainfall, temperature, cloudiness;
-
-    for (int i = 0; i < argc; i++)
-    {
-        std::string valstr;
-        std::string colstr;
-        if (argv[i])
-        {
-            valstr = argv[i];
-        }
-        else
-        {
-            valstr = "NULL";
-        }
-        colstr = colnames[i];
-
-        if (colstr == "Month_ID")
-        {
-            monthidx = std::stoi(valstr);
-        }
-        else if (colstr == "Rainfall")
-        {
-            rainfall = std::stof(valstr);
-        }
-        else if (colstr == "Temperature")
-        {
-            temperature = std::stof(valstr);
-        }
-        else if (colstr == "Cloudiness")
-        {
-            cloudiness = std::stof(valstr);
-        }
-    }
-    common->rainfall[monthidx] = rainfall;
-    common->temperature[monthidx] = temperature;
-    common->cloudiness[monthidx] = cloudiness;
-
-    return 0;
-}
-
-static int sql_callback_common_data_biome_stats(void *write_info, int argc, char ** argv, char **colnames)
-{
-    data_importer::common_data *common = (data_importer::common_data *)write_info;
-
-    std::string statname;
-    float value;
-    for (int i = 0; i < argc; i++)
-    {
-        std::string valstr;
-        std::string colstr;
-        if (argv[i])
-        {
-            valstr = argv[i];
-        }
-        else
-        {
-            valstr = "NULL";
-        }
-        colstr = colnames[i];
-
-        if (colstr == "Biome_stat_name")
-        {
-            statname = valstr;
-        }
-        else if (colstr == "Value")
-        {
-            value = std::stof(valstr);
-        }
-    }
-    if (statname == "Slope threshold")
-    {
-        common->soil_info.slopethresh = value;
-    }
-    else if (statname == "Slope maximum")
-    {
-        common->soil_info.slopemax = value;
-    }
-    else if (statname == "Evaporation rate")
-    {
-        common->soil_info.evap = value;
-    }
-    else if (statname == "Runoff limit")
-    {
-        common->soil_info.runofflim = value;
-    }
-    else if (statname == "Soil saturation limit")
-    {
-        common->soil_info.soilsat = value;
-    }
-    else if (statname == "Riverlevel")
-    {
-        common->soil_info.riverlevel = value;
-    }
-    else if (statname == "Latitude")
-    {
-        common->latitude = value;
-    }
-    else if (statname == "Temp lapse rate")
-    {
-        common->temp_lapse_rate = value;
-    }
-    return 0;
-
-}
-
-static int sql_callback_common_data_subbiomes(void *write_info, int argc, char ** argv, char **colnames)
-{
-    data_importer::common_data *common = (data_importer::common_data *)write_info;
-
-    data_importer::sub_biome sb;
-    for (int i = 0; i < argc; i++)
-    {
-        std::string valstr;
-        std::string colstr;
-        if (argv[i])
-        {
-            valstr = argv[i];
-        }
-        else
-        {
-            valstr = "NULL";
-        }
-        colstr = colnames[i];
-
-        if (colstr == "Sub_biome_ID")
-        {
-            sb.id = std::stoi(valstr);
-        }
-        else if (colstr == "Value")
-        {
-            sb.name = valstr;
-        }
-    }
-    common->subbiomes[sb.id] = sb;
-    common->subbiomes_all_species[sb.id] = sb;
-    return 0;
-}
-
-static int sql_callback_common_data_subbiomes_species(void *write_info, int argc, char ** argv, char **colnames)
-{
-    data_importer::common_data *common = (data_importer::common_data *)write_info;
-
-    int sb_id, tree_id;
-    for (int i = 0; i < argc; i++)
-    {
-        std::string valstr;
-        std::string colstr;
-        if (argv[i])
-        {
-            valstr = argv[i];
-        }
-        else
-        {
-            valstr = "NULL";
-        }
-        colstr = colnames[i];
-
-        if (colstr == "Sub_biome_ID")
-        {
-            sb_id = std::stoi(valstr);
-        }
-        else if (colstr == "Tree_ID")
-        {
-            tree_id = std::stoi(valstr);
-        }
-    }
-    data_importer::sub_biome &sb = common->subbiomes[sb_id];
-    data_importer::species_encoded sp;
-    sp.id = tree_id;
-    sb.species.insert(sp);
-    return 0;
-}
-
-static int sql_callback_common_data_subbiomes_all_species(void *write_info, int argc, char ** argv, char **colnames)
-{
-    data_importer::common_data *common = (data_importer::common_data *)write_info;
-
-    int sb_id, tree_id;
-    bool canopy;
-    for (int i = 0; i < argc; i++)
-    {
-        std::string valstr;
-        std::string colstr;
-        if (argv[i])
-        {
-            valstr = argv[i];
-        }
-        else
-        {
-            valstr = "NULL";
-        }
-        colstr = colnames[i];
-
-        if (colstr == "Sub_biome_ID")
-        {
-            sb_id = std::stoi(valstr);
-        }
-        else if (colstr == "Tree_ID")
-        {
-            tree_id = std::stoi(valstr);
-        }
-        else if (colstr == "Canopy")
-        {
-            int canopyval = std::stoi(valstr);
-            if (canopyval)
-            {
-                //std::cout << "Encountered canopy species" << std::endl;
-                canopy = true;
-            }
-            else
-                canopy = false;
-        }
-    }
-    data_importer::sub_biome &sb = common->subbiomes_all_species[sb_id];
-    data_importer::species_encoded sp;
-    sp.id = tree_id;
-    sp.canopy = canopy;
-    auto insert_result = sb.species.insert(sp);
-    if (!insert_result.second)
-    {
-        auto sp_iter = sb.species.find(sp);
-
-        assert(canopy || sp_iter->canopy);
-
-        std::cout << "Inserting canopy species" << std::endl;
-
-        data_importer::species_encoded sp = *sp_iter;
-        sb.species.erase(sp_iter);
-        sp.canopy = true;
-        sb.species.insert(sp);
-
-    }
-    return 0;
-}
-
-static int sql_callback_common_data_models(void *write_info, int argc, char ** argv, char **colnames)
-{
-    data_importer::common_data *common = (data_importer::common_data *)write_info;
-
-    int tree_id;
-    data_importer::treemodel model;
-
-    for (int i = 0; i < argc; i++)
-    {
-        std::string valstr;
-        std::string colstr;
-        if (argv[i])
-        {
-            valstr = argv[i];
-        }
-        else
-        {
-            valstr = "NULL";
-        }
-        colstr = colnames[i];
-
-        if (colstr == "vueid")
-        {
-            model.vueid = std::stoi(valstr);
-        }
-        else if (colstr == "Tree_ID")
-        {
-            tree_id = std::stoi(valstr);
-        }
-        else if (colstr == "hmin")
-        {
-            model.hmin = std::stof(valstr);
-        }
-        else if (colstr == "hmax")
-        {
-            model.hmax = std::stof(valstr);
-        }
-        else if (colstr == "prob")
-        {
-            model.prob = std::stof(valstr);
-        }
-        else if (colstr == "modheight")
-        {
-            model.modheight = std::stof(valstr);
-        }
-        else if (colstr == "whratio")
-        {
-            model.whratio = std::stof(valstr);
-        }
-        else if (colstr == "modname")
-        {
-            model.modname = valstr;
-        }
-    }
-
-    if (common->canopy_and_under_species.at(tree_id).maxhght < model.hmax)
-    {
-        std::cout << "WARNING: maximum height (" << model.hmax << ") for model " << model.vueid << " is higher than maximum height for species " << tree_id << ", which is " << common->canopy_and_under_species.at(tree_id).maxhght << std::endl;
-    }
-    common->modelsamplers[tree_id].add_model(model);
-
-    return 0;
-}
-
 static int sql_callback_common_data_species(void *write_info, int argc, char ** argv, char **colnames)
 {
     //std::cout << "Processing row in sql_callback_common_data_species" << std::endl;
@@ -1036,9 +720,6 @@ static int sql_callback_common_data_species(void *write_info, int argc, char ** 
     data_importer::common_data *common = (data_importer::common_data *)write_info;
 
     int tree_idx;
-    float a, b;
-    data_importer::viability sun, moisture, temp, slope;
-    float trunkrad;
     for (int i = 0; i < argc; i++)
     {
         std::string valstr;
@@ -1057,63 +738,9 @@ static int sql_callback_common_data_species(void *write_info, int argc, char ** 
         {
             tree_idx = std::stoi(valstr);
         }
-        else if (colstr == "canopy")
-        {
-            if (valstr != "Y")
-            {
-                return 0;	// we only look at canopy species. If not a canopy species, return, not writing
-                            // the current row to the data struct
-            }
-        }
-        else if (colstr == "a")
-        {
-            a = std::stof(valstr);
-        }
-        else if (colstr == "b")
-        {
-            b = std::stof(valstr);
-        }
-        else if (colstr == "shadeval")
-        {
-            sun.cmin = std::stof(valstr);
-        }
-        else if (colstr == "sunval")
-        {
-            sun.cmax = std::stof(valstr);
-        }
-        else if (colstr == "droughtval")
-        {
-            moisture.cmin = std::stof(valstr);
-        }
-        else if (colstr == "floodval")
-        {
-            float val = std::stof(valstr);
-            moisture.cmax = std::stof(valstr);
-        }
-        else if (colstr == "coldval")
-        {
-            temp.cmin = std::stof(valstr);
-            temp.cmax = 35.0f;
-        }
-        else if (colstr == "slopeval")
-        {
-            slope.cmax = std::stof(valstr);
-            slope.cmin = 0.0f;
-        }
-        else if (colstr == "Max_trunk_radius")
-        {
-            trunkrad = std::stof(valstr);
-        }
     }
     data_importer::species sp;
     sp.idx = tree_idx;
-    sp.a = a;
-    sp.b = b;
-    sp.max_trunk_radius = trunkrad;
-    assign_viability(sp.sun, sun);
-    assign_viability(sp.wet, moisture);
-    assign_viability(sp.temp, temp);
-    assign_viability(sp.slope, slope);
     auto result = common->all_species.insert({sp.idx, sp});
     assert(result.second);		// Each species should only be inserted once. If it already exists in the map
                                 // there is a bug
@@ -1125,19 +752,13 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
     data_importer::common_data *common = (data_importer::common_data *)write_info;
 
     int tree_idx;
-    float a, b;
-    float alpha, maxage, maxheight;
-    char grow_period;
-    int grow_start, grow_end;
-    float grow_m, grow_c1, grow_c2;
+    std::string alpha_code, common_name, sci_name;
     float draw_color [4];
     float draw_height;
     float draw_radius, draw_box1, draw_box2;
-    std::string name;
+
     data_importer::treeshape draw_shape;
-    data_importer::viability sun, temp, moisture, slope;
-    float trunkrad = 0;
-    bool iscanopy;
+
     for (int i = 0; i < argc; i++)
     {
         std::string valstr;
@@ -1152,63 +773,22 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
         }
         colstr = colnames[i];
 
+        // std::cerr << colstr << " " << valstr << std::endl;
         if (colstr == "Tree_ID")
         {
             tree_idx = std::stoi(valstr);
         }
-        /*
-        else if (colstr == "canopy")
+        else if (colstr == "alpha_code")
         {
-            if (valstr != "Y")
-            {
-                return 0;	// we only look at canopy species. If not a canopy species, return, not writing
-                            // the current row to the data struct		NOT IN THIS CASE
-            }
+            alpha_code = valstr;
         }
-        */
-        else if (colstr == "a")
+        else if (colstr == "common_name")
         {
-            a = std::stof(valstr);
+            common_name = valstr;
         }
-        else if (colstr == "b")
+        else if (colstr == "scientific_name")
         {
-            b = std::stof(valstr);
-        }
-        else if (colstr == "maxage")
-        {
-            maxage = std::stof(valstr);
-        }
-        else if (colstr == "maxheight")
-        {
-            maxheight = std::stof(valstr);
-        }
-        else if (colstr == "alpha")
-        {
-            alpha = std::stof(valstr);
-        }
-        else if (colstr == "Growth_ID")
-        {
-            grow_period = valstr[0];
-        }
-        else if (colstr == "Start_month")
-        {
-            grow_start = std::stoi(valstr);
-        }
-        else if (colstr == "End_month")
-        {
-            grow_end = std::stoi(valstr);
-        }
-        else if (colstr == "grow_m")
-        {
-            grow_m = std::stof(valstr);
-        }
-        else if (colstr == "grow_c1")
-        {
-            grow_c1 = std::stof(valstr);
-        }
-        else if (colstr == "grow_c2")
-        {
-            grow_c2 = std::stof(valstr);
+            sci_name = valstr;
         }
         else if (colstr == "base_col_red")
         {
@@ -1265,90 +845,21 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
                 draw_shape = data_importer::treeshape::CYL;
             }
         }
-        else if (colstr == "common_name")
-        {
-            name = valstr;
-        }
-        else if (colstr == "shadeval")
-        {
-            sun.cmin = std::stof(valstr);
-        }
-        else if (colstr == "sunval")
-        {
-            sun.cmax = std::stof(valstr);
-        }
-        else if (colstr == "droughtval")
-        {
-            moisture.cmin = std::stof(valstr);
-        }
-        else if (colstr == "floodval")
-        {
-            moisture.cmax = std::stof(valstr);
-        }
-        else if (colstr == "coldval")
-        {
-            temp.cmin = std::stof(valstr);
-            temp.cmax = 35.0f;
-        }
-        else if (colstr == "slopeval")
-        {
-            slope.cmax = std::stof(valstr);
-            slope.cmin = 0.0f;
-        }
-        else if (colstr == "Max_trunk_radius")
-        {
-            trunkrad = std::stof(valstr);
-        }
-        else if (colstr == "canopy")
-        {
-            if (valstr == "Y")
-                iscanopy = true;
-            else
-                iscanopy = false;
-        }
     }
     data_importer::species sp;
     sp.idx = tree_idx;
-    sp.a = a;
-    sp.b = b;
-    sp.maxage = maxage;
-    sp.maxhght = maxheight;
-    sp.alpha = alpha;
-    sp.growth_period = grow_period;
-    sp.grow_start = grow_start;
-    sp.grow_end = grow_end;
-    if (grow_start > grow_end)
-        sp.grow_months = grow_end + 12 - grow_start + 1;
-    else
-        sp.grow_months = grow_end - grow_start + 1;
-    sp.grow_m = grow_m;
-    sp.grow_c1 = grow_c1;
-    sp.grow_c2 = grow_c2;
     sp.basecol[0] = draw_color[0], sp.basecol[1] = draw_color[1], sp.basecol[2] = draw_color[2];
     sp.basecol[3] = 1.0f;
     sp.draw_hght = draw_height;
     sp.draw_radius = draw_radius;
     sp.draw_box1 = draw_box1;
     sp.draw_box2 = draw_box2;
-    sp.name = name;
-    sp.max_trunk_radius = trunkrad;
+    sp.cname = common_name;
+    sp.sname = sci_name;
+    sp.alpha_code = alpha_code;
     sp.shapetype = draw_shape;
 
-    assign_viability(sp.slope, slope);
-    assign_viability(sp.sun, sun);
-    assign_viability(sp.temp, temp);
-    assign_viability(sp.wet, moisture);
-
-    auto result = common->canopy_and_under_species.insert({sp.idx, sp});
-    assert(result.second);		// Each species should only be inserted once. If it already exists in the map
-                                // there is a bug
-
-    if (iscanopy)		// insert into the canopy species-only map also
-    {
-        result = common->all_species.insert({sp.idx, sp});
-        assert(result.second);
-    }
-
+    auto result = common->all_species.insert({sp.idx, sp});
     return 0;
 }
 
@@ -1392,18 +903,9 @@ data_importer::common_data::common_data(std::string db_filename)
     char * errmsg;
 
     errcode = sqlite3_exec(db, "SELECT Tree_ID, \
+                                    alpha_code, \
                                     common_name, \
                                     scientific_name, \
-                                    form, \
-                                    canopy, \
-                                    maxage, \
-                                    maxheight, \
-                                    alpha, \
-                                    species.Growth_ID as Growth_ID, \
-                                    species.Allometry_ID as Allometry_ID, \
-                                    grow_m, \
-                                    grow_c1, \
-                                    grow_c2, \
                                     base_col_red, \
                                     base_col_green, \
                                     base_col_blue, \
@@ -1411,72 +913,14 @@ data_importer::common_data::common_data(std::string db_filename)
                                     draw_radius, \
                                     draw_box1, \
                                     draw_box2, \
-                                    draw_shape, \
-                                    a, \
-                                    b, \
-                                    Start_month, \
-                                    End_month, \
-                                    shadeTolLow.value as shadeval, \
-                                    sunTolUpper.value as sunval, \
-                                    droughtTolLow.value as droughtval, \
-                                    floodTolUpper.value as floodval, \
-                                    coldTolLow.value as coldval, \
-                                    slopeTolUpper.value as slopeval \
-                               FROM species INNER JOIN allometry ON species.Allometry_ID = allometry.Allometry_ID \
-                               INNER JOIN growth ON species.Growth_ID = growth.Growth_ID \
-                                INNER JOIN shadeTolLow ON species.shade_tol_lower = shadeTolLow.shade_tol_lower \
-                                INNER JOIN sunTolUpper ON species.sun_tol_upper = sunTolUpper.sun_tol_upper \
-                                INNER JOIN droughtTolLow ON species.drought_tol_lower = droughtTolLow.drought_tol_lower \
-                                INNER JOIN floodTolUpper ON species.flood_tol_upper = floodTolUpper.flood_tol_upper \
-                                INNER JOIN coldTolLow ON species.cold_tol_lower = coldTolLow.cold_tol_lower \
-                                INNER JOIN slopeTolUpper ON species.slope_tol_upper = slopeTolUpper.slope_tol_upper",
+                                    draw_shape \
+                                    FROM species",
                           sql_callback_common_data_all_species,
                           this,
                           &errmsg);
     sql_err_handler(db, errcode, errmsg);
 
-    errcode = sqlite3_exec(db, "SELECT modelMapping.vueid as vueid, \
-                                modelMapping.Tree_ID as Tree_ID, \
-                                hmin, hmax, prob, modheight, modname, whratio \
-                                FROM modelDetails INNER JOIN modelMapping ON modelDetails.vueid = modelMapping.vueid",
-                                sql_callback_common_data_models, this, &errmsg);
-    sql_err_handler(db, errcode, errmsg);
-    for (auto &p : modelsamplers)
-        p.second.setup_ranges();		// can actually call setup_selections here, instead of this
-
-    errcode = sqlite3_exec(db, "SELECT * FROM monthlies", sql_callback_common_data_monthlies, this, &errmsg);
-    sql_err_handler(db, errcode, errmsg);
-
-    errcode = sqlite3_exec(db, "SELECT * FROM biome_stats", sql_callback_common_data_biome_stats, this, &errmsg);
-    sql_err_handler(db, errcode, errmsg);
-
-    errcode = sqlite3_exec(db, "SELECT * FROM subBiomes", sql_callback_common_data_subbiomes, this, &errmsg);
-    sql_err_handler(db, errcode, errmsg);
-
-    errcode = sqlite3_exec(db, "SELECT Sub_biome_ID, Tree_ID FROM subBiomesMapping WHERE Canopy = 1",
-                           sql_callback_common_data_subbiomes_species,
-                           this,
-                           &errmsg);
-    sql_err_handler(db, errcode, errmsg);
-
-    errcode = sqlite3_exec(db, "SELECT * FROM subBiomesMapping",
-                           sql_callback_common_data_subbiomes_all_species,
-                           this,
-                           &errmsg);
-    sql_err_handler(db, errcode, errmsg);
-
     sqlite3_close(db);
-
-    for (auto &subb : subbiomes)
-    {
-        int subcode = subb.first;
-        sub_biome sbiome = subb.second;
-        for (auto spec_enc : sbiome.species)
-        {
-            int speccode = spec_enc.id;
-            canopyspec_to_subbiome[speccode] = subcode;
-        }
-    }
 }
 
 
@@ -1490,7 +934,7 @@ std::vector<basic_tree> data_importer::minimal_to_basic(const std::map<int, std:
         const std::vector<MinimalPlant> &specplants = speccls.second;
         for (const auto &ctree : specplants)
         {
-            float x, y, radius, height;
+            float x, y, radius;
             x = ctree.x;
             y = ctree.y;
             radius = ctree.r;
@@ -1500,62 +944,5 @@ std::vector<basic_tree> data_importer::minimal_to_basic(const std::map<int, std:
         }
     }
     return trees;
-}
-
-std::map<std::string, data_importer::grass_viability> data_importer::read_grass_viability(std::string filename)
-{
-    auto get_viability = [](std::stringstream &sstr, grass_viability &v) {
-        sstr >> v.absmin;
-        sstr >> v.innermin;
-        sstr >> v.innermax;
-        sstr >> v.absmax;
-    };
-
-    std::ifstream ifs(filename);
-
-    if (!ifs.is_open())
-    {
-        throw std::invalid_argument("Could not open grass viability parameters file at " + filename);
-    }
-
-    std::string line;
-
-    std::map<std::string, grass_viability> vs;
-
-    bool moisture_good = false, sun_good = false, temp_good = false;
-
-    for (int i = 0; i < 3; i++)
-    {
-        std::getline(ifs, line);
-        std::stringstream sstr(line);
-        std::string token;
-        sstr >> token;
-        for (auto &ch : token)
-            ch = tolower(ch);
-        if (token == "moisture")
-        {
-            moisture_good = true;
-        }
-        else if (token == "sunlight")
-        {
-            sun_good = true;
-        }
-        else if (token == "temperature")
-        {
-            temp_good = true;
-        }
-        else
-        {
-            throw std::invalid_argument("Error parsing grass viability file at " + filename);
-        }
-        get_viability(sstr, vs[token]);
-    }
-
-    if (!(temp_good && sun_good && moisture_good))
-    {
-        throw std::invalid_argument("Error importing grass viability file at " + filename);
-    }
-
-    return vs;
 }
 
