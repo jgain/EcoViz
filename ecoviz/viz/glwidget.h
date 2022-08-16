@@ -165,8 +165,14 @@ public:
     /// toggle lock flag
     void setViewLockState(bool state){ viewlock = state; }
 
+    /// get Transect
+    TransectCreation * getTransectCreate(){ return trc; }
+
     /// set Transect
-    void setTransect(Transect * newtrx){ trc.trx = newtrx; }
+    void setTransectCreate(TransectCreation * newtrc);
+
+    // make transect independent
+    void seperateTransectCreate(Transect * newtrx);
 
     /// Prepare decal texture
     void loadDecals();
@@ -201,9 +207,26 @@ public:
     template<typename T>
     int loadTypeMap(const T &map, TypeMapType purpose);
 
+    /**
+     * @brief pointPlaceTransect    GUI actions related to transect point placement
+     * @param firstPoint true if this is the placement of the first transect point, false if the second
+     */
+    void pointPlaceTransect(bool firstPoint);
+
+    void resetTransectState()
+    {
+        if(trc != nullptr)
+        {
+            trc->trxstate = -1;
+            loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
+            refreshOverlay();
+        }
+    }
+
 signals:
     void signalRepaintAllGL();
     void signalShowTransectView();
+    void signalSyncPlace(bool firstPoint);
     
 public slots:
     void animUpdate(); // animation step for change of focus
@@ -228,6 +251,9 @@ private:
     View * view;        //< viewpoint controls
     std::string datadir;
 
+    // transect parameters
+    TransectCreation * trc;
+
     // render variables
     PMrender::TRenderer * renderer;
     bool decalsbound;
@@ -242,7 +268,6 @@ private:
     std::vector<bool> plantvis;
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true
-    bool showtransect; //< display the widgets associated with the transect
     bool rebindplants; //< flag to indicate that plants have changed and need to be rebound
     float scf;
     int sun_mth; // which month to display in the sunlight texture
@@ -253,10 +278,6 @@ private:
     QColor qtWhite;
     QTimer * atimer, * rtimer; // timers to control different types of animation
     QLabel * vizpopup;  //< for debug visualisation
-
-    // transect parameters
-    TransectCreation trc;
-    Shape trxshape[3]; //< geometry for transect line display
 
     /**
      * @brief createLine    Create sub-line for part of the transect
@@ -302,6 +323,11 @@ private:
      * @param y         y-coord on terrain grid
      */
     void pickInfo(int x, int y);
+
+    /**
+     * @brief refreshViews Signal update to either this view or all views depending on lock state
+     */
+    void refreshViews();
 };
 
 #endif

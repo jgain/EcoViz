@@ -88,6 +88,14 @@ public:
         mapviz->fill(0.0f);
     }
 
+    inline void reset()
+    {
+        redraw = false;
+        valid = false;
+        mapviz->fill(0.0f);
+        thickness = 20.0f;
+    }
+
     // getters and setters
     inline void setThickness(float width, Terrain * ter)
     {
@@ -132,7 +140,9 @@ public:
     inline Vector getVertical(){ return vert; }
     inline bool getChangeFlag(){ return redraw; }
     inline bool getValidFlag(){ return valid; }
+    inline void setValidFlag(bool status){ valid = status; }
     inline basic_types::MapFloat * getTransectMap(){ return mapviz; }
+    inline void setTransectMap(basic_types::MapFloat * mviz){ mapviz = mviz; }
 
     /**
      * @brief clearChangeFlag reset change flag to false
@@ -160,6 +170,8 @@ struct TransectCreation
     vpPoint t1, t2;     // endpoints on the terrain
     int trxstate;       // current state of selecting endpoings
     Transect * trx;     // all remaining transect state
+    bool showtransect;  // whether or not display of the transect indicators is active
+    Shape trxshape[3];  //< geometry for transect line display
 };
 
 class Timeline

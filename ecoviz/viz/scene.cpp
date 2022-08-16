@@ -176,7 +176,6 @@ void Transect::derive(vpPoint p1, vpPoint p2, Terrain * ter)
     normal = Vector(-align.k, 0.0f, align.i);
 
     findBoundPoints(np1, align, bounds, ter);
-
     // calculate key parameters
     setInnerStart(np1, ter); setInnerEnd(np2, ter);
     hori = align;

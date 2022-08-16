@@ -1000,12 +1000,10 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
 
 void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool rebind)
 {
-    cerr << "Bind Plants Simplified Start" << endl;
     if(rebind) // plant positions have been updated since the last bindPlants
         eshapes.bindPlantsSimplified(ter, &esys, plantvis);
 
     eshapes.drawPlants(drawParams);
-    cerr << "Bind Plants Simplified End" << endl;
 }
 
 void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree)

@@ -17,6 +17,7 @@ TimeWindow::TimeWindow(QWidget *parent, int step_start, int step_end, int width,
 
     // media controls
     playing = false; // not currently animating timeline
+    viewlock = false; // side-by-side timebars are not initially synchronised
     ptimer = new QTimer(this);
     back_button = new QPushButton("", this);
     play_button = new QPushButton("", this);
@@ -67,7 +68,8 @@ TimeWindow::TimeWindow(QWidget *parent, int step_start, int step_end, int width,
 
     setLayout(hbox);
 
-    connect(tstep_slider, SIGNAL(sliderMoved(int)), this, SLOT(updateScene(int)));
+    // connect(tstep_slider, SIGNAL(sliderMoved(int)), this, SLOT(updateScene(int)));
+    connect(tstep_slider, SIGNAL(valueChanged(int)), this, SLOT(updateScene(int)));
     connect(advance_button, SIGNAL(clicked()), this, SLOT(advance()));
     connect(back_button, SIGNAL(clicked()), this, SLOT(backtrack()));
     connect(ptimer, SIGNAL(timeout()), this, SLOT(advance()));
@@ -99,6 +101,12 @@ int TimeWindow::get_sliderval()
 void TimeWindow::set_sliderval(int v)
 {
     tstep_slider->setValue(v);
+}
+
+void TimeWindow::synchronize(int t)
+{
+    set_sliderval(t);
+    updateSingleScene(t);
 }
 
 void TimeWindow::advance()
@@ -192,8 +200,18 @@ void TimeWindow::setScene(Scene * s)
     //   tstep_scrollwindow->set_labelvalue(tstep);
 }
 
- void TimeWindow::updateScene(int t)
- {
+void TimeWindow::updateScene(int t)
+{
+    updateSingleScene(t);
+    if(viewlock)
+    {
+        cerr << "signalSync " << t << endl;
+        signalSync(t);
+    }
+}
+
+void TimeWindow::updateSingleScene(int t)
+{
      // auto bt_master = std::chrono::steady_clock::now().time_since_epoch();
      set_labelvalue(t, scene->getTimeline()->getTimeEnd());
      scene->getTimeline()->setNow(t);

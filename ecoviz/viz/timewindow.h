@@ -21,6 +21,7 @@ class TimeWindow : public QWidget
 private:
     Scene * scene;
     bool playing;
+    bool viewlock;
 
     QTimer * ptimer;
     QSlider *tstep_slider;
@@ -35,11 +36,18 @@ private:
      */
     void setSliderBounds(int tstart, int tend);
 
+    /**
+     * @brief updateSingleScene Match the displayed plants to the current timestep, without signalling a lock with other timelines
+     * @param t current timestep on slider
+     */
+    void updateSingleScene(int t);
+
 signals:
     void signalRepaintAllGL();
     void signalRebindPlants();
     void doCohortMapsAdjustments(int);
     void setTimestepAndSample(int);
+    void signalSync(int);
 
 public slots:
     /**
@@ -47,6 +55,12 @@ public slots:
      * @param t current timestep on slider
      */
     void updateScene(int t);
+
+    /**
+     * @brief synchronize   Directly set the slider value. Used by timeline locking functionality.
+     * @param t timestep value for setting slider
+     */
+    void synchronize(int t);
 
     /**
      * @brief advance Advance the slider by a single timestep if possible
@@ -87,6 +101,9 @@ public:
 
     // getters and setters
     Scene * getScene(){ return scene; }
+
+    /// toggle lock flag
+    void setViewLockState(bool state){ viewlock = state; }
 };
 
 #endif // TIMEWINDOW_H
