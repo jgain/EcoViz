@@ -937,7 +937,7 @@ TRenderer::TRenderer(QGLWidget *drawTo, const std::string& dir)
   gridlinesWall = true; // draw gridlines on side walls
   terrainTypeTexture = false; // turn off terrain type texture by default
   constraintTypeTexture = false; // turn off constraint type texture by default
-  shadModel = RADIANCE_SCALING; // RADIANCE_SCALING; // BASIC
+  shadModel = BASIC; // RADIANCE_SCALING; // RADIANCE_SCALING; // BASIC
   manipulatorTextures = false; // do not texture manipulators by default
   drawOutOfBounds = false; // shade out of bound heights
   drawHiddenManipulators = false; // do/do not draw hidden manipulators

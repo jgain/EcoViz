@@ -156,8 +156,6 @@ private:
     QLineEdit * gridSepXEdit, * gridSepZEdit, * gridWidthEdit, * gridIntensityEdit, * contourSepEdit, * contourWidthEdit, * contourIntensityEdit, * radianceEnhanceEdit;
 
     // plant viz panel widgets
-    QCheckBox * checkCanopy, * checkUndergrowth, * checkS0, * checkS1, * checkS2, * checkS3, * checkS4, * checkS5, * checkS6, * checkS7, * checkS8, * checkS9,
-              * checkS10, * checkS11, * checkS12, * checkS13, * checkS14, * checkS15;
     QLineEdit * sunMapEdit, * wetMapEdit;
     QRadioButton * sunMapRadio, * wetMapRadio, * chmMapRadio, * noMapRadio;
     QLineEdit * smoothEdit;

@@ -27,7 +27,17 @@
 
 GLfloat *Biome::getSpeciesColour(int specid)
 {
-    return pftypes.at(specid).basecol;
+    if (specid < pftypes.size())
+        return pftypes.at(specid).basecol;
+
+    // fallback
+    return pftypes[0].basecol;
+}
+
+glm::vec4 Biome::getSpeciesColourV4(int specid)
+{
+    GLfloat *col = getSpeciesColour(specid);
+    return glm::vec4(col[0], col[1], col[2], col[3]);
 }
 
 bool Biome::read_dataimporter(std::string cdata_fpath)
@@ -41,6 +51,7 @@ bool Biome::read_dataimporter(std::string cdata_fpath)
 bool Biome::read_dataimporter(data_importer::common_data &cdata)
 {
     pftypes.clear();
+    species_info.clear();
 
     PFType pft;
 
@@ -51,6 +62,17 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
     for (auto &sppair : cdata.all_species)
     {
         data_importer::species &spec = sppair.second;
+
+        // build meta data structure
+        SpeciesInfo sinfo;
+        sinfo.speciesId = spec.alpha_code;
+        for (int i = 0; i < 4; i++)
+            sinfo.species_color[i] = spec.basecol[i];
+        sinfo.species_name = spec.cname;
+        sinfo.scientific_name = spec.sname;
+        sinfo.species_num_id = species_info.size();
+        species_info.push_back(sinfo);
+
         pft.code = spec.cname;
         for (int i = 0; i < 4; i++)
             pft.basecol[i] = spec.basecol[i];

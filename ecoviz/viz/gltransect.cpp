@@ -258,7 +258,7 @@ void GLTransect::initializeGL()
     // To use basic shading: PMrender::TRenderer::BASIC
     // To use radianvce scaling: PMrender::TRenderer::RADIANCE_SCALING
 
-    PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SCALING;
+    PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::BASIC;
 
     // set terrain shading model
     renderer->setTerrShadeModel(sMod);

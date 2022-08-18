@@ -732,6 +732,7 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
         {
             plnts = esys->getPopulation(x, y);
 
+
             for(s = 0; s < (int) plnts->pop.size(); s++) // iterate over plant types
             {
                 std::vector<glm::mat4> xform; // transformation to be applied to each instance
@@ -741,6 +742,9 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                     cerr << "Species " << s << " Present" << endl;
                 if((* plantvis)[s])
                     {
+
+                    //glm::vec4 species_base_color = biome->getSpeciesColourV4(s);
+
                     for(p = 0; p < (int) plnts->pop[s].size(); p++) // iterate over plant specimens
                     {
                         if(plnts->pop[s][p].height > 0.01f) // only display reasonably sized plants
@@ -987,7 +991,7 @@ void EcoSystem::pickPlants(Terrain * ter, TypeMap * clusters)
 
 void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
 {
-    esys.clear();
+    //esys.clear(); WR?
     for(int n = 0; n < (int) niches.size(); n++)
     {
         if(n == 0 && canopyOn)

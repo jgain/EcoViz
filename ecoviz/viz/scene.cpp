@@ -337,7 +337,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
             for(auto tree: trees)  // count species
                 if(tree.species == spc)
                 {
-                    basaltot += (PI * tree.dbh*tree.dbh);
+                    basaltot += (PI * tree.dbh*tree.dbh/ 4. / 10000.); // dbh is in cm, need to convert to m.
                     spccnt++;
                 }
             basaltot /= hectares;

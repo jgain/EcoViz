@@ -6,6 +6,7 @@
 #define CHARTWINDOW_H
 
 #include <QWidget>
+#include <QLabel>
 #include <QtCharts/QChart>
 #include <QtCharts/QAreaSeries>
 
@@ -21,7 +22,9 @@ private:
     Scene * scene;              //< attached underlying scene
     TimelineGraph * graphdata;  //< graph model corresponding to this graph view
     QChart * chart;             //< graphical chart from qt
-
+    enum ChartType { ChartBasalArea, ChartStemNumber, ChartDBHDistribution} ;
+    QStringList chart_desc;
+    QLabel *chart_help_label;
 signals:
     void signalRepaintAllGL();
 
