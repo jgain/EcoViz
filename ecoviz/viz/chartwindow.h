@@ -20,9 +20,9 @@ class ChartWindow : public QWidget
 
 private:
     Scene * scene;              //< attached underlying scene
-    TimelineGraph * graphdata;  //< graph model corresponding to this graph view
+    std::vector<TimelineGraph*> all_graphs; // collection of graphs
+    TimelineGraph * graphdata;  //< current graph model corresponding to this graph view
     QChart * chart;             //< graphical chart from qt
-    enum ChartType { ChartBasalArea, ChartStemNumber, ChartDBHDistribution} ;
     QStringList chart_desc;
     QLabel *chart_help_label;
 signals:
@@ -35,6 +35,8 @@ public slots:
     */
     void updateTimeBar();
 
+    void chartSelected(int index);
+
 public:
 
     ChartWindow(QWidget *parent, int width, int height);
@@ -45,6 +47,7 @@ public:
 
     void setScene(Scene * s){ scene = s; }
     void setData(TimelineGraph * gdata);
+    void setGraphs(std::vector<TimelineGraph*> all_gr) { all_graphs = all_gr; }
 };
 
 #endif // TIMEWINDOW_H

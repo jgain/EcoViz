@@ -487,13 +487,13 @@ void Window::setupVizPanel()
     for(int i = 0; i < 2; i++)
     {
         ChartWindow * cview = new ChartWindow(this, 800, 200);
-        TimelineGraph * gmodel = new TimelineGraph();
+        //TimelineGraph * gmodel = new TimelineGraph();
 
         // signal to slot connections
         // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-
+        std::vector< TimelineGraph* > tgs;
         chartViews.push_back(cview);
-        graphModels.push_back(gmodel);
+        graphModels.push_back( tgs );
         vizLayout->addWidget(cview, 3, i);
     }
 
@@ -522,6 +522,20 @@ void Window::setupVizPanel()
     "     background-color: red;\n"
     "}\n"
     ""));*/
+}
+
+void Window::setupGraphModels(int scene_index)
+{
+    auto charts = TimelineGraph::getChartTypes();
+    graphModels[scene_index].clear();
+
+    // loop over all charts and extract the data for it
+    for (auto c : charts) {
+        TimelineGraph *tg = new TimelineGraph;
+        tg->setTimeLine(scenes[scene_index]->getTimeline());
+        tg->extractDataSeries(scenes[scene_index], c);
+        graphModels[scene_index].push_back(tg);
+    }
 }
 
 Window::Window(string datadir)
@@ -594,10 +608,10 @@ void Window::run_viewer()
         perspectiveViews[i]->setScene(scenes[i]);
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
-        graphModels[i]->setTimeLine(scenes[i]->getTimeline());
-        graphModels[i]->extractNormalizedBasalArea(scenes[i]);
+        setupGraphModels(i);
         chartViews[i]->setScene(scenes[i]);
-        chartViews[i]->setData(graphModels[i]);
+        chartViews[i]->setGraphs(graphModels[i]);
+        chartViews[i]->setData(graphModels[i].front()); // set to first visualization
         transectControls[i]->init(scenes[i]->getTerrain());
     }
 

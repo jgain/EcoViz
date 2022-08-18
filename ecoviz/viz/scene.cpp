@@ -223,6 +223,8 @@ void Transect::zoom(float zdel, Terrain * ter)
 
 //// TimelineGraph
 
+std::vector<std::string> TimelineGraph::graph_titles = {"Basal area", "Stem number", "DBH distribution"};
+
 TimelineGraph::TimelineGraph()
 {
     timeline = nullptr;
@@ -258,6 +260,22 @@ void TimelineGraph::init()
         series.resize(hscale, 0.0f);
         graphdata.push_back(series);
     }
+}
+
+void TimelineGraph::extractDataSeries(Scene *scene, ChartType chart_type)
+{
+    title = graph_titles[chart_type];
+    switch (chart_type){
+    case ChartBasalArea:
+        extractNormalizedBasalArea(scene);
+        break;
+    case ChartStemNumber:
+        extractDBHSums(scene);
+        break;
+    case ChartDBHDistribution:
+        break;
+
+    };
 }
 
 void TimelineGraph::assignData(int attrib, int time, float value)

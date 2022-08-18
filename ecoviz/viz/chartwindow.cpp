@@ -43,13 +43,14 @@ ChartWindow::ChartWindow(QWidget *parent, int width, int height)
     QHBoxLayout *optlayout = new QHBoxLayout;
 
     QComboBox *vistype = new QComboBox;
-    vistype->addItem(tr("Basal area"), ChartWindow::ChartBasalArea);
-    vistype->addItem(tr("Stem number"), ChartWindow::ChartStemNumber);
-    vistype->addItem(tr("DBH Distribution"), ChartWindow::ChartDBHDistribution);
+    vistype->addItem(tr("Basal area"), TimelineGraph::ChartBasalArea);
+    vistype->addItem(tr("Stem number"), TimelineGraph::ChartStemNumber);
+    vistype->addItem(tr("DBH Distribution"), TimelineGraph::ChartDBHDistribution);
     chart_desc << "basal area per species (m2/ha)" << "number of trees per ha" << "diameter distribution in 10cm bins";
-    //connect(vistype, SIGNAL(currentIndexChanged(int)), this, SLOT(plantChange(int)));
-    connect(vistype, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ if (index>=0) chart_help_label->setText(chart_desc[index]); else chart_help_label->setText(""); });
+    connect(vistype, SIGNAL(currentIndexChanged(int)), this, SLOT(chartSelected(int)));
+
+    //connect(vistype, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    //    [=](int index){ if (index>=0) chart_help_label->setText(chart_desc[index]); else chart_help_label->setText(""); });
     vistype->setCurrentIndex(0);
 
     chart_help_label = new QLabel;
@@ -69,6 +70,21 @@ void ChartWindow::updateTimeBar()
         setData(graphdata);
 }
 
+void ChartWindow::chartSelected(int index)
+{
+    if (index<0) {
+        chart_help_label->setText("");
+        return;
+    }
+
+    chart_help_label->setText(chart_desc[index]);
+
+    // switch graph
+    // chartViews[i]->setData(graphModels[i].front()); // set to first visualization
+    TimelineGraph *data = all_graphs[index];
+    setData(data);
+}
+
 void ChartWindow::paintEvent(QPaintEvent * ev)
 {
     QStyleOption opt;
@@ -80,6 +96,7 @@ void ChartWindow::paintEvent(QPaintEvent * ev)
 void ChartWindow::setData(TimelineGraph * gdata)
 {
     QLineSeries * prev;
+
     graphdata = gdata;
     std::vector<float> cumulate;
 
@@ -178,7 +195,7 @@ void ChartWindow::setData(TimelineGraph * gdata)
 
     QValueAxis *axisY = new QValueAxis;
     axisY->setRange(0.0f, gdata->getVertScale());
-    axisY->setTitleText("Basal Area");
+    axisY->setTitleText(QString::fromStdString(gdata->getTitle()));
     // axisX->setTickCount(5);
     axisY->setLabelFormat("%d");
     chart->setAxisY(axisY, bar);

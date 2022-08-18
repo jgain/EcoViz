@@ -236,6 +236,7 @@ private:
     float vscale;             //< highest value on the verical axis
     int numseries;          //< number of attributes
     std::string title;      //< title for the graph
+    static std::vector< std::string > graph_titles;
 
 public:
 
@@ -256,7 +257,17 @@ public:
     void setNumSeries(int nseries){ numseries = nseries; init(); }
     int getNumSeries(){ return numseries; }
     int getHoriScale(){ return hscale; }
+    std::string getTitle() { return title; }
 
+    // types of data series
+    enum ChartType { ChartBasalArea, ChartStemNumber, ChartDBHDistribution} ;
+    static std::vector<ChartType> getChartTypes() { return {ChartBasalArea, ChartStemNumber, ChartDBHDistribution}; }
+
+    /**
+     * @brief extractData build the aggregate statistics for the time series
+     * @param chart_type  type of data
+     */
+    void extractDataSeries(Scene *scene, ChartType chart_type);
 
     /**
      * @brief assignData Assign single data value for an attribute at a particular time
