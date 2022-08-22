@@ -108,15 +108,16 @@ public:
      */
     void setScene(Scene * s);
 
-    /// getter for scene attached to glwidget
+    /// getter for various viewing controls
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
+    Transect * getTransect(){ return trx; }
 
     /// create an independent view object with the same parameter
-    void unlockView();
+    void unlockView(Transect * imposedTrx);
 
     /// create a locked view object by overwriting the current view
-    void lockView(View * imposedView);
+    void lockView(View * imposedView, Transect * imposedTrx);
 
     /// toggle lock flag
     void setViewLockState(bool state){ viewlock = state; }

@@ -100,6 +100,8 @@ public:
 
 public slots:
     void repaintAllGL();
+    void transectSyncPlace(bool firstplace);
+    void timelineSync(int t);
 
     // menu items
     void showRenderOptions();
@@ -120,12 +122,13 @@ public slots:
     // locking
     void lockViewsFromLeft();
     void lockViewsFromRight();
-    void unlockViews();
     void lockTransectFromLeft();
     void lockTransectFromRight();
-    void unlockTransects();
+    void lockTimelineFromLeft();
+    void lockTimelineFromRight();
 
     void showTransectViews();
+    void clearTransects();
 
 protected:
     void keyPressEvent(QKeyEvent *event);
@@ -143,6 +146,7 @@ private:
     QWidget * vizPanel;                         ///< Central panel with visualization subwidgets
     QWidget * renderPanel;                      ///< Side panel to adjust various rendering style parameters
     QWidget * plantPanel;                       ///< Side panel to adjust various plant visualization parameters
+    QGridLayout * vizLayout;
 
     // rendering parameters
     float gridSepX, numGridX, gridSepZ, numGridZ, gridWidth, gridIntensity; ///< grid params
@@ -165,14 +169,18 @@ private:
     QAction *showRenderAct;
     QAction *showPlantAct;
     QAction *exportMitsubaAct;
-    QAction *fromLeftViewAct, *fromRightViewAct;
     QAction *fromLeftTransectAct, *fromRightTransectAct;
+    QAction *clearTransectsAct;
+    bool transectsValid;
 
     // file management
     std::string scenedirname;
 
     // locking management
-    LockState viewLock, transectLock;
+    LockState viewLock, transectLock, timelineLock;
+    QPushButton * lockT1, * lockT2, * lockV1, * lockV2, * lockG1, * lockG2;
+    QGroupBox *lockTGroup;
+     QIcon * lockleftIcon, * unlockleftIcon, * lockrightIcon, * unlockrightIcon;
 
     // Map containing the different export profiles (Mitsuba)
     map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;
@@ -206,6 +214,21 @@ private:
     // init menu
     void createActions();
     void createMenus();
+
+    /**
+      * @brief unlockTimelines Unlink timelines so that graphs and play controls are no longer synchronized
+      */
+    void unlockTimelines();
+
+    /**
+     * @brief unlockViews Unlink views so that perspective renderings are no longer synchronized
+     */
+    void unlockViews();
+
+    /**
+     * @brief unlockTransects Unlink transacts so that they are no longer synchronized
+     */
+    void unlockTransects();
 
     /**
      * @brief readMitsubaExportProfiles Read the CSV files in the specified folder to fill profiles map

@@ -29,7 +29,19 @@
 #include <math.h>
 #include <algorithm>
 #include <QDir>
+#include <QElapsedTimer>
 
+class ElapsedTimer
+{
+public:
+    ElapsedTimer(std::string name) { cap = name; qet.start(); }
+    ~ElapsedTimer() { cerr << "Time: " << cap << ": " << qet.elapsed() << "ms"; }
+    void elapsed(std::string tx) { cerr << "Timer " << cap << " - " << tx << ": " << qet.elapsed() << "ms"; }
+private:
+   QElapsedTimer qet;
+   std::string cap;
+
+};
 
 /// NoiseField
 
@@ -738,8 +750,8 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                 std::vector<glm::mat4> xform; // transformation to be applied to each instance
                 std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
 
-                if((int) plnts->pop[s].size() > 0)
-                    cerr << "Species " << s << " Present" << endl;
+                //if((int) plnts->pop[s].size() > 0)
+                //    cerr << "Species " << s << " Present" << endl;
                 if((* plantvis)[s])
                     {
 
@@ -1004,12 +1016,12 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
 
 void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool rebind)
 {
-    cerr << "Bind Plants Simplified Start" << endl;
-    if(rebind) // plant positions have been updated since the last bindPlants
+    if(rebind) {
+        // plant positions have been updated since the last bindPlants
         eshapes.bindPlantsSimplified(ter, &esys, plantvis);
+    }
 
     eshapes.drawPlants(drawParams);
-    cerr << "Bind Plants Simplified End" << endl;
 }
 
 void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree)

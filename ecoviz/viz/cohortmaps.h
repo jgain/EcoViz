@@ -28,7 +28,7 @@ public:
     };
 
 public:
-    CohortMaps(const std::vector<std::string> &filenames, float rw, float rh, std::string minversion);
+    CohortMaps(const std::vector<std::string> &filenames, float rw, float rh, std::string minversion, const std::map<std::string, int> &species_lookup);
 
     void fix_cohortmaps();
 

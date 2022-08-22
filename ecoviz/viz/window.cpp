@@ -434,7 +434,7 @@ void Window::setupPlantPanel()
 void Window::setupVizPanel()
 {
     vizPanel = new QWidget;
-    QGridLayout *vizLayout = new QGridLayout;
+    vizLayout = new QGridLayout;
     vizLayout->setSpacing(3);
     // vizLayout->setMargin(1);
     vizLayout->setContentsMargins(3, 3, 3, 3);
@@ -446,7 +446,8 @@ void Window::setupVizPanel()
     glFormat.setProfile( QGLFormat::CoreProfile );
     glFormat.setSampleBuffers( false );
 
-    vizLayout->setRowStretch(0, 6);
+    // vizLayout->setRowStretch(0, 6);
+    vizLayout->setRowStretch(0, 0);
     vizLayout->setRowStretch(1, 24);
     vizLayout->setRowStretch(2, 1);
     vizLayout->setRowStretch(3, 8);
@@ -461,8 +462,11 @@ void Window::setupVizPanel()
         connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
         transectViews.push_back(tview);
 
-        vizLayout->addWidget(tview, 0, i);
+        // vizLayout->addWidget(tview, 0, i*2);
     }
+
+    // for(int i = 0; i < 2; i++)
+    //    vizLayout->addWidget(transectViews[i], 0, i);
 
     // main perspective views
     for(int i = 0; i < 2; i++)
@@ -478,9 +482,10 @@ void Window::setupVizPanel()
         // signal to slot connections
         connect(pview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
         connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
+        connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
 
         perspectiveViews.push_back(pview);
-        vizLayout->addWidget(pview, 1, i);
+        vizLayout->addWidget(pview, 1, i*2);
     }
 
     // chart views
@@ -493,8 +498,10 @@ void Window::setupVizPanel()
         // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
         std::vector< TimelineGraph* > tgs;
         chartViews.push_back(cview);
+
         graphModels.push_back( tgs );
         vizLayout->addWidget(cview, 3, i);
+
     }
 
     // timeline views
@@ -507,15 +514,82 @@ void Window::setupVizPanel()
         connect(tview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
         connect(tview, SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
         connect(tview, SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
+        connect(tview, SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
 
         timelineViews.push_back(tview);
-        vizLayout->addWidget(tview, 2, i);
+        vizLayout->addWidget(tview, 2, i*2);
     }
+
+    // lock buttons
+    QVBoxLayout *lockTLayout = new QVBoxLayout;
+    lockTGroup = new QGroupBox;
+    QVBoxLayout *lockVLayout = new QVBoxLayout;
+    QGroupBox *lockVGroup = new QGroupBox;
+    QVBoxLayout *lockGLayout = new QVBoxLayout;
+    QGroupBox *lockGGroup = new QGroupBox;
+
+    // TO DO put buttons into layout groups that are centered
+    // TO DO icons for buttons
+    lockT1 = new QPushButton("", this);
+    lockT2 = new QPushButton("", this);
+    lockV1 = new QPushButton("", this);
+    lockV2 = new QPushButton("", this);
+    lockG1 = new QPushButton("", this);
+    lockG2 = new QPushButton("", this);
+
+    QPixmap lockleftmap("../../common/Icons/locklefticon32.png");
+    lockleftIcon = new QIcon(lockleftmap);
+    QPixmap lockrightmap("../../common/Icons/lockrighticon32.png");
+    lockrightIcon = new QIcon(lockrightmap);
+    QPixmap unlockleftmap("../../common/Icons/unlocklefticon32.png");
+    unlockleftIcon = new QIcon(unlockleftmap);
+    QPixmap unlockrightmap("../../common/Icons/unlockrighticon32.png");
+    unlockrightIcon = new QIcon(unlockrightmap);
+
+    lockV1->setIcon((* unlockleftIcon));
+    lockV1->setIconSize(QSize(32, 32));
+    lockV2->setIcon((* unlockrightIcon));
+    lockV2->setIconSize(QSize(32, 32));
+    lockT1->setIcon((* unlockleftIcon));
+    lockT1->setIconSize(QSize(32, 32));
+    lockT2->setIcon((* unlockrightIcon));
+    lockT2->setIconSize(QSize(32, 32));
+    lockG1->setIcon((* unlockleftIcon));
+    lockG1->setIconSize(QSize(32, 32));
+    lockG2->setIcon((* unlockrightIcon));
+    lockG2->setIconSize(QSize(32, 32));
+
+    lockTLayout->addWidget(lockT1);
+    lockTLayout->addWidget(lockT2);
+    lockTGroup->setLayout(lockTLayout);
+
+    lockVLayout->addWidget(lockV1);
+    lockVLayout->addWidget(lockV2);
+    // lockVLayout->setAlignment(lockV1, Qt::AlignVCenter);
+    // lockVLayout->setAlignment(lockV2, Qt::AlignVCenter);
+    lockVGroup->setLayout(lockVLayout);
+
+    lockGLayout->addWidget(lockG1);
+    lockGLayout->addWidget(lockG2);
+    lockGGroup->setLayout(lockGLayout);
+
+    vizLayout->addWidget(lockVGroup, 1, 1);
+    vizLayout->addWidget(lockGGroup, 3, 1);
+
+    connect(lockT1, SIGNAL(clicked()), this, SLOT(lockTransectFromLeft()));
+    connect(lockT2, SIGNAL(clicked()), this, SLOT(lockTransectFromRight()));
+    connect(lockV1, SIGNAL(clicked()), this, SLOT(lockViewsFromLeft()));
+    connect(lockV2, SIGNAL(clicked()), this, SLOT(lockViewsFromRight()));
+    connect(lockG1, SIGNAL(clicked()), this, SLOT(lockTimelineFromLeft()));
+    connect(lockG2, SIGNAL(clicked()), this, SLOT(lockTimelineFromRight()));
 
     vizPanel->setLayout(vizLayout);
     vizPanel->setStyleSheet("background-color:grey;");
     viewLock = LockState::UNLOCKED;
     transectLock = LockState::UNLOCKED;
+    timelineLock = LockState::UNLOCKED;
+
+
     /*
     vizPanel->setStyleSheet(QString::fromUtf8("ChartWindow\n"
     "{\n"
@@ -543,6 +617,7 @@ Window::Window(string datadir)
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout();
 
+    transectsValid = false;
     mainLayout->setSpacing(1);
     // mainLayout->setMargin(1);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -603,7 +678,7 @@ void Window::run_viewer()
 {
     for(int i = 0; i < 2; i++)
     {
-        scenes[i]->loadScene(1, 5);
+        scenes[i]->loadScene(1, 5); // years
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         timelineViews[i]->setScene(scenes[i]);
@@ -687,6 +762,8 @@ void Window::unlockViews()
         perspectiveViews[0]->unlockView();
         for(auto &p: perspectiveViews)
             p->setViewLockState(false);
+        lockV1->setIcon((* unlockleftIcon));
+        lockV2->setIcon((* unlockrightIcon));
     }
     else
     {
@@ -698,23 +775,23 @@ void Window::lockViewsFromLeft()
 {
     if((int) perspectiveViews.size() == 2)
     {
-        if(fromLeftViewAct->isChecked())
-        {
-            if(viewLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
-            {
-                fromRightViewAct->setChecked(false);
-                unlockViews();
-            }
-            perspectiveViews[1]->lockView(perspectiveViews[0]->getView());
-            for(auto &p: perspectiveViews)
-                p->setViewLockState(true);
-            viewLock = LockState::LOCKEDFROMLEFT;
-        }
-        else
+        if(viewLock == LockState::LOCKEDFROMLEFT)
         {
             unlockViews();
             viewLock = LockState::UNLOCKED;
         }
+        else
+        {
+            if(viewLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
+                unlockViews();
+            perspectiveViews[1]->lockView(perspectiveViews[0]->getView());
+            for(auto &p: perspectiveViews)
+                p->setViewLockState(true);
+            viewLock = LockState::LOCKEDFROMLEFT;
+            lockV1->setIcon((* lockleftIcon));
+        }
+
+        repaintAllGL();
     }
     else
     {
@@ -726,23 +803,23 @@ void Window::lockViewsFromRight()
 {
     if((int) perspectiveViews.size() == 2)
     {
-        if(fromRightViewAct->isChecked())
-        {
-            if(viewLock == LockState::LOCKEDFROMLEFT) // need to unlock first
-            {
-                fromLeftViewAct->setChecked(false);
-                unlockViews();
-            }
-            perspectiveViews[0]->lockView(perspectiveViews[1]->getView());
-            for(auto &p: perspectiveViews)
-                p->setViewLockState(true);
-            viewLock = LockState::LOCKEDFROMRIGHT;
-        }
-        else
+        if(viewLock == LockState::LOCKEDFROMRIGHT)
         {
             unlockViews();
             viewLock = LockState::UNLOCKED;
         }
+        else
+        {
+            if(viewLock == LockState::LOCKEDFROMLEFT) // need to unlock first
+                unlockViews();
+            perspectiveViews[0]->lockView(perspectiveViews[1]->getView());
+            for(auto &p: perspectiveViews)
+                p->setViewLockState(true);
+            viewLock = LockState::LOCKEDFROMRIGHT;
+            lockV2->setIcon((* lockrightIcon));
+        }
+
+        repaintAllGL();
     }
     else
     {
@@ -753,14 +830,21 @@ void Window::lockViewsFromRight()
 void Window::unlockTransects()
 {
     if((int) transectViews.size() == 2)
-    {
-        transectViews[0]->unlockView();
+    { 
         for(auto &t: transectViews)
             t->setViewLockState(false);
 
         Transect * pretrx = transectControls[0];
         transectControls[0] = new Transect(scenes[0]->getTerrain());
+        basic_types::MapFloat * premapviz = transectControls[0]->getTransectMap();
         (* transectControls[0]) = (* pretrx);
+        transectControls[0]->setTransectMap(premapviz);
+        transectViews[0]->unlockView(transectControls[0]);
+
+        perspectiveViews[0]->seperateTransectCreate(transectControls[0]);
+        transectLock = LockState::UNLOCKED;
+        lockT1->setIcon((* unlockleftIcon));
+        lockT2->setIcon((* unlockrightIcon));
     }
     else
     {
@@ -770,29 +854,29 @@ void Window::unlockTransects()
 
 void Window::lockTransectFromLeft()
 {
+    cerr << "LockTransectFromLeft" << endl;
     if((int) transectViews.size() == 2)
     {
-        if(fromLeftTransectAct->isChecked())
+        if(transectLock == LockState::LOCKEDFROMLEFT)
+        {
+             unlockTransects();
+        }
+        else
         {
             if(transectLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
-            {
-                fromRightTransectAct->setChecked(false);
                 unlockTransects();
-            }
-            transectViews[1]->lockView(transectViews[0]->getView());
+
             for(auto &t: transectViews)
                 t->setViewLockState(true);
             delete transectControls[1];
             transectControls[1] = transectControls[0];
-            perspectiveViews[1]->setTransect(transectControls[1]);
+            perspectiveViews[1]->setTransectCreate(perspectiveViews[0]->getTransectCreate());
+            transectViews[1]->lockView(transectViews[0]->getView(), transectViews[0]->getTransect());
             transectLock = LockState::LOCKEDFROMLEFT;
+            lockT1->setIcon((* lockleftIcon));
             showTransectViews();
         }
-        else
-        {
-            unlockTransects();
-            transectLock = LockState::UNLOCKED;
-        }
+
         repaintAllGL();
     }
     else
@@ -803,34 +887,128 @@ void Window::lockTransectFromLeft()
 
 void Window::lockTransectFromRight()
 {
+    cerr << "LockTransectFromRight" << endl;
     if((int) transectViews.size() == 2)
     {
-        if(fromRightTransectAct->isChecked())
+        if(transectLock == LockState::LOCKEDFROMRIGHT)
+        {
+             unlockTransects();
+        }
+        else
         {
             if(transectLock == LockState::LOCKEDFROMLEFT) // need to unlock first
-            {
-                fromLeftTransectAct->setChecked(false);
                 unlockTransects();
-            }
-            transectViews[0]->lockView(transectViews[1]->getView());
+
             for(auto &t: transectViews)
                 t->setViewLockState(true);
             delete transectControls[0];
             transectControls[0] = transectControls[1];
-            perspectiveViews[0]->setTransect(transectControls[0]);
+
+            perspectiveViews[0]->setTransectCreate(perspectiveViews[1]->getTransectCreate());
+            transectViews[0]->lockView(transectViews[1]->getView(),  transectViews[1]->getTransect());
             transectLock = LockState::LOCKEDFROMRIGHT;
+            lockT2->setIcon((* lockrightIcon));
             showTransectViews();
         }
-        else
-        {
-            unlockTransects();
-            transectLock = LockState::UNLOCKED;
-        }
+
         repaintAllGL();
     }
     else
     {
         cerr << "Error Window::lockTransectFromRight: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::transectSyncPlace(bool firstPoint)
+{
+    if(transectLock != LockState::UNLOCKED)
+    {
+        if(sender() == perspectiveViews[0])
+            perspectiveViews[1]->pointPlaceTransect(firstPoint);
+        else
+            perspectiveViews[0]->pointPlaceTransect(firstPoint);
+    }
+}
+
+void Window::unlockTimelines()
+{
+    if((int) timelineViews.size() == 2)
+    {
+        for(auto &t: timelineViews)
+            t->setViewLockState(false);
+        timelineLock = LockState::UNLOCKED;
+        lockG1->setIcon((* unlockleftIcon));
+        lockG2->setIcon((* unlockrightIcon));
+    }
+    else
+    {
+        cerr << "Error Window::unlockTimelines: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::lockTimelineFromLeft()
+{
+    if((int) timelineViews.size() == 2)
+    {
+        if(timelineLock == LockState::LOCKEDFROMLEFT)
+        {
+            unlockTimelines();
+        }
+        else
+        {
+            if(timelineLock == LockState::LOCKEDFROMRIGHT)
+                unlockTimelines();
+            for(auto &t: timelineViews)
+                t->setViewLockState(true);
+            timelineLock = LockState::LOCKEDFROMLEFT;
+            lockG1->setIcon((* lockleftIcon));
+            timelineViews[1]->synchronize(timelineViews[0]->get_sliderval());
+        }
+
+        repaintAllGL();
+    }
+    else
+    {
+        cerr << "Error Window::lockTimelineFromLeft: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::lockTimelineFromRight()
+{
+    if((int) timelineViews.size() == 2)
+    {
+        if(timelineLock == LockState::LOCKEDFROMRIGHT)
+        {
+             unlockTimelines();
+        }
+        else
+        {
+            if(timelineLock == LockState::LOCKEDFROMLEFT) // need to unlock first
+                unlockTimelines();
+
+            for(auto &t: timelineViews)
+                t->setViewLockState(true);
+            timelineLock = LockState::LOCKEDFROMRIGHT;
+            lockG2->setIcon((* lockrightIcon));
+            timelineViews[0]->synchronize(timelineViews[1]->get_sliderval());
+        }
+
+        repaintAllGL();
+    }
+    else
+    {
+        cerr << "Error Window::lockTimelineFromRight: single panel so unlocking is not possible" << endl;
+    }
+}
+
+void Window::timelineSync(int t)
+{
+    if(timelineLock != LockState::UNLOCKED)
+    {
+        if(sender() == timelineViews[0])
+            timelineViews[1]->synchronize(t);
+        else
+            timelineViews[0]->synchronize(t);
     }
 }
 
@@ -843,11 +1021,44 @@ void Window::showContours(int show)
 
 void Window::showTransectViews()
 {
+    bool transectNowValid = transectControls[0]->getValidFlag() || transectControls[1]->getValidFlag();
+    if(transectNowValid && !transectsValid)
+    {
+        vizLayout->setRowStretch(0, 6);
+        for(int i = 0; i < 2; i++)
+            vizLayout->addWidget(transectViews[i], 0, i*2);
+        vizLayout->addWidget(lockTGroup, 0, 1);
+        transectsValid = true;
+    }
     for(int i = 0; i < 2; i++)
     {
-        if(transectControls[i]->getValidFlag())
-            transectViews[i]->setVisible(true);
+        transectViews[i]->setVisible(transectControls[i]->getValidFlag());
     }
+    repaintAllGL();
+    //    if(transectControls[i]->getValidFlag())
+    //        transectViews[i]->setVisible(true);
+
+}
+
+void Window::clearTransects()
+{
+    // change transects back to initial state
+    for(int i = 0; i < 2; i++)
+    {
+        transectControls[i]->reset();
+        perspectiveViews[i]->resetTransectState();
+    }
+
+    vizLayout->setRowStretch(0, 0);
+    for(int i = 0; i < 2; i++)
+    {
+        transectViews[i]->setVisible(false);
+        vizLayout->removeWidget(transectViews[i]);
+    }
+    vizLayout->removeWidget(lockTGroup);
+    QApplication::processEvents( QEventLoop::ExcludeUserInputEvents );
+    resize( sizeHint() );
+    transectsValid = false;
 }
 
 void Window::showGridLines(int show)
@@ -1047,33 +1258,14 @@ void Window::createActions()
     showPlantAct->setStatusTip(tr("Hide/Show Plant Options"));
     connect(showPlantAct, SIGNAL(triggered()), this, SLOT(showPlantOptions()));
 
+    clearTransectsAct = new QAction(tr("Clear Transects"), this);
+    clearTransectsAct->setCheckable(false);
+    clearTransectsAct->setStatusTip(tr("Remove Transects"));
+    connect(clearTransectsAct, SIGNAL(triggered()), this, SLOT(clearTransects()));
+
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
     connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsuba()));
-
-    fromLeftViewAct = new QAction(tr("Lock Views (left to right)"), this);
-    fromLeftViewAct->setCheckable(true);
-    fromLeftViewAct->setChecked(false);
-    fromLeftViewAct->setStatusTip(tr("Lock/Unlock Views"));
-    connect(fromLeftViewAct, SIGNAL(triggered()), this, SLOT(lockViewsFromLeft()));
-
-    fromRightViewAct = new QAction(tr("Lock Views (right to left)"), this);
-    fromRightViewAct->setCheckable(true);
-    fromRightViewAct->setChecked(false);
-    fromRightViewAct->setStatusTip(tr("Lock/Unlock Views"));
-    connect(fromRightViewAct, SIGNAL(triggered()), this, SLOT(lockViewsFromRight()));
-
-    fromLeftTransectAct = new QAction(tr("Lock Transects (left to right)"), this);
-    fromLeftTransectAct->setCheckable(true);
-    fromLeftTransectAct->setChecked(false);
-    fromLeftTransectAct->setStatusTip(tr("Lock/Unlock Transects"));
-    connect(fromLeftTransectAct, SIGNAL(triggered()), this, SLOT(lockTransectFromLeft()));
-
-    fromRightTransectAct = new QAction(tr("Lock Transects (right to left)"), this);
-    fromRightTransectAct->setCheckable(true);
-    fromRightTransectAct->setChecked(false);
-    fromRightTransectAct->setStatusTip(tr("Lock/Unlock Transects"));
-    connect(fromRightTransectAct, SIGNAL(triggered()), this, SLOT(lockTransectFromRight()));
 }
 
 void Window::createMenus()
@@ -1081,15 +1273,10 @@ void Window::createMenus()
     viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(showRenderAct);
     viewMenu->addAction(showPlantAct);
+    viewMenu->addAction(clearTransectsAct);
 
     // Export Mitsuba
     viewMenu->addAction(exportMitsubaAct);
-
-    viewMenu = menuBar()->addMenu(tr("&Link"));
-    viewMenu->addAction(fromLeftViewAct);
-    viewMenu->addAction(fromRightViewAct);
-    viewMenu->addAction(fromLeftTransectAct);
-    viewMenu->addAction(fromRightTransectAct);
 }
 
 class AdjustmentRunnable : public QRunnable

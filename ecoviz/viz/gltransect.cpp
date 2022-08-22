@@ -195,17 +195,21 @@ void GLTransect::setScene(Scene * s)
     signalRepaintAllGL();
 }
 
-void GLTransect::unlockView()
+void GLTransect::unlockView(Transect * imposedTrx)
 {
     View * preview = view;
     view = new View();
     (* view) = (* preview);
+
+    trx = imposedTrx; // pointer managed externally so no need to delete previous
 }
 
-void GLTransect::lockView(View * imposedView)
+void GLTransect::lockView(View * imposedView, Transect * imposedTrx)
 {
     delete view;
     view = imposedView;
+    trx = imposedTrx; // pointer managed externally so no need to delete
+    updateTransectView();
 }
 
 void GLTransect::loadDecals()

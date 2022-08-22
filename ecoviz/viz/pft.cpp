@@ -40,6 +40,8 @@ glm::vec4 Biome::getSpeciesColourV4(int specid)
     return glm::vec4(col[0], col[1], col[2], col[3]);
 }
 
+
+
 bool Biome::read_dataimporter(std::string cdata_fpath)
 {
     // data_importer::common_data cdata = data_importer::common_data(cdata_fpath);
@@ -52,6 +54,7 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
 {
     pftypes.clear();
     species_info.clear();
+    species_key_lookup.clear();
 
     PFType pft;
 
@@ -72,6 +75,8 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
         sinfo.scientific_name = spec.sname;
         sinfo.species_num_id = species_info.size();
         species_info.push_back(sinfo);
+        // save in lookup table
+        species_key_lookup[sinfo.speciesId] = sinfo.species_num_id;
 
         pft.code = spec.cname;
         for (int i = 0; i < 4; i++)

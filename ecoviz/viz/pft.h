@@ -68,6 +68,7 @@ class Biome
 private:
     std::vector<PFType> pftypes; //< vector of plant functional types in the biome
     std::vector<SpeciesInfo> species_info;
+    std::map<std::string, int> species_key_lookup;
     std::string name; //< biome name
     data_importer::common_data * cdata; // access to pdb database
 
@@ -91,6 +92,9 @@ public:
     glm::vec4 getSpeciesColourV4(int specid);
 
     const std::vector<SpeciesInfo> &getSpeciesMetaData() { return species_info; }
+    const std::map<std::string, int> &getSpeciesIndexLookupMap() {  return species_key_lookup;  }
+
+
 };
 
 
