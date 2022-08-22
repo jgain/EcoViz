@@ -499,6 +499,7 @@ void Window::setupVizPanel()
         std::vector< TimelineGraph* > tgs;
         chartViews.push_back(cview);
 
+
         graphModels.push_back( tgs );
         vizLayout->addWidget(cview, 3, i);
 

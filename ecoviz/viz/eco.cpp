@@ -1016,8 +1016,12 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
 
 void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool rebind)
 {
+<<<<<<< HEAD
     if(rebind) {
         // plant positions have been updated since the last bindPlants
+=======
+    if(rebind) // plant positions have been updated since the last bindPlants
+>>>>>>> e5ab982041e49e0341ccf49e659238b0db78e883
         eshapes.bindPlantsSimplified(ter, &esys, plantvis);
     }
 
