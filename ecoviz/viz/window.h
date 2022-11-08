@@ -113,6 +113,7 @@ public slots:
     // render panel
     void lineEditChange();
     void mapChange(bool on);
+    void cameraChange(int idx);
 
     // plant panel
     void plantChange(int show);
@@ -158,6 +159,7 @@ private:
 
     // render panel widgets
     QLineEdit * gridSepXEdit, * gridSepZEdit, * gridWidthEdit, * gridIntensityEdit, * contourSepEdit, * contourWidthEdit, * contourIntensityEdit, * radianceEnhanceEdit;
+    QComboBox * cameraDropDown;
 
     // plant viz panel widgets
     QCheckBox * checkCanopy, * checkUndergrowth, * checkS0, * checkS1, * checkS2, * checkS3, * checkS4, * checkS5, * checkS6, * checkS7, * checkS8, * checkS9,

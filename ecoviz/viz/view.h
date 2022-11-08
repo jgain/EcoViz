@@ -61,6 +61,12 @@ enum class ViewState {
     VSEND
 };
 
+enum class ViewMode
+{
+    ARCBALL,          //< rotate around terrain during viewing
+    FLY               //< first person flying view controls
+};
+
 // information structure for view control
 class View
 {
@@ -73,9 +79,11 @@ private:
     float zoomdist;             // distance to origin
     float perspwidth;           // back plane width of perspective projection
     float bu, bv;                 // arcball position parameters in normalized coordinate image plane
+    float xrad, yrad;           // rotation angles for fly mode
     float lastquat[4], curquat[4]; // quaternions for arcball
     float viewscale;            // scale adaptation to terrain size
     ViewState viewtype;          // {PERSPECTIVE, ORTHOGONAL} form of viewing
+    ViewMode viewmode;          // {ARCBALL, FLY} modes of viewing
     float terextent;            // the diagonal extent of the terrain for sizing orthogonal views to fit
     float terdepth;             //< the depth from near to far clipping planes for orthogonal views
     Timer time;
@@ -88,7 +96,6 @@ public:
     float width, height;        // viewport dimensions
     float startx, starty;       // bottom left corner of viewport
     
-
     View(){ reset(); }
 
     View(float extent){ reset(extent); }
@@ -106,11 +113,12 @@ public:
         focalstep = 0;
         viewscale = extent;
         viewtype = ViewState::PERSPECTIVE;
+        viewmode = ViewMode::ARCBALL;
         
         zoomdist = 4.5f * viewscale;
 
-        bu = 0.0f;
-        bv = 0.0f;
+        bu = 0.0f; bv = 0.0f;
+        xrad = PI / 4.0f; yrad = PI / 2.0f;
         trackball(curquat, 0.0f, 0.0f, 0.0f, -0.5f);
         cop = vpPoint(0.0f, 0.0f, 1.0f);
         terextent = 1.0f;
@@ -196,6 +204,22 @@ public:
 
     /// set the form of viewing
     inline void setViewType(ViewState vs){ viewtype = vs; }
+
+    /// get and set viewing mode
+    inline void setViewMode(ViewMode vm)
+    {
+        viewmode = vm;
+        reset();
+    }
+
+    inline ViewMode getViewMode(){ return viewmode; }
+    inline void switchViewMode()
+    {
+        if(viewmode == ViewMode::ARCBALL)
+            setViewMode(ViewMode::FLY);
+        else
+            setViewMode(ViewMode::ARCBALL);
+    }
     
     /// Return the view vector from the center of projection to the focal point
     inline Vector getDir()
@@ -216,6 +240,26 @@ public:
         if(zoomdist > 14.0f * viewscale) // furthest zoom out
             zoomdist = 14.0f * viewscale;
         apply();
+    }
+
+    /// fly forward or backward in the current viewing direction
+    inline void incrFly(float delta)
+    {
+        Vector flydirn = dir;
+        flydirn.normalize();
+        flydirn.mult(delta);
+        flydirn.pntplusvec(currfocus, &currfocus);
+    }
+
+    /// fly left or right in the current viewing direction projected onto the horizontal plane
+    inline void incrSideFly(float delta)
+    {
+        Vector flydirn;
+        flydirn.i = dir.k;
+        flydirn.k = -1.0f * dir.i;
+        flydirn.normalize();
+        flydirn.mult(delta);
+        flydirn.pntplusvec(currfocus, &currfocus);
     }
 
     inline void setZoomdist(float dist)

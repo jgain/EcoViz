@@ -142,12 +142,32 @@ void View::startArcRotate(float u, float v)
 
 void View::arcRotate (float u, float v)
 {
-    trackball(lastquat, bu, bv, u, v);
+    if(viewmode == ViewMode::ARCBALL)
+    {
+        trackball(lastquat, bu, bv, u, v);
+        bu = u;
+        bv = v;
+        add_quats (lastquat, curquat, curquat);
+        updateDir();
+    }
+    else
+    {
+        float damp = -1.0f;
+        float x[3], y[3];
+        float xquat[4], yquat[4];
+        x[0] = 1.0f; x[1] = 0.0f; x[2] = 0.0f;
+        y[0] = 0.0f; y[1] = 1.0f; y[2] = 0.0f;
 
-    bu = u;
-    bv = v;
-    add_quats (lastquat, curquat, curquat);
-    updateDir();
+        xrad += damp * (v-bv);
+        yrad += damp * (u-bu);
+
+        axis_to_quat(x, xrad, xquat);
+        axis_to_quat(y, yrad, yquat);
+        add_quats (xquat, yquat, curquat);
+        bu = u;
+        bv = v;
+        updateDir();
+    }
 }
 
 void View::sundir(Vector sunvec)
@@ -402,19 +422,39 @@ glm::mat4x4 View::getViewMtx()
     glm::vec3 trs;
     float mm[4][4];
 
-    // zoom
-    viewMx = glm::mat4x4(1.0f);
-    trs = glm::vec3(0.0f, 0.0f, -1.0f * zoomdist);
-    viewMx = glm::translate(viewMx, trs);
+    if(viewmode == ViewMode::ARCBALL)
+    {
+        // zoom
+        viewMx = glm::mat4x4(1.0f);
+        trs = glm::vec3(0.0f, 0.0f, -1.0f * zoomdist);
+        viewMx = glm::translate(viewMx, trs);
 
-    // quaternion to mult matrix from arcball
-    build_rotmatrix(mm, curquat);
-    quatMx = glm::make_mat4(&mm[0][0]);
-    viewMx = viewMx * quatMx;
+        // quaternion to mult matrix from arcball
+        build_rotmatrix(mm, curquat);
+        quatMx = glm::make_mat4(&mm[0][0]);
+        viewMx = viewMx * quatMx;
 
-    // center of projection
-    trs = glm::vec3(-currfocus.x, -currfocus.y, -currfocus.z);
-    viewMx = glm::translate(viewMx, trs);
+        // center of projection
+        trs = glm::vec3(-currfocus.x, -currfocus.y, -currfocus.z);
+        viewMx = glm::translate(viewMx, trs);
+    }
+    else
+    {
+        viewMx = glm::mat4x4(1.0f);
+
+        // quaternion to mult matrix from arcball
+        build_rotmatrix(mm, curquat);
+        quatMx = glm::make_mat4(&mm[0][0]);
+        viewMx = viewMx * quatMx;
+
+        // zoom
+        trs = glm::vec3(0.0f, 0.0f, -1.0f * zoomdist);
+        viewMx = glm::translate(viewMx, trs);
+
+        // center of projection
+        trs = glm::vec3(-currfocus.x, -currfocus.y, -currfocus.z);
+        viewMx = glm::translate(viewMx, trs);
+    }
 
     return viewMx;
 }

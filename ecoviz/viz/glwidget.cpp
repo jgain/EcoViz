@@ -234,6 +234,14 @@ void GLWidget::setScene(Scene * s)
     cerr << "Post update" << endl;*/
 }
 
+void GLWidget::changeViewMode(ViewMode vm)
+{
+    view->setViewMode(vm);
+    view->setForcedFocus(scene->getTerrain()->getFocus());
+    view->setViewScale(scene->getTerrain()->longEdgeDist());
+    view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
+}
+
 void GLWidget::unlockView()
 {
     View * preview = view;
@@ -628,6 +636,7 @@ void GLWidget::resizeGL(int width, int height)
 
 void GLWidget::keyPressEvent(QKeyEvent *event)
 {
+    /*
     if(event->key() == Qt::Key_Right)
     {
     }
@@ -639,12 +648,23 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
     if(event->key() == Qt::Key_Down)
     {
+    }*/
+    if(event->key() == Qt::Key_A || event->key() == Qt::Key_Left) // 'S' fly left
+    {
+        view->incrSideFly(-10.0f);
+        refreshViews();
     }
     /*
     if(event->key() == Qt::Key_C) // 'C' to show canopy height model texture overlay
     {
         setOverlay(TypeMapType::CHM);
+    }*/
+    if(event->key() == Qt::Key_D || event->key() == Qt::Key_Right) // 'S' fly left
+    {
+        view->incrSideFly(10.0f);
+        refreshViews();
     }
+    /*
     if(event->key() == Qt::Key_E) // 'E' to remove all texture overlays
     {
         setOverlay(TypeMapType::EMPTY);
@@ -688,6 +708,12 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         loadTypeMap(scene->getSunlight(sun_mth), TypeMapType::SUNLIGHT);
         setOverlay(TypeMapType::SUNLIGHT);
     }*/
+
+    if(event->key() == Qt::Key_S || event->key() == Qt::Key_Down) // 'S' fly backwards
+    {
+        view->incrFly(40.0f);
+        refreshViews();
+    }
     if(event->key() == Qt::Key_T) // 'T' to toggle transect display on/off
     {
         trc->showtransect = !trc->showtransect;
@@ -711,11 +737,24 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         rebindplants = true;
         update();
     }*/
+    /*
     if(event->key() == Qt::Key_V) // 'V' for top-down view
     {
         scene->getTerrain()->setMidFocus();
         view->setForcedFocus(scene->getTerrain()->getFocus());
         view->topdown();
+        refreshViews();
+    }*/
+
+    if(event->key() == Qt::Key_V) // 'V' for switching view modes
+    {
+        view->switchViewMode();
+        refreshViews();
+    }
+
+    if(event->key() == Qt::Key_W || event->key() == Qt::Key_Up) // 'W' fly forward
+    {
+        view->incrFly(-40.0f);
         refreshViews();
     }
     /*

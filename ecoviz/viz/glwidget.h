@@ -156,6 +156,9 @@ public:
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
 
+    /// alter the mode of the camera view to either ARBALL or FLY
+    void changeViewMode(ViewMode vm);
+
     /// create an independent view object with the same parameter
     void unlockView();
 

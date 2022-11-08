@@ -203,6 +203,7 @@ void Window::setupRenderPanel()
     radianceGroup->setLayout(radianceLayout);
 
     // map display
+/*
     QGroupBox *mapGroup = new QGroupBox(tr("Maps"));
     QGridLayout *mapLayout = new QGridLayout;
 
@@ -227,12 +228,22 @@ void Window::setupRenderPanel()
     mapLayout->addWidget(wetMapEdit, 1, 1);
     mapLayout->addWidget(chmMapRadio, 3, 0);
     mapLayout->addWidget(noMapRadio, 4, 0);
-    mapGroup->setLayout(mapLayout);
+    mapGroup->setLayout(mapLayout);*/
+
+    // camera controls
+    QGroupBox *cameraGroup = new QGroupBox(tr("Camera"));
+    QGridLayout *cameraLayout = new QGridLayout;
+    cameraDropDown = new QComboBox();
+    cameraDropDown->addItem(tr("Orbit"));
+    cameraDropDown->addItem(tr("Flyover"));
+    cameraLayout->addWidget(cameraDropDown, 0, 0);
+    cameraGroup->setLayout(cameraLayout);
 
     renderLayout->addWidget(gridGroup);
     renderLayout->addWidget(contourGroup);
     renderLayout->addWidget(radianceGroup);
-    renderLayout->addWidget(mapGroup);
+    renderLayout->addWidget(cameraGroup);
+    // renderLayout->addWidget(mapGroup);
 
     // signal to slot connections
     connect(checkContours, SIGNAL(stateChanged(int)), this, SLOT(showContours(int)));
@@ -246,14 +257,16 @@ void Window::setupRenderPanel()
     connect(contourIntensityEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(radianceEnhanceEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(radianceEnhanceEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
-    connect(sunMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
-    connect(wetMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
+    // connect(sunMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
+    // connect(wetMapEdit, SIGNAL(returnPressed()), this, SLOT(lineEditChange()));
 
     // map radio buttons
+    /*
     connect(sunMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(wetMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(chmMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
-    connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
+    connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));*/
+    connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
 
     renderPanel->setLayout(renderLayout);
 }
@@ -1215,6 +1228,17 @@ void Window::mapChange(bool on)
             pview->setOverlay(TypeMapType::CHM);
         if(noMapRadio->isChecked() && on)
             pview->setOverlay(TypeMapType::EMPTY);
+    }
+}
+
+void Window::cameraChange(int idx)
+{
+    for(auto pview: perspectiveViews)
+    {
+        if(idx == 0)
+            pview->changeViewMode(ViewMode::ARCBALL);
+        else
+            pview->changeViewMode(ViewMode::FLY);
     }
 }
 
