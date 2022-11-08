@@ -33,7 +33,7 @@ cohortsampler::cohortsampler(float tw, float th, float rw, float rh, float xoff,
     std::uniform_int_distribution<int> unif(0, ntiles - 1);
 
     for (int y = 0; y < gh; y++)
-        for (int x = 0; x < gh; x++)
+        for (int x = 0; x < gw; x++)
             tileidxes.set(x, y, unif(gen));
 
     generate_tiles(ntiles, 2);
@@ -242,7 +242,10 @@ std::vector<basic_tree> cohortsampler::sample(const ValueGridMap< std::vector<co
             continue;
         }
         xy<float> middle = crts.front().get_middle();
-        int tileidx = tileidxes.get_fromreal(middle.x, middle.y);
+        int tileidx = 0;
+        try {
+        tileidx = tileidxes.get_fromreal(middle.x, middle.y);
+        } catch (const std::exception &e) { std::cerr << e.what(); }
 
         float nsimplants = int(ceil(std::accumulate(crts.begin(), crts.end(), 0.0f, [](float value, const cohort &c1) { return value + c1.nplants; })) + 1e-3f);
         nsimplants = std::min(float(maxpercell), nsimplants);

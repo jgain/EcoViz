@@ -32,6 +32,20 @@
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include <QMessageBox>
+#include <QElapsedTimer>
+
+class ElapsedTimer
+{
+public:
+    ElapsedTimer(std::string name) { cap = name; qet.start(); }
+    ~ElapsedTimer() { cerr << "Time: " << cap << ": " << qet.elapsed() << "ms"; }
+    void elapsed(std::string tx) { cerr << "Timer " << cap << " - " << tx << ": " << qet.elapsed() << "ms"; }
+private:
+   QElapsedTimer qet;
+   std::string cap;
+
+};
+
 
 //// Transect
 
@@ -222,10 +236,13 @@ void Transect::zoom(float zdel, Terrain * ter)
 
 //// TimelineGraph
 
+std::vector<std::string> TimelineGraph::graph_titles = {"Basal area", "Stem number", "DBH distribution"};
+
 TimelineGraph::TimelineGraph()
 {
     timeline = nullptr;
     hscale = 0; vscale = 0;
+    numseries = 0;
     title = "";
 }
 
@@ -259,6 +276,22 @@ void TimelineGraph::init()
     }
 }
 
+void TimelineGraph::extractDataSeries(Scene *scene, ChartType chart_type)
+{
+    title = graph_titles[chart_type];
+    switch (chart_type){
+    case ChartBasalArea:
+        extractNormalizedBasalArea(scene);
+        break;
+    case ChartStemNumber:
+        extractDBHSums(scene);
+        break;
+    case ChartDBHDistribution:
+        break;
+
+    };
+}
+
 void TimelineGraph::assignData(int attrib, int time, float value)
 {
     // check bounds
@@ -278,32 +311,38 @@ void TimelineGraph::assignData(int attrib, int time, float value)
 
 void TimelineGraph::extractDBHSums(Scene * s)
 {
+    ElapsedTimer tmr("extractDBHSums");
     int vmax = 0;
     int nspecies = s->getBiome()->numPFTypes();
+    float hectares = s->getTerrain()->getTerrainHectArea();
     setNumSeries(nspecies);
 
     for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
     {
-        float tot = 0.0f;
 
         std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
+        tmr.elapsed("sampler");
         for(auto &tree: mature)
         {
             if(s->getTerrain()->inGridBounds(tree.x, tree.y))
                trees.push_back(tree);
         }
-        for(int spc = 0; spc < nspecies; spc++) // iterate over species
-        {
-            float dbhtot = 0.0f;
-            for(auto tree: trees)  // count species
-                if(tree.species == spc)
-                    dbhtot += tree.dbh;
-            assignData(spc, t, dbhtot);
-            tot += dbhtot;
+        tmr.elapsed("build list");
+        auto dbhs = std::vector<float>(nspecies);
+        for (const auto &tree : trees) {
+            dbhs[tree.species] += tree.dbh;
         }
-        if(tot > vmax)
-            vmax = tot;
+        float dbhtot = 0.f;
+        for (int spc=0; spc<nspecies; ++spc) {
+            dbhs[spc]/=hectares;
+            assignData(spc, t, dbhs[spc]);
+            dbhtot += dbhs[spc]; // cumulative sum
+        }
+
+        if(dbhtot > vmax)
+            vmax = dbhtot;
+        tmr.elapsed("iterate data");
     }
 
     setVertScale(vmax);
@@ -311,17 +350,15 @@ void TimelineGraph::extractDBHSums(Scene * s)
 
 void TimelineGraph::extractNormalizedBasalArea(Scene *s)
 {
+    ElapsedTimer tmr("extractbasal area");
     float vmax = 0.0f;
     int nspecies = s->getBiome()->numPFTypes();
     float hectares = s->getTerrain()->getTerrainHectArea();
-    int spccnt;
 
     setNumSeries(nspecies);
 
     for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
     {
-        float tot = 0.0f;
-
         std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
@@ -329,22 +366,18 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
             if(s->getTerrain()->inGridBounds(tree.x, tree.y))
                trees.push_back(tree);
         }
-        for(int spc = 0; spc < nspecies; spc++) // iterate over species
-        {
-            float basaltot = 0.0f;
-            spccnt = 0;
-            for(auto tree: trees)  // count species
-                if(tree.species == spc)
-                {
-                    basaltot += (PI * tree.dbh*tree.dbh);
-                    spccnt++;
-                }
-            basaltot /= hectares;
-            assignData(spc, t, basaltot);
-            tot += basaltot;
+        auto basal_areas = std::vector<float>(nspecies);
+        for(const auto &tree: trees)  // count species
+            basal_areas[tree.species] += (PI * tree.dbh*tree.dbh/ 4. / 10000.); // dbh is in cm, need to convert to m.
+
+        float basaltot = 0.f;
+        for (int spc=0; spc<nspecies; ++spc) {
+            basal_areas[spc] /= hectares; // calc m2/ha
+            basaltot += basal_areas[spc];
+            assignData(spc, t, basal_areas[spc]);
         }
-        if(tot > vmax)
-            vmax = tot;
+        if (basaltot > vmax)
+            vmax = basaltot;
     }
 
     setVertScale(vmax);
@@ -626,6 +659,13 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     float rw, rh;
     getTerrain()->getTerrainDim(rw, rh);
 
+    if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
+    {
+        // loading plant distribution
+        getEcoSys()->setBiome(getBiome());
+    }
+    auto species_lookup = getBiome()->getSpeciesIndexLookupMap();
+
     // check that pdb files exist
     for (auto &fname : timestep_files)
     {
@@ -642,7 +682,11 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     if(checkfiles)
     {
         // import cohorts
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0"));
+        try {
+        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0", species_lookup));
+        } catch (const std::exception &e) {
+            cerr << "Exception in create cohort maps: " << e.what();
+        }
         before_mod_map = cohortmaps->get_map(0);
         //cohortmaps->do_adjustments(2);
 
@@ -663,11 +707,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         cerr << "start = " << tline->getTimeStart() << " end = " << tline->getTimeEnd() << " delta = " << tline->getTimeStep() << " current = " << tline->getNow() << endl;
     }
 
-    if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
-    {
-        // loading plant distribution
-        getEcoSys()->setBiome(getBiome());
-    }
+
 }
 
 void Scene::saveScene(std::string dirprefix)

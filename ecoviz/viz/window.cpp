@@ -273,6 +273,13 @@ void Window::setupRenderPanel()
 
 void Window::setupPlantPanel()
 {
+    /*if (plantPanel != nullptr)
+    {
+        // delete all sub items
+        auto children = plantPanel->findChildren<QWidget*>();
+        for (auto &widget: children)
+          delete widget;
+    } */
     // plant panel
     plantPanel = new QWidget;
     QVBoxLayout *plantLayout = new QVBoxLayout;
@@ -301,7 +308,59 @@ void Window::setupPlantPanel()
     // per species plant parameters
     QGroupBox *speciesGroup = new QGroupBox(tr("Per Species"));
     QGridLayout *speciesLayout = new QGridLayout;
-    checkS0 = new QCheckBox(tr("Species 0"));
+
+    if (scenes.size()>0)
+    {
+        auto &sdata = scenes[0]->getBiome()->getSpeciesMetaData();
+
+        for (int i=0; i<sdata.size(); ++i)
+        {
+            QString sname = QString::fromStdString(sdata[i].species_name);
+            if (sname != "NA")
+            {
+                QCheckBox *cb = new QCheckBox();
+                cb->setChecked(true);
+                cb->setProperty("species_num", sdata[i].species_num_id);
+                cb->setToolTip( QString::fromStdString(sdata[i].scientific_name));
+                connect(cb, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
+
+                QLabel *cln = new QLabel(sname);
+                cln->setToolTip( QString::fromStdString(sdata[i].scientific_name));
+
+                QLabel *clbox = new QLabel();
+                clbox->setFixedWidth(60);
+                clbox->setFixedHeight(24);
+                QColor scolor;
+                scolor.setRgbF(sdata[i].species_color[0], sdata[i].species_color[1], sdata[i].species_color[2], sdata[i].species_color[3]);
+
+                clbox->setStyleSheet(QString("QLabel { background-color : %1; }").arg(scolor.name()));
+
+
+                speciesLayout->addWidget(cb,i,0); // checkbox
+                speciesLayout->addWidget(cln,i,2); // name
+                speciesLayout->addWidget(clbox, i, 1); // color
+
+            }
+        }
+
+    }
+
+
+    QPushButton * plantsOn = new QPushButton(tr("All Visible"));
+    QPushButton * plantsOff = new QPushButton(tr("None Visible"));;
+    connect(plantsOn, SIGNAL(clicked()), this, SLOT(allPlantsOn()));
+    connect(plantsOff, SIGNAL(clicked()), this, SLOT(allPlantsOff()));
+    globalLayout->addWidget(plantsOn);
+    globalLayout->addWidget(plantsOff);
+
+    plantLayout->addWidget(globalGroup);
+    plantLayout->addWidget(speciesGroup);
+
+
+    speciesGroup->setLayout(speciesLayout);
+    plantPanel->setLayout(plantLayout);
+
+/*    checkS0 = new QCheckBox(tr("Species 0"));
     checkS0->setChecked(true);
     checkS1 = new QCheckBox(tr("Species 1"));
     checkS1->setChecked(true);
@@ -380,9 +439,9 @@ void Window::setupPlantPanel()
     connect(checkS13, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
     connect(checkS14, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
     connect(checkS15, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(smoothEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(smoothEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange())); */
 
-    plantPanel->setLayout(plantLayout);
+
 }
 
 void Window::setupVizPanel()
@@ -446,14 +505,17 @@ void Window::setupVizPanel()
     for(int i = 0; i < 2; i++)
     {
         ChartWindow * cview = new ChartWindow(this, 800, 200);
-        TimelineGraph * gmodel = new TimelineGraph();
+        //TimelineGraph * gmodel = new TimelineGraph();
 
         // signal to slot connections
         // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-
+        std::vector< TimelineGraph* > tgs;
         chartViews.push_back(cview);
-        graphModels.push_back(gmodel);
-        vizLayout->addWidget(cview, 3, i*2);
+
+
+        graphModels.push_back( tgs );
+        vizLayout->addWidget(cview, 3, i);
+
     }
 
     // timeline views
@@ -550,6 +612,20 @@ void Window::setupVizPanel()
     ""));*/
 }
 
+void Window::setupGraphModels(int scene_index)
+{
+    auto charts = TimelineGraph::getChartTypes();
+    graphModels[scene_index].clear();
+
+    // loop over all charts and extract the data for it
+    for (auto c : charts) {
+        TimelineGraph *tg = new TimelineGraph;
+        tg->setTimeLine(scenes[scene_index]->getTimeline());
+        tg->extractDataSeries(scenes[scene_index], c);
+        graphModels[scene_index].push_back(tg);
+    }
+}
+
 Window::Window(string datadir)
 {
     QWidget *mainWidget = new QWidget;
@@ -567,7 +643,9 @@ Window::Window(string datadir)
     mainLayout->setColumnStretch(2, 1);
 
     setupRenderPanel();
+    plantPanel = nullptr;
     setupPlantPanel();
+
 
     // load scenes
     for(int i = 0; i < 2; i++)
@@ -581,8 +659,9 @@ Window::Window(string datadir)
         Transect * t = new Transect(scenes[i]->getTerrain());
         transectControls.push_back(t);
     }
-
     setupVizPanel();
+
+
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(plantPanel, 0, 1, Qt::AlignTop);
@@ -613,17 +692,19 @@ void Window::run_viewer()
 {
     for(int i = 0; i < 2; i++)
     {
-        scenes[i]->loadScene(1, 25);
+        scenes[i]->loadScene(1, 5); // years
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
-        graphModels[i]->setTimeLine(scenes[i]->getTimeline());
-        graphModels[i]->extractNormalizedBasalArea(scenes[i]);
+        setupGraphModels(i);
         chartViews[i]->setScene(scenes[i]);
-        chartViews[i]->setData(graphModels[i]);
+        chartViews[i]->setGraphs(graphModels[i]);
+        chartViews[i]->setData(graphModels[i].front()); // set to first visualization
         transectControls[i]->init(scenes[i]->getTerrain());
     }
+
+    setupPlantPanel();
 
     repaintAllGL();
 }
@@ -1005,89 +1086,35 @@ void Window::allPlantsOn()
 {
     for(auto pview: perspectiveViews)
         pview->setAllSpecies(true);
-    checkS0->setChecked(true);
-    checkS1->setChecked(true);
-    checkS2->setChecked(true);
-    checkS3->setChecked(true);
-    checkS4->setChecked(true);
-    checkS5->setChecked(true);
-    checkS6->setChecked(true);
-    checkS7->setChecked(true);
-    checkS8->setChecked(true);
-    checkS9->setChecked(true);
-    checkS10->setChecked(true);
-    checkS11->setChecked(true);
-    checkS12->setChecked(true);
-    checkS13->setChecked(true);
-    checkS14->setChecked(true);
-    checkS15->setChecked(true);
+
 }
 
 void Window::allPlantsOff()
 {
     for(auto pview: perspectiveViews)
         pview->setAllSpecies(false);
-    checkS0->setChecked(false);
-    checkS1->setChecked(false);
-    checkS2->setChecked(false);
-    checkS3->setChecked(false);
-    checkS4->setChecked(false);
-    checkS5->setChecked(false);
-    checkS6->setChecked(false);
-    checkS7->setChecked(false);
-    checkS8->setChecked(false);
-    checkS9->setChecked(false);
-    checkS10->setChecked(false);
-    checkS11->setChecked(false);
-    checkS12->setChecked(false);
-    checkS13->setChecked(false);
-    checkS14->setChecked(false);
-    checkS15->setChecked(false);
+
 }
 
 void Window::plantChange(int show)
 {
     bool vis = (bool) show;
 
+    QVariant snum = sender()->property("species_num");
+
+    auto &sdata = scenes[0]->getBiome()->getSpeciesMetaData();
+    if (!snum.isValid())
+    {
+        cerr << "Click plant on/off: invalid button!";
+        return;
+    }
+
     for(auto pview: perspectiveViews)
     {
-        if(sender() == checkCanopy)
-            pview->setCanopyVis(vis);
-        if(sender() == checkUndergrowth)
-            pview->setUndergrowthVis(vis);
-        if(sender() == checkS0)
-            pview->toggleSpecies(0, vis);
-        if(sender() == checkS1)
-            pview->toggleSpecies(1, vis);
-        if(sender() == checkS2)
-            pview->toggleSpecies(2, vis);
-        if(sender() == checkS3)
-            pview->toggleSpecies(3, vis);
-        if(sender() == checkS4)
-            pview->toggleSpecies(4, vis);
-        if(sender() == checkS5)
-            pview->toggleSpecies(5, vis);
-        if(sender() == checkS6)
-            pview->toggleSpecies(6, vis);
-        if(sender() == checkS7)
-            pview->toggleSpecies(7, vis);
-        if(sender() == checkS8)
-            pview->toggleSpecies(8, vis);
-        if(sender() == checkS9)
-            pview->toggleSpecies(9, vis);
-        if(sender() == checkS10)
-            pview->toggleSpecies(10, vis);
-        if(sender() == checkS11)
-            pview->toggleSpecies(11, vis);
-        if(sender() == checkS12)
-            pview->toggleSpecies(12, vis);
-        if(sender() == checkS13)
-            pview->toggleSpecies(13, vis);
-        if(sender() == checkS14)
-            pview->toggleSpecies(14, vis);
-        if(sender() == checkS15)
-            pview->toggleSpecies(15, vis);
+        pview->toggleSpecies(snum.toInt(), vis);
+        cerr << "Click plant on/off: toggle " << sdata[snum.toInt()].scientific_name << "to " << vis;
     }
+
 }
 
 void Window::lineEditChange()

@@ -29,7 +29,19 @@
 #include <math.h>
 #include <algorithm>
 #include <QDir>
+#include <QElapsedTimer>
 
+class ElapsedTimer
+{
+public:
+    ElapsedTimer(std::string name) { cap = name; qet.start(); }
+    ~ElapsedTimer() { cerr << "Time: " << cap << ": " << qet.elapsed() << "ms"; }
+    void elapsed(std::string tx) { cerr << "Timer " << cap << " - " << tx << ": " << qet.elapsed() << "ms"; }
+private:
+   QElapsedTimer qet;
+   std::string cap;
+
+};
 
 /// NoiseField
 
@@ -732,15 +744,19 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
         {
             plnts = esys->getPopulation(x, y);
 
+
             for(s = 0; s < (int) plnts->pop.size(); s++) // iterate over plant types
             {
                 std::vector<glm::mat4> xform; // transformation to be applied to each instance
                 std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
 
-                if((int) plnts->pop[s].size() > 0)
-                    cerr << "Species " << s << " Present" << endl;
+                //if((int) plnts->pop[s].size() > 0)
+                //    cerr << "Species " << s << " Present" << endl;
                 if((* plantvis)[s])
                     {
+
+                    //glm::vec4 species_base_color = biome->getSpeciesColourV4(s);
+
                     for(p = 0; p < (int) plnts->pop[s].size(); p++) // iterate over plant specimens
                     {
                         if(plnts->pop[s][p].height > 0.01f) // only display reasonably sized plants
@@ -987,7 +1003,7 @@ void EcoSystem::pickPlants(Terrain * ter, TypeMap * clusters)
 
 void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
 {
-    esys.clear();
+    //esys.clear(); WR?
     for(int n = 0; n < (int) niches.size(); n++)
     {
         if(n == 0 && canopyOn)
@@ -1000,8 +1016,10 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
 
 void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool rebind)
 {
-    if(rebind) // plant positions have been updated since the last bindPlants
+    if(rebind) {
+        // plant positions have been updated since the last bindPlants
         eshapes.bindPlantsSimplified(ter, &esys, plantvis);
+    }
 
     eshapes.drawPlants(drawParams);
 }

@@ -9,7 +9,7 @@
 
 using namespace data_importer;
 
-CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, float rh, std::string minversion)
+CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, float rh, std::string minversion, const std::map<std::string, int> &species_lookup)
     : rw(rw), rh(rh), gw(-1), gh(-1), dx(-1.0f), dy(-1.0f), nplant_div(1), maxpercohort(10)
 {
     std::vector<int> timesteps;
@@ -17,7 +17,7 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
     for (auto &fname : filenames)
     {
-        int timestep = ilanddata::read(fname, minversion, TIMESTEP_ONLY).timestep;
+        int timestep = ilanddata::read(fname, minversion,  species_lookup, TIMESTEP_ONLY).timestep;
         timesteps.push_back(timestep);
     }
 
@@ -47,7 +47,7 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
     timestep_mature.resize(filenames.size());
     for (auto &fname : filenames)
     {
-        auto fdata = ilanddata::read(fname, minversion, ALL_FILEDATA);
+        auto fdata = ilanddata::read(fname, minversion, species_lookup, ALL_FILEDATA);
         if (dx < 0.0f || dy < 0.0f)
         {
             dx = fdata.dx;
@@ -95,7 +95,9 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
                 continue;
             //if (crt.nplants > 0.0f)
             //    printf("cohort with %f plants being added at mid location %f, %f\n", crt.nplants, middle.x, middle.y);
+            try {
             map.get_fromreal(middle.x, middle.y).push_back(crt);
+            } catch (const std::exception &e) { std::cerr << e.what(); }
         }
     }
 
@@ -289,7 +291,7 @@ int CohortMaps::determine_cohort_startidxes()
                     if (!foundslot)
                     {
                         std::cout << "Slot not found for cohort!" << std::endl;
-                        throw std::logic_error("Slot not found for cohort");
+                        //throw std::logic_error("Slot not found for cohort");
                     }
                 }
             }
@@ -394,6 +396,7 @@ void CohortMaps::fix_cohortmaps()
                     nresize_neg = -1;
                 for (auto &currmap : timestep_maps)
                 {
+                    try{
                     auto &currcrts = currmap.get_fromreal(middle.x, middle.y);
                     for (auto &c : currcrts)
                     {
@@ -407,6 +410,7 @@ void CohortMaps::fix_cohortmaps()
                         if (baseend >= (xdir ? rw : rh))
                             baseend = (xdir ? rw : rh) - 1e-2f;
                     }
+                    } catch (const std::exception &e) { std::cerr << e.what(); }
                 }
             }
         }

@@ -20,8 +20,9 @@ int main(int argc, char * argv [])
             std::cout << filenames.back() << std::endl;
         }
     }
+    std::map<std::string, int> species_lookup; // is EMPTY! will throw exceptions
 
-    CohortMaps cmaps(filenames, 1000.0f, 1000.0f, "2.0");
+    CohortMaps cmaps(filenames, 1000.0f, 1000.0f, "2.0", species_lookup);
 
     cmaps.determine_cohort_startidxes();
     return 0;

@@ -55,24 +55,24 @@ namespace data_importer
 			{
 				cohort(int xs, int ys, int specidx, float dbh, float height, int nplants);
 
-                                cohort(std::stringstream &ss);
+                cohort(std::stringstream &ss, const std::map<std::string, int> &species_lookup);
 
-                                std::ostream &operator >>(std::ostream &ostr) const;
+                std::ostream &operator >>(std::ostream &ostr) const;
 
-                                bool operator ==(const cohort &other) const;
-                                bool operator !=(const cohort &other) const;
+                bool operator ==(const cohort &other) const;
+                bool operator !=(const cohort &other) const;
 
-                                xy<float> get_middle() const;
-                                float get_size() const;
+                xy<float> get_middle() const;
+                float get_size() const;
 
-                                int xs, ys;
-                                int xe, ye;
+                int xs, ys;
+                int xe, ye;
 				int specidx;
 				float dbh, height;
-                                float nplants;
-                                unsigned char startidx;
+                float nplants;
+                unsigned char startidx;
 
-                                bool modified = false;
+                bool modified = false;
 			};
 
 			struct filedata
@@ -80,18 +80,18 @@ namespace data_importer
 				int timestep;
 				std::string version;
 				std::vector<cohort> cohorts;
-                                std::vector<basic_tree> trees;
-                                float dx, dy;
-                                float minx, miny;
-                                float maxx, maxy;
+                std::vector<basic_tree> trees;
+                float dx, dy;
+                float minx, miny;
+                float maxx, maxy;
 			};
 
 			bool fileversion_gteq(std::string v1, std::string v2);
 
-                        filedata read(std::string filename, std::string minversion, bool timestep_only = false);
-                        std::vector<filedata> read_many(const std::vector<std::string> &filename, std::string minversion);
+            filedata read(std::string filename, std::string minversion,  const std::map<std::string, int> &species_lookup, bool timestep_only = false);
+            std::vector<filedata> read_many(const std::vector<std::string> &filename, std::string minversion, const std::map<std::string, int> &species_lookup);
 
-                        void trim_filedata_spatial(filedata &data, int width, int height);
+            void trim_filedata_spatial(filedata &data, int width, int height);
 		}
 
         struct viability

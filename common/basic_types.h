@@ -912,7 +912,8 @@ public:
         xy<int> coords = togrid(real_x, real_y);
         if (coords.x < 0 || coords.x >= gx || coords.y < 0 || coords.y >= gy)
         {
-            throw std::runtime_error("Grid coordinates outside range");
+            //throw std::runtime_error("Grid coordinates outside range");
+            return get(0,0);
         }
         return get(coords.x, coords.y);
     }
@@ -928,9 +929,11 @@ public:
         if (coords.x >= gx || coords.y >= gy || coords.x < 0 || coords.y < 0)
         {
             std::string msg = "grid coordinates (" + std::to_string(coords.x) + ", " + std::to_string(coords.y) + ") out of range in ValueGridMap::set_fromreal (although real coordinates were valid)";
-            throw std::out_of_range(msg);
-        }
+            //throw std::out_of_range(msg);
+            std::cerr << msg;
+        } else {
         this->set(coords.x, coords.y, val);
+        }
     }
 
     void getDimReal(float &rw, float &rh) const

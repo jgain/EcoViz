@@ -53,12 +53,25 @@ struct PFType
 
 };
 
+// meta data for a species
+struct SpeciesInfo
+{
+    int species_num_id; // numeric ID (index)
+    std::string speciesId; // 4-letter code
+    std::string species_name; // species name
+    std::string scientific_name; // scientific species name
+    float species_color[4]; // RGBA hex color code
+};
+
 class Biome
 {
 private:
     std::vector<PFType> pftypes; //< vector of plant functional types in the biome
+    std::vector<SpeciesInfo> species_info;
+    std::map<std::string, int> species_key_lookup;
     std::string name; //< biome name
     data_importer::common_data * cdata; // access to pdb database
+
     
 public:
 
@@ -76,6 +89,12 @@ public:
     bool read_dataimporter(data_importer::common_data &cdata);
 
     GLfloat *getSpeciesColour(int specid);
+    glm::vec4 getSpeciesColourV4(int specid);
+
+    const std::vector<SpeciesInfo> &getSpeciesMetaData() { return species_info; }
+    const std::map<std::string, int> &getSpeciesIndexLookupMap() {  return species_key_lookup;  }
+
+
 };
 
 

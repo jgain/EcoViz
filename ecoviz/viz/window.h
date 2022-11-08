@@ -143,7 +143,7 @@ private:
     std::vector<GLTransect *> transectViews;    ///< OpenGL transect views
     std::vector<TimeWindow *> timelineViews;    ///< widget for timeline control
     std::vector<ChartWindow *> chartViews;      ///< widget for displaying graphs
-    std::vector<TimelineGraph *> graphModels;   ///< Underlying graph data associated with scene
+    std::vector<std::vector< TimelineGraph *> > graphModels;   ///< Underlying graph data associated with scene, multiple graphs per scene
     QWidget * vizPanel;                         ///< Central panel with visualization subwidgets
     QWidget * renderPanel;                      ///< Side panel to adjust various rendering style parameters
     QWidget * plantPanel;                       ///< Side panel to adjust various plant visualization parameters
@@ -162,8 +162,6 @@ private:
     QComboBox * cameraDropDown;
 
     // plant viz panel widgets
-    QCheckBox * checkCanopy, * checkUndergrowth, * checkS0, * checkS1, * checkS2, * checkS3, * checkS4, * checkS5, * checkS6, * checkS7, * checkS8, * checkS9,
-              * checkS10, * checkS11, * checkS12, * checkS13, * checkS14, * checkS15;
     QLineEdit * sunMapEdit, * wetMapEdit;
     QRadioButton * sunMapRadio, * wetMapRadio, * chmMapRadio, * noMapRadio;
     QLineEdit * smoothEdit;
@@ -203,6 +201,11 @@ private:
      * @brief setupVizPanel  Initialize GUI layout of central visualization
      */
     void setupVizPanel();
+
+    /**
+     * @brief setupGraphModels  set up the data structures for dynamic graphs
+     */
+    void setupGraphModels(int scene_index);
 
     /**
      * @brief setSmoothing Set smoothing distance to soften the underlying plant grid

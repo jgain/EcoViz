@@ -529,13 +529,17 @@ void Terrain::loadElv(const std::string &filename)
         delGrid();
         init(dx, dy, (float) dx * step, (float) dy * step);
         // latitude = lat;
-        for (int x = 0; x < dx; x++)
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+        //for (int x = 0; x < dx; x++)
+        for (int y = 0; y < dy; y++)
         {
-            for (int y = 0; y < dy; y++)
+            //for (int y = 0; y < dy; y++)
+            for (int x = 0; x < dx; x++)
             {
                 infile >> val;
-                grid->set(x,y, val * 0.3048f); // convert from feet to metres
-                drawgrid->set(y, x, val * 0.3048f);
+                grid->set(x,y, val); //  * 0.3048f); // convert from feet to metres
+                drawgrid->set(y, x, val); // * 0.3048f);
             }
         }
         setMidFocus();

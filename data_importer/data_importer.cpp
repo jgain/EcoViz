@@ -85,11 +85,13 @@ data_importer::ilanddata::cohort::cohort(int xs, int ys, int specidx, float dbh,
     ye = ys + 2;
 }
 
-data_importer::ilanddata::cohort::cohort(std::stringstream &ss)
+data_importer::ilanddata::cohort::cohort(std::stringstream &ss, const std::map<std::string, int> &species_lookup)
 {
-	ss >> xs;
+    std::string id;
+    ss >> xs;
 	ss >> ys;
-	ss >> specidx;
+    ss >> id;
+    specidx = species_lookup.at(id);
 	ss >> dbh;
 	ss >> height;
     ss >> nplants;
@@ -159,17 +161,17 @@ bool data_importer::ilanddata::fileversion_gteq(std::string v1, std::string v2)
 	return true;		// in this case, they should be equal
 }
 
-std::vector<data_importer::ilanddata::filedata> data_importer::ilanddata::read_many(const std::vector<std::string> &filenames, std::string minversion)
+std::vector<data_importer::ilanddata::filedata> data_importer::ilanddata::read_many(const std::vector<std::string> &filenames, std::string minversion, const std::map<std::string, int> &species_lookup)
 {
     std::vector<data_importer::ilanddata::filedata> fdatas;
     for (auto &fname : filenames)
     {
-        fdatas.push_back(read(fname, minversion, false));
+        fdatas.push_back(read(fname, minversion, species_lookup, false));
     }
     return fdatas;
 }
 
-data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string filename, std::string minversion, bool timestep_only)
+data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string filename, std::string minversion, const std::map<std::string, int> &species_lookup, bool timestep_only)
 {
     using namespace data_importer::ilanddata;
 
@@ -202,6 +204,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 	int ntrees_expected = std::stoi(lstr);		// can use this integer to check that the file and import are consistent by comparing to tree vector size
 
 	std::cout << "Reading " << ntrees_expected << " trees..." << std::endl;
+    std::string species_id;
 
 	for (int i = 0; i < ntrees_expected; i++)
 	{
@@ -213,7 +216,9 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 		int treeid;
 		ss >> treeid;    // TODO: leaving out ID for now, must include it later
 
-		ss >> tree.species;
+        ss >> species_id; // alpha-numeric species key
+        tree.species = species_lookup.at(species_id);
+        //ss >> tree.species;
 		ss >> tree.x;
 		ss >> tree.y;
 		ss >> tree.height;
@@ -240,7 +245,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 		std::stringstream ss(lstr);
         if (!ifs.eof())
         {
-            fdata.cohorts.emplace_back(ss);
+            fdata.cohorts.emplace_back(ss, species_lookup); // load values from stream
             auto &crt = fdata.cohorts.back();
             if (crt.xs < minx)
             {
@@ -287,6 +292,10 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
     fdata.maxy = maxy;
     fdata.dx = dx;
     fdata.dy = dy;
+
+    auto minmaxh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.height<b.height;});
+    auto minmaxdbh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.dbh<b.dbh;});
+    std::cout << "Range height: " << minmaxh.first->height << " - " << minmaxh.second->height << ", Range DBH: " << minmaxdbh.first->dbh << " - " << minmaxdbh.second->dbh << std::endl;
 
     std::cout << "Maximum species index for larger trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail.begin(), species_avail.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
     std::cout << "Maximum species index for cohort trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail_cohorts.begin(), species_avail_cohorts.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
