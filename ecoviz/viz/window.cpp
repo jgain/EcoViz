@@ -78,7 +78,7 @@ using namespace std;
 
 QSize Window::sizeHint() const
 {
-    return QSize(1600, 1000);
+    return QSize(1600, 1000); // 1600, 1000
 }
 
 void Window::setupRenderPanel()
@@ -464,6 +464,9 @@ void Window::setupVizPanel()
     vizLayout->setRowStretch(1, 24);
     vizLayout->setRowStretch(2, 1);
     vizLayout->setRowStretch(3, 8);
+    vizLayout->setColumnStretch(0, 600);
+    vizLayout->setColumnStretch(1, 50);
+    vizLayout->setColumnStretch(2, 600);
 
     // transect views
     for(int i = 0; i < 2; i++)
@@ -512,10 +515,8 @@ void Window::setupVizPanel()
         std::vector< TimelineGraph* > tgs;
         chartViews.push_back(cview);
 
-
         graphModels.push_back( tgs );
-        vizLayout->addWidget(cview, 3, i);
-
+        vizLayout->addWidget(cview, 3, i*2);
     }
 
     // timeline views
@@ -542,14 +543,18 @@ void Window::setupVizPanel()
     QVBoxLayout *lockGLayout = new QVBoxLayout;
     QGroupBox *lockGGroup = new QGroupBox;
 
-    // TO DO put buttons into layout groups that are centered
-    // TO DO icons for buttons
     lockT1 = new QPushButton("", this);
     lockT2 = new QPushButton("", this);
     lockV1 = new QPushButton("", this);
     lockV2 = new QPushButton("", this);
     lockG1 = new QPushButton("", this);
     lockG2 = new QPushButton("", this);
+  /*  lockT1->setFixedSize(50, 50);
+    lockT2->setFixedSize(50, 50);
+    lockV1->setFixedSize(50, 50);
+    lockV2->setFixedSize(50, 50);
+    lockG1->setFixedSize(50, 50);
+    lockG2->setFixedSize(50, 50);*/
 
     QPixmap lockleftmap("../../common/Icons/locklefticon32.png");
     lockleftIcon = new QIcon(lockleftmap);
@@ -646,7 +651,6 @@ Window::Window(string datadir)
     plantPanel = nullptr;
     setupPlantPanel();
 
-
     // load scenes
     for(int i = 0; i < 2; i++)
     {
@@ -660,8 +664,6 @@ Window::Window(string datadir)
         transectControls.push_back(t);
     }
     setupVizPanel();
-
-
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(plantPanel, 0, 1, Qt::AlignTop);

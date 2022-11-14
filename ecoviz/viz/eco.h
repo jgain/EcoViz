@@ -26,7 +26,7 @@
 #ifndef _eco_h
 #define _eco_h
 
-#define HIGHRES
+#define LOWRES
 
 #include "pft.h"
 #include "dice_roller.h"
@@ -239,26 +239,6 @@ public:
      * @param pftPlnts  Vector in which to place extracted plants
      */
     void vectoriseByPFT(int pft, std::vector<Plant> &pftPlnts);
-
-    /**
-     * Read in plant positions from a PDB format text file
-     * @param filename  name of file to load (PDB format)
-     * @param biome biome to which the plants belong
-     * @param ter  terrain onto which trees are projected
-     * @param maxtree   update height if it exceeds the currently tallest tree
-     * @retval true  if load succeeds,
-     * @retval false otherwise.
-     */
-    bool readPDB(string filename, Biome * biome, Terrain * ter, float & maxtree);
-
-    /**
-     * Write plant positions to a PDB format text file
-     * @param filename  name of file to load (PDB format)
-     * @param biome     biome to which the plants belong
-     * @retval true  if load succeeds,
-     * @retval false otherwise.
-     */
-    bool writePDB(string filename, Biome * biome);
 };
 
 /// Plant Rendering
@@ -433,17 +413,6 @@ public:
     PlantGrid * getNiche(int n){ return &niches[n]; }
 
     void setBiome(Biome * ecobiome){ biome = ecobiome; clear(); eshapes.attachBiome(ecobiome); }
-
-    /**
-       * Read in plant positions from a PDB format text file
-       * @param filename  name of file to load (PDB format)
-       * @param ter       terrain onto which the plants will be placed
-       * @param niche     particular layer for which plants are active, 0 means all layers
-       * @retval true  if load succeeds,
-       * @retval false otherwise.
-       * NB: this will require that plants are rebound.
-       */
-    bool loadNichePDB(string filename, Terrain * ter, int niche = 0);
 
     /**
        * Write plant positions to a PDB format text file

@@ -77,7 +77,7 @@ bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd, Terrain 
 
     // determine bounding plane intersects
     float maxx, maxy;
-    ter->getTerrainDim(maxx, maxy);
+    ter->getTerrainDim(maxy, maxx);
 
     b[0].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // left edge
     b[1].formPlane(vpPoint(maxx, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // right edge
@@ -153,11 +153,11 @@ void Transect::paintThickness(Terrain * ter)
         for(int y = 0; y < dy; y++)
         {
             // position on terrain corresponding to grid point, projected onto the base plane
-            vizpnt = ter->toWorld(y, x, 0.0f);
+            vizpnt = ter->toWorld(x, y, 0.0f); // JG - orientation flip
             if(!offset[0].side(vizpnt) && !offset[1].side(vizpnt)) // between planes so draw in red
-                mapviz->set(x, y, 1.0f);
+                mapviz->set(y, x, 1.0f);
             else
-                mapviz->set(x, y, 0.0f);
+                mapviz->set(y, x, 0.0f);
         }
 }
 
@@ -325,7 +325,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
         tmr.elapsed("sampler");
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.x, tree.y))
+            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         tmr.elapsed("build list");
@@ -363,7 +363,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.x, tree.y))
+            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         auto basal_areas = std::vector<float>(nspecies);
@@ -397,7 +397,7 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.x, tree.y))
+            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         for(int spc = 0; spc < nspecies; spc++) // iterate over species
@@ -432,9 +432,9 @@ Scene::Scene(string ddir)
 
     // instantiate typemaps for all possible typemaps		(XXX: this could lead to memory issues for larger landscapes?)
     for (int t = 0; t < int(TypeMapType::TMTEND); t++)
-        maps[t] = new TypeMap(dx, dy, (TypeMapType)t);
+        maps[t] = new TypeMap(dy, dx, (TypeMapType)t);
     terrain->getGridDim(dx, dy);
-    maps[2]->setRegion(Region(0, 0, dx-1, dy-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
+    maps[2]->setRegion(Region(0, 0, dy-1, dx-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
     nfield = new NoiseField(terrain, 5, 0);
 
@@ -651,9 +651,9 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     // match dimensions for empty overlay
     int dx, dy;
     getTerrain()->getGridDim(dx, dy);
-    getTypeMap(TypeMapType::TRANSECT)->matchDim(dx, dy);
+    getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
     getTypeMap(TypeMapType::TRANSECT)->fill(1);
-    getTypeMap(TypeMapType::EMPTY)->matchDim(dx, dy);
+    getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
     getTypeMap(TypeMapType::EMPTY)->clear();
 
     float rw, rh;
@@ -683,7 +683,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     {
         // import cohorts
         try {
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "2.0", species_lookup));
+        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "1.0", species_lookup));
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }
@@ -708,18 +708,6 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     }
 
 
-}
-
-void Scene::saveScene(std::string dirprefix)
-{
-    std::string terfile = dirprefix+".elv";
-    std::string pdbfile = dirprefix+".pdb";
-
-    // save terrain
-    getTerrain()->saveElv(terfile);
-
-    if(!getEcoSys()->saveNichePDB(pdbfile))
-        cerr << "Error Scene::saveScene: saving plane file " << pdbfile << " failed" << endl;
 }
 
 void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect) {

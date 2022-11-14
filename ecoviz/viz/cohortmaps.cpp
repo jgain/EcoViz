@@ -42,7 +42,6 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         }
     }
 
-
     timestep_maps.resize(filenames.size());
     timestep_mature.resize(filenames.size());
     for (auto &fname : filenames)

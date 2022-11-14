@@ -151,12 +151,12 @@ void Terrain::init(int dx, int dy, float sx, float sy)
     grid->setDim(dx, dy);
     drawgrid->setDim(dy, dx);
     setTerrainDim(sx, sy);
-    setFocus(vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f));
+    setFocus(vpPoint(sy/2.0f, grid->get(dx/2-1,dy/2-1), sx/2.0f));
     scfac = 1.0f;
 
     // init accel structure
     spherestep = 8;
-    numspx = (grid->width()-1) / spherestep + 1; numspy = (grid->height()-1) / spherestep + 1;
+    numspx = (grid->height()-1) / spherestep + 1; numspy = (grid->width()-1) / spherestep + 1; // JG mod
     for(int i = 0; i < numspx; i++)
     {
         std::vector<AccelSphere> sphrow;
@@ -201,7 +201,7 @@ void Terrain::setMidFocus()
     getGridDim(dx, dy);
     getTerrainDim(sx, sy);
     if(dx > 0 && dy > 0)
-        setFocus(vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f));
+        setFocus(vpPoint(sy/2.0f, grid->get(dx/2-1,dy/2-1), sx/2.0f));
     else
         setFocus(vpPoint(0.0f, 0.0f, 0.0f));
 }
@@ -362,11 +362,13 @@ void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
 
     if (bufferState == BufferState::REALLOCATE || bufferState == BufferState::DIRTY )
     {
-        renderer->updateHeightMap(width, height, scx, scy, drawgrid->getPtr(), true);
+        // renderer->updateHeightMap(width, height, scx, scy, drawgrid->getPtr(), true);
+        renderer->updateHeightMap(height, width, scy, scx, drawgrid->getPtr(), true);
     }
     else
     {
-        renderer->updateHeightMap(width, height, scx, scy, drawgrid->getPtr());
+        // renderer->updateHeightMap(width, height, scx, scy, drawgrid->getPtr());
+        renderer->updateHeightMap(height, width, scy, scx, drawgrid->getPtr());
     }
 
     bufferState = BufferState::CLEAN;
@@ -391,13 +393,13 @@ void Terrain::buildSphereAccel()
     for(si = 0; si < numspx; si++)
         for(sj = 0; sj < numspy; sj++)
         {
-            imin = si*spherestep; imax = std::min(imin+spherestep, grid->width());
-            jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid->height());
+            imin = si*spherestep; imax = std::min(imin+spherestep, grid->height());
+            jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid->width());
             // cerr << "(" << si << ", " << sj << ") = " << "i: " << imin << " - " << imax << " j: " << jmin << " - " << jmax << endl;
 
             // center point
             b1 = toWorld(imin, jmin, grid->get(jmin, imin));
-            b2 = toWorld(imax, jmax, grid->get(jmax-1,imax-1));
+            b2 = toWorld(imax, jmax, grid->get(jmax-1, imax-1));
             c.affinecombine(0.5f, b1, 0.5f, b2);
 
             // update radius
@@ -437,8 +439,8 @@ bool Terrain::rayIntersect(vpPoint start, Vector dirn, vpPoint & p)
             rayPointDist(start, dirn, boundspheres[si][sj].center, tval, dist);
             if(dist <= boundspheres[si][sj].radius) // intersects enclosing sphere so test enclosed points
             {
-                imin = si*spherestep; imax = std::min(imin+spherestep, grid->width());
-                jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid->height());
+                imin = si*spherestep; imax = std::min(imin+spherestep, grid->height());
+                jmin = sj*spherestep; jmax = std::min(jmin+spherestep, grid->width());
                 // check ray against grid points
                 for(j = jmin; j < jmax; j++)
                     for(i = imin; i < imax; i++)
@@ -467,8 +469,6 @@ bool Terrain::pick(int sx, int sy, View * view, vpPoint & p)
 {
     vpPoint start;
     Vector dirn;
-
-    cerr << "sx = " << sx << ", sy = " << sy << endl;
 
     // find ray params from viewpoint through screen <sx, sy>
     view->projectingRay(sx, sy, start, dirn);
@@ -531,14 +531,14 @@ void Terrain::loadElv(const std::string &filename)
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
-        //for (int x = 0; x < dx; x++)
-        for (int y = 0; y < dy; y++)
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
         {
-            //for (int y = 0; y < dy; y++)
-            for (int x = 0; x < dx; x++)
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
             {
                 infile >> val;
-                grid->set(x,y, val); //  * 0.3048f); // convert from feet to metres
+                grid->set(x, y, val); //  * 0.3048f); // convert from feet to metres
                 drawgrid->set(y, x, val); // * 0.3048f);
             }
         }

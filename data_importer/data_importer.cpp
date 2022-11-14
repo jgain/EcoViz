@@ -198,7 +198,9 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
     fdata.timestep = std::stoi(lstr);
 
     if(timestep_only)
+    {
         return fdata;
+    }
 
 	std::getline(ifs, lstr);
 	int ntrees_expected = std::stoi(lstr);		// can use this integer to check that the file and import are consistent by comparing to tree vector size

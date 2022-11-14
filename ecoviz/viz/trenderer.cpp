@@ -238,13 +238,12 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
 
         indices[2*vidx] = (reverse ? width-1-x: x);
         indices[2*vidx+1] = (reverse ? 2*width-1-x: x+width);
-
     }
 
     glGenVertexArrays(1, &vao); CE();
     glBindVertexArray(vao); CE();
 
-    // set up vertex buffer an copy in data
+    // set up vertex buffer and copy in data
     glGenBuffers(1, &vbo); CE();
     glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
     glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*width*2, verts, GL_STATIC_DRAW); CE();
@@ -263,7 +262,6 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*2*width, indices, GL_STATIC_DRAW); CE();
 
     // unbind everything and clean up
-
     glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     glBindVertexArray(0); CE();
 }
@@ -292,8 +290,8 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
         verts[5*vidx+1 + 5*height] = verts[5*vidx+1];
         verts[5*vidx+2 + 5*height] = verts[5*vidx+2];
         // texture coordinates
-        verts[5*vidx+3 + 5*width] = -1.0f;
-        verts[5*vidx+4 + 5*width] = -1.0f;
+        verts[5*vidx+3 + 5*height] = -1.0f;
+        verts[5*vidx+4 + 5*height] = -1.0f;
 
         indices[2*vidx] = (reverse ? height-1-y: y);
         indices[2*vidx+1] = (reverse ? 2*height-1-y: y+height);
@@ -1052,9 +1050,9 @@ void TRenderer::loadTerrainData(float* data, int wd, int ht, float scx, float sc
     if (constraintMap) updateTypeMapTexture(constraintMap,  CONSTRAINT);
 }
 
-  // the typ emap can be either a PAINT map (for painting on types) or an CONSTRAINT map
-  // for painting on freezing or other constraints.
-  void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool force)
+// the typ emap can be either a PAINT map (for painting on types) or an CONSTRAINT map
+// for painting on freezing or other constraints.
+void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool force)
 {
   if (tmap == NULL)
     {
@@ -1086,7 +1084,11 @@ void TRenderer::loadTerrainData(float* data, int wd, int ht, float scx, float sc
 
   // assert(wd == width && ht == height);
   if(wd != width || ht != height)
+  {
       cerr << "TERRAIN TEXTURE mismatch" << endl;
+      cerr << "wd = " << wd << " and width = " << width << endl;
+      cerr << "ht = " << ht << " and height = " << height << endl;
+  }
 
   // texturing ops affect this texture unit
 

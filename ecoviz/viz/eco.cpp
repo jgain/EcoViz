@@ -306,150 +306,6 @@ void PlantGrid::getRegionIndices(Terrain * ter, Region region, int &sx, int &sy,
     // cerr << "grid = " << sx << ", " << sy << " -> " << ex << ", " << ey << endl;
 }
 
-
-
-bool PlantGrid::readPDB(string filename, Biome * biome, Terrain * ter, float &maxtree)
-{
-    ifstream infile;
-    float rndoff;
-    int currSpecies, speciesCount;
-
-    infile.open((char *) filename.c_str(), ios_base::in);
-    if(infile.is_open())
-    {
-        infile >> speciesCount;
-
-        for(int i = 0; i < speciesCount; i++)
-        {
-            int numPlants;
-            float canopyRatio, hghtMin, hghtMax;
-
-            infile >> currSpecies;
-
-            infile >> hghtMin >> hghtMax >> canopyRatio;
-            // cerr << "currSpecies = " << currSpecies << " hmin = " << hghtMin << " hmax = " << hghtMax << " cRatio = " << canopyRatio << endl;
-
-            if(hghtMax > maxtree)
-                maxtree = hghtMax;
-
-            infile >> numPlants;
-            for(int j = 0; j < numPlants; j++)
-            {
-                Plant p;
-                float x, y, z, h, r;
-
-                // terrain position and plant height
-                infile >> x >> y >> z >> h >> r;
-
-                // convert units to meters and drape onto terrain
-                p.height = h;
-
-                // supplied canopy ratio is actually radius to height (not diameter to height)
-                p.canopy = r * 2.0f;
-
-                rndoff = (float)(rand() % 100) / 100.0f * 0.6f;
-                p.col = glm::vec4(-0.3f+rndoff, -0.3f+rndoff, -0.3f+rndoff, 1.0f); // randomly vary lightness of plant
-                if(ter->drapePnt(vpPoint(x, z, y), p.pos)) // project plant onto the terrain
-                    placePlant(ter, currSpecies, p);
-            }
-        }
-        infile.close();
-    }
-    else
-    {
-        cerr << "Error Mesh::readPDB: unable to open " << filename << endl;
-        return false;
-    }
-    return true;
-}
-
-bool PlantGrid::writePDB(string filename, Biome * biome)
-{
-    ofstream outfile;
-    std::vector<int> activeSpecies;
-    int writtenPlants = 0;
-
-    cerr << "write PDB " << filename << endl;
-    outfile.open((char *) filename.c_str(), ios_base::out | ios_base::trunc);
-    if(outfile.is_open())
-    {
-        // count number of non-zero element species
-        for(int s = 0; s < biome->numPFTypes(); s++)
-        {
-            int specNum;
-            bool found = false;
-
-            // gather plants belonging to species and derive statistics
-            for(int i = 0; i < gx; i++)
-                for(int j = 0; j < gy; j++)
-                    if((int) pgrid[flatten(i,j)].pop[s].size() > 0)
-                        found = true;
-            if(found)
-                activeSpecies.push_back(s);
-        }
-
-        outfile << (int) activeSpecies.size() << endl;
-
-        for(int k = 0; k < (int) activeSpecies.size(); k++)
-        {
-            int numPlants, s;
-            float canopyRatio, hghtMin, hghtMax;
-            std::vector<Plant> tpop; tpop.clear();
-
-            s = activeSpecies[k];
-            outfile << s << " ";
-
-            canopyRatio = 0.0f; hghtMax = 0.0f; hghtMin = 200.0f;
-            // gather plants belonging to species and derive statistics
-            for(int i = 0; i < gx; i++)
-                for(int j = 0; j < gy; j++)
-                {
-                    for(int p = 0; p < (int) pgrid[flatten(i,j)].pop[s].size(); p++)
-                    {
-                        Plant plnt = pgrid[flatten(i,j)].pop[s][p];
-
-                        if(plnt.height < hghtMin)
-                            hghtMin = plnt.height;
-                        if(plnt.height > hghtMax)
-                            hghtMax = plnt.height;
-                        canopyRatio += (plnt.canopy / plnt.height) * 0.5f ;
-                        tpop.push_back(plnt);
-                    }
-                }
-            numPlants = (int) tpop.size();
-            canopyRatio /= (float) numPlants;
-
-            outfile << hghtMin << " " << hghtMax << " " << canopyRatio; // << " ";
-            outfile << endl;	// XXX: if errors occur in PDB file, remove this line, and uncomment space above
-
-            outfile << numPlants << endl;
-            for(int j = 0; j < numPlants; j++)
-            {
-                Plant plnt = tpop[j];
-
-                // terrain position and plant height
-                float x = plnt.pos.x;
-                float y = plnt.pos.z;
-                float z = plnt.pos.y;
-                float h = plnt.height;
-                float r = plnt.canopy/2.0f;
-                outfile << x  << " " << y << " " << z << " " << h << " " << r << endl;
-                writtenPlants++;
-            }
-        }
-
-        outfile.close();
-    }
-    else
-    {
-        cerr << "Error Mesh::writePDB: unable to open " << filename << endl;
-        return false;
-    }
-    cerr << "num written plants = " << writtenPlants << endl;
-    return true;
-}
-
-
 /// PlantShape
 
 void ShapeGrid::genSpherePlant(float trunkheight, float trunkradius, Shape &shape)
@@ -972,24 +828,6 @@ void EcoSystem::clear()
     }
 }
 
-bool EcoSystem::loadNichePDB(string filename, Terrain * ter, int niche)
-{  
-    bool success;
-
-    // std::cout << "Number of niches: " << niches.size() << std::endl;
-    success = niches[niche].readPDB(filename, biome, ter, maxtreehght);
-    if(success)
-    {
-        cerr << "plants loaded for Niche " << niche << endl;
-    }
-    return success;
-}
-
-bool EcoSystem::saveNichePDB(string filename, int niche)
-{
-    return niches[niche].writePDB(filename, biome);
-}
-
 void EcoSystem::pickPlants(Terrain * ter, TypeMap * clusters)
 {
     Region reg = clusters->getRegion();
@@ -1026,9 +864,13 @@ void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &d
 
 void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree)
 {
+    float tx, ty;
+    int gx, gy;
     // cerr << "x = " << tree.x << " y = " << tree.y << endl;
-    float h = ter->getHeightFromReal(tree.x, tree.y);
-    vpPoint pos(tree.y, h, tree.x);
+    ter->getTerrainDim(tx, ty);
+    ter->getGridDim(gx, gy);
+    float h = ter->getHeightFromReal(tx - tree.y, tree.x);
+    vpPoint pos(tree.x, h, tx - tree.y);
     // cerr << "h = " << h << endl;
 
     int spc = tree.species;
@@ -1047,7 +889,6 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
         std::cout << "Adding canopytree xy: " << pos.x << ", " << pos.z << std::endl;
     }
     */
-
 
     Plant plnt = {pos, tree.height, tree.radius, coldata};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
     esys.placePlant(ter, spc, plnt);

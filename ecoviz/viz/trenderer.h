@@ -202,8 +202,8 @@ public:
     TRenderer(QGLWidget *drawTo = NULL, const std::string &dir="."); // the QGLwidget is created by the GUI manager
     ~TRenderer();
 
-    // load in new terrain data; this will come from an grid structure. paintMap is the associated
-    // terrain type map, and constrainTmap is the map with freeze constrainst etc. Both of these can be NULL.
+    // load in new terrain data; this will come from a grid structure. paintMap is the associated
+    // terrain type map, and constraintMap is the map with freeze constrainst etc. Both of these can be NULL.
     void loadTerrainData(float* data, int wd, int ht, float scx, float scy,
                          TypeMap* paintMap = NULL, TypeMap* constraintMap = NULL);
 

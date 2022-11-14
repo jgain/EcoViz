@@ -394,12 +394,6 @@ public:
     void loadScene(std::string dirprefix, int timestep_start, int timestep_end);
 
      /**
-      * Save scene attributes to the directory specified
-      * @param dirprefix     directory path and file name prefix combined for saving a scene, directory is assumed to exist
-      */
-     void saveScene(std::string dirprefix);
-
-     /**
       * Export the scene (for Mitsuba) to the XML specified
       * @param speciesMap      Correspondence map between the plant type and a vector binding a height to a mitsuba id
       * @param xmlFile         XML file in which the scene will be exported

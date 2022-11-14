@@ -223,10 +223,13 @@ void TimeWindow::updateSingleScene(int t)
      std::vector<basic_tree> trees(scene->sampler->sample(scene->cohortmaps->get_map(curr_cohortmap), nullptr));
      // auto et_sample = std::chrono::steady_clock::now().time_since_epoch();
      std::vector<basic_tree> mature = scene->cohortmaps->get_maturetrees(curr_cohortmap);
+
      for(auto &tree: mature)
      {
-         if(scene->getTerrain()->inGridBounds(tree.x, tree.y))
-            trees.push_back(tree);
+         if(scene->getTerrain()->inGridBounds(tree.y, tree.x))
+             trees.push_back(tree);
+         else
+             cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
      }
 
 

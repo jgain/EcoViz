@@ -395,7 +395,7 @@ int TypeMap::load(const std::string &filename, TypeMapType purpose)
     {
         infile >> width >> height;
         // cerr << "width = " << width << " height = " << height << endl;
-        matchDim(width, height);
+        matchDim(height, width);
         // convert to internal type map format
 
         for (int x = 0; x < width; x++)
@@ -526,7 +526,7 @@ bool TypeMap::loadCategoryImage(const std::string &filename)
     // set internal storage dimensions
     width = img.width();
     height = img.height();
-    matchDim(width, height);
+    matchDim(height, width);
 
     // convert to internal type map format
     for (int x = 0; x < width; x++)
@@ -562,7 +562,7 @@ int TypeMap::convert(basic_types::MapFloat * map, TypeMapType purpose, float ran
     float val, maxval = 0.0f;
 
     map->getDim(width, height);
-    matchDim(width, height);
+    matchDim(height, width);
     // convert to internal type map format
     int mincm, maxcm;
     mincm = 100; maxcm = -1;

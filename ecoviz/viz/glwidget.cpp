@@ -613,6 +613,7 @@ void GLWidget::paintGL()
 
         if(focuschange)
             renderer->updateTypeMapTexture(scene->getTypeMap(getOverlay())); // only necessary if the texture is changing dynamically
+
         renderer->draw(view);
 
         t.stop();
@@ -925,6 +926,10 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
             cerr << "Pick Point = " << pickpnt.x << ", " << pickpnt.y << ", " << pickpnt.z << endl;
             focuschange = true; focusviz = true;
             atimer->start(10);
+        }
+        else
+        {
+            cerr << "Terrain missed" << endl;
         }
         // ignores pick if terrain not intersected, should possibly provide error message to user
     }
