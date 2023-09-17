@@ -110,6 +110,7 @@ GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidg
 
     setScene(scn);
     renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+
     viewlock = false;
     decalsbound = false;
     focuschange = false;
@@ -126,6 +127,7 @@ GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidg
 
     resize(sizeHint());
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
+
 
 }
 

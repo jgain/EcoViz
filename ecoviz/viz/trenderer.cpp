@@ -627,6 +627,7 @@ void TRenderer::generateNormalTexture(void)
     glBindVertexArray(0);  CE();
     glUseProgram(0);  CE();
 
+    /*
     std::vector<unsigned int> texdata(width * height);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, texdata.data());
 
@@ -640,6 +641,7 @@ void TRenderer::generateNormalTexture(void)
         ofs << outint << " ";
     }
     ofs << std::endl;
+    */
 
     // reset viewport
     glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
@@ -1733,6 +1735,7 @@ void TRenderer::drawSun(View * view, int renderPass)
 
 void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
 {
+
     glUseProgram(programID); CE();
 
     // use textured manipulators (decals)?
@@ -1746,8 +1749,13 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
         }
     }
 
+    std::cerr << "Draw Manipulators called\n";
     for (int i = 0; i < (int)manipDrawCallData.size(); i++)
     {
+        // if (manipDrawCallData[i].VAO  == 2) continue; //***TEST **** DODGY VAO?
+
+        if (manipDrawCallData[i].VAO == 0) continue; // don't bind VAO 0 - it's an empty record
+
         float alpha = 1.0f;
         if (drawToFB) // used when drawing frame for manipulator transparanecy blending
         {

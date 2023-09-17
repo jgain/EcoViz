@@ -22,6 +22,7 @@ find_package(PythonInterp)
 find_package(Qt5 COMPONENTS Core Gui Charts REQUIRED)
 find_package(Qt5Widgets 5.7 REQUIRED)
 find_package(Qt5OpenGL 5.7 REQUIRED)
+cmake_policy(SET CMP0072 NEW)
 find_package(OpenGL)
 pkg_check_modules(GLEW glew)
 
