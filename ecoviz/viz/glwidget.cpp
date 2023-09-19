@@ -330,6 +330,7 @@ void GLWidget::setMap(TypeMapType type, int mth)
 void GLWidget::initializeGL()
 {
     // get context opengl-version
+    qDebug() << "GL initialize....";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();
     qDebug() << "Context valid: " << context()->isValid();
     qDebug() << "Really used OpenGl: " << context()->format().majorVersion() << "." <<

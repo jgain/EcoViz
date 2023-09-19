@@ -457,7 +457,7 @@ void Window::setupVizPanel()
     QGLFormat glFormat;
     glFormat.setVersion( 4, 1 );
     glFormat.setProfile( QGLFormat::CoreProfile );
-    glFormat.setSampleBuffers( false );
+    glFormat.setSampleBuffers( true );
 
     // vizLayout->setRowStretch(0, 6);
     vizLayout->setRowStretch(0, 0);
