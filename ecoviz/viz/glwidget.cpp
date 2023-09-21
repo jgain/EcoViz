@@ -612,7 +612,8 @@ void GLWidget::paintGL()
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
-        scene->getTerrain()->updateBuffers(renderer);
+        if (drawParams.size() > 0) // DEBUG: PCM
+            scene->getTerrain()->updateBuffers(renderer);
 
         if(focuschange)
             renderer->updateTypeMapTexture(scene->getTypeMap(getOverlay())); // only necessary if the texture is changing dynamically

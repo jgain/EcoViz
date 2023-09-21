@@ -95,7 +95,7 @@ public:
 
     /// Adjust rendering parameters, grid and contours, to accommodate current scale
     void scaleRenderParams(float scale);
-
+    void loadSceneData(void); // load data from disk for each scene
     void run_viewer();
 
 public slots:

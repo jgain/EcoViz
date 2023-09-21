@@ -103,6 +103,8 @@ int main(int argc, char *argv[])
         int desktopArea = QApplication::desktop()->width() *
             QApplication::desktop()->height();
 
+        //window->loadSceneData(); // PCM - ensure all data loaded before events generated
+
         int widgetArea = window->width() * window->height();
         if (((float)widgetArea / (float)desktopArea) < 0.75f)
             window->show();

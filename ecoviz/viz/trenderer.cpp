@@ -1735,6 +1735,7 @@ void TRenderer::drawSun(View * view, int renderPass)
 
 void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
 {
+    // return; // DEBUG: PCM
 
     glUseProgram(programID); CE();
 

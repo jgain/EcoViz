@@ -457,7 +457,10 @@ void Window::setupVizPanel()
     QGLFormat glFormat;
     glFormat.setVersion( 4, 1 );
     glFormat.setProfile( QGLFormat::CoreProfile );
-    glFormat.setSampleBuffers( true );
+
+    // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
+    //glFormat.setSampleBuffers( true );
+    //glFormat.setSamples(4);
 
     // vizLayout->setRowStretch(0, 6);
     vizLayout->setRowStretch(0, 0);
@@ -688,6 +691,13 @@ Window::~Window()
     // delete transect controllers
     for(auto &it: transectControls)
         delete(it);
+}
+
+void Window::loadSceneData(void)
+{
+    assert(scenes.size() == 2);
+    for(int i = 0; i < 2; i++)
+        scenes[i]->loadScene(1, 5); // years
 }
 
 void Window::run_viewer()
