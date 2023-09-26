@@ -1753,8 +1753,6 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
     std::cerr << "Draw Manipulators called\n";
     for (int i = 0; i < (int)manipDrawCallData.size(); i++)
     {
-        // if (manipDrawCallData[i].VAO  == 2) continue; //***TEST **** DODGY VAO?
-
         if (manipDrawCallData[i].VAO == 0) continue; // don't bind VAO 0 - it's an empty record
 
         float alpha = 1.0f;

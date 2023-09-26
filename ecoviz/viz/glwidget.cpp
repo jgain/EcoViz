@@ -332,7 +332,7 @@ void GLWidget::initializeGL()
     // get context opengl-version
     qDebug() << "GL initialize....";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();
-    qDebug() << "Context valid: " << context()->isValid();
+    qDebug() << "Context valid: " << context()->isValid() << "; Address: " << context();;
     qDebug() << "Really used OpenGl: " << context()->format().majorVersion() << "." <<
               context()->format().minorVersion();
     qDebug() << "OpenGl information: VENDOR:       " << (const char*)glGetString(GL_VENDOR);

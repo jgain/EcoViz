@@ -238,9 +238,9 @@ void GLTransect::loadDecals()
 void GLTransect::initializeGL()
 {
     // get context opengl-version
-    qDebug() << "GLTransect initialize....";
+    qDebug() << "\nGLTransect initialize....\n";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();
-    qDebug() << "Context valid: " << context()->isValid();
+    qDebug() << "Context valid: " << context()->isValid() << "; Address: " << context();
     qDebug() << "Really used OpenGl: " << context()->format().majorVersion() << "." <<
               context()->format().minorVersion();
     qDebug() << "OpenGl information: VENDOR:       " << (const char*)glGetString(GL_VENDOR);
@@ -272,7 +272,8 @@ void GLTransect::initializeGL()
     Vector dl = Vector(0.6f, 1.0f, 0.6f);
     dl.normalize();
 
-    GLfloat pointLight[3] = { 0.5, 5.0, 7.0}; // side panel + BASIC lighting
+  //  GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
+     GLfloat pointLight[3] = {1000.0, 1000.0, 1000.0}; // side panel + BASIC lighting
     GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
     GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
 
@@ -384,6 +385,7 @@ void GLTransect::paintGL()
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
+        // scene->getTerrain()->setBufferToDirty();
         scene->getTerrain()->updateBuffers(renderer);
 
         renderer->draw(view);
