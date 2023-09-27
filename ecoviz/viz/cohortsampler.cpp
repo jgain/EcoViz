@@ -7,7 +7,8 @@
 #ifdef _WIN32
 #include <numeric>
 #else
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
+#include <numeric>
 #endif
 #include <deque>
 #include <algorithm>

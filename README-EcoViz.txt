@@ -35,7 +35,7 @@ Then run make to build. cmake options are sticky.
 
 The executable is ./viz/ecoviz. The system must be run from the build directory because there are some relative paths.
 
-To run the visualizer with test data execute: ./viz/ecoviz ../../data/test
+To run the visualizer with test data execute: ./viz/ecoviz ../../data/test2
 
 GUI
 ---
