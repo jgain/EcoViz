@@ -1210,8 +1210,37 @@ void TRenderer::initShaders(void)
 
   if (shadersReady) return; // already compiled
 
+  std::string fshaderName;
+  std::string vshaderName;
+
       shaderProgram *s;
 
+        std::vector< std::tuple<std::string, std::string, std::string> > shaderInfo; // tuple - fragName, vertName, commonName
+
+        shaderInfo.push_back(std::make_tuple("basic.frag", "basic.vert", "basicShader"));
+        shaderInfo.push_back(std::make_tuple("genNormal.frag", "genNormal.vert", "normalShader"));
+        shaderInfo.push_back(std::make_tuple("phong.frag", "phong.vert", "phong"));
+        shaderInfo.push_back(std::make_tuple("rad_scaling_pass1.frag", "rad_scaling_pass1.vert", "rscale1"));
+        shaderInfo.push_back(std::make_tuple("rad_scaling_pass2.frag", "rad_scaling_pass2.vert", "rscale2"));
+        shaderInfo.push_back(std::make_tuple("phongRS.frag", "phongRS.vert", "phongRS"));
+        shaderInfo.push_back(std::make_tuple("phongRSmanip.frag", "phongRSmanip.vert", "phongRSmanipShader"));
+        shaderInfo.push_back(std::make_tuple("sun.frag", "sun.vert", "sunShader"));
+        shaderInfo.push_back(std::make_tuple("canopy.frag", "canopy.vert", "canopyShader"));
+
+        // PCM: flat shader with double sides lighting for terrain
+        shaderInfo.push_back(std::make_tuple("flatTerr.frag", "flatTerr.vert", "flatTransectShader"));
+
+        for (auto &sh : shaderInfo)
+        {
+            s = new shaderProgram();
+            std::string fragS = shaderDir + "/" + std::get<0>(sh);
+            std::string vertS = shaderDir + "/" + std::get<1>(sh);
+
+            s->setShaderSources( fragS.c_str(), vertS.c_str() );
+            shaders[std::get<2>(sh)] = s;
+        }
+
+   /*
       s = new shaderProgram();
       s->setShaderSources(std::string("basic.frag"), std::string("basic.vert"));
       shaders["basicShader"] = s;
@@ -1247,6 +1276,13 @@ void TRenderer::initShaders(void)
       s = new shaderProgram();
       s->setShaderSources(std::string("canopy.frag"), std::string("canopy.vert"));
       shaders["canopyShader"] = s;
+
+      // PCM: flat shader wi double sides lighting for terrain
+
+      s = new shaderProgram();
+      s->setShaderSources(std::string("flatTerr.frag"), std::string("flatTerr.vert"));
+      shaders["flatTransectShader"] = s;
+*/
 
 // #ifdef _WIN32
       GLenum err = glewInit();
@@ -1338,6 +1374,8 @@ void TRenderer::draw(View * view)
     std::string shaderName;
     if (shadModel == BASIC) // basic Phong
       shaderName = "basicShader";
+    else if (shadModel == FLAT_TRANSECT)
+        shaderName = "flatTransectShader";
     else if(shadModel == RADIANCE_SCALING)
       shaderName = "rscale1";
     else // sun shading
@@ -1421,6 +1459,16 @@ void TRenderer::draw(View * view)
         glUniform4fv(glGetUniformLocation(programID, "specularCol"), 1, glm::value_ptr(lightSpecColour) ); CE();
         glUniform1f(glGetUniformLocation(programID, "shiny"), shinySpec); CE();
       }
+    else if (shadModel == FLAT_TRANSECT)
+    {
+        glUniform4fv(glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
+
+        // set colours
+        glUniform4fv(glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(terMatDiffuse) ); CE();
+        glUniform4fv(glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(terMatAmbient) ); CE();
+        glUniform4fv(glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
+        glUniform4fv(glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
+    }
     else if(shadModel == RADIANCE_SCALING) // radiance scaling
       {
         // map side wall lights into camera space; lights at corners of terrain, moved along diagonal
@@ -1738,6 +1786,8 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
     // return; // DEBUG: PCM
 
     glUseProgram(programID); CE();
+\
+    glm::vec4 lightPos = MVmx * pointLight; // map light pos into camera space
 
     // use textured manipulators (decals)?
     if (shadModel == RADIANCE_SCALING)
@@ -1785,15 +1835,16 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
                 manipDrawCallData[i].specular[2], manipDrawCallData[i].specular[3]); // JG: ambient colour of manipulator
       glm::vec4 lightDiffuseColour = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f); // colour of light
       glm::vec4 lightAmbientColour = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+      glm::vec4 lightSpecCol = glm::vec4(1.0f,1.0f,1.0f,1.0f);
 
       // set colours and light
       glUniform4fv(glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(MatDiffuse) ); CE();
       glUniform4fv(glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(MatAmbient) ); CE();
       glUniform4fv(glGetUniformLocation(programID, "matSpec"), 1, glm::value_ptr(MatSpecular) ); CE();
-      glUniform4fv(glGetUniformLocation(programID, "lightPos"), 1, glm::value_ptr(pointLight)); CE();
+      glUniform4fv(glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
       glUniform4fv(glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
       glUniform4fv(glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
-      glUniform4fv(glGetUniformLocation(programID, "specularCol"), 1, glm::value_ptr(lightSpecColour) ); CE();
+      glUniform4fv(glGetUniformLocation(programID, "specularCol"), 1, glm::value_ptr(lightSpecCol) ); CE();
       glUniform1f(glGetUniformLocation(programID, "shiny"), shinySpec); CE();
 
       glBindVertexArray(manipDrawCallData[i].VAO); CE();

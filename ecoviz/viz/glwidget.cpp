@@ -364,7 +364,7 @@ void GLWidget::initializeGL()
     Vector dl = Vector(0.6f, 1.0f, 0.6f);
     dl.normalize();
 
-    GLfloat pointLight[3] = { 0.5, 5.0, 7.0}; // side panel + BASIC lighting
+    GLfloat pointLight[3] = { 0.5, 5.0, 7.0}; // side panel + BASIC lighting - FIX FOR TERRAIN HEIGHT (PCM)?
     GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
     GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
 

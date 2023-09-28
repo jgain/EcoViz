@@ -1,7 +1,7 @@
 #version 150
 
-uniform vec4 specularCol;
 uniform float shiny;
+uniform vec4 specularCol;
 uniform vec4 matSpec;
 
 uniform int drawWalls;

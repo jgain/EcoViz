@@ -3,15 +3,17 @@ UBUNTU INSTALLATION:
 These are requirements for Ubuntu. In each case, I've listed where to get the software 
 for Ubuntu 18.10. For newer versions of Ubuntu you might not need all the PPAs.
 
-CMake 2.8.7+, make, automake 1.9, pkg-config, QT5.7+, Boost1.49+, SQLite3
+CMake 2.8.7+, make, automake 1.9+, pkg-config, QT5.7+, Boost1.49+, SQLite3
 
-sudo apt-get install cmake automake1.9 pkg-config libglm-dev qtbase5-dev libqt5charts5-dev libboost-all-dev libglew-dev qtcreator sqlite3 sqlitebrowser
+sudo apt-get install cmake automake pkg-config libglm-dev qtbase5-dev libqt5charts5-dev libboost-all-dev libglew-dev qtcreator sqlite3 sqlitebrowser libsqlite3-dev
 
-To install a particular version of g++ (in this case v7, note that version 9 does not work):
+To install a particular version of g++ (e.g. g++8):
 
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt install gcc-8 g++-8
 then make sure to set the correct version in the build script (buildecoviz.sh)
+
+NOTE: the latest version of g++ should work. 
 
 Compiling and Executing
 -----------------------
