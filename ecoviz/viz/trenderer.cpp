@@ -1521,6 +1521,11 @@ void TRenderer::draw(View * view)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
       }
 
+    if (shadModel == FLAT_TRANSECT) // turn offbackface culling to for terrian draw - transect only
+    {
+        glDisable(GL_CULL_FACE); CE();
+    }
+
     glUniform1i(glGetUniformLocation(programID, "drawWalls"), 0); CE(); // do NOT draw walls
     glBindVertexArray(vaoTerrain); CE();
 
@@ -1544,6 +1549,10 @@ void TRenderer::draw(View * view)
         glDrawElements(GL_TRIANGLE_STRIP, wallDrawEls[i], GL_UNSIGNED_INT, 0); CE();
     }
 
+    if (shadModel == FLAT_TRANSECT) // generally want this on for all other rendering
+    {
+        glEnable(GL_CULL_FACE); CE();
+    }
     // **************************** draw manipulators/constraints with phong **********************************
 
     if (shadModel == RADIANCE_SCALING)
