@@ -130,6 +130,7 @@ shaderProgram::shaderProgram(const char * fragSourceFile, const char * vertSourc
 }
 
   // use Bruce's shader/kernel source code bake...
+/*
     void shaderProgram::setShaderSources(const std::string& fragSource, const std::string& vertSource)
     {
         if (shaderReady)
@@ -145,7 +146,7 @@ shaderProgram::shaderProgram(const char * fragSourceFile, const char * vertSourc
         fileInput = false;
         shaderReady = false;
     }
-
+*/
 
     void shaderProgram::setShaderSources(const char * fragSourceFile, const char * vertSourceFile)
     {

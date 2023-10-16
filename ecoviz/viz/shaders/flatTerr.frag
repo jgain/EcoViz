@@ -9,4 +9,6 @@ out vec4 col;
 void main(void)
 {
    col = colour;
+//   if (gl_FrontFacing == false)
+ //     col = vec4(1.0, 0.0, 0.0, 1.0);
 }

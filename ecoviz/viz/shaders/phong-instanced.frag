@@ -1,12 +1,15 @@
-#version 150
+#version 330
 
-uniform float shiny;
+#extension GL_ARB_explicit_attrib_location: enable
+
 uniform vec4 specularCol;
+uniform float shiny;
 uniform vec4 matSpec;
 
-uniform int drawWalls;
+//uniform sampler2D decalTexture;
+//uniform int useTexturing;
 
-in vec2 texCoord;
+out vec4 color;
 
 in vec3 normal;
 in vec3 halfVector;
@@ -14,9 +17,9 @@ in vec3 lightDir;
 in vec4 diffuse;
 in vec4 ambient;
 
-out vec4 color;
+in vec2 texCoord;
 
-// NOTE: this shader does not compute a disance attentuation term for lighting.
+// NOTE: this shader does not compute a distance attentuation term for lighting.
 // some more variables need to be passed in for that.
 
 void main(void)
@@ -43,8 +46,14 @@ void main(void)
 
         halfV = normalize(halfVector);
         NdotHV = max(dot(n,halfV),0.0);
-        //color += att * gl_FrontMaterial.specular * gl_LightSource[0].specular *
-        //pow(NdotHV,gl_FrontMaterial.shininess);
         color += matSpec * specularCol * pow(NdotHV, shiny);
-        }
+     }
+     // decal texturing:
+ //    if (useTexturing == 1)
+ //    {
+ //       vec4 texel = texture(decalTexture, texCoord);
+        // color = vec4(texCoord.x, texCoord.y, 0.0, 1.0);
+        // color = vec4(texel.r, texel.g, texel.b, color.a); // GL_REPLACE
+ //       color = vec4(mix(color.rgb, texel.rgb, texel.a), color.a); // GL_DECAL
+ //    }
 }

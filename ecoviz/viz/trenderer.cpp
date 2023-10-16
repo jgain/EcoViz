@@ -1229,6 +1229,7 @@ void TRenderer::initShaders(void)
 
         // PCM: flat shader with double sides lighting for terrain
         shaderInfo.push_back(std::make_tuple("flatTerr.frag", "flatTerr.vert", "flatTransectShader"));
+        shaderInfo.push_back(std::make_tuple("phong-instanced.frag", "phong-instanced.vert", "phongInstancedShader"));
 
         for (auto &sh : shaderInfo)
         {
@@ -1461,6 +1462,9 @@ void TRenderer::draw(View * view)
       }
     else if (shadModel == FLAT_TRANSECT)
     {
+        // needed for two sided lighting
+        glDisable(GL_CULL_FACE); CE();
+
         glUniform4fv(glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
 
         // set colours
@@ -1556,11 +1560,16 @@ void TRenderer::draw(View * view)
         programID = (*shaders["canopyShader"]).getProgramID();
         //std::cout << "Using canopyShader shader" << std::endl;
     }
-    else
+    else if (shadModel == FLAT_TRANSECT) // should only be used for this case
     {
-        programID = (*shaders["phong"]).getProgramID();
-        //std::cout << "Using phong shader" << std::endl;
+      programID = (*shaders["phongInstancedShader"]).getProgramID();
+      //std::cout << "Using phongInstanced shader" << std::endl;
     }
+    //else
+    //{
+    //    programID = (*shaders["phong"]).getProgramID();
+    //    std::cout << "Using phong shader to draw manipulators" << std::endl;
+    //}
 
     drawManipulators(programID);
 
@@ -1800,7 +1809,7 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
         }
     }
 
-    std::cerr << "Draw Manipulators called\n";
+    std::cerr << "Draw Manipulators called - programID = " << programID << "\n";
     for (int i = 0; i < (int)manipDrawCallData.size(); i++)
     {
         if (manipDrawCallData[i].VAO == 0) continue; // don't bind VAO 0 - it's an empty record

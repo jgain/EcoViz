@@ -263,7 +263,8 @@ void GLTransect::initializeGL()
     // To use basic shading: PMrender::TRenderer::BASIC
     // To use radianvce scaling: PMrender::TRenderer::RADIANCE_SCALING
 
-    PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::BASIC;
+    // PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::BASIC;
+    PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::FLAT_TRANSECT;
 
     // set terrain shading model
     renderer->setTerrShadeModel(sMod);
@@ -273,7 +274,7 @@ void GLTransect::initializeGL()
     dl.normalize();
 
   //  GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
-     GLfloat pointLight[3] = {1000.0, 1000.0, 1000.0}; // side panel + BASIC lighting
+     GLfloat pointLight[3] = {1000.0, 2000.0, 1000.0}; // side panel + BASIC lighting
     GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
     GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
 

@@ -150,7 +150,7 @@ public:
      * @pre There is a current OpenGL contex
      * @post @ref bufferState == @ref BufferState::CLEAN
      */
-    void updateBuffers(PMrender::TRenderer *renderer) const;
+    void updateBuffers(PMrender::TRenderer *renderer);
 
     /// Allocate memory for a grid of size @a dx by @a dy, and scale @a sx by @a sy in metres
     void initGrid(int dx, int dy, float sx, float sy);
@@ -159,7 +159,7 @@ public:
     void delGrid();
 
     // draw: display terrain using OpenGL as a triangle mesh
-    void draw(View * view, PMrender::TRenderer *renderer) const;
+    void draw(View * view, PMrender::TRenderer *renderer);
 
     // setFocus, getFocus: access methods for view focus on terrain
     inline void setFocus(vpPoint f){ focus = f; }

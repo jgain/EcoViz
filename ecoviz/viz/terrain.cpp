@@ -341,7 +341,7 @@ float Terrain::getCellExtent()
     return dimx / (float) grid->width();
 }
 
-void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
+void Terrain::updateBuffers(PMrender::TRenderer * renderer)
 {
     const int width = grid->width();
     const int height = grid->height();
@@ -374,7 +374,7 @@ void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
     bufferState = BufferState::CLEAN;
 }
 
-void Terrain::draw(View * view, PMrender::TRenderer *renderer) const
+void Terrain::draw(View * view, PMrender::TRenderer *renderer)
 {
     updateBuffers(renderer);
 

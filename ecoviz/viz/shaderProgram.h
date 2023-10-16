@@ -59,7 +59,7 @@ public:
     }
         ~shaderProgram(){}
 
-    void setShaderSources(const std::string& frageSource, const std::string& vertSource);
+    // void setShaderSources(const std::string& frageSource, const std::string& vertSource);
     void setShaderSources(const char * fragSourceFile, const char * vertSourceFile);
 
         bool  compileAndLink(void); //compile and link shaders
