@@ -68,7 +68,8 @@ void main(void)
     vec4 diffuse = 0.5*matDiffuse * diffuseCol * NdotL;
     vec4 ambient = 0.5*matAmbient * ambientCol;
 
-    colour = clamp(diffuse + ambient, 0.0, 1.0);
+    // colour = clamp(diffuse + ambient, 0.0, 1.0);
+    colour  = clamp(0.5*matAmbient*ambientCol + 0.5*matDiffuse*diffuseCol, 0.0, 1.0);
 
     gl_Position = MVproj * vec4(v, 1.0); // clip space position
 }
