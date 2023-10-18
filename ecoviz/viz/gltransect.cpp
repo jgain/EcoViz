@@ -265,7 +265,9 @@ void GLTransect::initializeGL()
 
     //PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::BASIC;
 
-    PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::FLAT_TRANSECT; // flat shading transect
+    // PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::FLAT_TRANSECT; // flat shading transect
+
+PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SCALING_TRANSECT;
 
     // set terrain shading model
     renderer->setTerrShadeModel(sMod);

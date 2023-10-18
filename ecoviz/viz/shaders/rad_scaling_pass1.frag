@@ -137,4 +137,7 @@ void main(void) {
        col = mix(col, outBoundsCol, outBoundsBlend);
 
    col = clamp(col, 0.0, 1.0);
+
+   if (gl_FrontFacing == false)
+     col = vec4(1.0, 0.0, 0.0, 1.0);
 }

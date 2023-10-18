@@ -48,7 +48,7 @@ class TRenderer
 {
  public:
     // select which render methos to use for terrain
-    enum terrainShadingModel {BASIC, RADIANCE_SCALING, SUN, FLAT_TRANSECT};
+    enum terrainShadingModel {BASIC, RADIANCE_SCALING, SUN, FLAT_TRANSECT, RADIANCE_SCALING_TRANSECT};
     // select type map info to update - PAINT upfdated paint type map,
     // CONSTRAINT updates the overlay data (additional constraints etc)
     enum typeMapInfo {PAINT, CONSTRAINT};
