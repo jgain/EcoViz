@@ -115,6 +115,7 @@ class TRenderer
     GLenum rsDestTexUnit;
     GLenum constraintTexUnit; // used for terrain freezing and other overlay data
     GLenum manipTranspTexUnit; // used for transparency affect on manipulators
+    GLenum depthTexUnit;      // used to read back depth value for manipulator FBO
 
     GLuint depthTexture; // radiance scaling: FBO depth texture
     GLuint normTexture; // radiance scaling: FBO normal texture

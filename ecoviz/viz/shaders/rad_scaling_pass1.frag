@@ -138,6 +138,11 @@ void main(void) {
 
    col = clamp(col, 0.0, 1.0);
 
+   // NOTE: this is for exposed back-face processing for cutaways
+   // specifically, after RS pass 1, manipulators are drawn - the colour alpha channel
+   // can be used for processing there, effectively serving as a mask/stencil. Only a=0.0 fragments
+   // are back-facing and can be managed accordingly
+   
    if (gl_FrontFacing == false)
-     col = vec4(1.0, 0.0, 0.0, 1.0);
+     col = vec4(col.rgb, 0.0);
 }

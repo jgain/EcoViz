@@ -783,9 +783,7 @@ void TRenderer::generateNormalTexture(void)
 
     // ****** manipulator depth texture:: ********************
 
-
-    glActiveTexture(manipTranspTexUnit);
-
+    glActiveTexture(depthTexUnit);
     glGenTextures(1, &manipDepthTexture); CE();
     glBindTexture(GL_TEXTURE_2D, manipDepthTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
@@ -799,6 +797,7 @@ void TRenderer::generateNormalTexture(void)
 
    // ****** manipulator colour texture:: ********************
 
+    glActiveTexture(manipTranspTexUnit);
     glGenTextures(1, &manipTranspTexture); CE();
     glBindTexture(GL_TEXTURE_2D, manipTranspTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
@@ -887,6 +886,7 @@ void TRenderer::initInstanceData(void)
       decalTexUnit = GL_TEXTURE7;
       constraintTexUnit = GL_TEXTURE8;
       manipTranspTexUnit = GL_TEXTURE9;
+      depthTexUnit = GL_TEXTURE10;
 
       width = height = 0;
       scalex = scaley = 0.0f;
@@ -1223,7 +1223,7 @@ void TRenderer::initShaders(void)
         shaderInfo.push_back(std::make_tuple("rad_scaling_pass1.frag", "rad_scaling_pass1.vert", "rscale1"));
         shaderInfo.push_back(std::make_tuple("rad_scaling_pass2.frag", "rad_scaling_pass2.vert", "rscale2"));
         shaderInfo.push_back(std::make_tuple("phongRS.frag", "phongRS.vert", "phongRS"));
-        shaderInfo.push_back(std::make_tuple("phongRSmanip.frag", "phongRSmanip.vert", "phongRSmanipShader"));
+        shaderInfo.push_back(std::make_tuple("phongRSmanip.frag", "phongRSmanip.vert", "phongRSmanip"));
         shaderInfo.push_back(std::make_tuple("sun.frag", "sun.vert", "sunShader"));
         shaderInfo.push_back(std::make_tuple("canopy.frag", "canopy.vert", "canopyShader"));
 
@@ -1560,10 +1560,14 @@ void TRenderer::draw(View * view)
     }
     // **************************** draw manipulators/constraints with phong **********************************
 
-    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
+    if (shadModel == RADIANCE_SCALING)
     {
       programID = (*shaders["phongRS"]).getProgramID();
       //std::cout << "Using phongRS shader" << std::endl;
+    }
+    else if (shadModel == RADIANCE_SCALING_TRANSECT) // draw manip fragments to a differnet FBO
+    {
+        programID = (*shaders["phongRSmanip"]).getProgramID();
     }
     else if (shadModel == SUN)
     {
@@ -1585,19 +1589,17 @@ void TRenderer::draw(View * view)
     //    std::cout << "Using phong shader to draw manipulators" << std::endl;
     //}
 
-    drawManipulators(programID);
 
-    // draw second pass for manipulator transparency (not supported in BASIC mode)
+    // draw second pass for manipulator in transects - this will allow later blending against pass 1 of RS (terrain fragments)
 
-    /*
-    if (shadModel == RADIANCE_SCALING)
+
+    if (shadModel == RADIANCE_SCALING_TRANSECT)
       {
-        programID  = (*shaders["phongRSmanip"]).getProgramID();
         glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
         glViewport(0,0,_w, _h); CE();
-        drawManipulators(programID, true);
       }
-    */
+
+     drawManipulators(programID);
 
     // reset frame buffer buffer etc
 
@@ -1621,6 +1623,9 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
     programID = (*shaders[shaderName]).getProgramID();
     //std::cout << "Shader ID (RScaling) = " << programID << std::endl;
     glUseProgram(programID); CE();
+
+    GLuint blendTrans = glGetUniformLocation(programID, "blendTransect"); CE();
+    glUniform1i(blendTrans, (shadModel == RADIANCE_SCALING_TRANSECT ? 1 : 0)); CE();
 
     //glClearColor( 0.5f, 0.0f, 0.0f, 1.0f ); CE();
 
@@ -1667,6 +1672,9 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
     glUniform1i(textur, (GLuint)(rsColTexUnit - GL_TEXTURE0) );  CE();
     textur = glGetUniformLocation(programID, "manipTTexture"); CE(); // manipulator transparency
     glUniform1i(textur, (GLuint)(manipTranspTexUnit - GL_TEXTURE0) );  CE();
+    // manipulator depth
+    textur = glGetUniformLocation(programID, "depthMap"); CE(); // manipulator depth map
+    glUniform1i(textur, (GLuint)(depthTexUnit - GL_TEXTURE0) );  CE();
 
     // draw screeen aligned quad to compose RS calculations
     glBindVertexArray(vaoScreenQuad); CE();
@@ -1806,7 +1814,6 @@ void TRenderer::drawSun(View * view, int renderPass)
 
 void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
 {
-    // return; // DEBUG: PCM
 
     glUseProgram(programID); CE();
 \

@@ -24,7 +24,7 @@
 *****************************************************************************/
 //#version 120
 //#extension GL_EXT_gpu_shader4 : enable
-#version 150
+#version 330
 //#extension GL_ARB_explicit_attrib_location: enable
 
 out vec4 fcolour;
@@ -36,10 +36,15 @@ uniform vec4 lightPos0; // in camera coordinates
 uniform vec4 lightPos1; // in camera coordinates
 
 uniform sampler2D grad;  // (gx,gy,depth,1.0)
-uniform sampler2D norm;  // (nx,ny,nz,depth)
-uniform sampler2D colormap; // (r,g,b,1.0)
+uniform sampler2D norm;  // (nx,ny,nz,frag_depth)
+uniform sampler2D colormap; // (r,g,b,1.0) - note alpha = 0.0 means that this is a backfacing fragment
 
 uniform sampler2D manipTTexture; // texture with all manipulator fragments
+
+// Added for transect processing
+uniform int blendTransect;
+uniform sampler2D depthMap; // texture with 1D depth values for transect blending
+
 
 uniform float     sw;
 uniform float     sh;
@@ -214,8 +219,15 @@ void main(void) {
 
   vec3 n = texture(norm, texCoord.st).xyz;
 
+  //Initialize the depth of the fragment with the just saved depth
+  gl_FragDepth = texture(norm, texCoord.st).w;
+  
   if(n==vec3(0.0)) { // fragments outside mesh or that we do not want affected by RS
-    fcolour = vec4(texture(colormap, texCoord.st).xyz,1.0);
+
+    if (blendTransect == 1 && texture(depthMap, texCoord).r < 1.0) // region exterior to terrain covered by manipulator
+       fcolour = vec4(texture(manipTTexture,texCoord).rgb, 1.0);
+    else
+	fcolour = vec4(texture(colormap, texCoord.st).rgb,1.0);
 
     return;
   }
@@ -231,11 +243,12 @@ void main(void) {
   vec3  l1 = normalize(lightPos1.xyz);
   vec4  m = vec4(texture(colormap, texCoord.st).xyz,1.0);
 
-  //Initialize the depth of the fragment with the just saved depth
-  gl_FragDepth = texture(norm, texCoord.st).w;
-
   if(display==0)
   {
+    float manipDepth;
+    bool backFacing;
+    vec4 cmap;
+    
     // lambertian lighting + ambient (white light source assumed)
     // diffuse dirnl light 0:
     float cosineTerm = max(dot(n,l0),0.0);
@@ -245,9 +258,34 @@ void main(void) {
     cosineTerm = max(dot(n,l1),0.0);
     warpedTerm = enabled ? (0.6*cosineTerm*warp(cosineTerm,c) ) : (0.6*cosineTerm);
     fcolour += m*warpedTerm;
+    
     // blend in hidden manipulators
-    vec4 texel = texture(manipTTexture, texCoord.st);
-    fcolour = vec4(mix(fcolour.rgb, texel.rgb, texel.a), fcolour.a);
+    //vec4 texel = texture(manipTTexture, texCoord.st);
+    //fcolour = vec4(mix(fcolour.rgb, texel.rgb, texel.a), fcolour.a);
+
+    // if rendering transect/cutaway - manage depth and blend in manipulator fragments
+    
+    // check depth of this manipulator (tree!) fragment
+
+
+    if (blendTransect == 1)
+    {
+	manipDepth = texture(depthMap, texCoord).r;
+	cmap = texture(colormap, texCoord);
+        backFacing = (cmap.a == 0.0 ? true : false);
+	
+	if (backFacing == true) // Ok - this is backfacing region - test for occluded manipulator
+	{
+	  if (manipDepth > gl_FragDepth) //  manip fragment hidden by cutaway, blend in
+	    fcolour = vec4(mix(texture(manipTTexture, texCoord.st).rgb, cmap.rgb, 0.5), 1.0);
+	}
+	else
+	{
+           if (manipDepth < gl_FragDepth)
+	      fcolour = vec4(texture(manipTTexture,texCoord).rgb, 1.0);
+        }
+    }
+
   }
   else if(display==1)
   {
