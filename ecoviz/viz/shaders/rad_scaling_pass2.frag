@@ -227,7 +227,7 @@ void main(void) {
     if (blendTransect == 1 && texture(depthMap, texCoord).r < 1.0) // region exterior to terrain covered by manipulator
        fcolour = vec4(texture(manipTTexture,texCoord).rgb, 1.0);
     else
-	fcolour = vec4(texture(colormap, texCoord.st).rgb,1.0);
+       fcolour = vec4(texture(colormap, texCoord.st).rgb,1.0);	
 
     return;
   }
@@ -271,18 +271,21 @@ void main(void) {
     if (blendTransect == 1)
     {
 	manipDepth = texture(depthMap, texCoord).r;
-	cmap = texture(colormap, texCoord);
+	cmap = texture(colormap, texCoord)*0.8; // make backfacing part a bit dimmer
         backFacing = (cmap.a == 0.0 ? true : false);
 	
 	if (backFacing == true) // Ok - this is backfacing region - test for occluded manipulator
 	{
-	  if (manipDepth > gl_FragDepth) //  manip fragment hidden by cutaway, blend in
-	    fcolour = vec4(mix(texture(manipTTexture, texCoord.st).rgb, cmap.rgb, 0.5), 1.0);
+	  if (manipDepth < 1.0 && manipDepth > gl_FragDepth) //  valid manip fragment hidden by cutaway, blend in
+	    fcolour = vec4(mix(texture(manipTTexture, texCoord).rgb, cmap.rgb, 0.8), 1.0);
+	 else
+	    fcolour = vec4(cmap.rgb, 1.0);
 	}
 	else
 	{
            if (manipDepth < gl_FragDepth)
 	      fcolour = vec4(texture(manipTTexture,texCoord).rgb, 1.0);
+	   
         }
     }
 

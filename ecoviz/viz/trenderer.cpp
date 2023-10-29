@@ -1554,7 +1554,7 @@ void TRenderer::draw(View * view)
         glDrawElements(GL_TRIANGLE_STRIP, wallDrawEls[i], GL_UNSIGNED_INT, 0); CE();
     }
 
-    if (shadModel == FLAT_TRANSECT) // generally want this on for all other rendering
+    if (shadModel == FLAT_TRANSECT || shadModel == RADIANCE_SCALING_TRANSECT) // generally want this on for all other rendering
     {
         glEnable(GL_CULL_FACE); CE();
     }
