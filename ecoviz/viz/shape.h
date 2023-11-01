@@ -102,6 +102,7 @@ public:
         numInstances = 0;
     }
 
+
     /// getter for shape colour
     GLfloat * getColour(){ return diffuse; }
 

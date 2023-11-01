@@ -163,6 +163,10 @@ public:
      * @param ter   underlying terrain
      */
     void zoom(float zdel, Terrain * ter);
+
+    // PCM 2023 ****
+    // return the planes bounding the transect
+    std::pair<Plane, Plane> getTransectPlanes(void);
 };
 
 struct TransectCreation

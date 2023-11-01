@@ -187,6 +187,9 @@ private:
     float scf;
     Transect * trx; //< transect control parameters
 
+    // PCM 2023 - can be used to test geometry against transect
+    std::vector<Plane> transectPlanes;
+
     QPoint lastPos;
     QColor qtWhite;
     QLabel * vizpopup;  //< for debug visualisation

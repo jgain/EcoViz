@@ -161,6 +161,28 @@ void Transect::paintThickness(Terrain * ter)
         }
 }
 
+std::pair<Plane, Plane>  Transect::getTransectPlanes(void)
+{
+    Plane offset[2];
+    Vector offvec;
+    vpPoint offpnt, vizpnt;
+
+    // establish offset planes to bound the transect thickness
+    // cerr << "normal = " << normal.i << ", " << normal.j << ", " << normal.k << endl;
+    offvec = normal;
+    offvec.mult(thickness / 2.0f);
+    offvec.pntplusvec(center, &offpnt);
+    // cerr << "offpnt = " << offpnt.x << ", " << offpnt.y << ", " << offpnt.z << endl;
+    // cerr << "center = " << center.x << ", " << center.y << ", " << center.z << endl;
+    offset[0].formPlane(offpnt, normal);
+    offvec.mult(-1.0f);
+    offvec.pntplusvec(center, &offpnt);
+    offvec.normalize();
+    offset[1].formPlane(offpnt, offvec);
+
+    return std::make_pair(offset[0], offset[1]);
+}
+
 /**
  * @brief derive Derive a transect passing through two points on the terrain
  * @param p1    first point
