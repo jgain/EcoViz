@@ -1064,6 +1064,7 @@ ShapeDrawData Shape::getDrawParameters()
     return sdd;
 }
 
+
 bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols)
 {
     if((int) indices.size() > 0 && ((int) iforms->size() == (int) icols->size()))

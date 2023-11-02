@@ -158,6 +158,11 @@ void GLTransect::updateTransectView()
     // cerr << "extent = " << trx->getExtent() << endl;
     // cerr << "thickness = " << trx->getThickness() << endl;
     // cerr << "zoomdist = " << view->getZoom() << endl;
+
+    std::pair<Plane, Plane> planes  = trx->getTransectPlanes();
+    transectPlanes.clear();
+    transectPlanes.push_back(planes.first);
+    transectPlanes.push_back(planes.second);
 }
 
 void GLTransect::setScene(Scene * s)
@@ -351,8 +356,8 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
 void GLTransect::paintGL()
 {
     vpPoint mo;
-    glm::mat4 tfm, idt;
-    glm::vec3 trs, rot;
+    //glm::mat4 tfm, idt;
+    //glm::vec3 trs, rot;
     std::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
     Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
@@ -381,7 +386,7 @@ void GLTransect::paintGL()
 
         if(focuschange)
         {
-            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants);
+            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants, transectPlanes);
             rebindplants = false;
         }
 
