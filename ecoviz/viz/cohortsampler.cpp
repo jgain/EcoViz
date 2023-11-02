@@ -4,11 +4,7 @@
 #include <iostream>
 #include <random>
 #include <chrono>
-#ifdef _WIN32
 #include <numeric>
-#else
-#include <bits/stdc++.h>
-#endif
 #include <deque>
 #include <algorithm>
 #include "cohortsampler.h"

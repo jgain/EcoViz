@@ -485,8 +485,8 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
     toGrid(pnt, x, y, h); // locate point on base domain
 
     // test whether point is in bounds
-    ux = (float) (dx-1) - pluszero;
-    uy = (float) (dy-1) - pluszero;
+    ux = (float) (dy-1) - pluszero;
+    uy = (float) (dx-1) - pluszero;
 
     if(x < pluszero || y < pluszero || x > ux || y > uy)
         return false;

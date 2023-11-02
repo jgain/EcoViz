@@ -477,10 +477,10 @@ void GLWidget::createLine(vector<vpPoint> * line, vpPoint start, vpPoint end, fl
     for(int j = 0; j < steps; j++)
     {
         del.pntplusvec(pnt, &pnt);
-        if(pnt.x >= tx-tolzero) pnt.x = tx-tolzero;
+        if(pnt.x >= ty-tolzero) pnt.x = ty-tolzero;
         if(pnt.x <= tolzero) pnt.x = tolzero;
         pnt.y = 1.0f;
-        if(pnt.z >= ty-tolzero) pnt.z = ty-tolzero;
+        if(pnt.z >= tx-tolzero) pnt.z = tx-tolzero;
         if(pnt.z <= tolzero) pnt.z = tolzero;
         line->push_back(pnt);
     }

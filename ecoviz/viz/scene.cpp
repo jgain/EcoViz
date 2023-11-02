@@ -59,9 +59,9 @@ bool Transect::inBounds(vpPoint pnt, Terrain * ter)
     ter->getTerrainDim(maxx, maxy);
 
     b[0].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // left edge
-    b[1].formPlane(vpPoint(maxx, 0.0f, 0.0f), Vector(-1.0f, 0.0f, 0.0f)); // right edge
+    b[1].formPlane(vpPoint(maxy, 0.0f, 0.0f), Vector(-1.0f, 0.0f, 0.0f)); // right edge
     b[2].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(0.0f, 0.0f, 1.0f)); // front edge
-    b[3].formPlane(vpPoint(0.0f, 0.0f, maxy), Vector(0.0f, 0.0f, -1.0f)); // back edge
+    b[3].formPlane(vpPoint(0.0f, 0.0f, maxx), Vector(0.0f, 0.0f, -1.0f)); // back edge
 
     for(int i = 0; i < 4; i++)
         if(!b[i].side(pnt)) // must be on the correct side of all the bounding planes
@@ -78,6 +78,8 @@ bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd, Terrain 
     // determine bounding plane intersects
     float maxx, maxy;
     ter->getTerrainDim(maxy, maxx);
+
+    cerr << "maxx = " << maxx << " and maxy = " << maxy << endl;
 
     b[0].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // left edge
     b[1].formPlane(vpPoint(maxx, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // right edge
