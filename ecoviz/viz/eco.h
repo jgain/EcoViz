@@ -253,7 +253,7 @@ private:
     inline int flatten(int dx, int dy){ return dx * gy + dy; }
 
     /// reset grid to empty state
-    void initGrid();
+    void initGrid(bool assignGeom = true);
 
     /**
       * Create geometry for PFT with sphere top
@@ -319,6 +319,29 @@ public:
 
     ShapeGrid(int dx, int dy, Biome * shpbiome){ gx = dx; gy = dy; biome = shpbiome; initGrid(); }
 
+    // copy assignment ... assumes that geometry for source shapegrid is present (hacky I know)
+    ShapeGrid& operator=(const ShapeGrid& old)
+    {
+        if (this != &old)
+        {
+            biome = old.biome; gx = old.gx; gy = old.gy;
+
+            delGrid();
+            initGrid(false); // init empty grid only  - geom created ONCE - then copied below
+
+            std::cerr << "ShapeGrid - copy: rows " << shapes.size() << "; Col = " << shapes[0].size() << std::endl;
+
+            // copy grid geom data...
+            for(std::size_t i = 0; i < shapes.size(); i++)
+                for(std::size_t j = 0; j < shapes[i].size(); j++)
+                    shapes[i][j] = old.shapes[i][j];
+
+        }
+
+        return *this;
+    }
+
+
     ~ShapeGrid(){ delGrid(); }
 
     /// completely delete grid
@@ -382,6 +405,8 @@ class EcoSystem
 private:
 
     ShapeGrid eshapes;                //< graphical representation of ecosystem
+    ShapeGrid transectShapes;         //< copy of graphical data for transect view (only subset will be bound, depending
+                                      // on culling planes)
     std::vector<PlantGrid> niches;    //< individual ecosystems for each niche
                                       //< the purpose of niches is to allow a coarse form of selection and rendering
                                       //< by default only the first niche is used
@@ -412,7 +437,7 @@ public:
     /// getNiche: return a pointer to a particular ecosystem niche (n)
     PlantGrid * getNiche(int n){ return &niches[n]; }
 
-    void setBiome(Biome * ecobiome){ biome = ecobiome; clear(); eshapes.attachBiome(ecobiome); }
+    void setBiome(Biome * ecobiome){ biome = ecobiome; clear(); eshapes.attachBiome(ecobiome); transectShapes = eshapes; }
 
     /**
        * Write plant positions to a PDB format text file

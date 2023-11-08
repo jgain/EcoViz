@@ -91,6 +91,36 @@ public:
         clear();
     }
 
+    // copy assignment - no buffers are bound, only geometry and other data is copied
+    // (this is therefore not a true copy assignment....but suitable for our special use case)
+
+    Shape& operator=(const Shape & old)
+    {
+        if (this != &old)
+        {
+            clear();
+            numInstances = 0;
+
+            verts = old.verts;
+            indices = old.indices;
+            vaoConstraint = 0;
+            vboConstraint = 0;
+            iboConstraint = 0;
+            iBuffer = 0;
+            cBuffer = 0;
+            numInstances = old.numInstances;
+
+            for (std::size_t i = 0; i < 4; ++i)
+            {
+                diffuse[i] = old.diffuse[i];
+                ambient[i] = old.ambient[i];
+                specular[i] = old.specular[i];
+            }
+        }
+
+        return *this;
+    }
+
     void clear()
     {
         verts.clear();

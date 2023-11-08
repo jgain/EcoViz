@@ -529,6 +529,9 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
     }
 
     lastPos = event->pos();
+    // pCM - hack for now (click to update transect to current)
+    rebindplants = true;
+
 }
 
 void GLTransect::mouseMoveEvent(QMouseEvent *event)
@@ -603,6 +606,7 @@ void GLTransect::wheelEvent(QWheelEvent * wheel)
     // also adjust inner bounds relative to center
     trx->zoom(del, scene->getTerrain());
     updateTransectView();
+
     signalRepaintAllGL();
 }
 
