@@ -165,8 +165,9 @@ public:
     void zoom(float zdel, Terrain * ter);
 
     // PCM 2023 ****
-    // return the planes bounding the transect
-    std::pair<Plane, Plane> getTransectPlanes(void);
+    // return the planes bounding the transect;
+    // planeBaseOrigin = centre of 1st plane (for use with view transformation)
+    std::pair<Plane, Plane> getTransectPlanes(vpPoint &planeBaseOrigin);
 };
 
 struct TransectCreation
