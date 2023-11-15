@@ -490,7 +490,8 @@ void Window::setupVizPanel()
     // main perspective views
     for(int i = 0; i < 2; i++)
     {
-        GLWidget * pview = new GLWidget(glFormat, scenes[i], transectControls[i]);
+        GLWidget * pview = new GLWidget(glFormat, scenes[i], transectControls[i],
+                                        (i == 0 ? "left": "right") );
 
         numGridX = 1.0f / gridSepX;
         numGridZ = 1.0f / gridSepZ;

@@ -101,7 +101,7 @@ class GLWidget : public QGLWidget
 
 public:
 
-    GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent = 0);
+    GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, const std::string &widgetName, QWidget *parent = 0);
     ~GLWidget();
 
     QSize minimumSizeHint() const;
@@ -253,6 +253,7 @@ private:
     Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
     View * view;        //< viewpoint controls
     std::string datadir;
+    std::string wname; //< name for this widget
 
     // transect parameters
     TransectCreation * trc;

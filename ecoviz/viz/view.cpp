@@ -375,6 +375,52 @@ void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
 */
 }
 
+/// export camera matrixc - note as per usual, OpenGL column majopr ordering is used
+///  so elements of each column  are written in turn.
+
+void View::saveCameraMatrices(const std::string & basename)
+{
+    glm::mat4x4 projMx, viewMx, proj_viewMx;
+    float *dataPtr = nullptr;
+    std::string fname;
+
+    projMx = getProjMtx();
+    viewMx = getViewMtx();
+    proj_viewMx  = projMx * viewMx;
+
+
+
+    for (std::size_t i = 0; i < 3; ++i)
+    {
+        switch(i) {
+        case 0:
+            dataPtr = glm::value_ptr(viewMx);
+            fname = basename+"-view.txt";
+            break;
+        case 1:
+            dataPtr = glm::value_ptr(projMx);
+            fname = basename+"-proj.txt";
+            break;
+        case 2:
+            dataPtr = glm::value_ptr(proj_viewMx);
+            fname = basename+"-proj_view.txt";
+            break;
+        }
+
+        std::ofstream ofs(fname);
+        if (!ofs)
+              std::cerr << "saveViewMatrices() - can't open file: " << fname << std::endl;
+        else
+          {
+              for (std::size_t j = 0; j < 16; ++j)
+                  ofs << *(dataPtr+j) << " ";
+
+              ofs.close();
+          }
+    }
+}
+
+
 glm::mat4x4 View::getMatrix()
 {
     glm::mat4x4 projMx, viewMx;

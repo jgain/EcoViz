@@ -90,9 +90,10 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent)
+GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, const std::string &widName, QWidget *parent)
     : QGLWidget(format, parent)
 {
+    wname = widName;
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     vizpopup = new QLabel();
     atimer = new QTimer(this);
@@ -755,6 +756,12 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     {
         view->switchViewMode();
         refreshViews();
+    }
+
+    if(event->key() == Qt::Key_M) // 'M' save camera matrices (view, projection, and product)
+    {
+        view->saveCameraMatrices(wname);
+        std::cout << "\nCamera matrices saved for " << wname << "\n";
     }
 
     if(event->key() == Qt::Key_W || event->key() == Qt::Key_Up) // 'W' fly forward
