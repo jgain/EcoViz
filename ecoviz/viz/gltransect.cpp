@@ -140,10 +140,21 @@ PMrender::TRenderer * GLTransect::getRenderer()
 void GLTransect::updateTransectView()
 {
     float tx, ty;
+    vpPoint basePlaneOrigin;
+
+    // extract planes for world space culling and retrieve origin on one of the planes
+    // (which will map to the near plane for camera)
+
+    std::pair<Plane, Plane> planes  = trx->getTransectPlanes(basePlaneOrigin);
+    transectPlanes.clear();
+    transectPlanes.push_back(planes.first);
+    transectPlanes.push_back(planes.second);
+
     view->setOrthoViewExtent(trx->getExtent());
     view->setOrthoViewDepth(trx->getThickness());
     // scene->getTerrain()->setMidFocus();
-    view->setForcedFocus(trx->getCenter());
+    // view->setForcedFocus(trx->getCenter());
+    view->setForcedFocus(basePlaneOrigin);
     // view->setForcedFocus(scene->getTerrain()->getFocus());
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
 
@@ -159,10 +170,7 @@ void GLTransect::updateTransectView()
     // cerr << "thickness = " << trx->getThickness() << endl;
     // cerr << "zoomdist = " << view->getZoom() << endl;
 
-    std::pair<Plane, Plane> planes  = trx->getTransectPlanes();
-    transectPlanes.clear();
-    transectPlanes.push_back(planes.first);
-    transectPlanes.push_back(planes.second);
+
 }
 
 void GLTransect::setScene(Scene * s)
@@ -529,6 +537,9 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
     }
 
     lastPos = event->pos();
+    // pCM - hack for now (click to update transect to current)
+    rebindplants = true;
+
 }
 
 void GLTransect::mouseMoveEvent(QMouseEvent *event)
@@ -603,6 +614,7 @@ void GLTransect::wheelEvent(QWheelEvent * wheel)
     // also adjust inner bounds relative to center
     trx->zoom(del, scene->getTerrain());
     updateTransectView();
+
     signalRepaintAllGL();
 }
 
