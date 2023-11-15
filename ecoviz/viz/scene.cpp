@@ -390,6 +390,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
             if(s->getTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
+        cerr << "num trees = " << (int) trees.size() << " t = " << t << endl;
         auto basal_areas = std::vector<float>(nspecies);
         for(const auto &tree: trees)  // count species
             basal_areas[tree.species] += (PI * tree.dbh*tree.dbh/ 4. / 10000.); // dbh is in cm, need to convert to m.
@@ -404,6 +405,17 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
             vmax = basaltot;
     }
 
+    // print out graph data for debugging
+    cerr << "BASAL AREA GRAPH DATA" << endl;
+    for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
+    {
+        cerr << "T " << t << " ";
+        for (int spc=0; spc<nspecies; ++spc)
+        {
+            cerr <<  graphdata[spc][t] << " ";
+        }
+        cerr << endl;
+    }
     setVertScale(vmax);
 }
 
