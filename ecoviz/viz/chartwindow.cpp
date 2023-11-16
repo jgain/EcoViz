@@ -1,6 +1,7 @@
 #include "chartwindow.h"
 #include "glwidget.h"
 #include "scene.h"
+#include "window.h"
 
 #include<QtCharts/QLineSeries>
 #include<QtCharts/QAreaSeries>

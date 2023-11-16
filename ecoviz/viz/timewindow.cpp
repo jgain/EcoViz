@@ -9,10 +9,12 @@
 
 #include "glwidget.h"
 #include "scene.h"
+#include "window.h"
 
-TimeWindow::TimeWindow(QWidget *parent, int step_start, int step_end, int width, int height)
+TimeWindow::TimeWindow(QWidget *parent, Window * wp, int step_start, int step_end, int width, int height)
     : QWidget(parent, Qt::Window)
 {
+    setParent(wp);
     this->resize(width, height);
 
     // media controls
@@ -237,8 +239,9 @@ void TimeWindow::updateSingleScene(int t)
      scene->getEcoSys()->clear();
      scene->getEcoSys()->placeManyPlants(scene->getTerrain(), scene->getNoiseField(), trees);
      signalRebindPlants();
+     winparent->rendercount++;
      signalRepaintAllGL();
-     update();
+     // update(); // JG should not be needed because of RepaintAllGL immediately above
      // auto et_render = std::chrono::steady_clock::now().time_since_epoch();
 
      // std::cout << "Timestep changed to " << tstep << std::endl;

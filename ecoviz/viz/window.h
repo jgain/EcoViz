@@ -91,6 +91,9 @@ public:
 
     ~Window();
 
+    // static std::atomic<uint32_t> rendercount; // count of the number of simultaneuos render calls
+    atomic_int rendercount;
+
     QSize sizeHint() const;
 
     /// Adjust rendering parameters, grid and contours, to accommodate current scale

@@ -82,6 +82,7 @@
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include "cohortmaps.h"
+#include "window.h"
 
 using namespace std;
 
@@ -92,11 +93,13 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLTransect::GLTransect(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent)
+GLTransect::GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent)
     : QGLWidget(format, parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     glformat = format;
+
+    setParent(wp);
 
     trx = trans;
     setScene(scn);
@@ -205,6 +208,7 @@ void GLTransect::setScene(Scene * s)
     rebindplants = true;
 
     updateTransectView();
+    winparent->rendercount++;
     signalRepaintAllGL();
 }
 
@@ -443,9 +447,15 @@ void GLTransect::setCanopyVis(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     if(viewlock)
+    {
+        winparent->rendercount++;
         signalRepaintAllGL();
+    }
     else
-        update();
+    {
+        winparent->rendercount++;
+        updateGL();
+    }
 }
 
 void GLTransect::setUndergrowthVis(bool vis)
@@ -455,9 +465,15 @@ void GLTransect::setUndergrowthVis(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     if(viewlock)
+    {
+        winparent->rendercount++;
         signalRepaintAllGL();
+    }
     else
-        update();
+    {
+        winparent->rendercount++;
+        updateGL();
+    }
 }
 
 void GLTransect::setAllSpecies(bool vis)
@@ -467,9 +483,15 @@ void GLTransect::setAllSpecies(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     if(viewlock)
+    {
+        winparent->rendercount++;
         signalRepaintAllGL();
+    }
     else
-        update();
+    {
+        winparent->rendercount++;
+        updateGL();
+    }
 }
 
 void GLTransect::setSinglePlantVis(int p)
@@ -482,9 +504,15 @@ void GLTransect::setSinglePlantVis(int p)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         if(viewlock)
+        {
+            winparent->rendercount++;
             signalRepaintAllGL();
+        }
         else
-            update();
+        {
+            winparent->rendercount++;
+            updateGL();
+        }
     }
     else
     {
@@ -500,9 +528,15 @@ void GLTransect::toggleSpecies(int p, bool vis)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         if(viewlock)
+        {
+            winparent->rendercount++;
             signalRepaintAllGL();
+        }
         else
-            update();
+        {
+            winparent->rendercount++;
+            updateGL();
+        }
     }
     else
     {
@@ -518,11 +552,6 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
 
-    if(viewlock)
-        signalRepaintAllGL();
-    else
-        update();
-
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
     if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
@@ -536,10 +565,21 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
         view->startArcRotate(nx, ny);*/
     }
 
+    if(viewlock)
+    {
+        winparent->rendercount++;
+        signalRepaintAllGL();
+    }
+    else
+    {
+        winparent->rendercount++;
+        updateGL();
+    }
+
+
     lastPos = event->pos();
     // pCM - hack for now (click to update transect to current)
     rebindplants = true;
-
 }
 
 void GLTransect::mouseMoveEvent(QMouseEvent *event)
@@ -583,6 +623,7 @@ void GLTransect::mouseMoveEvent(QMouseEvent *event)
         trx->setInnerStart(inner[0], scene->getTerrain()); trx->setInnerEnd(inner[1], scene->getTerrain());
 
         updateTransectView();
+        winparent->rendercount++;
         signalRepaintAllGL();
         lastPos = event->pos();
     }
@@ -614,7 +655,7 @@ void GLTransect::wheelEvent(QWheelEvent * wheel)
     // also adjust inner bounds relative to center
     trx->zoom(del, scene->getTerrain());
     updateTransectView();
-
+    winparent->rendercount++;
     signalRepaintAllGL();
 }
 

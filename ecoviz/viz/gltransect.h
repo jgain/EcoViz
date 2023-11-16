@@ -88,11 +88,13 @@ class GLTransect : public QGLWidget
 
 public:
 
-    GLTransect(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent = 0);
+    GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent = 0);
     ~GLTransect();
 
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
+
+    void setParent(Window * wp){ winparent = wp; }
 
     /// getters for currently active view, terrain, typemaps, renderer, ecosystem
     PMrender::TRenderer * getRenderer();
@@ -167,6 +169,7 @@ protected:
 private:
 
     QGLFormat glformat; //< format for OpenGL
+    Window * winparent;
     Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
     View * view;        //< viewpoint controls
     std::string datadir;

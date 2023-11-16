@@ -101,11 +101,13 @@ class GLWidget : public QGLWidget
 
 public:
 
-    GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent = 0);
+    GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent = 0);
     ~GLWidget();
 
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
+
+    void setParent(Window * wp){ winparent = wp; }
 
     /**
      * capture the framebuffer as an image
@@ -250,6 +252,7 @@ protected:
 private:
 
     QGLFormat glformat; //< format for OpenGL
+    Window * winparent;
     Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
     View * view;        //< viewpoint controls
     std::string datadir;

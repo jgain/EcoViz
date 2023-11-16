@@ -80,6 +80,7 @@
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include "cohortmaps.h"
+#include "window.h"
 
 using namespace std;
 
@@ -90,7 +91,7 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent)
+GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent)
     : QGLWidget(format, parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
@@ -101,6 +102,8 @@ GLWidget::GLWidget(const QGLFormat& format, Scene * scn, Transect * trans, QWidg
     rtimer = new QTimer(this);
     connect(rtimer, SIGNAL(timeout()), this, SLOT(rotateUpdate()));
     glformat = format;
+
+    setParent(wp);
 
     // setup transect creation state
     trc = new TransectCreation();
@@ -170,7 +173,6 @@ PMrender::TRenderer * GLWidget::getRenderer()
 void GLWidget::refreshOverlay()
 {
     renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, false);
-    refreshViews();
 }
 
 void GLWidget::setOverlay(TypeMapType purpose)
@@ -225,15 +227,17 @@ void GLWidget::setScene(Scene * s)
 
     loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
     // loadTypeMap(scene->getSlope(), TypeMapType::SLOPE);
-    refreshViews();
 
     /*
     cerr << "Pre refreshOverlay" << endl;
     scene->getTerrain()->setBufferToDirty();
     refreshOverlay();
     cerr << "Post refreshOverlay" << endl;
-    update();
+    winparent->rendercount++;
+    updateGL();
     cerr << "Post update" << endl;*/
+
+     refreshViews();
 }
 
 void GLWidget::changeViewMode(ViewMode vm)
@@ -541,6 +545,10 @@ void GLWidget::paintGL()
 
     Timer t;
 
+    if(winparent->rendercount > 1)
+        cerr << "Queued rendering count = " << winparent->rendercount << endl;
+    winparent->rendercount = 0;
+
     if(active)
     {
         drawParams.clear();
@@ -654,7 +662,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_Down)
     {
     }*/
-    if(event->key() == Qt::Key_A || event->key() == Qt::Key_Left) // 'S' fly left
+    if(event->key() == Qt::Key_A || event->key() == Qt::Key_Left) // 'A' fly left
     {
         view->incrSideFly(-10.0f);
         refreshViews();
@@ -664,7 +672,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     {
         setOverlay(TypeMapType::CHM);
     }*/
-    if(event->key() == Qt::Key_D || event->key() == Qt::Key_Right) // 'S' fly left
+    if(event->key() == Qt::Key_D || event->key() == Qt::Key_Right) // 'D' fly right
     {
         view->incrSideFly(10.0f);
         refreshViews();
@@ -677,7 +685,8 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_F) // 'F' to toggle focus stick visibility
     {
         focusviz = !focusviz;
-        update();
+        winparent->rendercount++;
+        updateGL();
     }
 
     /*
@@ -688,7 +697,8 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         canopyvis = !canopyvis; // toggle canopy visibility
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
-        update();
+        winparent->rendercount++;
+        updateGL();
     }
     if(event->key() == Qt::Key_P) // 'P' to toggle plant visibility
     {
@@ -697,7 +707,8 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         focuschange = !focuschange;
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
-        update();
+        winparent->rendercount++;
+        updateGL();
     }
     */
     /*
@@ -731,7 +742,6 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         {
             setOverlay(TypeMapType::EMPTY);
         }
-        refreshViews();
     }
     /*
     if(event->key() == Qt::Key_U) // 'U' toggle undergrowth display on/off
@@ -740,7 +750,8 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         undervis = !undervis; // toggle canopy visibility
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
-        update();
+        winparent->rendercount++;
+        updateGL();
     }*/
     /*
     if(event->key() == Qt::Key_V) // 'V' for top-down view
@@ -786,7 +797,8 @@ void GLWidget::setCanopyVis(bool vis)
     canopyvis = vis; // toggle canopy visibility
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
-    update();
+    winparent->rendercount++;
+    updateGL();
 }
 
 void GLWidget::setUndergrowthVis(bool vis)
@@ -795,7 +807,8 @@ void GLWidget::setUndergrowthVis(bool vis)
     undervis = vis;
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
-    update();
+    winparent->rendercount++;
+    updateGL();
 }
 
 void GLWidget::setAllSpecies(bool vis)
@@ -804,7 +817,8 @@ void GLWidget::setAllSpecies(bool vis)
         plantvis[i] = vis;
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
-    update();
+    winparent->rendercount++;
+    updateGL();
 }
 
 void GLWidget::setSinglePlantVis(int p)
@@ -816,7 +830,8 @@ void GLWidget::setSinglePlantVis(int p)
         plantvis[p] = true;
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
-        update();
+        winparent->rendercount++;
+        updateGL();
     }
     else
     {
@@ -831,7 +846,8 @@ void GLWidget::toggleSpecies(int p, bool vis)
         plantvis[p] = vis;
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
-        update();
+        winparent->rendercount++;
+        updateGL();
     }
     else
     {
@@ -892,7 +908,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
 
     // ensure this viewport is current for unproject
-    refreshViews();
+    refreshViews(); // should not be necessary
 
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
     if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
@@ -974,6 +990,7 @@ void GLWidget::setTransectCreate(TransectCreation * newtrc)
         trc->trx->setValidFlag(false);
     }
     signalShowTransectView();
+    winparent->rendercount++;
     signalRepaintAllGL(); // need to also update transect view
 }
 
@@ -1020,6 +1037,8 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
                 trc->trx->setValidFlag(false);
                 pointPlaceTransect(true);
                 signalSyncPlace(true);
+                winparent->rendercount++;
+                updateGL();
             }
             break;
         case 1: // placement of final point
@@ -1030,6 +1049,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
                 trc->trx->derive(trc->t1, trc->t2, scene->getTerrain());
                 pointPlaceTransect(false);
                 signalSyncPlace(false);
+                winparent->rendercount++;
                 signalRepaintAllGL(); // need to also update transect view
             }
             break;
@@ -1042,7 +1062,6 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
             pickInfo(x, y);
         }
         */
-        refreshViews();
     }
 }
 
@@ -1114,7 +1133,13 @@ void GLWidget::rebindPlants()
 void GLWidget::refreshViews()
 {
     if(viewlock)
+    {
+        winparent->rendercount++;
         signalRepaintAllGL();
+    }
     else
-        update();
+    {
+        winparent->rendercount++;
+        updateGL();
+    }
 }

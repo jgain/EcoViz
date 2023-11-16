@@ -12,6 +12,8 @@
 
 #include "scene.h"
 
+class Window;
+
 QT_CHARTS_USE_NAMESPACE
 
 class ChartWindow : public QWidget
@@ -20,6 +22,7 @@ class ChartWindow : public QWidget
 
 private:
     Scene * scene;              //< attached underlying scene
+    Window * winparent;
     std::vector<TimelineGraph*> all_graphs; // collection of graphs
     TimelineGraph * graphdata;  //< current graph model corresponding to this graph view
     QChart * chart;             //< graphical chart from qt
@@ -40,6 +43,8 @@ public slots:
 public:
 
     ChartWindow(QWidget *parent, int width, int height);
+
+    void setParent(Window * wp){ winparent = wp; }
 
     void init();
 

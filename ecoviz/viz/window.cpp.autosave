@@ -763,9 +763,10 @@ void Window::mouseMoveEvent(QMouseEvent *event)
 
 void Window::repaintAllGL()
 {
+    /*
     if(rendercount > 1)
         cerr << "Queued rendering count = " << rendercount << endl;
-    rendercount = 0;
+    rendercount = 0;*/
     for(auto pview: perspectiveViews)
         pview->repaint();
     for(auto tview: transectViews)

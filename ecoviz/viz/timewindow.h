@@ -14,12 +14,15 @@
 
 #include "scene.h"
 
+class Window;
+
 class TimeWindow : public QWidget
 {
     Q_OBJECT
 
 private:
     Scene * scene;
+    Window * winparent;
     bool playing;
     bool viewlock;
 
@@ -78,7 +81,9 @@ public slots:
     void playControl();
 
 public:
-    TimeWindow(QWidget *parent, int step_start, int step_end, int width, int height);
+    TimeWindow(QWidget *parent, Window * wp, int step_start, int step_end, int width, int height);
+
+    void setParent(Window * wp){ winparent = wp; }
 
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
