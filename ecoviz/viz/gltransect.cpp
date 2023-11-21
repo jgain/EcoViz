@@ -337,7 +337,8 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     Shape shape;
     glm::mat4 tfm, idt;
     glm::vec3 trs, rot;
-    std::vector<glm::mat4> sinst;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
     std::vector<glm::vec4> cinst;
 
     // create shape
@@ -357,7 +358,7 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     float arad = mrad / 2.5f;
 
     shape.genCappedCylinder(scale*arad, 1.5f*scale*arad, scale*(mheight-mrad), 40, 10, tfm, false);
-    if(shape.bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
     {
         sdd = shape.getDrawParameters();
         sdd.current = false;

@@ -1065,21 +1065,25 @@ ShapeDrawData Shape::getDrawParameters()
 }
 
 
-bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols)
+bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<glm::vec4> * icols)
 {
-    if((int) indices.size() > 0 && ((int) iforms->size() == (int) icols->size()))
+    if((int) indices.size() > 0 && ((int) iTransl->size() == (int) icols->size()))
     {
         if (vboConstraint != 0)
         {
             glDeleteVertexArrays(1, &vaoConstraint);
             glDeleteBuffers(1, &vboConstraint);
             glDeleteBuffers(1, &iboConstraint);
-            glDeleteBuffers(1, &iBuffer);
+            //glDeleteBuffers(1, &iBuffer);
+            glDeleteBuffers(1, &iTranslBuffer);
+            glDeleteBuffers(1, &iScaleBuffer);
             glDeleteBuffers(1, &cBuffer);
             vaoConstraint = 0;
             vboConstraint = 0;
             iboConstraint = 0;
-            iBuffer = 0;
+            //iBuffer = 0;
+            iTranslBuffer = 0;
+            iScaleBuffer = 0;
             cBuffer = 0;
         }
 
@@ -1112,7 +1116,58 @@ bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(nz) );
 
+        // genrate buffer for translation and scaling (2 scales only)
+
+        glGenBuffers(1, &iTranslBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, iTranslBuffer);
+        if((int) iTransl->size() > 0) // load instance data
+        {
+            numInstances = (int) iTransl->size();
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * numInstances, (GLfloat *) & (* iTransl)[0], GL_DYNAMIC_DRAW);
+        }
+        else // create a single instance
+        {
+            numInstances = 1;
+            //std::vector<glm::mat4> tmpform;
+            //glm::mat4 idt = glm::mat4(1.0f);
+            //tmpform.push_back(idt);
+            glm::vec3 tmpform = {0.0, 0.0, 0.0};
+
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * numInstances, (GLfloat *) &tmpform[0], GL_DYNAMIC_DRAW);
+        }
+
+        glGenBuffers(1, &iScaleBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, iScaleBuffer);
+        if((int) iScale->size() > 0) // load instance data
+        {
+            numInstances = (int) iScale->size();
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * numInstances, (GLfloat *) & (* iScale)[0], GL_DYNAMIC_DRAW);
+        }
+        else // create a single instance
+        {
+            numInstances = 1;
+            //std::vector<glm::mat4> tmpform;
+            //glm::mat4 idt = glm::mat4(1.0f);
+            //tmpform.push_back(idt);
+            glm::vec2 tmpform = {1.0, 1.0};
+
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * numInstances, (GLfloat *) &tmpform[0], GL_DYNAMIC_DRAW);
+        }
+
+        // set up vert atributes and instancing step
+        glBindBuffer(GL_ARRAY_BUFFER, iTranslBuffer);
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)(0) );
+        glVertexAttribDivisor(3, 1);
+
+        glBindBuffer(GL_ARRAY_BUFFER, iScaleBuffer);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)(0));
+        glVertexAttribDivisor(4, 1);
+
+
         // we need a full mat4 because the plant dimensions (non-uniform scale) as well as position are being instanced
+        /*
         glGenBuffers(1, &iBuffer); // create a vertex buffer object for plant transform instancing
         glBindBuffer(GL_ARRAY_BUFFER, iBuffer);
         if((int) iforms->size() > 0) // load instance data
@@ -1136,6 +1191,7 @@ bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4
                                   (const GLvoid*)(sizeof(GLfloat) * i * 4));
             glVertexAttribDivisor(3 + i, 1);
         }
+        */
 
         glGenBuffers(1, &cBuffer); // create a vertex buffer object for plant colour instancing
         glBindBuffer(GL_ARRAY_BUFFER, cBuffer);
@@ -1155,10 +1211,10 @@ bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4
         }
 
         glBindBuffer(GL_ARRAY_BUFFER, cBuffer);
-        glEnableVertexAttribArray(7);
-        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0); // stride may need adjusting here
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0); // stride may need adjusting here
         // glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (const GLvoid*)0);
-        glVertexAttribDivisor(7, 1);
+        glVertexAttribDivisor(5, 1);
 
         glBindVertexArray(0);
 

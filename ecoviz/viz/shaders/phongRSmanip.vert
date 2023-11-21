@@ -6,8 +6,9 @@
 layout (location=0) in vec3 vertex;
 layout (location=1) in vec2 UV;
 layout (location=2) in vec3 vertexNormal;
-layout (location=3) in mat4 iform;
-layout (location=7) in vec4 coloff;
+layout (location=3) in vec3 instTransl;
+layout (location=4) in vec2 instScale;
+layout (location=5) in vec4 coloff;
 
 // transformations
 uniform mat4 MV; // model-view mx
@@ -33,6 +34,12 @@ out vec2 texCoord;
 void main(void)
 {
     vec3 inNormal, v;
+    mat4 instanceTransf = mat4(0.0);
+
+    instanceTransf[0][0] = instScale.x;
+    instanceTransf[1][1] = instScale.y;
+    instanceTransf[2][2] = instScale.x;
+    instanceTransf[3] = vec4(instTransl, 1.0);
 
     texCoord = UV;
     v = vertex;
@@ -50,5 +57,5 @@ void main(void)
     diffuse = matDiffuse * (diffuseCol+coloff);
     ambient = matAmbient * (ambientCol+coloff);
 
-    gl_Position = MVproj * iform * vec4(v, 1.0); // clip space position
+    gl_Position = MVproj * instanceTransf * vec4(v, 1.0); // clip space position
 }

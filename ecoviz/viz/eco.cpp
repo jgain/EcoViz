@@ -592,7 +592,9 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
     Region wholeRegion = Region(0, 0, gwidth - 1, gheight - 1);
     esys->getRegionIndices(ter, wholeRegion, sx, sy, ex, ey);
 
-    std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
+    // std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
+    std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)
+    std::vector<std::vector<glm::vec2> > xformsScale; // transformation to be applied to each instance - scale (base, height)
     std::vector<std::vector<glm::vec4> > colvars; // colour variation to be applied to each instance
 
     vpPoint loc;
@@ -606,7 +608,10 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
 
             for(s = 0; s < (int) plnts->pop.size(); s++) // iterate over plant types
             {
-                std::vector<glm::mat4> xform; // transformation to be applied to each instance
+                //std::vector<glm::mat4> xform; // transformation to be applied to each instance
+                std::vector<glm::vec3> xformTrans;
+                std::vector<glm::vec2> xformScale;
+
                 std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
 
                 //if((int) plnts->pop[s].size() > 0)
@@ -644,8 +649,8 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                                (cullPlanes.size() == 0 || (cullPlanes.size() > 0 && cull == false) ) )
                         {
                             // setup transformation for individual plant, including scaling and translation
-                            glm::mat4 idt, tfm;
-                            glm::vec3 trs, sc; // rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
+                            //glm::mat4 idt, tfm;
+                            //glm::vec3 trs, sc; // rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
                             loc = plnts->pop[s][p].pos;
                             // GLfloat rotate_rad;
 
@@ -659,13 +664,17 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                                 rotate_rad = rand_unif(generator_under) * glm::pi<GLfloat>() * 2.0f;
                             }*/
 
+                            /*
                             idt = glm::mat4(1.0f);
                             trs = glm::vec3(loc.x, loc.y, loc.z);
                             tfm = glm::translate(idt, trs);
                             sc = glm::vec3(plnts->pop[s][p].canopy, plnts->pop[s][p].height, plnts->pop[s][p].canopy);		// XXX: use this for actual tree models
                             tfm = glm::scale(tfm, sc);
+                            */
                             // tfm = glm::rotate(tfm, rotate_rad, rotate_axis);
-                            xform.push_back(tfm);
+                            xformTrans.push_back(glm::vec3(loc.x, loc.y, loc.z));
+                            xformScale.push_back(glm::vec2(plnts->pop[s][p].canopy, plnts->pop[s][p].height));
+                            //xform.push_back(tfm);
 
                             colvar.push_back(plnts->pop[s][p].col); // colour variation
                             bndplants++;
@@ -678,25 +687,35 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
 
                 }
 
-                if (xforms.size() < s + 1)
+                if (xformsScale.size() < s + 1)
                 {
-                    xforms.resize(s  + 1);
+                    xformsScale.resize(s  + 1);
+                }
+                if (xformsTrans.size() < s + 1)
+                {
+                    xformsTrans.resize(s  + 1);
                 }
                 if (colvars.size() < s + 1)
                 {
                     colvars.resize(s + 1);
                 }
-                xforms[s].insert(xforms[s].end(), xform.begin(), xform.end());
+                xformsTrans[s].insert(xformsTrans[s].end(), xformTrans.begin(), xformTrans.end());
+                xformsScale[s].insert(xformsScale[s].end(), xformScale.begin(), xformScale.end());
+
                 colvars[s].insert(colvars[s].end(), colvar.begin(), colvar.end());
+
                 f = flatten(x, y);
                 shapes[f][s].removeAllInstances();
             }
         }
 
-    for (std::size_t i = 0; i < xforms.size(); i++)
+    assert(xformsTrans.size() == xformsScale.size());
+
+    for (std::size_t i = 0; i < xformsTrans.size(); i++)
     {
         shapes[0][i].removeAllInstances();
-        shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
+        shapes[0][i].bindInstances(&xformsTrans[i], &xformsScale[i], &colvars[i]);
+        //shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
     }
     // DEBUG:
     std::cerr << "bindPlantsSimplified - bound: " << bndplants << "; culled: " << culledplants << std::endl;
@@ -714,7 +733,10 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
     Region wholeRegion = Region(0, 0, gwidth - 1, gheight - 1);
     esys->getRegionIndices(ter, wholeRegion, sx, sy, ex, ey);
 
-    std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
+    //std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
+    std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)
+    std::vector<std::vector<glm::vec2> > xformsScale; // transformation to be applied to each instance - scale (base, height)
+
     std::vector<std::vector<glm::vec4> > colvars; // colour variation to be applied to each instance
 
     for(x = sx; x <= ex; x++)
@@ -724,7 +746,9 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
 
             for(s = 0; s < (int) plnts->pop.size(); s+=3) // iterate over plant types
             {
-                std::vector<glm::mat4> xform; // transformation to be applied to each instance
+                //std::vector<glm::mat4> xform; // transformation to be applied to each instance
+                std::vector<glm::vec3> xformTrans;
+                std::vector<glm::vec2> xformScale;
                 std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
 
                 for(int a = 0; a < 3; a++)
@@ -734,8 +758,8 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
                         if(plnts->pop[s+a][p].height > 0.01f) // only display reasonably sized plants
                         {
                             // setup transformation for individual plant, including scaling and translation
-                            glm::mat4 idt, tfm;
-                            glm::vec3 trs, sc; // rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
+                            //glm::mat4 idt, tfm;
+                            //glm::vec3 trs, sc; // rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
                             vpPoint loc = plnts->pop[s+a][p].pos;
                             // GLfloat rotate_rad;
 
@@ -749,12 +773,17 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
                                 rotate_rad = rand_unif(generator_under) * glm::pi<GLfloat>() * 2.0f;
                             }*/
 
+                            /*
                             idt = glm::mat4(1.0f);
                             trs = glm::vec3(loc.x, loc.y, loc.z);
                             tfm = glm::translate(idt, trs);
                             sc = glm::vec3(plnts->pop[s+a][p].height, plnts->pop[s+a][p].height, plnts->pop[s+a][p].height);		// XXX: use this for actual tree models
                             tfm = glm::scale(tfm, sc);
-                            xform.push_back(tfm);
+                            */
+                            xformTrans.push_back(glm::vec3(loc.x, loc.y, loc.z));
+                            xformScale.push_back(glm::vec2(plnts->pop[s+a][p].height, plnts->pop[s+a][p].height) );
+
+                            // xform.push_back(tfm);
 
                             colvar.push_back(plnts->pop[s+a][p].col); // colour variation
                             bndplants++;
@@ -766,27 +795,35 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
                     }
 
                 }
-                if (xforms.size() < s / 3 + 1)
+                if (xformsScale.size() < s / 3 + 1)
                 {
-                    xforms.resize(s / 3 + 1);
+                    xformsScale.resize(s / 3 + 1);
+                }
+                if (xformsTrans.size() < s / 3 + 1)
+                {
+                    xformsTrans.resize(s / 3 + 1);
                 }
                 if (colvars.size() < s / 3 + 1)
                 {
                     colvars.resize(s / 3 + 1);
                 }
-                xforms[s / 3].insert(xforms[s / 3].end(), xform.begin(), xform.end());
+                xformsTrans[s / 3].insert(xformsTrans[s / 3].end(), xformTrans.begin(), xformTrans.end());
+                xformsScale[s / 3].insert(xformsScale[s / 3].end(), xformScale.begin(), xformScale.end());
                 colvars[s / 3].insert(colvars[s / 3].end(), colvar.begin(), colvar.end());
+
                 f = flatten(x, y);
                 shapes[f][s / 3].removeAllInstances();
             }
         }
 
+    assert(xformsTrans.size() == xformsScale.size());
 
-    for (std::size_t i = 0; i < xforms.size(); i++)
+    for (std::size_t i = 0; i < xformsTrans.size(); i++)
     {
         cerr << i << endl;
         shapes[0][i].removeAllInstances();
-        shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
+        //shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
+        shapes[0][i].bindInstances(&xformsTrans[i], &xformsScale[i], &colvars[i]);
     }
     cerr << "num bound plants = " << bndplants << endl;
     cerr << "num culled plants = " << culledplants << endl;

@@ -413,7 +413,8 @@ void GLWidget::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &dr
     Shape shape;
     glm::mat4 tfm, idt;
     glm::vec3 trs, rot;
-    std::vector<glm::mat4> sinst;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
     std::vector<glm::vec4> cinst;
 
     // create shape
@@ -428,7 +429,7 @@ void GLWidget::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &dr
     tfm = glm::translate(idt, trs);
     tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
     shape.genCappedCylinder(scale*armradius, 1.5f*scale*armradius, scale*(manipheight-manipradius), 40, 10, tfm, false);
-    if(shape.bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
     {
         sdd = shape.getDrawParameters();
         sdd.current = false;
@@ -443,7 +444,8 @@ void GLWidget::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> 
     Shape shape;
     glm::mat4 tfm, idt;
     glm::vec3 trs, rot;
-    std::vector<glm::mat4> sinst;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
     std::vector<glm::vec4> cinst;
 
     // create shape
@@ -458,7 +460,7 @@ void GLWidget::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> 
     tfm = glm::translate(idt, trs);
     // tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
     shape.genSphere(scale * transectradius, 40, 40, tfm);
-    if(shape.bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
     {
         sdd = shape.getDrawParameters();
         sdd.current = false;
@@ -523,7 +525,8 @@ void GLWidget::paintTransect(GLfloat * col, std::vector<ShapeDrawData> &drawPara
 {
     // assumes that the transect shape has already been created
     ShapeDrawData sdd[3];
-    std::vector<glm::mat4> sinst;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
     std::vector<glm::vec4> cinst;
 
     // update and bind shapes
@@ -531,7 +534,7 @@ void GLWidget::paintTransect(GLfloat * col, std::vector<ShapeDrawData> &drawPara
     {
         trc->trxshape[i].setColour(col);
 
-        if(trc->trxshape[i].bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+        if(trc->trxshape[i].bindInstances(&translInstance,&scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
         {
             sdd[i] = trc->trxshape[i].getDrawParameters();
             sdd[i].current = false;

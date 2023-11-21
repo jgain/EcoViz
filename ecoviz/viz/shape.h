@@ -48,7 +48,9 @@ private:
     GLuint vaoConstraint;       //< openGL handles for various buffers
     GLuint vboConstraint;
     GLuint iboConstraint;
-    GLuint iBuffer;             //< handle for the transform instance buffer
+    // GLuint iBuffer;             //< handles for the transform instance buffer
+    GLuint iTranslBuffer;
+    GLuint iScaleBuffer;
     GLuint cBuffer;             //< handle for the colour variation instance buffer
     GLfloat diffuse[4], ambient[4], specular[4]; // material properties
     int numInstances;
@@ -106,7 +108,9 @@ public:
             vaoConstraint = 0;
             vboConstraint = 0;
             iboConstraint = 0;
-            iBuffer = 0;
+            // iBuffer = 0;
+            iTranslBuffer = 0;
+            iScaleBuffer = 0;
             cBuffer = 0;
             numInstances = old.numInstances;
 
@@ -256,7 +260,8 @@ public:
      * @param icols     colour offset applied to each instance. Must match the size of iforms.
      * @retval @c true if buffers successfully bound
      */
-    bool bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols);
+    // bool bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols);
+    bool bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<glm::vec4> * icols);
 };
 
 #endif
