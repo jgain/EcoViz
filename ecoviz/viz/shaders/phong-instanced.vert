@@ -8,7 +8,7 @@ layout (location=1) in vec2 UV;
 layout (location=2) in vec3 vertexNormal;
 layout (location=3) in vec3 instTransl;
 layout (location=4) in vec2 instScale;
-layout (location=5) in vec4 coloff;
+layout (location=5) in float csoffset;
 
 
 
@@ -36,7 +36,7 @@ out vec2 texCoord;
 void main(void)
 {
     vec3 inNormal, v;
-    
+    vec4 coloff = vec4(-0.15+csoffset, -0.15+csoffset, -0.15+csoffset, 0.0);
     mat4 instanceTransf = mat4(0.0);
 
     instanceTransf[0][0] = instScale.x;
@@ -57,9 +57,10 @@ void main(void)
     lightDir  = normalize(lightpos.xyz - ecPos.xyz);
     halfVector = normalize(normalize(-ecPos.xyz) + lightDir);
 
-    diffuse = matDiffuse * (diffuseCol+coloff);
+    diffuse = matDiffuse * clamp(diffuseCol+coloff, 0.0, 1.0);
     // diffuse = vec4(1.0, 0.0, 0.0, 1.0);
-    ambient = matAmbient * (ambientCol+coloff);
+    ambient = matAmbient * clamp(ambientCol+coloff, 0.0, 1.0);
+    // clamp colours?
 
     gl_Position = MVproj * instanceTransf * vec4(v, 1.0); // clip space position
 }

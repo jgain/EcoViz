@@ -256,12 +256,13 @@ public:
     /**
      * Bind the appropriate OpenGL buffers for rendering instances. Only needs to be done if
      * the instances attributes change.
-     * @param iforms    transformation applied to each instance. If this is empty assume a single instance with identity transformation.
-     * @param icols     colour offset applied to each instance. Must match the size of iforms.
+     * @param iTransl    translation applied to each instance. If this is empty assume a single instance with identity transformation.
+     * @param iScale    scaling applied (first) to each instance. If this is empty assume a single instance with identity transformation.
+     * @param icols     scale colour offset applied to each instance in shader. Must match the size of iforms.
      * @retval @c true if buffers successfully bound
      */
     // bool bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols);
-    bool bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<glm::vec4> * icols);
+    bool bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<float> * icols);
 };
 
 #endif

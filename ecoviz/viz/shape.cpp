@@ -1065,7 +1065,7 @@ ShapeDrawData Shape::getDrawParameters()
 }
 
 
-bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<glm::vec4> * icols)
+bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<float> * icols)
 {
     if((int) indices.size() > 0 && ((int) iTransl->size() == (int) icols->size()))
     {
@@ -1199,20 +1199,20 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
         if((int) icols->size() > 0)
         {
             numInstances = (int) icols->size();
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * numInstances, (GLfloat *) & (* icols)[0], GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(float) * numInstances, (GLfloat *) & (* icols)[0], GL_DYNAMIC_DRAW);
         }
         else // a single colour instance, with no change to the underlying colour
         {
             numInstances = 1;
-            std::vector<glm::vec4> tmpcol;
-            glm::vec4 idt = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            tmpcol.push_back(idt);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * numInstances, (GLfloat *) &tmpcol[0], GL_DYNAMIC_DRAW);
+            std::vector<float> tmpcol;
+            //glm::vec4 idt = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            tmpcol.push_back(float(0.0));
+            glBufferData(GL_ARRAY_BUFFER, sizeof(float) * numInstances, (GLfloat *) &tmpcol[0], GL_DYNAMIC_DRAW);
         }
 
         glBindBuffer(GL_ARRAY_BUFFER, cBuffer);
         glEnableVertexAttribArray(5);
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0); // stride may need adjusting here
+        glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0); // stride may need adjusting here
         // glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (const GLvoid*)0);
         glVertexAttribDivisor(5, 1);
 

@@ -339,7 +339,7 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     glm::vec3 trs, rot;
     std::vector<glm::vec3> translInstance;
     std::vector<glm::vec2> scaleInstance;
-    std::vector<glm::vec4> cinst;
+    std::vector<float> cinst;
 
     // create shape
     shape.clear();

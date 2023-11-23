@@ -27,6 +27,7 @@
 #define _eco_h
 
 #define LOWRES
+//#define HIGHRES
 
 #include "pft.h"
 #include "dice_roller.h"
@@ -42,8 +43,8 @@ struct Plant
 {
     vpPoint pos;    //< position on terrain in world units
     float height;   //< plant height in metres
-    float canopy;   //< canopy radius in metres
-    glm::vec4 col;  //< colour variation randomly assigned to plant
+    float canopy;   //< canopy radius (width?) in metres
+    float col;      //< colour variation randomly assigned to plant - scalar applied in shader to plant colour
 };
 
 struct SubSpecies

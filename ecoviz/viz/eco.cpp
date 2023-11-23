@@ -595,7 +595,7 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
     // std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
     std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)
     std::vector<std::vector<glm::vec2> > xformsScale; // transformation to be applied to each instance - scale (base, height)
-    std::vector<std::vector<glm::vec4> > colvars; // colour variation to be applied to each instance
+    std::vector<std::vector<float> > colvars; // colour variation to be applied to each instance (scale value multiplied in shader)
 
     vpPoint loc;
     float rad;
@@ -612,7 +612,7 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                 std::vector<glm::vec3> xformTrans;
                 std::vector<glm::vec2> xformScale;
 
-                std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
+                std::vector<float> colvar; // colour variation to be applied to each instance
 
                 //if((int) plnts->pop[s].size() > 0)
                 //    cerr << "Species " << s << " Present" << endl;
@@ -737,7 +737,7 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
     std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)
     std::vector<std::vector<glm::vec2> > xformsScale; // transformation to be applied to each instance - scale (base, height)
 
-    std::vector<std::vector<glm::vec4> > colvars; // colour variation to be applied to each instance
+    std::vector<std::vector<float> > colvars; // colour variation to be applied to each instance (in shader - scalar needed)
 
     for(x = sx; x <= ex; x++)
         for(y = sy; y <= ey; y++)
@@ -749,7 +749,7 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
                 //std::vector<glm::mat4> xform; // transformation to be applied to each instance
                 std::vector<glm::vec3> xformTrans;
                 std::vector<glm::vec2> xformScale;
-                std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
+                std::vector<float> colvar; // colour variation to be applied to each instance
 
                 for(int a = 0; a < 3; a++)
                 {
@@ -962,8 +962,8 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
 
     // introduce small random variation in colour
     float rndoff = nfield->getNoise(pos)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
-    glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
-
+    // glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
+    // NB: now done in shader!
     /*
     if (canopy && (fmod(pos.x / 0.9144f, 0.5f) < 1e-4 || fmod(pos.z / 0.9144f, 0.5f) < 1e-4))
     {
@@ -975,7 +975,8 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
     }
     */
 
-    Plant plnt = {pos, tree.height, tree.radius, coldata};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
+    //Plant plnt = {pos, tree.height, tree.radius, coldata};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
+    Plant plnt = {pos, tree.height, tree.radius, rndoff};
     esys.placePlant(ter, spc, plnt);
 }
 

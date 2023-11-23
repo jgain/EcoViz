@@ -415,7 +415,7 @@ void GLWidget::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &dr
     glm::vec3 trs, rot;
     std::vector<glm::vec3> translInstance;
     std::vector<glm::vec2> scaleInstance;
-    std::vector<glm::vec4> cinst;
+    std::vector<float> cinst;
 
     // create shape
     shape.clear();
@@ -446,7 +446,7 @@ void GLWidget::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> 
     glm::vec3 trs, rot;
     std::vector<glm::vec3> translInstance;
     std::vector<glm::vec2> scaleInstance;
-    std::vector<glm::vec4> cinst;
+    std::vector<float> cinst;
 
     // create shape
     shape.clear();
@@ -527,7 +527,7 @@ void GLWidget::paintTransect(GLfloat * col, std::vector<ShapeDrawData> &drawPara
     ShapeDrawData sdd[3];
     std::vector<glm::vec3> translInstance;
     std::vector<glm::vec2> scaleInstance;
-    std::vector<glm::vec4> cinst;
+    std::vector<float> cinst;
 
     // update and bind shapes
     for(int i = 0; i < 3; i++)
