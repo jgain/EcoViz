@@ -1067,6 +1067,9 @@ ShapeDrawData Shape::getDrawParameters()
 
 bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<float> * icols)
 {
+
+    size_t bytesBound = 0;
+
     if((int) indices.size() > 0 && ((int) iTransl->size() == (int) icols->size()))
     {
         if (vboConstraint != 0)
@@ -1097,10 +1100,14 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
         glBindBuffer(GL_ARRAY_BUFFER, vboConstraint);
         glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*(int) verts.size(), (GLfloat *) &verts[0], GL_STATIC_DRAW);
 
+        bytesBound += sizeof(GLfloat)*(int) verts.size();
+
         // ibo
         glGenBuffers(1, &iboConstraint);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboConstraint);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*(int) indices.size(), (GLuint *) &indices[0], GL_STATIC_DRAW);
+
+        bytesBound += sizeof(GLuint) * (int)indices.size();
 
         // enable position attribute
         glEnableVertexAttribArray(0);
@@ -1124,6 +1131,8 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
         {
             numInstances = (int) iTransl->size();
             glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * numInstances, (GLfloat *) & (* iTransl)[0], GL_DYNAMIC_DRAW);
+
+            bytesBound  += sizeof(glm::vec3) * numInstances;
         }
         else // create a single instance
         {
@@ -1134,6 +1143,8 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
             glm::vec3 tmpform = {0.0, 0.0, 0.0};
 
             glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * numInstances, (GLfloat *) &tmpform[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(glm::vec3) * numInstances;
         }
 
         glGenBuffers(1, &iScaleBuffer);
@@ -1142,6 +1153,8 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
         {
             numInstances = (int) iScale->size();
             glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * numInstances, (GLfloat *) & (* iScale)[0], GL_DYNAMIC_DRAW);
+
+            bytesBound  += sizeof(glm::vec2) * numInstances;
         }
         else // create a single instance
         {
@@ -1152,6 +1165,8 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
             glm::vec2 tmpform = {1.0, 1.0};
 
             glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * numInstances, (GLfloat *) &tmpform[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(glm::vec2) * numInstances;
         }
 
         // set up vert atributes and instancing step
@@ -1200,6 +1215,8 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
         {
             numInstances = (int) icols->size();
             glBufferData(GL_ARRAY_BUFFER, sizeof(float) * numInstances, (GLfloat *) & (* icols)[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(float) * numInstances;
         }
         else // a single colour instance, with no change to the underlying colour
         {
@@ -1208,6 +1225,8 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
             //glm::vec4 idt = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             tmpcol.push_back(float(0.0));
             glBufferData(GL_ARRAY_BUFFER, sizeof(float) * numInstances, (GLfloat *) &tmpcol[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(float) * numInstances;
         }
 
         glBindBuffer(GL_ARRAY_BUFFER, cBuffer);

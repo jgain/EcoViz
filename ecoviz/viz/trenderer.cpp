@@ -65,7 +65,7 @@ namespace PMrender {
 
     if (heightmapTexture == 0) // create texture if it does not exist
       {
-        // std::cerr << "- Create texture\n";
+        std::cerr << "- Create heightmap texture: wd = " << wd << "; ht = " << ht << "\n";
         glGenTextures(1, &heightmapTexture); CE();
         glActiveTexture(htmapTexUnit); CE();
         glBindTexture(GL_TEXTURE_2D, heightmapTexture ); CE();
@@ -213,6 +213,8 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
 {
     int vidx = 0, x, y;
 
+    size_t numBytesOnGPU = 0;
+
     y = atY;  // create wall at y = atY;
 
     for (x = 0; x < width; x++, vidx++)
@@ -248,6 +250,8 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
     glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
     glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*width*2, verts, GL_STATIC_DRAW); CE();
 
+    numBytesOnGPU += 5*sizeof(GLfloat)*width*2;
+
     // enable position attribute
     glEnableVertexAttribArray(0); CE();
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
@@ -261,14 +265,20 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*2*width, indices, GL_STATIC_DRAW); CE();
 
+    numBytesOnGPU += sizeof(GLuint)*2*width;
+
     // unbind everything and clean up
     glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     glBindVertexArray(0); CE();
+
+    std::cout << " -- makeXwall: " << numBytesOnGPU << " bytes on GPU\n";
 }
 
   void TRenderer::makeYwall(int atX, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, GLuint *indices, bool reverse)
 {
     int vidx = 0, x, y;
+
+    size_t numBytesonGPU = 0;
 
     x = atX;  // create vertical wall at x = atX;
 
@@ -306,6 +316,8 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
     glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
     glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*height*2, verts, GL_STATIC_DRAW); CE();
 
+    numBytesonGPU += 5*sizeof(GLfloat)*height*2;
+
     // enable position attribute
     glEnableVertexAttribArray(0); CE();
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
@@ -319,15 +331,22 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*2*height, indices, GL_STATIC_DRAW); CE();
 
+    numBytesonGPU += sizeof(GLuint)*2*height;
+
     // unbind everything and clean up
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     glBindVertexArray(0); CE();
+
+    std::cout << " -- makeYwall: " << numBytesonGPU << " bytes on GPU\n";
 }
 
 void TRenderer::makeBase(GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, GLuint *indices)
  {
    float coords[4][2] = { {0.0f, 0.0f}, {scalex, 0.0f}, {0.0f, scaley}, {scalex, scaley}};
+
+   size_t numBytesOnGPU = 0;
+
     for (int vidx = 0; vidx < 4; vidx++)
       {
         verts[5*vidx] = coords[vidx][0];
@@ -349,6 +368,8 @@ void TRenderer::makeBase(GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, G
     glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
     glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*4, verts, GL_STATIC_DRAW); CE();
 
+    numBytesOnGPU += 5*sizeof(GLfloat)*4;
+
     // enable position attribute
     glEnableVertexAttribArray(0); CE();
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
@@ -362,10 +383,14 @@ void TRenderer::makeBase(GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, G
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*4, indices, GL_STATIC_DRAW); CE();
 
+    numBytesOnGPU += sizeof(GLuint)*4;
+
     // unbind everything and clean up
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     glBindVertexArray(0); CE();
+
+    std::cout << " -- makeBase: " << numBytesOnGPU << " bytes on GPU\n";
  }
 
 bool TRenderer::prepareWalls(void)
@@ -418,6 +443,8 @@ bool TRenderer::prepareTerrainGeometry(void)
 {
     GLfloat *vertexStorage;
     GLuint *indexStorage;
+
+   size_t numBytesOnGPU = 0;
 
     vertexStorage = new GLfloat [width*height*5];
     if (vertexStorage == NULL)
@@ -489,6 +516,10 @@ bool TRenderer::prepareTerrainGeometry(void)
     glBindBuffer(GL_ARRAY_BUFFER, vboTerrain); CE();
     glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*width*height, vertexStorage, GL_STATIC_DRAW); CE();
 
+    numBytesOnGPU += 5*sizeof(GLfloat)*width*height;
+
+    std::cout << " -- prepareTerrainGeometry -  vertex/tex coords: " << (5*sizeof(GLfloat)*width*height/1024.0/1024.0) << " MB on GPU\n";
+
     // enable position attribute
     glEnableVertexAttribArray(0); CE();
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
@@ -501,6 +532,9 @@ bool TRenderer::prepareTerrainGeometry(void)
     glGenBuffers(1, &iboTerrain);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboTerrain); CE();
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*indexSize, indexStorage, GL_STATIC_DRAW); CE();
+
+    numBytesOnGPU += sizeof(GLuint)*indexSize;
+    std::cout << " -- prepareTerrainGeometry -  index buffer data: " << (sizeof(GLuint)*indexSize/1024.0/1024.0) << " MB on GPU\n";
 
     // unbind everything and clean up
 
@@ -518,6 +552,8 @@ bool TRenderer::prepareTerrainGeometry(void)
     glGenBuffers(1, &vboScreenQuad); CE();
     glBindBuffer(GL_ARRAY_BUFFER, vboScreenQuad); CE();
     glBufferData(GL_ARRAY_BUFFER, sizeof(screenQuad), screenQuad, GL_STATIC_DRAW); CE();
+
+    numBytesOnGPU += sizeof(screenQuad);
 
     // enable position attribute
     //glEnableVertexAttribArray(0); CE();
@@ -549,6 +585,10 @@ bool TRenderer::prepareTerrainGeometry(void)
     // Give an empty image to OpenGL ( the last "0" )
     glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16F, width, height, 0,GL_RGBA, GL_FLOAT, 0); CE();
 
+    numBytesOnGPU += width*height * 4 * 2; // RGBAF16 = 2 bytes per channel
+
+    std::cout << " -- prepareTerrainGeometry -  normalMapTexture: " << (width*height * 4 * 2/1024.0/1024.0) << " MB on GPU\n";
+
     // no filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
@@ -574,6 +614,8 @@ bool TRenderer::prepareTerrainGeometry(void)
     // unbind FBO
 
     glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
+
+    std::cout << " -- prepareTerrainGeometry -  Total:" << (numBytesOnGPU/1024.0/1024.0) << " MB on GPU\n";
     return true;
 }
 
@@ -652,9 +694,14 @@ void TRenderer::generateNormalTexture(void)
 
   bool TRenderer::initRadianceScalingBuffers(int vWd, int vHt)
   {
+
+      size_t numBytesOnGPU = 0;
+
     // get viewport size - every time this changes we'll have to rebuild the textures
     _w = vWd;
     _h = vHt;
+
+    std::cerr << " -- initRadianceScalingBuffers - rebuilding radScaling textures/FBOs with w = " << _w << " and h = " << _h << std::endl;
 
     // Create & Configure FBO: final composite
 
@@ -673,6 +720,8 @@ void TRenderer::generateNormalTexture(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); CE();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); CE();
+
+    numBytesOnGPU += _w*_h * 4;
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, destTexture, 0); CE();
 
@@ -709,6 +758,8 @@ void TRenderer::generateNormalTexture(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    numBytesOnGPU += _w * _h *3; // approx
+
     // ****** gradient texture:: *******************
 
     glActiveTexture(rsGradTexUnit);
@@ -722,6 +773,8 @@ void TRenderer::generateNormalTexture(void)
     // - deal with out of array access
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    numBytesOnGPU += _w * _h * 4*2;
 
     // ****** screenspace normal texture:: ********************
 
@@ -737,6 +790,8 @@ void TRenderer::generateNormalTexture(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    numBytesOnGPU += _w * _h * 4 * 2;
+
    // ****** colour texture:: ********************
 
     glActiveTexture(rsColTexUnit);
@@ -750,6 +805,8 @@ void TRenderer::generateNormalTexture(void)
     // - deal with out of array access
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    numBytesOnGPU += _w * _h * 4;
 
     // configure FBO: intermediate
 
@@ -795,6 +852,8 @@ void TRenderer::generateNormalTexture(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    numBytesOnGPU += _w * _h * 3;
+
    // ****** manipulator colour texture:: ********************
 
     glActiveTexture(manipTranspTexUnit);
@@ -808,6 +867,8 @@ void TRenderer::generateNormalTexture(void)
     // - deal with out of array access
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    numBytesOnGPU += _w * _h * 4;
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, manipDepthTexture, 0); CE();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, manipTranspTexture, 0); CE();
@@ -826,6 +887,7 @@ void TRenderer::generateNormalTexture(void)
     // unbind FBO
     glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
 
+    std::cout << " -- initRadianceScalingBuffers -- " << numBytesOnGPU/1024.0/1024.0 << " MB on GPU\n";
     return true;
   }
 
@@ -1830,7 +1892,7 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
         }
     }
 
-    std::cerr << "Draw Manipulators called - programID = " << programID << "\n";
+    //std::cerr << "Draw Manipulators called - programID = " << programID << "\n";
     for (int i = 0; i < (int)manipDrawCallData.size(); i++)
     {
         if (manipDrawCallData[i].VAO == 0) continue; // don't bind VAO 0 - it's an empty record
