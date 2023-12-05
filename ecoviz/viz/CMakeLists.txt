@@ -9,6 +9,7 @@ if (BUILD_GUI)
     set(GUI_SOURCES
        glwidget.cpp glwidget.h
        gltransect.cpp gltransect.h
+       gloverview.cpp gloverview.h
        timer.cpp timer.h
        pft.cpp pft.h
        eco.cpp eco.h
