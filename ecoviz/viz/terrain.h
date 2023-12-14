@@ -319,6 +319,13 @@ public:
     void loadElv(const std::string &filename);
 
     /**
+       * Load a terrain from a file - pply dwonsampling (skip every nth sample)
+       * @param filename   File to load (simple ascii elevation format)
+       * @param downsample donsam,pling factor (integer > 1)
+       */
+    void loadElv(const std::string &filename, int downsample);
+
+    /**
        * Save a terrain to file.
        * @param filename   File to save (simple ascii elevation format)
        * @see @ref MemMap for exception information
@@ -328,6 +335,11 @@ public:
     /// Recalculate the mean height over the terrain
     void calcMeanHeight();
     float getHeightFromReal(float x, float y);
+
+    /// PCM - build new terrain from sub-region -
+    /// calling function must assume responsibility for memory
+
+    std::unique_ptr<Terrain> buildSubTerrain(int x0, int x1, int y0, int y1);
 };
 
 #endif // TERRAIN_H

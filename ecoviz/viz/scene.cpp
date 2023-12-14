@@ -457,6 +457,21 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
     setVertScale(vmax);
 }
 
+////  mapScene - light weight class for overview map
+
+std::string mapScene::get_dirprefix()
+{
+    while (datadir.back() == '/')
+        datadir.pop_back();
+
+    int slash_idx = datadir.find_last_of("/");
+    std::string setname = datadir.substr(slash_idx + 1);
+    std::string dirprefix = datadir + "/" + setname;
+    return dirprefix;
+}
+
+
+
 //// Scene
 
 Scene::Scene(string ddir)

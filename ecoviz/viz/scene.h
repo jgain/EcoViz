@@ -314,6 +314,99 @@ public:
     void extractNormalizedBasalArea(Scene * s);
 };
 
+// lightweight scene class for overview map
+class mapScene
+{
+private:
+    std::unique_ptr<Terrain> fullResTerrain;   // input terrain -  full resolution
+    std::unique_ptr<Terrain> lowResTerrain;    // low resolution terrain for overview rendering
+    std::unique_ptr<Terrain> subwTerrain;      // terrain sub-window corresponding to user overview selection
+    std::unique_ptr<TypeMap> overlay;          // single overlay supported (blended over terrain)
+    std::string datadir;                       // directory containing all the scene data
+    std::string overlayName;                   // name of overlap image
+    Region subwindow;                          // subwindow extents (relative to full resolution terrain)
+
+    // downsampling/rescaling
+    bool sampledReady;
+    int downFactor;
+
+    // ensure scene directory is valid
+    std::string get_dirprefix();
+
+public:
+
+    mapScene(const std::string & ddir, const std::string overlayNm) :
+        fullResTerrain(new Terrain), lowResTerrain(new Terrain), subwTerrain(new Terrain),
+        overlay(new TypeMap)
+    {
+        overlayName = overlayNm;
+        datadir = ddir;
+        sampledReady = false;
+        downFactor = 4;
+        subwindow.x0 = subwindow.y0 = subwindow.x1 = subwindow.y1 = -1;
+    }
+    ~mapScene();
+
+
+    // getters
+
+    std::unique_ptr<Terrain> & getHighResTerrain(void)  { return fullResTerrain; }
+    std::unique_ptr<Terrain> & getLowResTerrain(void) { return lowResTerrain; }
+    std::unique_ptr<Terrain> & getTerrainSubwindow(void) { return subwTerrain; }
+    std::unique_ptr<TypeMap> & getOverlayMap(void) { return overlay; }
+    Region getSubwindowExtents(void) const { return subwindow;}
+    bool subwindowValid(void)
+    {
+        if (subwindow.x0 == -1 || subwindow.x1 == -1 ||
+            subwindow.x1 == -1 || subwindow.y1 == -1)
+            return false;
+
+        return true;
+    }
+    void setDownsampleFactor(int factor) { downFactor = factor; }
+
+    // extract the sub-region specified by region and update internal data structures
+    // return the new extracted terrain for later processing.
+    bool extractTerrainSubwindow(Region region)
+    {
+        if (!subwindowValid())
+            return false;
+
+        subwTerrain = fullResTerrain->buildSubTerrain(region.x0, region.y0, region.x1, region.y1);
+
+        return true;
+    }
+
+    void loadOverViewData(void)
+    {
+
+        std::string terfile = datadir+"/dem.elv";
+
+        // load terrain
+        fullResTerrain->loadElv(terfile);
+        fullResTerrain->calcMeanHeight();
+
+        // create downsampled overview
+
+        lowResTerrain->loadElv(terfile, downFactor);
+        lowResTerrain->calcMeanHeight();
+
+        // create texture/map overlay
+
+        /*
+        // match dimensions for empty overlay
+        int dx, dy;
+        getTerrain()->getGridDim(dx, dy);
+        getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
+        getTypeMap(TypeMapType::TRANSECT)->fill(1);
+        getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
+        getTypeMap(TypeMapType::EMPTY)->clear();
+        */
+
+
+    }
+};
+
 class Scene
 {
 private:

@@ -88,7 +88,7 @@ class GLOverview : public QGLWidget
 
 public:
 
-    GLOverview(const QGLFormat& format, Window * wp, Scene * scn, QWidget *parent = 0);
+    GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWidget *parent = 0);
     ~GLOverview();
 
     QSize minimumSizeHint() const;
@@ -104,10 +104,10 @@ public:
      * @brief setScene Change the scene being displayed and initialize a new default view
      * @param s Scene to display
      */
-    void setScene(Scene * s);
+    void setScene(mapScene * s);
 
     /// getter for various viewing controls
-    Scene * getScene(){ return scene; }
+    mapScene * getScene(){ return scene; }
     View * getView(){ return view; }
 
 
@@ -134,7 +134,7 @@ private:
 
     QGLFormat glformat; //< format for OpenGL
     Window * winparent;
-    Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
+    mapScene * scene;      //<overview scene info
     View * view;        //< viewpoint controls
     std::string datadir;
 

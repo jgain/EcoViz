@@ -193,6 +193,43 @@ void Terrain::delGrid()
     accelValid = false;
 }
 
+// PCM ----
+// NOTE: source region is *grid relative* - all other data is preserved, scale etc.
+// assume end points are included.
+
+ std::unique_ptr<Terrain> Terrain::buildSubTerrain(int x0, int x1, int y0, int y1)
+ {
+    int dx = x1-x0+1;
+    int dy = y1-y0+1;
+    float val;
+
+    std::unique_ptr<Terrain> newTerrain(new Terrain);
+
+    newTerrain->init(dx, dy, (float) dx * step, (float) dy * step);
+    newTerrain->step = step;
+    newTerrain->scfac = scfac;
+    newTerrain->scaleOn = scaleOn;
+    // other state that may have changed since init()?
+
+    // copy data
+    for (int x = 0; x < dx; x++)
+    {
+        for (int y = 0; y < dy; y++)
+        {
+            val  = grid->get(x0+x,y0+y);
+
+            newTerrain->grid->set(x,y, val);
+            newTerrain->drawgrid->set(y,x, val);
+        }
+    }
+
+    newTerrain->calcMeanHeight();
+
+    return newTerrain;
+ }
+
+
+
 void Terrain::setMidFocus()
 {
     int dx, dy;
@@ -510,9 +547,67 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
     return true;
 }
 
+void Terrain::loadElv(const std::string &filename, int dFactor)
+{
+    //float lat;
+    int dx, dy;
+
+
+    float val;
+    ifstream infile;
+
+
+
+    infile.open((char *) filename.c_str(), ios_base::in);
+    if(infile.is_open())
+    {
+        std::size_t count =0;
+        infile >> dx >> dy;
+        infile >> step;
+
+        assert(dx > dFactor);
+        assert(dy > dFactor);
+
+        int newdx = int(dx/dFactor) + ( dx % dFactor > 0 ? 1: 0),
+            newdy = int(dy/dFactor) + ( dy % dFactor > 0 ? 1: 0);
+
+        // infile >> lat;
+
+        delGrid();
+        init(newdx, newdy, (float) dx * step, (float) dy * step);
+        // latitude = lat;
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
+        {
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
+            {
+                infile >> val;
+                // only take every dFactor'th sample, starting at 0
+                if (x % dFactor == 0 && y % dFactor == 0)
+                {
+                    count++;
+                    grid->set(x/dFactor, y/dFactor, val); //  * 0.3048f); // convert from feet to metres
+                    drawgrid->set(y/dFactor, x/dFactor, val); // * 0.3048f);
+                }
+            }
+        }
+
+        assert(count == newdx*newdy);
+
+        setMidFocus();
+        infile.close();
+    }
+    else
+    {
+        cerr << "Error Terrain::loadElv (with downsample): unable to open file " << filename << endl;
+    }
+}
 void Terrain::loadElv(const std::string &filename)
 {
-    float lat;
+    //float lat;
     int dx, dy;
 
     float val;

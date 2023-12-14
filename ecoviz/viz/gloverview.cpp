@@ -92,10 +92,7 @@ using namespace std;
 #define GL_MULTISAMPLE  0x809D
 #endif
 
-static int curr_cohortmap = 0;
-static int curr_tstep = 1;
-
-GLOverview::GLOverview(const QGLFormat& format, Window * wp, Scene * scn, QWidget *parent)
+GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWidget *parent)
     : QGLWidget(format, parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
@@ -139,7 +136,7 @@ PMrender::TRenderer * GLOverview::getRenderer()
 
 
 
-void GLOverview::setScene(Scene * s)
+void GLOverview::setScene(mapScene * s)
 {
     scene = s;
     view = new View();
@@ -148,13 +145,16 @@ void GLOverview::setScene(Scene * s)
     view->setViewType(ViewState::ORTHOGONAL);
     view->setZoomdist(0.0f);
 
-    scf = scene->getTerrain()->getMaxExtent();
-    scene->getTerrain()->setBufferToDirty();
+    scene->getLowResTerrain()->setMidFocus();
+    view->setForcedFocus(scene->getLowResTerrain()->getFocus());
+    view->topdown();
+
+    scf = scene->getLowResTerrain()->getMaxExtent();
+    scene->getLowResTerrain()->setBufferToDirty();
 
     // transect setup
-    float rw, rh;
-    scene->getTerrain()->getTerrainDim(rw, rh);
-
+    //float rw, rh;
+    //scene->getTerrain()->getTerrainDim(rw, rh);
     
     winparent->rendercount++;
     signalRepaintAllGL();
@@ -294,7 +294,7 @@ void GLOverview::paintGL()
 
         // draw terrain
         // scene->getTerrain()->setBufferToDirty();
-        scene->getTerrain()->updateBuffers(renderer);
+        scene->getLowResTerrain()->updateBuffers(renderer);
 
         renderer->draw(view);
 
@@ -324,7 +324,6 @@ void GLOverview::keyPressEvent(QKeyEvent *event)
 
 void GLOverview::mousePressEvent(QMouseEvent *event)
 {
-    float nx, ny;
     vpPoint pnt;
 
     int x = event->x(); int y = event->y();
