@@ -474,9 +474,9 @@ std::string mapScene::get_dirprefix()
 
 //// Scene
 
-Scene::Scene(string ddir)
+Scene::Scene(string ddir) : terrain( new Terrain())
 {
-    terrain = new Terrain();
+    //terrain = new Terrain();
     terrain->initGrid(1024, 1024, 10000.0f, 10000.0f);
     eco = new EcoSystem();
     biome = new Biome();
@@ -492,7 +492,7 @@ Scene::Scene(string ddir)
     terrain->getGridDim(dx, dy);
     maps[2]->setRegion(Region(0, 0, dy-1, dx-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
-    nfield = new NoiseField(terrain, 5, 0);
+    nfield = new NoiseField(dx,dy,5, 0);
 
     for(int m = 0; m < 12; m++)
     {
@@ -503,11 +503,13 @@ Scene::Scene(string ddir)
     slope = new basic_types::MapFloat();
     chm = new basic_types::MapFloat();
     cdm = new basic_types::MapFloat();
+
+    masterTerrain = nullptr;
 }
 
 Scene::~Scene()
 {
-    delete terrain;
+    //delete terrain;
 
     // cycle through all typemaps, and if exists, delete and assign nullptr to indicate empty
     for (int t = 0; t < int(TypeMapType::TMTEND); t++)
@@ -693,27 +695,46 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     using namespace data_importer;
 
     std::vector<std::string> timestep_files;
-    std::string terfile = datadir+"/dem.elv";
+    //std::string terfile = datadir+"/dem.elv";
 
     for (int ts = timestep_start; ts <= timestep_end; ts++)
     {
         timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
     }
 
-    // load terrain
-    getTerrain()->loadElv(terfile);
-    getTerrain()->calcMeanHeight();
+    // load terrain (already calld loadElv and calcMeanHeight)
+
+    //terrain = std::move(newTerr);
+
+    //getTerrain()->loadElv(terfile);
+    //getTerrain()->calcMeanHeight();
 
     // match dimensions for empty overlay
+
+    // continue setup for sub-terrain newTerr
+    /*
     int dx, dy;
     getTerrain()->getGridDim(dx, dy);
     getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
     getTypeMap(TypeMapType::TRANSECT)->fill(1);
     getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
     getTypeMap(TypeMapType::EMPTY)->clear();
+    */
 
-    float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
+    // NB: must maintain original terrain dims/size when imposing a sub-region terrain
+    // ****entire**** region plan/eco data read in - later we select out the relevant parts for
+    // rendering
+    float SRCregionwidth, SRCregionheight;
+    Region srcRegion;
+    float sx,ex, sy, ey;
+    terrain->getSourceRegion(srcRegion, sx, sy, ex, ey);
+    SRCregionwidth = ex-sx;
+    SRCregionheight = ey-sy;
+
+    assert(SRCregionheight > 0.0);
+    assert(SRCregionwidth > 0.0);
+
+    // getTerrain()->getTerrainDim(rw, rh);
 
     if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
     {
@@ -739,7 +760,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     {
         // import cohorts
         try {
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "1.0", species_lookup));
+        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, SRCregionwidth, SRCregionheight, "1.0", species_lookup));
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }
@@ -766,6 +787,8 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
 
 }
 
+// PCM - this won't export properly with overview window since that loads entire ecosystem, and can't deal with sub-regions
+// TBD
 void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect) {
     set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
 

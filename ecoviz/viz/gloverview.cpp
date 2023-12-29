@@ -137,30 +137,69 @@ PMrender::TRenderer * GLOverview::getRenderer()
 
 
 void GLOverview::setScene(mapScene * s)
-{
+{ 
     scene = s;
     view = new View();
 
-    // orthogonal rendering
-    view->setViewType(ViewState::ORTHOGONAL);
-    view->setZoomdist(0.0f);
-
     scene->getLowResTerrain()->setMidFocus();
+    view->setViewType(ViewState::ORTHOGONAL);
     view->setForcedFocus(scene->getLowResTerrain()->getFocus());
+    view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
+    view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
+    scf = scene->getLowResTerrain()->getMaxExtent();
+
+    // orthogonal rendering
+    //view->setViewType(ViewState::ORTHOGONAL);
+    //view->setZoomdist(0.0f);
+    //view->setOrthoViewDepth(2000.0f);
+    //view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist());
+
+    std::cout << "***** setScene(mapScene) - data:\n";
+    vpPoint pt = scene->getLowResTerrain()->getFocus();
+    std::cout << " ** focus.x: " << pt.x;
+    std::cout << " ** focus.y: " << pt.y;
+    std::cout << " ** focus.z: " << pt.z;
+    std::cout << " ** scf: " << scf << "\n";
+    std::cout << " ** wd: " << this->width() << "\n";
+    std::cout << " ** ht: " << this->height() << "\n";
+    std::cout << " ** terrain scale: " << scene->getLowResTerrain()->longEdgeDist() << "\n";
+
+    // scene->getLowResTerrain()->setMidFocus();
     view->topdown();
 
-    scf = scene->getLowResTerrain()->getMaxExtent();
     scene->getLowResTerrain()->setBufferToDirty();
-
-    // transect setup
-    //float rw, rh;
-    //scene->getTerrain()->getTerrainDim(rw, rh);
     
     winparent->rendercount++;
-    signalRepaintAllGL();
+    //signalRepaintAllGL();
+    updateGL();
 }
 
+// the heightfield will change after initial dummy creation (and possible edits later)
+// make sure View params are correct.
 
+void GLOverview::updateViewParams(void)
+{
+    scene->getLowResTerrain()->setMidFocus();
+    view->setForcedFocus(scene->getLowResTerrain()->getFocus());
+    view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
+    scf = scene->getLowResTerrain()->getMaxExtent();
+
+    // orthogonal rendering
+
+    view->setViewType(ViewState::ORTHOGONAL);
+    float minHt, maxHt;
+    scene->getLowResTerrain()->getHeightBounds(minHt, maxHt);
+    view->setZoomdist(0.0f);
+    vpPoint orthoFocusTop;
+    orthoFocusTop = scene->getLowResTerrain()->getFocus();
+    orthoFocusTop.y = maxHt/2.0 + 1.0f;
+    view->setForcedFocus(orthoFocusTop);
+    view->setOrthoViewDepth(100000.0f); // maxHt - minHt);
+    view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()*4);
+
+    view->topdown();
+    view->apply();
+}
 
 void GLOverview::initializeGL()
 {
@@ -189,7 +228,9 @@ void GLOverview::initializeGL()
 
     // To use basic shading: PMrender::TRenderer::BASIC
     // To use radiance scaling: PMrender::TRenderer::RADIANCE_SCALING
-    PMrender::TRenderer::terrainShadingModel  sMod = PMrender::TRenderer::RADIANCE_SCALING;
+    // PMrender::TRenderer::RADIANCE_SCALING;
+    // PMrender::TRenderer::RADIANCE_SCALING_TRANSECT;
+    PMrender::TRenderer::terrainShadingModel  sMod = PMrender::TRenderer::RADIANCE_SCALING_OVERVIEW;
 
     // set terrain shading model
     renderer->setTerrShadeModel(sMod);
@@ -199,7 +240,7 @@ void GLOverview::initializeGL()
     dl.normalize();
 
   //  GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
-     GLfloat pointLight[3] = {1000.0, 2000.0, 1000.0}; // side panel + BASIC lighting
+     GLfloat pointLight[3] = {1000.0, 3000.0, 1000.0}; // side panel + BASIC lighting
     GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
     GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
 
@@ -218,16 +259,17 @@ void GLOverview::initializeGL()
     renderer->drawGridlines(false);
 
     // turn on terrain type overlay (off by default); NB you can stil call methods to update terrain type,
-    renderer->useTerrainTypeTexture(true);
+    renderer->useTerrainTypeTexture(false);
     renderer->useConstraintTypeTexture(false);
 
     // use manipulator textures (decal'd)
-    renderer->textureManipulators(true);
+    renderer->textureManipulators(false);
 
     // *** PM Render code - end ***
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    //glEnable(GL_DEPTH_CLAMP);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_TEXTURE_2D);
 
@@ -271,6 +313,53 @@ void GLOverview::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     }
 }
 
+void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &drawparams)
+{
+    ShapeDrawData sdd;
+    float scale;
+    Shape shape;
+    glm::mat4 tfm, idt;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
+    std::vector<float> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    scale = 1.0; // view->getScaleFactor();
+
+    Region region;
+    vpPoint centre;
+    float planeHeight, planeWidth;
+    region = getScene()->getSelectedRegion(); //  (region, startx, starty, endx, endy);
+    float minHt, maxHt;
+    scene->getLowResTerrain()->getHeightBounds(minHt, maxHt);
+    centre.y = maxHt;
+    centre.x = (region.x0 + region.x1)/2.0;
+    centre.z = (region.y0 + region.y1)/2.0;
+    idt = glm::mat4(1.0f);
+    tfm = glm::translate(idt, glm::vec3(centre.x, centre.y, centre.z));
+
+    // PCM: these are int (grid coords not actual coordinates - scaling ???)
+    planeWidth = (region.x1 - region.x0)/2.0f;
+    planeHeight = (region.y1 - region.y0);
+
+    std::cout << "\nSelection plane data:\n";
+    std::cout << "centre = (" << centre.x << "," << centre.y << "," << centre.z << ")\n";
+    std::cout << "scale: " << scale << std::endl;
+    std::cout << "(planeWidth, planeHeight) = " << planeWidth << "," << planeHeight << ")\n";
+
+    shape.genPlane(vpPoint(0.0,0.0,1.0), vpPoint(0.0,0.0,0.0), planeWidth*scale, planeHeight*scale, tfm);
+    if (shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawparams.push_back(sdd);
+    }
+}
+
+
 void GLOverview::paintGL()
 {
     vpPoint mo;
@@ -280,21 +369,33 @@ void GLOverview::paintGL()
     Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
     std::vector<glm::vec4> cinst;
+    GLfloat planeCol[] = {0.325f, 0.235f, 1.0f, 1.0f};
 
     Timer t;
 
     if(active)
     {
+        std::cout << " ------- GLOverview::paintGL() called ----------\n";
+        drawParams.clear();
         t.start();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // viewport is incorrect on creation, this will ensure current is used to match View
+        updateViewParams();
+
+        // build selection plane 'manipulator'
+
+        paintSelectionPlane(planeCol, drawParams);
 
         // pass in draw params for objects
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain
-        // scene->getTerrain()->setBufferToDirty();
-        scene->getLowResTerrain()->updateBuffers(renderer);
+
+        //scene->getLowResTerrain()->setBufferToDirty();
+        // draw terrain  with selection plane
+        if (drawParams.size() > 0) // DEBUG: PCM
+            scene->getLowResTerrain()->updateBuffers(renderer);
 
         renderer->draw(view);
 
@@ -343,8 +444,9 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
     }
 
     winparent->rendercount++;
-    updateGL();
 
+    std::cout << "---- overview mouse click ----- \n";
+    updateGL();
     lastPos = event->pos();
 }
 

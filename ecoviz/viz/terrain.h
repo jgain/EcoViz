@@ -96,6 +96,12 @@ private:
 
     float latitude;         ///< latitude location of terrain in degrees, if available
 
+    Region sourceRegion;    ///< source region for a terrain built from larger terrain;
+                            ///< caller must maintain knowledge of parent; this is used for
+                            ///< ecosystem offsetting from master terrain to this sub-terrain
+                            ///< by default it is not set (0 for each entry): NOTE: these are
+                            ///< *grid* coordinates relative to parent grid - they must be converted to
+                            /// < world space for terrain checks.
     // PM: terrain renderer
     mutable bool glewSetupDone;
     mutable GLuint htMapTextureId;
@@ -127,12 +133,14 @@ private:
 public:
 
     /// Constructor
-    Terrain()
+    Terrain(Region source = Region()) // empty source region by default
     {
         glewSetupDone = false; dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0;
         hghtrange = 0.0f; hghtmean = 0.0f; accelValid = false;
         grid = new basic_types::MapFloat();
         drawgrid = new basic_types::MapFloat();
+        // PCM - set only if this terrain was created from (larger) parent terrain
+        sourceRegion = source;
     }
 
     /// Destructor
@@ -140,6 +148,21 @@ public:
     {
         delete grid;
         delete drawgrid;
+    }
+
+
+    //returns true if source region is set.
+    // src: the grid coordinates (relative to source) of this terrain
+    // sx, sy, ex. ey are "physical" terrain  coordinates covered by source
+    bool getSourceRegion(Region &src, float &sx, float &sy, float &ex, float &ey) const
+    {
+        src = sourceRegion;
+        sx = src.x0*step;
+        sy = src.y0*step;
+        ex = src.x1*step;
+        ey = src.y1*step;
+
+        return sourceRegion.empty();
     }
 
     void setHeightMaptextureID(GLuint id) { htMapTextureId = id; }

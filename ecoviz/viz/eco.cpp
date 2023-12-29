@@ -45,14 +45,14 @@ private:
 
 /// NoiseField
 
-NoiseField::NoiseField(Terrain * ter, int dstep, long sval)
+NoiseField::NoiseField(int gridX, int gridY, int dstep, long sval)
 {
-    int tx, ty;
+    //int tx, ty;
 
-    terrain = ter;
-    terrain->getGridDim(tx, ty);
-    dimx = tx * dstep;
-    dimy = tx * dstep;
+    // terrain = ter;
+    //terrain->getGridDim(tx, ty);
+    dimx = gridX * dstep;
+    dimy = gridY * dstep;
     nmap = new basic_types::MapFloat();
     nmap->setDim(dimx, dimy);
     nmap->fill(0.0f);
@@ -70,16 +70,21 @@ void NoiseField::init()
         }
 }
 
-float NoiseField::getNoise(vpPoint p)
+float NoiseField::getNoise(vpPoint p, float tx, float ty)
 {
-    float tx, ty, convx, convy;
+    float convx, convy;
     int x, y;
-
-    terrain->getTerrainDim(tx, ty);
+    // NOTE: this assumes p is in [0,tx] x [0,ty]
+    // terrain pointer removed since it is hard to manage with sub-region terrains
+    //terrain->getTerrainDim(tx, ty);
     convx = (float) (dimx-1) / tx;
     convy = (float) (dimy-1) / ty;
     x = (int) (p.x * convx);
     y = (int) (p.z * convy);
+
+   //assert((x >=0) && (x < dimx));
+   //assert((y >=0) && (y < dimy));
+
     return nmap->get(x, y);
 }
 
@@ -961,7 +966,9 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
     int spc = tree.species;
 
     // introduce small random variation in colour
-    float rndoff = nfield->getNoise(pos)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
+    // PCM: I swapped x/y for call to getNoise: I am not sure what correct order is, but this avoid out-of-range error in coordinate lookup (and
+    // we really just want a random numbetr).
+    float rndoff = nfield->getNoise(vpPoint(tx-tree.y,h,tree.x), tx, ty)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
     // glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
     // NB: now done in shader!
     /*

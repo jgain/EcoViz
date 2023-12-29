@@ -62,7 +62,7 @@ class NoiseField
 {
 private:
     long seed;      //< random number initialization to ensure a Noisefield can be reproduced
-    Terrain * terrain;  //< underlying terrain
+    // *** decouple ** Terrain * terrain;  //< underlying terrain
     int dimx, dimy; //< dimsions of the noisefield (a multiplicative factor of the terrain)
     basic_types::MapFloat * nmap;  //< field of noise values
     DiceRoller * dice; //< random number generator
@@ -71,11 +71,12 @@ public:
 
     /**
      * @brief NoiseField initializer
-     * @param ter   underlying terrain
+     * @param gridX   underlying grid X size
+     * @param gridY   underlying grid Y size
      * @param dstep number of sub-cells per terrain cell (basically a multiplication factor)
      * @param sval  seed value
      */
-    NoiseField(Terrain * ter, int dstep, long sval);
+    NoiseField(int gridX, int gridY, int dstep, long sval);
 
     ~NoiseField(){ delete dice; }
 
@@ -83,7 +84,8 @@ public:
     void init();
 
     /// recover a random value in [0, 1] at a point on the terrain
-    float getNoise(vpPoint p);
+    /// rangeX/Y allow any p in the valid range - else p can map outrside [0,1]
+    float getNoise(vpPoint p, float rangeX, float rangeY);
 };
 
 class PlantGrid

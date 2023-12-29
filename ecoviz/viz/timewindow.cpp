@@ -178,6 +178,7 @@ void TimeWindow::setScene(Scene * s)
     scene->getTimeline()->getTimeBounds(tstart, tend);
     setSliderBounds(tstart, tend);
 
+    //PCM: no idea what this does? Seems to be a map tied to resolution of the terrain? May cause issues.
     if(scene->getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
     {
         cerr << "type map error" << endl;
@@ -187,8 +188,9 @@ void TimeWindow::setScene(Scene * s)
     {
         int gw, gh;
         float rw, rh;
-        scene->getTerrain()->getGridDim(gw, gh);
-        scene->getTerrain()->getTerrainDim(rw, rh);
+        //PCM: changed to get params of master/high res terrain from which this is extracted
+        scene->getMasterTerrain()->getGridDim(gw, gh);
+        scene->getMasterTerrain()->getTerrainDim(rw, rh);
 
         auto amap = scene->cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
         updateScene(scene->getTimeline()->getNow());
@@ -228,7 +230,9 @@ void TimeWindow::updateSingleScene(int t)
 
      for(auto &tree: mature)
      {
-         if(scene->getTerrain()->inGridBounds(tree.y, tree.x))
+         // PCM: changed to use Master terrain - we will place all then cull away (to avoid issues with Timeline)
+         // PCM: why are x/y swapped?
+         if(scene->getMasterTerrain()->inGridBounds(tree.y, tree.x))
              trees.push_back(tree);
          else
              cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
@@ -237,7 +241,7 @@ void TimeWindow::updateSingleScene(int t)
 
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
-     scene->getEcoSys()->placeManyPlants(scene->getTerrain(), scene->getNoiseField(), trees);
+     scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), trees);
      signalRebindPlants();
      winparent->rendercount++;
      signalRepaintAllGL();

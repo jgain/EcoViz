@@ -320,14 +320,13 @@ class mapScene
 private:
     std::unique_ptr<Terrain> fullResTerrain;   // input terrain -  full resolution
     std::unique_ptr<Terrain> lowResTerrain;    // low resolution terrain for overview rendering
-    std::unique_ptr<Terrain> subwTerrain;      // terrain sub-window corresponding to user overview selection
     std::unique_ptr<TypeMap> overlay;          // single overlay supported (blended over terrain)
     std::string datadir;                       // directory containing all the scene data
     std::string overlayName;                   // name of overlap image
-    Region subwindow;                          // subwindow extents (relative to full resolution terrain)
+    Region selectedRegion;                     // current selected sub-region  - relative to hi-res input
+                                               //(needed for overview render)
 
     // downsampling/rescaling
-    bool sampledReady;
     int downFactor;
 
     // ensure scene directory is valid
@@ -336,14 +335,17 @@ private:
 public:
 
     mapScene(const std::string & ddir, const std::string overlayNm) :
-        fullResTerrain(new Terrain), lowResTerrain(new Terrain), subwTerrain(new Terrain),
+        fullResTerrain(new Terrain), lowResTerrain(new Terrain),
         overlay(new TypeMap)
     {
         overlayName = overlayNm;
         datadir = ddir;
-        sampledReady = false;
         downFactor = 4;
-        subwindow.x0 = subwindow.y0 = subwindow.x1 = subwindow.y1 = -1;
+
+        selectedRegion = Region();
+
+        // dummy init to avoid issues with early paintGL() which expects valid terrain
+        lowResTerrain->initGrid(10, 10, 100.0f, 100.0f);
     }
     ~mapScene();
 
@@ -352,13 +354,22 @@ public:
 
     std::unique_ptr<Terrain> & getHighResTerrain(void)  { return fullResTerrain; }
     std::unique_ptr<Terrain> & getLowResTerrain(void) { return lowResTerrain; }
-    std::unique_ptr<Terrain> & getTerrainSubwindow(void) { return subwTerrain; }
     std::unique_ptr<TypeMap> & getOverlayMap(void) { return overlay; }
-    Region getSubwindowExtents(void) const { return subwindow;}
-    bool subwindowValid(void)
+    void setSelectedRegion(Region reg) { selectedRegion = reg; }
+    Region getSelectedRegion(void) const { return selectedRegion; }
+
+    bool subwindowValid(Region subwindow)
     {
-        if (subwindow.x0 == -1 || subwindow.x1 == -1 ||
-            subwindow.x1 == -1 || subwindow.y1 == -1)
+        int gridx, gridy;
+        fullResTerrain->getGridDim(gridx, gridy);
+
+        if (subwindow.x0 < 0 || subwindow.x0 > gridx-1)
+            return false;
+        if (subwindow.x1 < 0 || subwindow.x1 > gridx-1)
+            return false;
+        if (subwindow.y0 < 0 || subwindow.y0 > gridy-1)
+            return false;
+        if (subwindow.y1 < 0 || subwindow.y1 > gridy-1)
             return false;
 
         return true;
@@ -367,29 +378,68 @@ public:
 
     // extract the sub-region specified by region and update internal data structures
     // return the new extracted terrain for later processing.
-    bool extractTerrainSubwindow(Region region)
+    std::unique_ptr<Terrain> extractTerrainSubwindow(Region region)
     {
-        if (!subwindowValid())
-            return false;
+        if (!subwindowValid(region))
+        {
+            std::ostringstream oss("extractTerrainSubwindow: region invalid:");
+            oss << " ++++ [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+                   region.x1 << "," << region.y1 << "]";
 
-        subwTerrain = fullResTerrain->buildSubTerrain(region.x0, region.y0, region.x1, region.y1);
+            throw std::runtime_error(oss.str());
+        }
 
-        return true;
+        return fullResTerrain->buildSubTerrain(region.x0, region.y0, region.x1, region.y1);
     }
 
-    void loadOverViewData(void)
+    // factor: default reduction factor to extract sub-region for main terrain (10 = 1/10th)
+    // defRegion: return the default region (integer grid coordinates)
+    // return value = a unique_ptr to extracted Terrain  that must be managed by the caller
+    std::unique_ptr<Terrain> loadOverViewData(int factor = 10)
     {
 
         std::string terfile = datadir+"/dem.elv";
+        float terx, tery;
+        int gridx, gridy;
+        vpPoint mid;
 
         // load terrain
         fullResTerrain->loadElv(terfile);
         fullResTerrain->calcMeanHeight();
 
-        // create downsampled overview
+        std::cout << "\n ****** Hi-res Terrain loaded...\n";
+        std::cout << " ****** Mean height: " << fullResTerrain->getHeightMean() << "\n";
+        fullResTerrain->getTerrainDim(terx, tery);
+        std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+        fullResTerrain->getGridDim(gridx, gridy);
+        std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+        fullResTerrain->getMidPoint(mid);
+        std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
 
+        // define default region to be small aspect ratio preserving subregion of full terrain input
+        int centrex = int(gridx/2), centrey = int(gridy/2);
+        int widthx = int(gridx/factor), widthy = int(gridy/factor);
+        Region defRegion;
+        defRegion.x0 = centrex - int(0.5*widthx);
+        defRegion.y0 = centrey - int(0.5*widthy);
+        defRegion.x1 = centrex + int(0.5*widthx);
+        defRegion.y1 = centrey + int(0.5*widthy);
+
+        // create downsampled overview
         lowResTerrain->loadElv(terfile, downFactor);
         lowResTerrain->calcMeanHeight();
+
+        selectedRegion = defRegion;
+
+        std::cout << "\n ****** Lo-res Terrain loaded...\n";
+        std::cout << " ****** Mean height: " << lowResTerrain->getHeightMean() << "\n";
+        lowResTerrain->getTerrainDim(terx, tery);
+        std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+        lowResTerrain->getGridDim(gridx, gridy);
+        std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+        lowResTerrain->getMidPoint(mid);
+        std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
 
         // create texture/map overlay
 
@@ -403,14 +453,17 @@ public:
         getTypeMap(TypeMapType::EMPTY)->clear();
         */
 
+        // default region extract
 
+        return extractTerrainSubwindow(defRegion);
     }
 };
 
 class Scene
 {
 private:
-    Terrain * terrain;                          //< underlying terrain
+    std::unique_ptr<Terrain> terrain;                          //< underlying terrain
+    Terrain *masterTerrain;                     //< a pointer to the large input terrain this one is extracted from
     TypeMap * maps[(int) TypeMapType::TMTEND];  //< underlying type map data
     basic_types::MapFloat * slope, * chm, * cdm;             //< condition maps
     std::vector<basic_types::MapFloat *> sunlight;           //< local per cell illumination for each month
@@ -439,7 +492,8 @@ public:
     ~Scene();
 
     /// getters for currently active view, terrain, typemaps, renderer, ecosystem
-    Terrain * getTerrain(){ return terrain; }
+    Terrain *  getTerrain(){ return terrain.get(); }
+    Terrain *  getMasterTerrain() { return masterTerrain; }
     TypeMap * getTypeMap(TypeMapType purpose){ return maps[static_cast<int>(purpose)]; }
     EcoSystem * getEcoSys(){ return eco; }
     basic_types::MapFloat * getSunlight(int month){ return sunlight[month]; }
@@ -450,6 +504,24 @@ public:
     Biome * getBiome(){ return biome; }
     Timeline * getTimeline(){ return tline; }
     NoiseField * getNoiseField(){ return nfield; }
+
+    // set new Terrain core data; assumes newTerr has internal state set up
+    void setNewTerrainData(std::unique_ptr<Terrain> newTerr, Terrain *master)
+    {
+        terrain = std::move(newTerr);
+
+        terrain->calcMeanHeight();
+
+        // match dimensions for empty overlay
+        int dx, dy;
+        terrain->getGridDim(dx, dy);
+        getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
+        getTypeMap(TypeMapType::TRANSECT)->fill(1);
+        getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
+        getTypeMap(TypeMapType::EMPTY)->clear();
+
+        masterTerrain = master;
+    }
 
     /**
      * @brief calcSlope    Calculate per cell ground slope

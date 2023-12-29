@@ -757,20 +757,22 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         winparent->rendercount++;
         updateGL();
     }*/
-    /*
+
     if(event->key() == Qt::Key_V) // 'V' for top-down view
     {
         scene->getTerrain()->setMidFocus();
         view->setForcedFocus(scene->getTerrain()->getFocus());
         view->topdown();
         refreshViews();
-    }*/
+    }
+    /*
 
     if(event->key() == Qt::Key_V) // 'V' for switching view modes
     {
         view->switchViewMode();
         refreshViews();
     }
+   */
 
     if(event->key() == Qt::Key_M) // 'M' save camera matrices (view, projection, and product)
     {

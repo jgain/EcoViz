@@ -64,6 +64,7 @@
 
 #include "glwidget.h"
 #include "gltransect.h"
+#include "gloverview.h"
 #include "chartwindow.h"
 #include "mitsuba_model.h"
 #include <QWidget>
@@ -141,9 +142,11 @@ protected:
 
 private:
     std::vector<Scene *> scenes;                ///< scenes for each half
+    std::vector<mapScene *> mapScenes;          ///< map scenes for each half
     std::vector<Transect *> transectControls;   ///< Transect controls for each viewing pair
     std::vector<GLWidget *> perspectiveViews;   ///< OpenGL perspective rendering views
     std::vector<GLTransect *> transectViews;    ///< OpenGL transect views
+    std::vector<GLOverview *> overviewMaps;     ///< OpenGL over maps (left and right)
     std::vector<TimeWindow *> timelineViews;    ///< widget for timeline control
     std::vector<ChartWindow *> chartViews;      ///< widget for displaying graphs
     std::vector<std::vector< TimelineGraph *> > graphModels;   ///< Underlying graph data associated with scene, multiple graphs per scene
@@ -189,6 +192,10 @@ private:
 
     // Map containing the different export profiles (Mitsuba)
     map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;
+
+    // PCM --- name of image overlay for overview maps (left and right)
+    std::string mapOverlayFile[2];
+    int mapDownSampleFactor; // default = 4;
 
     /**
      * @brief setupRenderPanel  Initialize GUI layout of side render panel for controlling various rendering parameters

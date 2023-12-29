@@ -203,7 +203,7 @@ void Terrain::delGrid()
     int dy = y1-y0+1;
     float val;
 
-    std::unique_ptr<Terrain> newTerrain(new Terrain);
+    std::unique_ptr<Terrain> newTerrain(new Terrain(Region(x0,y0,x1,y1)) );
 
     newTerrain->init(dx, dy, (float) dx * step, (float) dy * step);
     newTerrain->step = step;
@@ -681,7 +681,7 @@ void Terrain::calcMeanHeight()
     for(j = 0; j < grid->height(); j++)
         for(i = 0; i < grid->width(); i++)
         {
-            hghtmean += grid->get(j,i);
+            hghtmean += grid->get(i,j);
             cnt++;
         }
     hghtmean /= (float) cnt;
@@ -698,7 +698,7 @@ void Terrain::getHeightBounds(float &minh, float &maxh)
     for(j = 0; j < grid->height(); j++)
         for(i = 0; i < grid->width(); i++)
         {
-            hght = grid->get(j,i);
+            hght = grid->get(i,j);
             if(hght < minh)
                 minh = hght;
             if(hght > maxh)

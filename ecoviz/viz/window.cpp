@@ -467,6 +467,9 @@ void Window::setupVizPanel()
     vizLayout->setRowStretch(1, 24);
     vizLayout->setRowStretch(2, 1);
     vizLayout->setRowStretch(3, 8);
+    // PCM: add overview map
+    vizLayout->setRowStretch(4,6);
+
     vizLayout->setColumnStretch(0, 600);
     vizLayout->setColumnStretch(1, 50);
     vizLayout->setColumnStretch(2, 600);
@@ -537,6 +540,23 @@ void Window::setupVizPanel()
 
         timelineViews.push_back(tview);
         vizLayout->addWidget(tview, 2, i*2);
+    }
+
+    // PCM: overview maps L/R
+
+    for(int i = 0; i < 2; i++)
+    {
+        GLOverview *oview = new GLOverview(glFormat, this, mapScenes[i]);
+
+        // set params
+
+        // signal to slot connections
+        connect(oview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+        //connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
+        //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
+
+        overviewMaps.push_back(oview);
+        vizLayout->addWidget(oview, 4, i*2);
     }
 
     // lock buttons
@@ -635,6 +655,7 @@ void Window::setupGraphModels(int scene_index)
     }
 }
 
+// PCM: add in constructor names for map overlay  - TBD
 Window::Window(string datadir)
 {
     QWidget *mainWidget = new QWidget;
@@ -656,11 +677,15 @@ Window::Window(string datadir)
     plantPanel = nullptr;
     setupPlantPanel();
 
+    // mapDownSampleFactor = 4;
+
     // load scenes
     for(int i = 0; i < 2; i++)
     {
         Scene * s = new Scene(datadir);
         scenes.push_back(s);
+        mapScene * ms = new mapScene(datadir, mapOverlayFile[i]);
+        mapScenes.push_back(ms);
     }
 
     for(int i = 0; i < 2; i++)
@@ -695,17 +720,29 @@ Window::~Window()
         delete(it);
 }
 
+/*
 void Window::loadSceneData(void)
 {
     assert(scenes.size() == 2);
     for(int i = 0; i < 2; i++)
         scenes[i]->loadScene(1, 5); // years
 }
+*/
 
 void Window::run_viewer()
 {
     for(int i = 0; i < 2; i++)
     {
+        // PCM: added overview map
+        // load large scale terrain, downsample for oevrview map, and extract  default sub-region for
+        // main render window.
+        std::unique_ptr<Terrain> subTerr = mapScenes[i]->loadOverViewData();
+        // set extracted sub-region as the region for this window
+        // pass in a poinyer to highres (master) terrain
+        scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
+        // load in remaing eco-system data - NOTE:
+        // the original source region extent is stored in scene[i] - this will beed to be queried to
+        // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
         scenes[i]->loadScene(1, 5); // years
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
@@ -774,6 +811,9 @@ void Window::repaintAllGL()
         mview->repaint();
     for(auto cview: chartViews)
         cview->repaint();
+    // PCM: probbaly not needed mostly...
+    for (auto mapviews: overviewMaps)
+        mapviews->repaint();
 }
 
 void Window::showRenderOptions()

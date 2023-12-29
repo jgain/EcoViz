@@ -110,6 +110,8 @@ public:
     mapScene * getScene(){ return scene; }
     View * getView(){ return view; }
 
+    /// recalculate View params for viewport
+    void updateViewParams(void);
 
     /// Respond to key press events
     void keyPressEvent(QKeyEvent *event);
@@ -158,6 +160,9 @@ private:
      * @param drawParams accumulated rendering state
      */
     void paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
+
+    // paint on the overview selection window (size and position obtained from Terrain)
+    void paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> & drawparams);
 };
 
 #endif
