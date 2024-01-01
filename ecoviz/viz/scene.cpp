@@ -151,15 +151,15 @@ void Transect::paintThickness(Terrain * ter)
 
     // test if grid points on vizmap lie between offset planes
     ter->getGridDim(dx, dy);
-    for(int x = 0; x < dx; x++)
-        for(int y = 0; y < dy; y++)
+    for(int y = 0; y < dy; y++)
+        for(int x = 0; x < dx; x++)
         {
             // position on terrain corresponding to grid point, projected onto the base plane
-            vizpnt = ter->toWorld(x, y, 0.0f); // JG - orientation flip
+            vizpnt = ter->toWorld(y, x, 0.0f); // JG/PCM - orientation flip
             if(!offset[0].side(vizpnt) && !offset[1].side(vizpnt)) // between planes so draw in red
-                mapviz->set(y, x, 1.0f);
+                mapviz->set(x, y, 1.0f); // PCM:  more flipping (ensure map  indices are valid, adjusted other values too)
             else
-                mapviz->set(y, x, 0.0f);
+                mapviz->set(x, y, 0.0f);
         }
 }
 
