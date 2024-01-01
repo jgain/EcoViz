@@ -388,6 +388,11 @@ public:
 
             throw std::runtime_error(oss.str());
         }
+        else
+        {
+            std::cout << " Subregion extracted -  [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+                   region.x1 << "," << region.y1 << "]";
+        }
 
         return fullResTerrain->buildSubTerrain(region.x0, region.y0, region.x1, region.y1);
     }

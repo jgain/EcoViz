@@ -101,7 +101,10 @@ private:
                             ///< ecosystem offsetting from master terrain to this sub-terrain
                             ///< by default it is not set (0 for each entry): NOTE: these are
                             ///< *grid* coordinates relative to parent grid - they must be converted to
-                            /// < world space for terrain checks.
+                            ///< world space for terrain checks.
+    int parentGridx;       ///< if source Region is set, this will also be set and indicate parent grid
+    int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as (dim-1)*step
+
     // PM: terrain renderer
     mutable bool glewSetupDone;
     mutable GLuint htMapTextureId;
@@ -141,7 +144,8 @@ public:
         drawgrid = new basic_types::MapFloat();
         // PCM - set only if this terrain was created from (larger) parent terrain
         sourceRegion = source;
-    }
+        parentGridx = parentGridy = 0;
+      }
 
     /// Destructor
     ~Terrain()
@@ -154,7 +158,9 @@ public:
     //returns true if source region is set.
     // src: the grid coordinates (relative to source) of this terrain
     // sx, sy, ex. ey are "physical" terrain  coordinates covered by source
-    bool getSourceRegion(Region &src, float &sx, float &sy, float &ex, float &ey) const
+    // parentDimx/y are the full original terrain extents (in meters)
+    bool getSourceRegion(Region &src, float &sx, float &sy, float &ex, float &ey,
+                         float& parentDimx, float & parentDimy) const
     {
         src = sourceRegion;
         sx = src.x0*step;
@@ -162,7 +168,10 @@ public:
         ex = src.x1*step;
         ey = src.y1*step;
 
-        return sourceRegion.empty();
+        parentDimx = (parentGridx-1)*step;
+        parentDimy = (parentGridy-1)*step;
+
+        return !sourceRegion.empty();
     }
 
     void setHeightMaptextureID(GLuint id) { htMapTextureId = id; }
@@ -362,7 +371,7 @@ public:
     /// PCM - build new terrain from sub-region -
     /// calling function must assume responsibility for memory
 
-    std::unique_ptr<Terrain> buildSubTerrain(int x0, int x1, int y0, int y1);
+    std::unique_ptr<Terrain> buildSubTerrain(int x0, int y0, int x1, int y1);
 };
 
 #endif // TERRAIN_H

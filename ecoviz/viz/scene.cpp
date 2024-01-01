@@ -724,15 +724,14 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     // NB: must maintain original terrain dims/size when imposing a sub-region terrain
     // ****entire**** region plan/eco data read in - later we select out the relevant parts for
     // rendering
-    float SRCregionwidth, SRCregionheight;
-    Region srcRegion;
-    float sx,ex, sy, ey;
-    terrain->getSourceRegion(srcRegion, sx, sy, ex, ey);
-    SRCregionwidth = ex-sx;
-    SRCregionheight = ey-sy;
+       Region srcRegion;
+    float sx,ex, sy, ey, parentXdim, parentYdim;
+    terrain->getSourceRegion(srcRegion,
+                             sx, sy, ex, ey,
+                             parentXdim, parentYdim);
 
-    assert(SRCregionheight > 0.0);
-    assert(SRCregionwidth > 0.0);
+    assert(parentXdim > 0.0);
+    assert(parentYdim > 0.0);
 
     // getTerrain()->getTerrainDim(rw, rh);
 
@@ -760,7 +759,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     {
         // import cohorts
         try {
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, SRCregionwidth, SRCregionheight, "1.0", species_lookup));
+        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "1.0", species_lookup));
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }

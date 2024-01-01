@@ -740,6 +740,9 @@ void Window::run_viewer()
         // set extracted sub-region as the region for this window
         // pass in a poinyer to highres (master) terrain
         scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
+        vpPoint midPoint;
+        scenes[i]->getTerrain()->getMidPoint(midPoint);
+        scenes[i]->getTerrain()->setFocus(midPoint);
         // load in remaing eco-system data - NOTE:
         // the original source region extent is stored in scene[i] - this will beed to be queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)

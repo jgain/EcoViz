@@ -197,11 +197,14 @@ void Terrain::delGrid()
 // NOTE: source region is *grid relative* - all other data is preserved, scale etc.
 // assume end points are included.
 
- std::unique_ptr<Terrain> Terrain::buildSubTerrain(int x0, int x1, int y0, int y1)
+ std::unique_ptr<Terrain> Terrain::buildSubTerrain(int x0, int y0, int x1, int y1)
  {
     int dx = x1-x0+1;
     int dy = y1-y0+1;
     float val;
+
+    assert(dx > 0);
+    assert(dy > 0);
 
     std::unique_ptr<Terrain> newTerrain(new Terrain(Region(x0,y0,x1,y1)) );
 
@@ -209,6 +212,10 @@ void Terrain::delGrid()
     newTerrain->step = step;
     newTerrain->scfac = scfac;
     newTerrain->scaleOn = scaleOn;
+    int parentXdim, parentYdim;
+    getGridDim(parentXdim, parentYdim);
+    newTerrain->parentGridx = parentXdim;
+    newTerrain->parentGridy = parentYdim;
     // other state that may have changed since init()?
 
     // copy data
