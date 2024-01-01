@@ -643,8 +643,8 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                             loc.x -= parentY0; // PCM: this x/y flip is very confusing...
                             loc.z -= parentX0;
 
-                            if (loc.x < 0.0 || loc.z < 0.0 ||
-                                loc.x > (parentY1-parentY0) || loc.z > (parentX1 - parentX0))
+                            if ( (loc.x-rad) < 0.0 || (loc.z-rad) < 0.0 ||
+                                (loc.x+rad) > (parentY1-parentY0) || (loc.z+rad) > (parentX1 - parentX0))
                                 regionExclude = true;
                         }
 

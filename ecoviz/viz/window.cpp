@@ -731,20 +731,22 @@ void Window::loadSceneData(void)
 
 void Window::run_viewer()
 {
+    int extractWindowDSample = 4;
+
     for(int i = 0; i < 2; i++)
     {
         // PCM: added overview map
         // load large scale terrain, downsample for oevrview map, and extract  default sub-region for
         // main render window.
-        std::unique_ptr<Terrain> subTerr = mapScenes[i]->loadOverViewData();
-        // set extracted sub-region as the region for this window
-        // pass in a poinyer to highres (master) terrain
+        std::unique_ptr<Terrain> subTerr = mapScenes[i]->loadOverViewData(extractWindowDSample);
+        // (1) set extracted sub-region as the region for this window
+        // (2) pass in a pointer to highres (master) terrain
         scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
         vpPoint midPoint;
         scenes[i]->getTerrain()->getMidPoint(midPoint);
         scenes[i]->getTerrain()->setFocus(midPoint);
         // load in remaing eco-system data - NOTE:
-        // the original source region extent is stored in scene[i] - this will beed to be queried to
+        // the original source region extent is stored in scene[i] - this is later queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
         scenes[i]->loadScene(1, 5); // years
         transectViews[i]->setScene(scenes[i]);

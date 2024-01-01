@@ -336,14 +336,14 @@ void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &d
     float minHt, maxHt;
     scene->getLowResTerrain()->getHeightBounds(minHt, maxHt);
     centre.y = maxHt;
-    centre.x = (region.x0 + region.x1)/2.0;
-    centre.z = (region.y0 + region.y1)/2.0;
+    centre.x = (region.y0 + region.y1)/2.0; // PCM: again, flip since drawgrid is flipped
+    centre.z = (region.x0 + region.x1)/2.0;
     idt = glm::mat4(1.0f);
     tfm = glm::translate(idt, glm::vec3(centre.x, centre.y, centre.z));
 
     // PCM: these are int (grid coords not actual coordinates - scaling ???)
-    planeWidth = (region.x1 - region.x0)/2.0f;
-    planeHeight = (region.y1 - region.y0);
+    planeWidth = (region.y1 - region.y0)/2.0f;
+    planeHeight = (region.x1 - region.x0);
 
     std::cout << "\nSelection plane data:\n";
     std::cout << "centre = (" << centre.x << "," << centre.y << "," << centre.z << ")\n";
