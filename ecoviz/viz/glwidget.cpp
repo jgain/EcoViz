@@ -579,6 +579,7 @@ void GLWidget::paintGL()
                 loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
                 refreshOverlay();
                 trc->trx->clearChangeFlag();
+                signalRebindTransectPlants(); // PCM...see if thsi works
             }
 
             if(trc->trxstate == 0)
@@ -589,6 +590,7 @@ void GLWidget::paintGL()
                 paintSphere(trc->trx->getClampedInnerEnd(), transectCol, drawParams);
                 paintTransect(transectCol, drawParams);
                 // paintCyl(trx->getCenter(), transectCol, drawParams);
+                signalRebindTransectPlants(); // PCM...see if thsi works
             }
             if(trc->trxstate == 1)
             {
@@ -776,8 +778,16 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_M) // 'M' save camera matrices (view, projection, and product)
     {
-        view->saveCameraMatrices(wname);
-        std::cout << "\nCamera matrices saved for " << wname << "\n";
+        Region src;
+        float sx, sy, ex, ey, pdimX, pdimY;
+        bool flag = scene->getTerrain()->getSourceRegion(src, sx, sy, ex, ey, pdimX, pdimY);
+        if (!flag)
+        {
+            std::cerr << "keyPressEvent (m) - source region undefined, camera matrix unreliable.\n";
+        }
+
+        view->saveCameraMatrices(wname, sx, sy);
+        std::cerr << "\nCamera matrix saved for " << wname << "\n";
     }
 
     if(event->key() == Qt::Key_W || event->key() == Qt::Key_Up) // 'W' fly forward
@@ -1014,6 +1024,17 @@ void GLWidget::seperateTransectCreate(Transect * trx)
     trc = newtrc;
 }
 
+void GLWidget::forceTransect(Transect *newTrans)
+{
+    if (trc) delete trc;
+    // clear existing texture??
+    trc = new TransectCreation;
+    trc->trx = newTrans;
+    trc->trxstate = -1;
+    trc->showtransect = true;
+}
+
+
 void GLWidget::pointPlaceTransect(bool firstPoint)
 {
     if(firstPoint)
@@ -1119,6 +1140,7 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     {
         del /= 60.0f;
         trc->trx->setThickness(trc->trx->getThickness()+del, scene->getTerrain());
+        signalRebindTransectPlants(); // PCM...see if this works
     }
     else // otherwise adjust view zoom
         view->incrZoom(del);

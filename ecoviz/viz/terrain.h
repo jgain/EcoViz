@@ -266,6 +266,9 @@ public:
     /// Return longest edge extent of terrain in metres
     float longEdgeDist();
 
+    /// get distance between points in metres
+    float getPointStep() const { return step; }
+
     /// getter for artificial scale factor
     float getScaleFactor(){ return scfac; }
 

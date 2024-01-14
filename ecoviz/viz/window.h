@@ -135,6 +135,9 @@ public slots:
     void showTransectViews();
     void clearTransects();
 
+    // PCM: extract new terrain base don current selection
+    void extractNewSubTerrain();
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void mouseMoveEvent(QMouseEvent *event);

@@ -470,7 +470,114 @@ std::string mapScene::get_dirprefix()
     return dirprefix;
 }
 
+bool mapScene::subwindowValid(Region subwindow)
+{
+    int gridx, gridy;
+    fullResTerrain->getGridDim(gridx, gridy);
 
+    if (subwindow.x0 < 0 || subwindow.x0 > gridx-1)
+        return false;
+    if (subwindow.x1 < 0 || subwindow.x1 > gridx-1)
+        return false;
+    if (subwindow.y0 < 0 || subwindow.y0 > gridy-1)
+        return false;
+    if (subwindow.y1 < 0 || subwindow.y1 > gridy-1)
+        return false;
+
+    return true;
+}
+
+// extract the sub-region specified by region and update internal data structures
+// return the new extracted terrain for later processing.
+std::unique_ptr<Terrain> mapScene::extractTerrainSubwindow(Region region)
+{
+    if (!subwindowValid(region))
+    {
+        std::ostringstream oss;
+        oss << "run-time error: extractTerrainSubwindow: region invalid: ++++ [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+               region.x1 << "," << region.y1 << "]";
+
+        throw std::runtime_error(oss.str());
+    }
+    else
+    {
+        std::cout << " Subregion extracted -  [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+               region.x1 << "," << region.y1 << "]";
+    }
+
+    return fullResTerrain->buildSubTerrain(region.x0, region.y0, region.x1, region.y1);
+}
+
+// factor: default reduction factor to extract sub-region for main terrain (10 = 1/10th)
+// return value = a unique_ptr to extracted Terrain  that must be managed by the caller
+std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
+{
+
+    std::string terfile = datadir+"/dem.elv";
+    float terx, tery;
+    int gridx, gridy;
+    vpPoint mid;
+
+    // load terrain
+    fullResTerrain->loadElv(terfile);
+    fullResTerrain->calcMeanHeight();
+
+    std::cout << "\n ****** Hi-res Terrain loaded...\n";
+    std::cout << " ****** Mean height: " << fullResTerrain->getHeightMean() << "\n";
+    fullResTerrain->getTerrainDim(terx, tery);
+    std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+    fullResTerrain->getGridDim(gridx, gridy);
+    std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+    fullResTerrain->getMidPoint(mid);
+    std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
+    // define default region to be small aspect ratio preserving subregion of full terrain input
+    float centrex = (gridx-1)/2.0f, centrey = (gridy-1)/2.0f;
+    float widthx = (gridx-1)/float(factor), widthy = (gridy-1)/float(factor);
+    Region defRegion;
+    defRegion.x0 = int( centrex - (0.5*widthx) );
+    defRegion.y0 = int( centrey - (0.5*widthy) );
+    defRegion.x1 = int( centrex + (0.5*widthx) );
+    defRegion.y1 = int( centrey + (0.5*widthy) );
+
+    // PCM: test - full coverage of input terrain
+    //defRegion.x0 = 0;
+    //defRegion.y0 = 0;
+    //defRegion.x1 = gridx-1;
+    //defRegion.y1 = gridy-1;
+
+    // create downsampled overview
+    lowResTerrain->loadElv(terfile, downFactor);
+    lowResTerrain->calcMeanHeight();
+
+    selectedRegion = defRegion;
+
+    std::cout << "\n ****** Lo-res Terrain loaded...\n";
+    std::cout << " ****** Mean height: " << lowResTerrain->getHeightMean() << "\n";
+    lowResTerrain->getTerrainDim(terx, tery);
+    std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+    lowResTerrain->getGridDim(gridx, gridy);
+    std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+    lowResTerrain->getMidPoint(mid);
+    std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
+
+    // create texture/map overlay
+
+    /*
+    // match dimensions for empty overlay
+    int dx, dy;
+    getTerrain()->getGridDim(dx, dy);
+    getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
+    getTypeMap(TypeMapType::TRANSECT)->fill(1);
+    getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
+    getTypeMap(TypeMapType::EMPTY)->clear();
+    */
+
+    // default region extract
+
+    return extractTerrainSubwindow(defRegion);
+}
 
 //// Scene
 

@@ -151,6 +151,9 @@ public:
     /// Toggle visibility of an individual species on or off
     void toggleSpecies(int p, bool vis);
 
+    /// switch scene - should only be called when a new sub-terrainis extracted
+    void switchTransectScene(Scene *newScene, Transect *newTransect);
+
 signals:
     void signalRepaintAllGL();
 
@@ -184,6 +187,7 @@ private:
     bool timeron;
     bool active; //< scene only rendered if this is true
     bool rebindplants; //< flag to indicate that plants have changed and need to be rebound
+    bool forceRebindPlants; //< flag to override lack of 'focus' (which never seems to be used?)
     std::vector<bool> plantvis;
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true

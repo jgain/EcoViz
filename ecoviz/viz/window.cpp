@@ -505,6 +505,7 @@ void Window::setupVizPanel()
         connect(pview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
         connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
         connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
+        connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
 
         perspectiveViews.push_back(pview);
         vizLayout->addWidget(pview, 1, i*2);
@@ -552,7 +553,8 @@ void Window::setupVizPanel()
 
         // signal to slot connections
         connect(oview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        //connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
+        connect(oview, SIGNAL(signalExtractNewSubTerrain()), this, SLOT(extractNewSubTerrain()) );
+        //connect(oview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
         //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
 
         overviewMaps.push_back(oview);
@@ -718,6 +720,7 @@ Window::~Window()
     // delete transect controllers
     for(auto &it: transectControls)
         delete(it);
+    // PCM what about other objects? TBD
 }
 
 /*
@@ -731,7 +734,7 @@ void Window::loadSceneData(void)
 
 void Window::run_viewer()
 {
-    int extractWindowDSample = 4;
+    int extractWindowDSample = 6;
 
     for(int i = 0; i < 2; i++)
     {
@@ -819,6 +822,51 @@ void Window::repaintAllGL()
     // PCM: probbaly not needed mostly...
     for (auto mapviews: overviewMaps)
         mapviews->repaint();
+}
+
+void Window::extractNewSubTerrain()
+{
+
+    // clear transects and create new transects
+    clearTransects();
+
+    for (int i = 0; i < 2; ++i)
+        delete transectControls[i];
+    transectControls.clear();
+
+    for(int i = 0; i < 2; i++)
+    {
+        // get current region (which should have changed from before)
+        Region newReg = overviewMaps[i]->getScene()->getSelectedRegion();
+        // (0) add check to see if this Region has changed (else wasteful) ...PCM
+        std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
+        // (1) set extracted sub-region as the region for this window
+        // (2) pass in a pointer to highres (master) terrain
+        scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
+        vpPoint midPoint;
+        scenes[i]->getTerrain()->getMidPoint(midPoint);
+        scenes[i]->getTerrain()->setFocus(midPoint);
+
+        Transect * t = new Transect(scenes[i]->getTerrain());
+        transectControls.push_back(t);
+        transectViews[i]->switchTransectScene(scenes[i], t);
+        perspectiveViews[i]->forceTransect(t);
+
+        // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
+        scenes[i]->getTerrain()->setBufferToDirty();
+        //scenes[i]->getTerrain()->updateBuffers(perspectiveViews[i]->getRenderer() ); // should update internal renderer state
+        // (4) fix other state: transects and maps
+        //clearTransects();
+        // change size of image dims as required for new terrain
+        //perspectiveViews[i]->replaceTransectImageMap(scenes[i]->getTerrain());
+
+
+
+        perspectiveViews[i]->rebindPlants();
+    }
+    rendercount++;
+    // PCM: + signal to clear transect!!!
+    repaintAllGL();
 }
 
 void Window::showRenderOptions()

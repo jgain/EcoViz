@@ -99,18 +99,22 @@ GLTransect::GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transe
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     glformat = format;
 
+    view = nullptr;
+
+    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+
     setParent(wp);
 
     trx = trans;
     setScene(scn);
-
-    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
     viewlock = false;
     decalsbound = false;
     focuschange = false;
     timeron = false;
     active = true;
     rebindplants = true;
+    forceRebindPlants = true;
+
     scf = 10000.0f;
 
     setMouseTracking(true);
@@ -118,6 +122,22 @@ GLTransect::GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transe
 
     resize(sizeHint());
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
+}
+
+void GLTransect::switchTransectScene(Scene *newScene, Transect *newTransect)
+{
+    trx = newTransect;
+    viewlock = false;
+    decalsbound = false;
+    timeron = false;
+    active = true;
+    rebindplants = true;
+    scf = 10000.0f;
+
+    setScene(newScene);
+
+    focuschange = true;
+    forceRebindPlants = true;
 }
 
 GLTransect::~GLTransect()
@@ -208,13 +228,15 @@ void GLTransect::setScene(Scene * s)
     rebindplants = true;
 
     updateTransectView();
+
+    // PCM: should these be here? this is called from constructor.
     winparent->rendercount++;
     signalRepaintAllGL();
 }
 
 void GLTransect::unlockView(Transect * imposedTrx)
 {
-    View * preview = view;
+    View * preview = view; // PCM: likely a leak of Viewe object at some point
     view = new View();
     (* view) = (* preview);
 
@@ -397,17 +419,19 @@ void GLTransect::paintGL()
 
             // prepare plants for rendering
 
-        if(focuschange)
+        if(focuschange || forceRebindPlants)
         {
             scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants, transectPlanes);
+            scene->getTerrain()->setBufferToDirty();
             rebindplants = false;
+            forceRebindPlants = false;
         }
 
         // pass in draw params for objects
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
-        // scene->getTerrain()->setBufferToDirty();
+        //scene->getTerrain()->setBufferToDirty();
         scene->getTerrain()->updateBuffers(renderer);
 
         renderer->draw(view);
@@ -579,8 +603,7 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
 
 
     lastPos = event->pos();
-    // pCM - hack for now (click to update transect to current)
-    rebindplants = true;
+
 }
 
 void GLTransect::mouseMoveEvent(QMouseEvent *event)
@@ -663,4 +686,6 @@ void GLTransect::wheelEvent(QWheelEvent * wheel)
 void GLTransect::rebindPlants()
 {
     rebindplants = true;
+    forceRebindPlants = true;
+    std::cout << "%%%%%% rebindPlants on Transect called...%%%%%%\n";
 }

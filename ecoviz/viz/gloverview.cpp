@@ -188,16 +188,19 @@ void GLOverview::updateViewParams(void)
 
     view->setViewType(ViewState::ORTHOGONAL);
     float minHt, maxHt;
-    scene->getLowResTerrain()->getHeightBounds(minHt, maxHt);
-    view->setZoomdist(0.0f);
+    scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need *global* max height
+
     vpPoint orthoFocusTop;
     orthoFocusTop = scene->getLowResTerrain()->getFocus();
-    orthoFocusTop.y = maxHt/2.0 + 1.0f;
+    orthoFocusTop.y = 1.1* maxHt + 100.0f; // PCM: for some reason the camera near plane clips even when using maxHt
+    // could be the slight near plane offset e=0.01, but that is small and an addiive offset should have fixed that.
+    // Possible issue?
     view->setForcedFocus(orthoFocusTop);
-    view->setOrthoViewDepth(100000.0f); // maxHt - minHt);
-    view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()*4);
+    view->setOrthoViewDepth(100000.0f); // make this large to avoid issues!
+    view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()*4); // this scales to fit in window
 
     view->topdown();
+    view->setZoomdist(0.0f);
     view->apply();
 }
 
@@ -316,7 +319,6 @@ void GLOverview::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
 void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &drawparams)
 {
     ShapeDrawData sdd;
-    float scale;
     Shape shape;
     glm::mat4 tfm, idt;
     std::vector<glm::vec3> translInstance;
@@ -327,30 +329,33 @@ void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &d
     shape.clear();
     shape.setColour(col);
 
-    scale = 1.0; // view->getScaleFactor();
-
     Region region;
     vpPoint centre;
     float planeHeight, planeWidth;
     region = getScene()->getSelectedRegion(); //  (region, startx, starty, endx, endy);
     float minHt, maxHt;
-    scene->getLowResTerrain()->getHeightBounds(minHt, maxHt);
-    centre.y = maxHt;
-    centre.x = (region.y0 + region.y1)/2.0; // PCM: again, flip since drawgrid is flipped
-    centre.z = (region.x0 + region.x1)/2.0;
+    scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need global maxHt
+    float pointStep = scene->getHighResTerrain()->getPointStep();
+
+    std::cout << "@@@@ paintSelectionPlane: input region [" << region.x0 << "," << region.y0 <<
+                 "," << region.x1 << "," << region.y1 << "]\n";
+
+    centre.y = 1.1*maxHt + 10.0f; // PCM: hack **** I think the quat rotation is inaccurate and camera is off angle slightly
+    centre.x = (pointStep*region.y0 + pointStep*region.y1)/2.0; // PCM: again, flip since drawgrid is flipped
+    centre.z = (pointStep*region.x0 + pointStep*region.x1)/2.0;
     idt = glm::mat4(1.0f);
     tfm = glm::translate(idt, glm::vec3(centre.x, centre.y, centre.z));
 
-    // PCM: these are int (grid coords not actual coordinates - scaling ???)
-    planeWidth = (region.y1 - region.y0)/2.0f;
-    planeHeight = (region.x1 - region.x0);
+    // PCM: this seems to be implied by way plane is defined?
+    planeWidth  = pointStep*(region.y1 - region.y0 + 1)/2.0f;
+    planeHeight = pointStep*(region.x1 - region.x0 + 1);
 
     std::cout << "\nSelection plane data:\n";
     std::cout << "centre = (" << centre.x << "," << centre.y << "," << centre.z << ")\n";
-    std::cout << "scale: " << scale << std::endl;
+    std::cout << "point step: " << pointStep << std::endl;
     std::cout << "(planeWidth, planeHeight) = " << planeWidth << "," << planeHeight << ")\n";
 
-    shape.genPlane(vpPoint(0.0,0.0,1.0), vpPoint(0.0,0.0,0.0), planeWidth*scale, planeHeight*scale, tfm);
+    shape.genPlane(vpPoint(0.0,0.0,1.0), vpPoint(0.0,0.0,0.0), planeWidth, planeHeight, tfm);
     if (shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
     {
         sdd = shape.getDrawParameters();
@@ -429,23 +434,62 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
 
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
+    float deltaX, deltaY;
 
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
     if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
-        // TO DO: translate in orthogonal view
+        float dX = x/W, dY = y/H;
+        float midX = W/2, midY = H/2;
+        int step = 100;
 
-        // convert to [0,1] X [0,1] domain
+        // X/Y flipped
+        if (event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier )
+        {
+            // translate in Y
+            if (x - midX > 0) deltaY  = step;
+            else deltaY = -step;
+            deltaX = 0;
+        }
+        else
+        {
+            // translate in X
+            if (y - midY > 0) deltaX = step;
+            else deltaX = -step;
+            deltaY = 0;
+        }
+
+        Region currentRegion;
+        currentRegion = getScene()->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+
+        // bounds check
+
+        currentRegion.x0 = currentRegion.x0 + deltaX;
+        currentRegion.y0 = currentRegion.y0 + deltaY;
+        currentRegion.x1 = currentRegion.x1 + deltaX;
+        currentRegion.y1 = currentRegion.y1 + deltaY;
+
+        if (getScene()->subwindowValid(currentRegion) )
+        {
+            getScene()->setSelectedRegion(currentRegion);
+        }
         /*
-        nx = (2.0f * (float) x - W) / W;
-        ny = (H - 2.0f * (float) y) / H;
-        lastPos = event->pos();
-        view->startArcRotate(nx, ny);*/
+       else
+            std::cerr << " %%%%%% mouse wheel - inavlid region: [" << currentRegion.x0 << ","
+                  <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
+                       currentRegion.y1 << "]\n";
+        */
+        //std::cerr<< "---- overview mouse click ----- \n";
+    }
+    else if (event->buttons() == Qt::LeftButton)
+    {
+        // extract the currently  selected region
+        signalExtractNewSubTerrain();
+        //signalRebindPlants();
     }
 
     winparent->rendercount++;
 
-    std::cout << "---- overview mouse click ----- \n";
     updateGL();
     lastPos = event->pos();
 }
@@ -494,16 +538,18 @@ void GLOverview::mouseMoveEvent(QMouseEvent *event)
         updateTransectView();
         */
 
+
         winparent->rendercount++;
         signalRepaintAllGL();
         lastPos = event->pos();
     }
 
+   // std::cerr << " ***gloverview: mousemove registered...***\n";
 }
 
 void GLOverview::wheelEvent(QWheelEvent * wheel)
 {
-    float del, extent;
+    float del, aspect;
 
     QPoint pix = wheel->pixelDelta();
     QPoint deg = wheel->angleDelta();
@@ -514,19 +560,60 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
     }
     else if(!deg.isNull()) // mouse wheel instead
     {
-        del = (float) -deg.y() * 0.5f;
+        del = (float) deg.y()/8;
     }
+    else
+        del = 0.0;
 
-        /*
-        extent = view->getOrthoViewExtent();
-        extent += del;
-        view->setOrthoViewExtent(extent);
-        */
+    Region currentRegion;
+    currentRegion = getScene()->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+    int X0, Y0, X1, Y1, Xwd,Ywd;
+    int centreX, centreY;
 
-    // also adjust inner bounds relative to center
-    
+    aspect = float(currentRegion.x1 - currentRegion.x0)/float(currentRegion.y1 - currentRegion.y0);
+
+    centreX = int( (currentRegion.x0 + currentRegion.x1)/2);
+    centreY = int( (currentRegion.y0 + currentRegion.y1)/2);
+
+    //del /= 360; // scale this to allow slower expansion/contraction
+    // prerserve aspect ratio
+    del = (del/30);
+    Ywd = centreY - currentRegion.y0;
+    Ywd += del;
+    if (Ywd < 50) Ywd = 50;
+    Xwd = int(aspect*Ywd);
+    std::cerr << "@@@@@ - (XWd, Ywd, deg) =  (" << Xwd << "," << Ywd << "," << del << ")\n";
+    X0 = centreX - Xwd;
+    X1 = centreX + Xwd;
+    Y0 = centreY - Ywd;
+    Y1 = centreY + Ywd;
+
+    // bounds check
+
+    currentRegion.x0 = X0;
+    currentRegion.y0 = Y0;
+    currentRegion.x1 = X1;
+    currentRegion.y1 = Y1;
+
+    Xwd = X1-X0+1;
+    Ywd = Y1-Y0+1;
+
+    // valid window and no side can be less than 50 samples
+    if (getScene()->subwindowValid(currentRegion) && Xwd > 50 && Ywd > 50)
+    {
+        //std::cerr << "---%%%%%-- mouse wheel - new region valid: [" << currentRegion.x0 << ","
+        //          <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
+        //               currentRegion.y1 << "]\n";
+        getScene()->setSelectedRegion(currentRegion);
+    }
+/*   else
+        std::cerr << " %%%%%% mouse wheel - inavlid region: [" << currentRegion.x0 << ","
+              <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
+                   currentRegion.y1 << "]\n";
+*/
     winparent->rendercount++;
-    signalRepaintAllGL();
+    //signalRepaintAllGL();
+     updateGL();
 }
 
 

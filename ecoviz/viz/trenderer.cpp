@@ -1895,7 +1895,6 @@ void TRenderer::drawSun(View * view, int renderPass)
 
 void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
 {
-
     glUseProgram(programID); CE();
 \
     glm::vec4 lightPos = MVmx * pointLight; // map light pos into camera space

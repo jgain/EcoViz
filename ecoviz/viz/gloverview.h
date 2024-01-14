@@ -117,8 +117,9 @@ public:
     void keyPressEvent(QKeyEvent *event);
 
 signals:
-  // void regenerateTerrainsAndPlants(); 
+    void signalExtractNewSubTerrain();
     void signalRepaintAllGL();
+    //void signalRebindPlants();
 
 public slots:
   //void rebindPlants(); // set flag indicating that plants need to be re-bound

@@ -208,7 +208,7 @@ void Terrain::delGrid()
 
     std::unique_ptr<Terrain> newTerrain(new Terrain(Region(x0,y0,x1,y1)) );
 
-    newTerrain->init(dx, dy, (float) dx * step, (float) dy * step);
+    newTerrain->init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
     newTerrain->step = step;
     newTerrain->scfac = scfac;
     newTerrain->scaleOn = scaleOn;
@@ -581,7 +581,9 @@ void Terrain::loadElv(const std::string &filename, int dFactor)
         // infile >> lat;
 
         delGrid();
-        init(newdx, newdy, (float) dx * step, (float) dy * step);
+        // PCM: think this should be (dx-1)*step etc?
+        // retain original domain size, just sample coarsely
+        init(newdx, newdy, (float) (dx-1) * step, (float) (dy-1) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
@@ -603,6 +605,9 @@ void Terrain::loadElv(const std::string &filename, int dFactor)
         }
 
         assert(count == newdx*newdy);
+
+        // reflect new sampling for this image - coarsened
+        step = step*dFactor;
 
         setMidFocus();
         infile.close();
@@ -629,7 +634,8 @@ void Terrain::loadElv(const std::string &filename)
         // infile >> lat;
 
         delGrid();
-        init(dx, dy, (float) dx * step, (float) dy * step);
+        // PCM: changed dx*step -> (dx-1)*step etc, else looks incorrect?
+        init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
