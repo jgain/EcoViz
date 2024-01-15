@@ -126,14 +126,14 @@ public:
         updateDir();
     }
 
-    /// save out projection and view matrices, as text files, as well as combined proj*view mx
+    /// save out view matrix, as text files
     /// the filename basename will be used to produce:
     /// basename-view.txt
-    /// basename-proje.txt
-    /// basename-proj_view.txt
-    /// these are 16 space separated float numbers representng the 4x4 OpenGL matrix, listed
-    /// column by column (as per OpenGL standard) - they can be transposed to get row major
-    void saveCameraMatrices(const std::string & basename);
+    /// format reqired for external software
+    /// offsetX/Z  is the camera x-z offset (in terrain ground plane)
+    /// to accommodate for sub-regions. This will allow *global* camera to be extracted
+
+    void saveCameraMatrices(const std::string & basename, float  offsetX, float offsetZ);
 
 
     /// Return the center of projection of the view, recalculated as necessary

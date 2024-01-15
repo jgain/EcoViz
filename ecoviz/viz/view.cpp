@@ -375,48 +375,41 @@ void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
 */
 }
 
-/// export camera matrixc - note as per usual, OpenGL column majopr ordering is used
-///  so elements of each column  are written in turn.
 
-void View::saveCameraMatrices(const std::string & basename)
+
+void View::saveCameraMatrices(const std::string & basename, float offX, float offZ)
 {
-    glm::mat4x4 projMx, viewMx, proj_viewMx;
-    float *dataPtr = nullptr;
     std::string fname;
 
-    projMx = getProjMtx();
-    viewMx = getViewMtx();
-    proj_viewMx  = projMx * viewMx;
+    fname = basename+"-view.txt";
+    int focal = 50.0; // PCM: invalid!!! fix these - is this 50. Near=50....?
+    float FOV = 18.0; // PCM: invalid!!! fix these (setup suggests 18 degrees, 2*arctan(8/50), but that doesn't look right)
+    // PCM: invaid!!! fix these - how does zoom come in? one of x/z may need to be flipped and inverted
+    vpPoint Eye = vpPoint(cop.x + offX, cop.y, cop.z + offZ),
+            At = vpPoint(currfocus.x + offX, currfocus.y, currfocus.z + offZ),
+            Up = vpPoint(0.0, 1.0, 0.0);
 
-
-
-    for (std::size_t i = 0; i < 3; ++i)
+    std::ofstream ofs(fname);
+    if (!ofs)
+        std::cerr << "saveViewMatrices() - can't open file: " << fname << std::endl;
+    else
     {
-        switch(i) {
-        case 0:
-            dataPtr = glm::value_ptr(viewMx);
-            fname = basename+"-view.txt";
-            break;
-        case 1:
-            dataPtr = glm::value_ptr(projMx);
-            fname = basename+"-proj.txt";
-            break;
-        case 2:
-            dataPtr = glm::value_ptr(proj_viewMx);
-            fname = basename+"-proj_view.txt";
-            break;
-        }
+        ofs << "\"Cameras\": [\n";
+        ofs << "    {\n";
+        ofs << "          \"Name\":\"" << basename <<"\",\n";
+        ofs << "          \"Focal\":" << focal << ",\n";
+        ofs << "          \"FOV\":" << FOV << ",\n";
+        ofs << "          \"Instances\":[\n";
+        ofs << "               {\n";
+        ofs << "                    \"Eye\": [" << Eye.x << "," << Eye.y <<"," << Eye.z <<"],\n";
+        ofs << "                    \"At\": [" << At.x << "," << At.y <<"," << At.z << "],\n";
+        ofs << "                    \"Up\": [" << Up.x << "," << Up.y << "," << Up.z << "]\n";
+        ofs << "               }\n";
+        ofs << "            ]\n";
+        ofs << "    }\n";
+        ofs << "]\n";
 
-        std::ofstream ofs(fname);
-        if (!ofs)
-              std::cerr << "saveViewMatrices() - can't open file: " << fname << std::endl;
-        else
-          {
-              for (std::size_t j = 0; j < 16; ++j)
-                  ofs << *(dataPtr+j) << " ";
-
-              ofs.close();
-          }
+        ofs.close();
     }
 }
 

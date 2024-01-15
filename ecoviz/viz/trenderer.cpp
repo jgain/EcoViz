@@ -460,7 +460,7 @@ bool TRenderer::prepareTerrainGeometry(void)
     {
         for (int x = 0; x < width; x++, vidx++)
         {
-            // positions: z wil be offset from height texture in the shader
+            // positions: z (actually 'y') will be offset from height texture in the shader
             vertexStorage[5*vidx] = (float) x / (float) (width - 1) * scalex;
             //vertexStorage[5*vidx+1] = 1.0f - ((float) y / (float) (height - 1)) - 0.5f;
             //vertexStorage[5*vidx+2] = 0.0f;
@@ -897,7 +897,8 @@ void TRenderer::generateNormalTexture(void)
 
   void TRenderer::updateRadianceScalingBuffers(int vwd, int vht)
   {
-    if (shadModel != RADIANCE_SCALING && shadModel != RADIANCE_SCALING_TRANSECT)
+    if (shadModel != RADIANCE_SCALING && shadModel != RADIANCE_SCALING_TRANSECT &&
+            shadModel != RADIANCE_SCALING_OVERVIEW)
       return;
 
     if (_w == 0 || _h == 0 || vwd != _w || vht != _h)
@@ -1284,6 +1285,7 @@ void TRenderer::initShaders(void)
         shaderInfo.push_back(std::make_tuple("phong.frag", "phong.vert", "phong"));
         shaderInfo.push_back(std::make_tuple("rad_scaling_pass1.frag", "rad_scaling_pass1.vert", "rscale1"));
         shaderInfo.push_back(std::make_tuple("rad_scaling_pass2.frag", "rad_scaling_pass2.vert", "rscale2"));
+        shaderInfo.push_back(std::make_tuple("rad_scaling_pass2b.frag", "rad_scaling_pass2b.vert", "rscale2b"));
         shaderInfo.push_back(std::make_tuple("phongRS.frag", "phongRS.vert", "phongRS"));
         shaderInfo.push_back(std::make_tuple("phongRSmanip.frag", "phongRSmanip.vert", "phongRSmanip"));
         shaderInfo.push_back(std::make_tuple("sun.frag", "sun.vert", "sunShader"));
@@ -1439,7 +1441,7 @@ void TRenderer::draw(View * view)
       shaderName = "basicShader";
     else if (shadModel == FLAT_TRANSECT)
         shaderName = "flatTransectShader";
-    else if(shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
+    else if(shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT || shadModel == RADIANCE_SCALING_OVERVIEW)
       shaderName = "rscale1";
     else // sun shading
       shaderName = "sunShader";
@@ -1535,7 +1537,8 @@ void TRenderer::draw(View * view)
         glUniform4fv(glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
         glUniform4fv(glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
     }
-    else if(shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT) // radiance scaling
+    else if(shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
+            shadModel == RADIANCE_SCALING_OVERVIEW) // radiance scaling
       {
         // map side wall lights into camera space; lights at corners of terrain, moved along diagonal
         glm::vec4 LP1 = MVmx * glm::vec4(2.0*scalex, 0.5, 2.0*scaley, 1.0);
@@ -1558,7 +1561,8 @@ void TRenderer::draw(View * view)
 
     // draw terrain:
 
-    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
+    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
+            shadModel == RADIANCE_SCALING_OVERVIEW)
       {
         GLfloat depthClear = 1.0f;
         GLfloat colClear[4] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -1622,13 +1626,13 @@ void TRenderer::draw(View * view)
     }
     // **************************** draw manipulators/constraints with phong **********************************
 
-    if (shadModel == RADIANCE_SCALING)
+    if (shadModel == RADIANCE_SCALING )
     {
       programID = (*shaders["phongRS"]).getProgramID();
       //std::cout << "Using phongRS shader" << std::endl;
     }
-    else if (shadModel == RADIANCE_SCALING_TRANSECT) // draw manip fragments to a differnet FBO
-    {
+    else if (shadModel == RADIANCE_SCALING_TRANSECT || shadModel == RADIANCE_SCALING_OVERVIEW)
+    {   // draw manip fragments to a differnet FBO
         programID = (*shaders["phongRSmanip"]).getProgramID();
     }
     else if (shadModel == SUN)
@@ -1652,10 +1656,11 @@ void TRenderer::draw(View * view)
     //}
 
 
-    // draw second pass for manipulator in transects - this will allow later blending against pass 1 of RS (terrain fragments)
+    // (1) draw second pass for manipulator in transects - this will allow later blending against pass 1 of RS (terrain fragments)
+    // OR
+    // (2) use the FBO if overview map being rendered - the manipulator fragments will be blended back in second rad scaling pass
 
-
-    if (shadModel == RADIANCE_SCALING_TRANSECT)
+    if (shadModel == RADIANCE_SCALING_TRANSECT || shadModel == RADIANCE_SCALING_OVERVIEW)
       {
         glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
         glViewport(0,0,_w, _h); CE();
@@ -1665,7 +1670,9 @@ void TRenderer::draw(View * view)
 
     // reset frame buffer buffer etc
 
-    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
+    if (shadModel == RADIANCE_SCALING ||
+            shadModel == RADIANCE_SCALING_TRANSECT ||
+            shadModel == RADIANCE_SCALING_OVERVIEW)
       {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
         glViewport(viewport[0], viewport[1], viewport[2], viewport[3]); // reset viewport to system setting
@@ -1673,7 +1680,8 @@ void TRenderer::draw(View * view)
 
 // **************************** radiance scaling pass 2 ****************************************************
 
-if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
+if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
+        shadModel == RADIANCE_SCALING_OVERVIEW)
   {
     glDisable(GL_DEPTH_TEST); CE(); // not required for screen  aligned quad
 
@@ -1681,13 +1689,21 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
     glBindFramebuffer(GL_FRAMEBUFFER, fboRSOutput); CE();
     glViewport(0,0,_w, _h); // draw into entire frame
 
-    shaderName = "rscale2";
+    if (shadModel == RADIANCE_SCALING_OVERVIEW)
+        shaderName = "rscale2b";
+    else
+        shaderName = "rscale2";
+
     programID = (*shaders[shaderName]).getProgramID();
     //std::cout << "Shader ID (RScaling) = " << programID << std::endl;
     glUseProgram(programID); CE();
 
-    GLuint blendTrans = glGetUniformLocation(programID, "blendTransect"); CE();
-    glUniform1i(blendTrans, (shadModel == RADIANCE_SCALING_TRANSECT ? 1 : 0)); CE();
+    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
+            shadModel == RADIANCE_SCALING_OVERVIEW)
+    {
+        GLuint blendTrans = glGetUniformLocation(programID, "blendTransect"); CE();
+        glUniform1i(blendTrans, (shadModel == RADIANCE_SCALING_TRANSECT ? 1 : 0)); CE();
+    }
 
     //glClearColor( 0.5f, 0.0f, 0.0f, 1.0f ); CE();
 
@@ -1734,10 +1750,13 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
     glUniform1i(textur, (GLuint)(rsColTexUnit - GL_TEXTURE0) );  CE();
     textur = glGetUniformLocation(programID, "manipTTexture"); CE(); // manipulator transparency
     glUniform1i(textur, (GLuint)(manipTranspTexUnit - GL_TEXTURE0) );  CE();
-    // manipulator depth
-    textur = glGetUniformLocation(programID, "depthMap"); CE(); // manipulator depth map
-    glUniform1i(textur, (GLuint)(depthTexUnit - GL_TEXTURE0) );  CE();
-
+    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
+            shadModel == RADIANCE_SCALING_OVERVIEW)
+    {
+        // manipulator depth
+        textur = glGetUniformLocation(programID, "depthMap"); CE(); // manipulator depth map
+        glUniform1i(textur, (GLuint)(depthTexUnit - GL_TEXTURE0) );  CE();
+    }
     // draw screeen aligned quad to compose RS calculations
     glBindVertexArray(vaoScreenQuad); CE();
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
@@ -1876,13 +1895,13 @@ void TRenderer::drawSun(View * view, int renderPass)
 
 void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
 {
-
     glUseProgram(programID); CE();
 \
     glm::vec4 lightPos = MVmx * pointLight; // map light pos into camera space
 
     // use textured manipulators (decals)?
-    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
+    if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
+            shadModel == RADIANCE_SCALING_OVERVIEW)
     {
         glUniform1i(glGetUniformLocation(programID, "useTexturing"), (manipulatorTextures ? 1:0) ); CE();
         if (manipulatorTextures)
@@ -1901,7 +1920,8 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
         if (drawToFB) // used when drawing frame for manipulator transparanecy blending
         {
             // draw transparent manipulator - current only
-            if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT)
+            if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
+                    shadModel == RADIANCE_SCALING_OVERVIEW)
             {
                 if (manipDrawCallData[i].current && drawHiddenManipulators == true)
                     alpha = manipAlpha;

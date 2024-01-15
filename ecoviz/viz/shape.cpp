@@ -1029,7 +1029,8 @@ void Shape::genPlane(const vpPoint &orient, const vpPoint &center, float thickne
     int base = int(verts.size()) / 8;
 
     // base vertices
-    v = Vector(0.0f, 0.0f, -1.0f);
+    v = Vector(0.0f, 1.0f, 0.0f);
+    //v = Vector(0.0f, 0.0f, -1.0f);
     for(int i = 0; i < 4; i++)
     {
         p = trm * glm::vec4(b[i].x, b[i].y, b[i].z, 1.0f);
@@ -1037,6 +1038,8 @@ void Shape::genPlane(const vpPoint &orient, const vpPoint &center, float thickne
         verts.push_back(p.x); verts.push_back(p.y); verts.push_back(p.z);
         verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
         verts.push_back(n.x); verts.push_back(n.y); verts.push_back(n.z); // normal
+        std::cout << "(p.x, p.y, p.z) = " << p.x << "," << p.y << "," << p.z << ")\n";
+        std::cout << "(n.x, n.y, n.z) = " << n.x << "," << n.y << "," << n.z << ")\n";
     }
     // counterclockwise winding
     indices.push_back(base+1); indices.push_back(base+0); indices.push_back(base+2);

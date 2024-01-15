@@ -180,6 +180,10 @@ public:
     // make transect independent
     void seperateTransectCreate(Transect * newtrx);
 
+    /// PCM: force new transect data on existing and reset - needs to free existing texture; only
+    /// used when a sub-terrain has been extracted since this invalidates existing information
+    void forceTransect(Transect *newTrans);
+
     /// Prepare decal texture
     void loadDecals();
 
@@ -229,10 +233,32 @@ public:
         }
     }
 
+    // replace current FloatImage for the overlay with newly sized version from newTerr
+    // PCM: is excisting GL texture is correctly released?
+    void replaceTransectImageMap(Terrain *newTerr)
+    {
+        if (trc != nullptr && trc->trx != nullptr)
+        {
+           int dx, dy, tdx, tdy;
+           newTerr->getGridDim(dx, dy);
+           trc->trx->reset(newTerr);
+           trc->trx->getTransectMap()->getDim(tdx, tdy);
+           std::cout << " ^^^ transect reset: terr dims [" << dx << "," << dy << "]; mapviz size [" <<
+                        tdx << "," << tdy << "]\n";
+           trc->trxstate = -1;
+           trc->trx->setValidFlag(false);
+           loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
+           setOverlay(TypeMapType::EMPTY);
+        }
+        else
+            throw  std::runtime_error("replaceTransectImageMap - applied to a null pointer!");
+    }
+
 signals:
     void signalRepaintAllGL();
     void signalShowTransectView();
     void signalSyncPlace(bool firstPoint);
+    void signalRebindTransectPlants();
     
 public slots:
     void animUpdate(); // animation step for change of focus

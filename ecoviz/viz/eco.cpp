@@ -45,14 +45,14 @@ private:
 
 /// NoiseField
 
-NoiseField::NoiseField(Terrain * ter, int dstep, long sval)
+NoiseField::NoiseField(int gridX, int gridY, int dstep, long sval)
 {
-    int tx, ty;
+    //int tx, ty;
 
-    terrain = ter;
-    terrain->getGridDim(tx, ty);
-    dimx = tx * dstep;
-    dimy = tx * dstep;
+    // terrain = ter;
+    //terrain->getGridDim(tx, ty);
+    dimx = gridX * dstep;
+    dimy = gridY * dstep;
     nmap = new basic_types::MapFloat();
     nmap->setDim(dimx, dimy);
     nmap->fill(0.0f);
@@ -70,16 +70,21 @@ void NoiseField::init()
         }
 }
 
-float NoiseField::getNoise(vpPoint p)
+float NoiseField::getNoise(vpPoint p, float tx, float ty)
 {
-    float tx, ty, convx, convy;
+    float convx, convy;
     int x, y;
-
-    terrain->getTerrainDim(tx, ty);
+    // NOTE: this assumes p is in [0,tx] x [0,ty]
+    // terrain pointer removed since it is hard to manage with sub-region terrains
+    //terrain->getTerrainDim(tx, ty);
     convx = (float) (dimx-1) / tx;
     convy = (float) (dimy-1) / ty;
     x = (int) (p.x * convx);
     y = (int) (p.z * convy);
+
+   //assert((x >=0) && (x < dimx));
+   //assert((y >=0) && (y < dimy));
+
     return nmap->get(x, y);
 }
 
@@ -591,6 +596,13 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
     ter->getGridDim(gwidth, gheight);
     Region wholeRegion = Region(0, 0, gwidth - 1, gheight - 1);
     esys->getRegionIndices(ter, wholeRegion, sx, sy, ex, ey);
+    Region parentRegion;
+    float parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy;
+
+    bool parentRegionAvailable = ter->getSourceRegion(parentRegion, parentX0, parentY0,
+                                                      parentX1, parentY1, parentDimx, parentDimy);
+    std::cout << " +++++ Parent origin = " << (parentRegionAvailable ? "[DEFINED]" : "[NULL]")
+              << " = (" << parentX0 << "," << parentY0 << ")\n";
 
     // std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
     std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)
@@ -622,14 +634,26 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
 
                     for(p = 0; p < (int) plnts->pop[s].size(); p++) // iterate over plant specimens
                     {
+                        rad = plnts->pop[s][p].canopy/2.0; // radius = 0.5 canopy_width
+                        loc = plnts->pop[s][p].pos;
+
+                        bool regionExclude = false;
+                        if (parentRegionAvailable)
+                        {
+                            loc.x -= parentY0; // PCM: this x/y flip is very confusing...
+                            loc.z -= parentX0;
+
+                            if ( (loc.x-rad) < 0.0 || (loc.z-rad) < 0.0 ||
+                                (loc.x+rad) > (parentY1-parentY0) || (loc.z+rad) > (parentX1 - parentX0))
+                                regionExclude = true;
+                        }
 
                          // ***** PCM 2023 - cull plant cylinder against planes if cullPlanes available
                         bool cull = false;
-                        if (cullPlanes.size() > 0)
+                        if (cullPlanes.size() > 0 && !regionExclude)
                         {
-                            rad = plnts->pop[s][p].canopy/2.0; // radius = 0.5 canopy_width
-                            loc = plnts->pop[s][p].pos;
-
+                            //rad = plnts->pop[s][p].canopy/2.0; // radius = 0.5 canopy_width
+                            //loc = plnts->pop[s][p].pos;
                             for (std::size_t planes = 0; planes < cullPlanes.size(); ++planes)
                             {
                                 // if candidate cyl is beyond plane or overlaps with plane, fails test (small tolerance)
@@ -645,13 +669,13 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                         // *****************************************
 
                         // only display reasonably sized plants
-                        if(plnts->pop[s][p].height > 0.01f &&
+                        if(plnts->pop[s][p].height > 0.01f && !regionExclude &&
                                (cullPlanes.size() == 0 || (cullPlanes.size() > 0 && cull == false) ) )
                         {
                             // setup transformation for individual plant, including scaling and translation
                             //glm::mat4 idt, tfm;
                             //glm::vec3 trs, sc; // rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
-                            loc = plnts->pop[s][p].pos;
+                            // loc = plnts->pop[s][p].pos;
                             // GLfloat rotate_rad;
 
                             /*
@@ -961,9 +985,11 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
     int spc = tree.species;
 
     // introduce small random variation in colour
-    float rndoff = nfield->getNoise(pos)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
+    // PCM: I swapped x/y for call to getNoise: I am not sure what correct order is, but this avoid out-of-range error in coordinate lookup (and
+    // we really just want a random numbetr).
+    float rndoff = nfield->getNoise(vpPoint(tx-tree.y,h,tree.x), tx, ty)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
     // glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
-    // NB: now done in shader!
+    // PCM: now done in shader!
     /*
     if (canopy && (fmod(pos.x / 0.9144f, 0.5f) < 1e-4 || fmod(pos.z / 0.9144f, 0.5f) < 1e-4))
     {

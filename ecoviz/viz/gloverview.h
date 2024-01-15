@@ -60,8 +60,8 @@
 **
 ****************************************************************************/
 
-#ifndef GLTRANSECT_H
-#define GLTRANSECT_H
+#ifndef GLOVERVIEW_H
+#define GLOVERVIEW_H
 
 #include "glheaders.h" // Must be included before QT opengl headers
 #include <QGLWidget>
@@ -82,14 +82,14 @@
 
 class Window;
 
-class GLTransect : public QGLWidget
+class GLOverview : public QGLWidget
 {
     Q_OBJECT
 
 public:
 
-    GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent = 0);
-    ~GLTransect();
+    GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWidget *parent = 0);
+    ~GLOverview();
 
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
@@ -99,66 +99,30 @@ public:
     /// getters for currently active view, terrain, typemaps, renderer, ecosystem
     PMrender::TRenderer * getRenderer();
 
-    /**
-     * @brief updateTransectView Change the view to match the current transect parameters
-     */
-    void updateTransectView();
 
     /**
      * @brief setScene Change the scene being displayed and initialize a new default view
      * @param s Scene to display
      */
-    void setScene(Scene * s);
+    void setScene(mapScene * s);
 
     /// getter for various viewing controls
-    Scene * getScene(){ return scene; }
+    mapScene * getScene(){ return scene; }
     View * getView(){ return view; }
-    Transect * getTransect(){ return trx; }
 
-    /// create an independent view object with the same parameter
-    void unlockView(Transect * imposedTrx);
-
-    /// create a locked view object by overwriting the current view
-    void lockView(View * imposedView, Transect * imposedTrx);
-
-    /// toggle lock flag
-    void setViewLockState(bool state){ viewlock = state; }
-
-    /// Prepare decal texture
-    void loadDecals();
+    /// recalculate View params for viewport
+    void updateViewParams(void);
 
     /// Respond to key press events
     void keyPressEvent(QKeyEvent *event);
 
-    /// set scaling value for all terrains
-    void setScales(float sc);
-
-    /// Make all plants visible
-    void setAllPlantsVis();
-
-    /// Toggle canopy plant visibility
-    void setCanopyVis(bool vis);
-
-    /// Toggle undergrowth plant visibility
-    void setUndergrowthVis(bool vis);
-
-    /// Turn all species either visible or invisible
-    void setAllSpecies(bool vis);
-
-    /// Turn on visibility for a single plant species only (all others off)
-    void setSinglePlantVis(int p);
-
-    /// Toggle visibility of an individual species on or off
-    void toggleSpecies(int p, bool vis);
-
-    /// switch scene - should only be called when a new sub-terrainis extracted
-    void switchTransectScene(Scene *newScene, Transect *newTransect);
-
 signals:
+    void signalExtractNewSubTerrain();
     void signalRepaintAllGL();
+    //void signalRebindPlants();
 
 public slots:
-    void rebindPlants(); // set flag indicating that plants need to be re-bound
+  //void rebindPlants(); // set flag indicating that plants need to be re-bound
 
 protected:
     void initializeGL();
@@ -173,29 +137,18 @@ private:
 
     QGLFormat glformat; //< format for OpenGL
     Window * winparent;
-    Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
+    mapScene * scene;      //<overview scene info
     View * view;        //< viewpoint controls
     std::string datadir;
 
     // render variables
     PMrender::TRenderer * renderer;
-    bool decalsbound;
 
     // gui variables
-    bool viewlock;
-    bool focuschange;
+    bool active;
     bool timeron;
-    bool active; //< scene only rendered if this is true
-    bool rebindplants; //< flag to indicate that plants have changed and need to be rebound
-    bool forceRebindPlants; //< flag to override lack of 'focus' (which never seems to be used?)
-    std::vector<bool> plantvis;
-    bool canopyvis; //< display the canopy plants if true
-    bool undervis; //< display the understorey plants if true
     float scf;
-    Transect * trx; //< transect control parameters
-
-    // PCM 2023 - can be used to test geometry against transect
-    std::vector<Plane> transectPlanes;
+   
 
     QPoint lastPos;
     QColor qtWhite;
@@ -208,6 +161,9 @@ private:
      * @param drawParams accumulated rendering state
      */
     void paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
+
+    // paint on the overview selection window (size and position obtained from Terrain)
+    void paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> & drawparams);
 };
 
 #endif

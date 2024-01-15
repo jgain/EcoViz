@@ -96,6 +96,15 @@ private:
 
     float latitude;         ///< latitude location of terrain in degrees, if available
 
+    Region sourceRegion;    ///< source region for a terrain built from larger terrain;
+                            ///< caller must maintain knowledge of parent; this is used for
+                            ///< ecosystem offsetting from master terrain to this sub-terrain
+                            ///< by default it is not set (0 for each entry): NOTE: these are
+                            ///< *grid* coordinates relative to parent grid - they must be converted to
+                            ///< world space for terrain checks.
+    int parentGridx;       ///< if source Region is set, this will also be set and indicate parent grid
+    int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as (dim-1)*step
+
     // PM: terrain renderer
     mutable bool glewSetupDone;
     mutable GLuint htMapTextureId;
@@ -127,19 +136,42 @@ private:
 public:
 
     /// Constructor
-    Terrain()
+    Terrain(Region source = Region()) // empty source region by default
     {
         glewSetupDone = false; dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0;
         hghtrange = 0.0f; hghtmean = 0.0f; accelValid = false;
         grid = new basic_types::MapFloat();
         drawgrid = new basic_types::MapFloat();
-    }
+        // PCM - set only if this terrain was created from (larger) parent terrain
+        sourceRegion = source;
+        parentGridx = parentGridy = 0;
+      }
 
     /// Destructor
     ~Terrain()
     {
         delete grid;
         delete drawgrid;
+    }
+
+
+    //returns true if source region is set.
+    // src: the grid coordinates (relative to source) of this terrain
+    // sx, sy, ex. ey are "physical" terrain  coordinates covered by source
+    // parentDimx/y are the full original terrain extents (in meters)
+    bool getSourceRegion(Region &src, float &sx, float &sy, float &ex, float &ey,
+                         float& parentDimx, float & parentDimy) const
+    {
+        src = sourceRegion;
+        sx = src.x0*step;
+        sy = src.y0*step;
+        ex = src.x1*step;
+        ey = src.y1*step;
+
+        parentDimx = (parentGridx-1)*step;
+        parentDimy = (parentGridy-1)*step;
+
+        return !sourceRegion.empty();
     }
 
     void setHeightMaptextureID(GLuint id) { htMapTextureId = id; }
@@ -234,6 +266,9 @@ public:
     /// Return longest edge extent of terrain in metres
     float longEdgeDist();
 
+    /// get distance between points in metres
+    float getPointStep() const { return step; }
+
     /// getter for artificial scale factor
     float getScaleFactor(){ return scfac; }
 
@@ -319,6 +354,13 @@ public:
     void loadElv(const std::string &filename);
 
     /**
+       * Load a terrain from a file - pply dwonsampling (skip every nth sample)
+       * @param filename   File to load (simple ascii elevation format)
+       * @param downsample donsam,pling factor (integer > 1)
+       */
+    void loadElv(const std::string &filename, int downsample);
+
+    /**
        * Save a terrain to file.
        * @param filename   File to save (simple ascii elevation format)
        * @see @ref MemMap for exception information
@@ -328,6 +370,11 @@ public:
     /// Recalculate the mean height over the terrain
     void calcMeanHeight();
     float getHeightFromReal(float x, float y);
+
+    /// PCM - build new terrain from sub-region -
+    /// calling function must assume responsibility for memory
+
+    std::unique_ptr<Terrain> buildSubTerrain(int x0, int y0, int x1, int y1);
 };
 
 #endif // TERRAIN_H

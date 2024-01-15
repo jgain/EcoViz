@@ -32,7 +32,7 @@ void main(void)
 
     vec3 n, halfV,viewV,ldir;
     float NdotL,NdotHV;
-    color = ambient; //global ambient
+    color =  ambient; //global ambient
 
     n = normalize(normal);
 
@@ -56,7 +56,6 @@ void main(void)
         // color = vec4(texel.r, texel.g, texel.b, color.a); // GL_REPLACE
         color = vec4(mix(color.rgb, texel.rgb, texel.a), color.a); // GL_DECAL
      }
-
 
     // turn of radiance scaling calculations for this in Pass 2
     norm = vec4(0.0f, 0.0f, 0.0f, 0.0f);

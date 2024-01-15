@@ -59,8 +59,6 @@
 **
 ****************************************************************************/
 
-#include "gltransect.h"
-#include "eco.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -68,6 +66,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+
+#include "gloverview.h"
+
 #include <QGridLayout>
 #include <QGLFramebufferObject>
 #include <QImage>
@@ -77,8 +78,9 @@
 #include <QLineEdit>
 #include <QRunnable>
 #include <QThreadPool>
-
 #include <fstream>
+
+#include "eco.h"
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include "cohortmaps.h"
@@ -90,33 +92,21 @@ using namespace std;
 #define GL_MULTISAMPLE  0x809D
 #endif
 
-static int curr_cohortmap = 0;
-static int curr_tstep = 1;
-
-GLTransect::GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent)
+GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWidget *parent)
     : QGLWidget(format, parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     glformat = format;
 
-    view = nullptr;
-
-    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+    active = true;
+    timeron = false;
 
     setParent(wp);
 
-    trx = trans;
     setScene(scn);
-    viewlock = false;
-    decalsbound = false;
-    focuschange = false;
-    timeron = false;
-    active = true;
-    rebindplants = true;
-    forceRebindPlants = true;
 
-    scf = 10000.0f;
-
+    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+   
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
@@ -124,160 +114,100 @@ GLTransect::GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transe
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
 }
 
-void GLTransect::switchTransectScene(Scene *newScene, Transect *newTransect)
-{
-    trx = newTransect;
-    viewlock = false;
-    decalsbound = false;
-    timeron = false;
-    active = true;
-    rebindplants = true;
-    scf = 10000.0f;
-
-    setScene(newScene);
-
-    focuschange = true;
-    forceRebindPlants = true;
-}
-
-GLTransect::~GLTransect()
+GLOverview::~GLOverview()
 {
     if (renderer) delete renderer;
 }
 
-QSize GLTransect::minimumSizeHint() const
+QSize GLOverview::minimumSizeHint() const
 {
     return QSize(80, 15);
 }
 
-QSize GLTransect::sizeHint() const
+QSize GLOverview::sizeHint() const
 {
     return QSize(800, 150);
 }
 
-PMrender::TRenderer * GLTransect::getRenderer()
+PMrender::TRenderer * GLOverview::getRenderer()
 {
     return renderer;
 }
 
-void GLTransect::updateTransectView()
-{
-    float tx, ty;
-    vpPoint basePlaneOrigin;
-
-    // extract planes for world space culling and retrieve origin on one of the planes
-    // (which will map to the near plane for camera)
-
-    std::pair<Plane, Plane> planes  = trx->getTransectPlanes(basePlaneOrigin);
-    transectPlanes.clear();
-    transectPlanes.push_back(planes.first);
-    transectPlanes.push_back(planes.second);
-
-    view->setOrthoViewExtent(trx->getExtent());
-    view->setOrthoViewDepth(trx->getThickness());
-    // scene->getTerrain()->setMidFocus();
-    // view->setForcedFocus(trx->getCenter());
-    view->setForcedFocus(basePlaneOrigin);
-    // view->setForcedFocus(scene->getTerrain()->getFocus());
-    view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
-
-    Vector v, n;
-    v = Vector(0.0f, 0.0f, 1.0f);
-    n = trx->getNormal();
-    float r = atan2(n.k, n.i) - atan2(v.k, v.i);
-
-    // cerr << "rotation angle = " << -r << endl;
-    view->flatview(-r);
-
-    // cerr << "extent = " << trx->getExtent() << endl;
-    // cerr << "thickness = " << trx->getThickness() << endl;
-    // cerr << "zoomdist = " << view->getZoom() << endl;
 
 
-}
-
-void GLTransect::setScene(Scene * s)
-{
+void GLOverview::setScene(mapScene * s)
+{ 
     scene = s;
     view = new View();
 
-    float tx, ty;
+    scene->getLowResTerrain()->setMidFocus();
+    view->setViewType(ViewState::ORTHOGONAL);
+    view->setForcedFocus(scene->getLowResTerrain()->getFocus());
+    view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
+    view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
+    scf = scene->getLowResTerrain()->getMaxExtent();
 
     // orthogonal rendering
-    view->setViewType(ViewState::ORTHOGONAL);
-    view->setZoomdist(0.0f);
+    //view->setViewType(ViewState::ORTHOGONAL);
+    //view->setZoomdist(0.0f);
+    //view->setOrthoViewDepth(2000.0f);
+    //view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist());
 
-    scf = scene->getTerrain()->getMaxExtent();
-    scene->getTerrain()->setBufferToDirty();
+    std::cout << "***** setScene(mapScene) - data:\n";
+    vpPoint pt = scene->getLowResTerrain()->getFocus();
+    std::cout << " ** focus.x: " << pt.x;
+    std::cout << " ** focus.y: " << pt.y;
+    std::cout << " ** focus.z: " << pt.z;
+    std::cout << " ** scf: " << scf << "\n";
+    std::cout << " ** wd: " << this->width() << "\n";
+    std::cout << " ** ht: " << this->height() << "\n";
+    std::cout << " ** terrain scale: " << scene->getLowResTerrain()->longEdgeDist() << "\n";
 
-    // transect setup
-    float rw, rh;
-    scene->getTerrain()->getTerrainDim(rw, rh);
+    // scene->getLowResTerrain()->setMidFocus();
+    view->topdown();
 
-    plantvis.clear();
-    plantvis.resize(scene->getBiome()->numPFTypes()*3);
-    for(int t = 0; t < scene->getBiome()->numPFTypes(); t++)
-        plantvis[t] = true;
-
-    canopyvis = true;
-    undervis = true;
-
-    setAllPlantsVis();
-    focuschange = !focuschange;
-    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
-    rebindplants = true;
-
-    updateTransectView();
-
-    // PCM: should these be here? this is called from constructor.
+    scene->getLowResTerrain()->setBufferToDirty();
+    
     winparent->rendercount++;
-    signalRepaintAllGL();
+    //signalRepaintAllGL();
+    updateGL();
 }
 
-void GLTransect::unlockView(Transect * imposedTrx)
+// the heightfield will change after initial dummy creation (and possible edits later)
+// make sure View params are correct.
+
+void GLOverview::updateViewParams(void)
 {
-    View * preview = view; // PCM: likely a leak of Viewe object at some point
-    view = new View();
-    (* view) = (* preview);
+    scene->getLowResTerrain()->setMidFocus();
+    view->setForcedFocus(scene->getLowResTerrain()->getFocus());
+    view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
+    scf = scene->getLowResTerrain()->getMaxExtent();
 
-    trx = imposedTrx; // pointer managed externally so no need to delete previous
+    // orthogonal rendering
+
+    view->setViewType(ViewState::ORTHOGONAL);
+    float minHt, maxHt;
+    scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need *global* max height
+
+    vpPoint orthoFocusTop;
+    orthoFocusTop = scene->getLowResTerrain()->getFocus();
+    orthoFocusTop.y = 1.1* maxHt + 100.0f; // PCM: for some reason the camera near plane clips even when using maxHt
+    // could be the slight near plane offset e=0.01, but that is small and an addiive offset should have fixed that.
+    // Possible issue?
+    view->setForcedFocus(orthoFocusTop);
+    view->setOrthoViewDepth(100000.0f); // make this large to avoid issues!
+    view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()*4); // this scales to fit in window
+
+    view->topdown();
+    view->setZoomdist(0.0f);
+    view->apply();
 }
 
-void GLTransect::lockView(View * imposedView, Transect * imposedTrx)
-{
-    delete view;
-    view = imposedView;
-    trx = imposedTrx; // pointer managed externally so no need to delete
-    updateTransectView();
-}
-
-void GLTransect::loadDecals()
-{
-    QImage decalImg, t;
-
-    // load image
-    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../../common/Icons/manipDecals.png"))
-        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../../common/Icons/manipDecals.png" << " not found" << endl;
-
-    // Qt prep image for OpenGL
-    QImage fixedImage(decalImg.width(), decalImg.height(), QImage::Format_ARGB32);
-    QPainter painter(&fixedImage);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
-    painter.fillRect(fixedImage.rect(), Qt::transparent);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.drawImage( 0, 0, decalImg);
-    painter.end();
-
-    t = QGLWidget::convertToGLFormat( fixedImage );
-
-    renderer->bindDecals(t.width(), t.height(), t.bits());
-    decalsbound = true;
-}
-
-void GLTransect::initializeGL()
+void GLOverview::initializeGL()
 {
     // get context opengl-version
-    qDebug() << "\nGLTransect initialize....\n";
+    qDebug() << "\nGLOverview initialize....\n";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();
     qDebug() << "Context valid: " << context()->isValid() << "; Address: " << context();
     qDebug() << "Really used OpenGl: " << context()->format().majorVersion() << "." <<
@@ -300,13 +230,10 @@ void GLTransect::initializeGL()
     // *** PM Render code - start ***
 
     // To use basic shading: PMrender::TRenderer::BASIC
-    // To use radianvce scaling: PMrender::TRenderer::RADIANCE_SCALING
-
-    //PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::BASIC;
-
-    // PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::FLAT_TRANSECT; // flat shading transect
-
-PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SCALING_TRANSECT;
+    // To use radiance scaling: PMrender::TRenderer::RADIANCE_SCALING
+    // PMrender::TRenderer::RADIANCE_SCALING;
+    // PMrender::TRenderer::RADIANCE_SCALING_TRANSECT;
+    PMrender::TRenderer::terrainShadingModel  sMod = PMrender::TRenderer::RADIANCE_SCALING_OVERVIEW;
 
     // set terrain shading model
     renderer->setTerrShadeModel(sMod);
@@ -316,7 +243,7 @@ PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SC
     dl.normalize();
 
   //  GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
-     GLfloat pointLight[3] = {1000.0, 2000.0, 1000.0}; // side panel + BASIC lighting
+     GLfloat pointLight[3] = {1000.0, 3000.0, 1000.0}; // side panel + BASIC lighting
     GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
     GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
 
@@ -335,24 +262,25 @@ PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SC
     renderer->drawGridlines(false);
 
     // turn on terrain type overlay (off by default); NB you can stil call methods to update terrain type,
-    renderer->useTerrainTypeTexture(true);
+    renderer->useTerrainTypeTexture(false);
     renderer->useConstraintTypeTexture(false);
 
     // use manipulator textures (decal'd)
-    renderer->textureManipulators(true);
+    renderer->textureManipulators(false);
 
     // *** PM Render code - end ***
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    //glEnable(GL_DEPTH_CLAMP);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_TEXTURE_2D);
 
-    loadDecals();
+    // overlay - load??
     paintGL();
 }
 
-void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
+void GLOverview::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     ShapeDrawData sdd;
     float scale;
@@ -388,7 +316,56 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     }
 }
 
-void GLTransect::paintGL()
+void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &drawparams)
+{
+    ShapeDrawData sdd;
+    Shape shape;
+    glm::mat4 tfm, idt;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
+    std::vector<float> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    Region region;
+    vpPoint centre;
+    float planeHeight, planeWidth;
+    region = getScene()->getSelectedRegion(); //  (region, startx, starty, endx, endy);
+    float minHt, maxHt;
+    scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need global maxHt
+    float pointStep = scene->getHighResTerrain()->getPointStep();
+
+    std::cout << "@@@@ paintSelectionPlane: input region [" << region.x0 << "," << region.y0 <<
+                 "," << region.x1 << "," << region.y1 << "]\n";
+
+    centre.y = 1.1*maxHt + 10.0f; // PCM: hack **** I think the quat rotation is inaccurate and camera is off angle slightly
+    centre.x = (pointStep*region.y0 + pointStep*region.y1)/2.0; // PCM: again, flip since drawgrid is flipped
+    centre.z = (pointStep*region.x0 + pointStep*region.x1)/2.0;
+    idt = glm::mat4(1.0f);
+    tfm = glm::translate(idt, glm::vec3(centre.x, centre.y, centre.z));
+
+    // PCM: this seems to be implied by way plane is defined?
+    planeWidth  = pointStep*(region.y1 - region.y0 + 1)/2.0f;
+    planeHeight = pointStep*(region.x1 - region.x0 + 1);
+
+    std::cout << "\nSelection plane data:\n";
+    std::cout << "centre = (" << centre.x << "," << centre.y << "," << centre.z << ")\n";
+    std::cout << "point step: " << pointStep << std::endl;
+    std::cout << "(planeWidth, planeHeight) = " << planeWidth << "," << planeHeight << ")\n";
+
+    shape.genPlane(vpPoint(0.0,0.0,1.0), vpPoint(0.0,0.0,0.0), planeWidth, planeHeight, tfm);
+    if (shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawparams.push_back(sdd);
+    }
+}
+
+
+void GLOverview::paintGL()
 {
     vpPoint mo;
     //glm::mat4 tfm, idt;
@@ -397,42 +374,33 @@ void GLTransect::paintGL()
     Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
     std::vector<glm::vec4> cinst;
+    GLfloat planeCol[] = {0.325f, 0.235f, 1.0f, 1.0f};
 
     Timer t;
 
     if(active)
     {
+        std::cout << " ------- GLOverview::paintGL() called ----------\n";
+        drawParams.clear();
         t.start();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        updateTransectView();
+        // viewport is incorrect on creation, this will ensure current is used to match View
+        updateViewParams();
 
-            /*
-            if(focuschange)
-            {
-                GLfloat manipCol1[] = {0.325f, 0.235f, 1.0f, 1.0f};
-                paintCyl(trx->getInnerStart(), manipCol1, drawParams);
+        // build selection plane 'manipulator'
 
-                GLfloat manipCol2[] = {0.725f, 0.235f, 1.0f, 1.0f};
-                paintCyl(trx->getInnerEnd(), manipCol2, drawParams);
-            }*/
-
-            // prepare plants for rendering
-
-        if(focuschange || forceRebindPlants)
-        {
-            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants, transectPlanes);
-            scene->getTerrain()->setBufferToDirty();
-            rebindplants = false;
-            forceRebindPlants = false;
-        }
+        paintSelectionPlane(planeCol, drawParams);
 
         // pass in draw params for objects
         renderer->setConstraintDrawParams(drawParams);
 
-        // draw terrain and plants
-        //scene->getTerrain()->setBufferToDirty();
-        scene->getTerrain()->updateBuffers(renderer);
+        // draw terrain
+
+        //scene->getLowResTerrain()->setBufferToDirty();
+        // draw terrain  with selection plane
+        if (drawParams.size() > 0) // DEBUG: PCM
+            scene->getLowResTerrain()->updateBuffers(renderer);
 
         renderer->draw(view);
 
@@ -443,7 +411,7 @@ void GLTransect::paintGL()
     }
 }
 
-void GLTransect::resizeGL(int width, int height)
+void GLOverview::resizeGL(int width, int height)
 {
     // TO DO: fix resizing
     // int side = qMin(width, height);
@@ -455,158 +423,78 @@ void GLTransect::resizeGL(int width, int height)
 }
 
 
-void GLTransect::keyPressEvent(QKeyEvent *event)
+void GLOverview::keyPressEvent(QKeyEvent *event)
 {
 }
 
-void GLTransect::setAllPlantsVis()
-{
-    for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
-        plantvis[i] = true;
-}
 
-void GLTransect::setCanopyVis(bool vis)
+void GLOverview::mousePressEvent(QMouseEvent *event)
 {
-    setAllPlantsVis();
-    canopyvis = vis; // toggle canopy visibility
-    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
-    rebindplants = true;
-    if(viewlock)
-    {
-        winparent->rendercount++;
-        signalRepaintAllGL();
-    }
-    else
-    {
-        winparent->rendercount++;
-        updateGL();
-    }
-}
-
-void GLTransect::setUndergrowthVis(bool vis)
-{
-    setAllPlantsVis();
-    undervis = vis;
-    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
-    rebindplants = true;
-    if(viewlock)
-    {
-        winparent->rendercount++;
-        signalRepaintAllGL();
-    }
-    else
-    {
-        winparent->rendercount++;
-        updateGL();
-    }
-}
-
-void GLTransect::setAllSpecies(bool vis)
-{
-    for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
-        plantvis[i] = vis;
-    scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
-    rebindplants = true;
-    if(viewlock)
-    {
-        winparent->rendercount++;
-        signalRepaintAllGL();
-    }
-    else
-    {
-        winparent->rendercount++;
-        updateGL();
-    }
-}
-
-void GLTransect::setSinglePlantVis(int p)
-{
-    if(p < (int) plantvis.size())
-    {
-        for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
-            plantvis[i] = false;
-        plantvis[p] = true;
-        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
-        rebindplants = true;
-        if(viewlock)
-        {
-            winparent->rendercount++;
-            signalRepaintAllGL();
-        }
-        else
-        {
-            winparent->rendercount++;
-            updateGL();
-        }
-    }
-    else
-    {
-        cerr << "non-valid pft and so unable to toggle visibility" << endl;
-    }
-}
-
-void GLTransect::toggleSpecies(int p, bool vis)
-{
-    if(p < static_cast<int>(plantvis.size()))
-    {
-        plantvis[p] = vis;
-        scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
-        rebindplants = true;
-        if(viewlock)
-        {
-            winparent->rendercount++;
-            signalRepaintAllGL();
-        }
-        else
-        {
-            winparent->rendercount++;
-            updateGL();
-        }
-    }
-    else
-    {
-        cerr << "non-valid pft and so unable to toggle visibility" << endl;
-    }
-}
-
-void GLTransect::mousePressEvent(QMouseEvent *event)
-{
-    float nx, ny;
     vpPoint pnt;
 
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
+    float deltaX, deltaY;
 
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
     if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
-        // TO DO: translate in orthogonal view
+        float dX = x/W, dY = y/H;
+        float midX = W/2, midY = H/2;
+        int step = 100;
 
-        // convert to [0,1] X [0,1] domain
+        // X/Y flipped
+        if (event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier )
+        {
+            // translate in Y
+            if (x - midX > 0) deltaY  = step;
+            else deltaY = -step;
+            deltaX = 0;
+        }
+        else
+        {
+            // translate in X
+            if (y - midY > 0) deltaX = step;
+            else deltaX = -step;
+            deltaY = 0;
+        }
+
+        Region currentRegion;
+        currentRegion = getScene()->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+
+        // bounds check
+
+        currentRegion.x0 = currentRegion.x0 + deltaX;
+        currentRegion.y0 = currentRegion.y0 + deltaY;
+        currentRegion.x1 = currentRegion.x1 + deltaX;
+        currentRegion.y1 = currentRegion.y1 + deltaY;
+
+        if (getScene()->subwindowValid(currentRegion) )
+        {
+            getScene()->setSelectedRegion(currentRegion);
+        }
         /*
-        nx = (2.0f * (float) x - W) / W;
-        ny = (H - 2.0f * (float) y) / H;
-        lastPos = event->pos();
-        view->startArcRotate(nx, ny);*/
+       else
+            std::cerr << " %%%%%% mouse wheel - inavlid region: [" << currentRegion.x0 << ","
+                  <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
+                       currentRegion.y1 << "]\n";
+        */
+        //std::cerr<< "---- overview mouse click ----- \n";
     }
-
-    if(viewlock)
+    else if (event->buttons() == Qt::LeftButton)
     {
-        winparent->rendercount++;
-        signalRepaintAllGL();
-    }
-    else
-    {
-        winparent->rendercount++;
-        updateGL();
+        // extract the currently  selected region
+        signalExtractNewSubTerrain();
+        //signalRebindPlants();
     }
 
+    winparent->rendercount++;
 
+    updateGL();
     lastPos = event->pos();
-
 }
 
-void GLTransect::mouseMoveEvent(QMouseEvent *event)
+void GLOverview::mouseMoveEvent(QMouseEvent *event)
 {
     float nx, ny, W, H;
 
@@ -627,6 +515,7 @@ void GLTransect::mouseMoveEvent(QMouseEvent *event)
         float dely = (float) (y - lastPos.y());
         delx *= scw;
         dely *= scw;
+        /*
         vpPoint center = trx->getCenter();
 
         center.x -= delx * trx->getHorizontal().i;
@@ -647,16 +536,20 @@ void GLTransect::mouseMoveEvent(QMouseEvent *event)
         trx->setInnerStart(inner[0], scene->getTerrain()); trx->setInnerEnd(inner[1], scene->getTerrain());
 
         updateTransectView();
+        */
+
+
         winparent->rendercount++;
         signalRepaintAllGL();
         lastPos = event->pos();
     }
 
+   // std::cerr << " ***gloverview: mousemove registered...***\n";
 }
 
-void GLTransect::wheelEvent(QWheelEvent * wheel)
+void GLOverview::wheelEvent(QWheelEvent * wheel)
 {
-    float del, extent;
+    float del, aspect;
 
     QPoint pix = wheel->pixelDelta();
     QPoint deg = wheel->angleDelta();
@@ -667,25 +560,60 @@ void GLTransect::wheelEvent(QWheelEvent * wheel)
     }
     else if(!deg.isNull()) // mouse wheel instead
     {
-        del = (float) -deg.y() * 0.5f;
+        del = (float) deg.y()/8;
     }
+    else
+        del = 0.0;
 
-        /*
-        extent = view->getOrthoViewExtent();
-        extent += del;
-        view->setOrthoViewExtent(extent);
-        */
+    Region currentRegion;
+    currentRegion = getScene()->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+    int X0, Y0, X1, Y1, Xwd,Ywd;
+    int centreX, centreY;
 
-    // also adjust inner bounds relative to center
-    trx->zoom(del, scene->getTerrain());
-    updateTransectView();
+    aspect = float(currentRegion.x1 - currentRegion.x0)/float(currentRegion.y1 - currentRegion.y0);
+
+    centreX = int( (currentRegion.x0 + currentRegion.x1)/2);
+    centreY = int( (currentRegion.y0 + currentRegion.y1)/2);
+
+    //del /= 360; // scale this to allow slower expansion/contraction
+    // prerserve aspect ratio
+    del = (del/30);
+    Ywd = centreY - currentRegion.y0;
+    Ywd += del;
+    if (Ywd < 50) Ywd = 50;
+    Xwd = int(aspect*Ywd);
+    std::cerr << "@@@@@ - (XWd, Ywd, deg) =  (" << Xwd << "," << Ywd << "," << del << ")\n";
+    X0 = centreX - Xwd;
+    X1 = centreX + Xwd;
+    Y0 = centreY - Ywd;
+    Y1 = centreY + Ywd;
+
+    // bounds check
+
+    currentRegion.x0 = X0;
+    currentRegion.y0 = Y0;
+    currentRegion.x1 = X1;
+    currentRegion.y1 = Y1;
+
+    Xwd = X1-X0+1;
+    Ywd = Y1-Y0+1;
+
+    // valid window and no side can be less than 50 samples
+    if (getScene()->subwindowValid(currentRegion) && Xwd > 50 && Ywd > 50)
+    {
+        //std::cerr << "---%%%%%-- mouse wheel - new region valid: [" << currentRegion.x0 << ","
+        //          <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
+        //               currentRegion.y1 << "]\n";
+        getScene()->setSelectedRegion(currentRegion);
+    }
+/*   else
+        std::cerr << " %%%%%% mouse wheel - inavlid region: [" << currentRegion.x0 << ","
+              <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
+                   currentRegion.y1 << "]\n";
+*/
     winparent->rendercount++;
-    signalRepaintAllGL();
+    //signalRepaintAllGL();
+     updateGL();
 }
 
-void GLTransect::rebindPlants()
-{
-    rebindplants = true;
-    forceRebindPlants = true;
-    std::cout << "%%%%%% rebindPlants on Transect called...%%%%%%\n";
-}
+

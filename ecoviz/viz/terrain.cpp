@@ -193,6 +193,50 @@ void Terrain::delGrid()
     accelValid = false;
 }
 
+// PCM ----
+// NOTE: source region is *grid relative* - all other data is preserved, scale etc.
+// assume end points are included.
+
+ std::unique_ptr<Terrain> Terrain::buildSubTerrain(int x0, int y0, int x1, int y1)
+ {
+    int dx = x1-x0+1;
+    int dy = y1-y0+1;
+    float val;
+
+    assert(dx > 0);
+    assert(dy > 0);
+
+    std::unique_ptr<Terrain> newTerrain(new Terrain(Region(x0,y0,x1,y1)) );
+
+    newTerrain->init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
+    newTerrain->step = step;
+    newTerrain->scfac = scfac;
+    newTerrain->scaleOn = scaleOn;
+    int parentXdim, parentYdim;
+    getGridDim(parentXdim, parentYdim);
+    newTerrain->parentGridx = parentXdim;
+    newTerrain->parentGridy = parentYdim;
+    // other state that may have changed since init()?
+
+    // copy data
+    for (int x = 0; x < dx; x++)
+    {
+        for (int y = 0; y < dy; y++)
+        {
+            val  = grid->get(x0+x,y0+y);
+
+            newTerrain->grid->set(x,y, val);
+            newTerrain->drawgrid->set(y,x, val);
+        }
+    }
+
+    newTerrain->calcMeanHeight();
+
+    return newTerrain;
+ }
+
+
+
 void Terrain::setMidFocus()
 {
     int dx, dy;
@@ -510,9 +554,72 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
     return true;
 }
 
+void Terrain::loadElv(const std::string &filename, int dFactor)
+{
+    //float lat;
+    int dx, dy;
+
+
+    float val;
+    ifstream infile;
+
+
+
+    infile.open((char *) filename.c_str(), ios_base::in);
+    if(infile.is_open())
+    {
+        std::size_t count =0;
+        infile >> dx >> dy;
+        infile >> step;
+
+        assert(dx > dFactor);
+        assert(dy > dFactor);
+
+        int newdx = int(dx/dFactor) + ( dx % dFactor > 0 ? 1: 0),
+            newdy = int(dy/dFactor) + ( dy % dFactor > 0 ? 1: 0);
+
+        // infile >> lat;
+
+        delGrid();
+        // PCM: think this should be (dx-1)*step etc?
+        // retain original domain size, just sample coarsely
+        init(newdx, newdy, (float) (dx-1) * step, (float) (dy-1) * step);
+        // latitude = lat;
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
+        {
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
+            {
+                infile >> val;
+                // only take every dFactor'th sample, starting at 0
+                if (x % dFactor == 0 && y % dFactor == 0)
+                {
+                    count++;
+                    grid->set(x/dFactor, y/dFactor, val); //  * 0.3048f); // convert from feet to metres
+                    drawgrid->set(y/dFactor, x/dFactor, val); // * 0.3048f);
+                }
+            }
+        }
+
+        assert(count == newdx*newdy);
+
+        // reflect new sampling for this image - coarsened
+        step = step*dFactor;
+
+        setMidFocus();
+        infile.close();
+    }
+    else
+    {
+        cerr << "Error Terrain::loadElv (with downsample): unable to open file " << filename << endl;
+    }
+}
 void Terrain::loadElv(const std::string &filename)
 {
-    float lat;
+    //float lat;
     int dx, dy;
 
     float val;
@@ -527,7 +634,8 @@ void Terrain::loadElv(const std::string &filename)
         // infile >> lat;
 
         delGrid();
-        init(dx, dy, (float) dx * step, (float) dy * step);
+        // PCM: changed dx*step -> (dx-1)*step etc, else looks incorrect?
+        init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
@@ -586,7 +694,7 @@ void Terrain::calcMeanHeight()
     for(j = 0; j < grid->height(); j++)
         for(i = 0; i < grid->width(); i++)
         {
-            hghtmean += grid->get(j,i);
+            hghtmean += grid->get(i,j);
             cnt++;
         }
     hghtmean /= (float) cnt;
@@ -603,7 +711,7 @@ void Terrain::getHeightBounds(float &minh, float &maxh)
     for(j = 0; j < grid->height(); j++)
         for(i = 0; i < grid->width(); i++)
         {
-            hght = grid->get(j,i);
+            hght = grid->get(i,j);
             if(hght < minh)
                 minh = hght;
             if(hght > maxh)

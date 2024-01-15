@@ -151,15 +151,15 @@ void Transect::paintThickness(Terrain * ter)
 
     // test if grid points on vizmap lie between offset planes
     ter->getGridDim(dx, dy);
-    for(int x = 0; x < dx; x++)
-        for(int y = 0; y < dy; y++)
+    for(int y = 0; y < dy; y++)
+        for(int x = 0; x < dx; x++)
         {
             // position on terrain corresponding to grid point, projected onto the base plane
-            vizpnt = ter->toWorld(x, y, 0.0f); // JG - orientation flip
+            vizpnt = ter->toWorld(y, x, 0.0f); // JG/PCM - orientation flip
             if(!offset[0].side(vizpnt) && !offset[1].side(vizpnt)) // between planes so draw in red
-                mapviz->set(y, x, 1.0f);
+                mapviz->set(x, y, 1.0f); // PCM:  more flipping (ensure map  indices are valid, adjusted other values too)
             else
-                mapviz->set(y, x, 0.0f);
+                mapviz->set(x, y, 0.0f);
         }
 }
 
@@ -457,11 +457,133 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
     setVertScale(vmax);
 }
 
+////  mapScene - light weight class for overview map
+
+std::string mapScene::get_dirprefix()
+{
+    while (datadir.back() == '/')
+        datadir.pop_back();
+
+    int slash_idx = datadir.find_last_of("/");
+    std::string setname = datadir.substr(slash_idx + 1);
+    std::string dirprefix = datadir + "/" + setname;
+    return dirprefix;
+}
+
+bool mapScene::subwindowValid(Region subwindow)
+{
+    int gridx, gridy;
+    fullResTerrain->getGridDim(gridx, gridy);
+
+    if (subwindow.x0 < 0 || subwindow.x0 > gridx-1)
+        return false;
+    if (subwindow.x1 < 0 || subwindow.x1 > gridx-1)
+        return false;
+    if (subwindow.y0 < 0 || subwindow.y0 > gridy-1)
+        return false;
+    if (subwindow.y1 < 0 || subwindow.y1 > gridy-1)
+        return false;
+
+    return true;
+}
+
+// extract the sub-region specified by region and update internal data structures
+// return the new extracted terrain for later processing.
+std::unique_ptr<Terrain> mapScene::extractTerrainSubwindow(Region region)
+{
+    if (!subwindowValid(region))
+    {
+        std::ostringstream oss;
+        oss << "run-time error: extractTerrainSubwindow: region invalid: ++++ [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+               region.x1 << "," << region.y1 << "]";
+
+        throw std::runtime_error(oss.str());
+    }
+    else
+    {
+        std::cout << " Subregion extracted -  [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+               region.x1 << "," << region.y1 << "]";
+    }
+
+    return fullResTerrain->buildSubTerrain(region.x0, region.y0, region.x1, region.y1);
+}
+
+// factor: default reduction factor to extract sub-region for main terrain (10 = 1/10th)
+// return value = a unique_ptr to extracted Terrain  that must be managed by the caller
+std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
+{
+
+    std::string terfile = datadir+"/dem.elv";
+    float terx, tery;
+    int gridx, gridy;
+    vpPoint mid;
+
+    // load terrain
+    fullResTerrain->loadElv(terfile);
+    fullResTerrain->calcMeanHeight();
+
+    std::cout << "\n ****** Hi-res Terrain loaded...\n";
+    std::cout << " ****** Mean height: " << fullResTerrain->getHeightMean() << "\n";
+    fullResTerrain->getTerrainDim(terx, tery);
+    std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+    fullResTerrain->getGridDim(gridx, gridy);
+    std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+    fullResTerrain->getMidPoint(mid);
+    std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
+    // define default region to be small aspect ratio preserving subregion of full terrain input
+    float centrex = (gridx-1)/2.0f, centrey = (gridy-1)/2.0f;
+    float widthx = (gridx-1)/float(factor), widthy = (gridy-1)/float(factor);
+    Region defRegion;
+    defRegion.x0 = int( centrex - (0.5*widthx) );
+    defRegion.y0 = int( centrey - (0.5*widthy) );
+    defRegion.x1 = int( centrex + (0.5*widthx) );
+    defRegion.y1 = int( centrey + (0.5*widthy) );
+
+    // PCM: test - full coverage of input terrain
+    //defRegion.x0 = 0;
+    //defRegion.y0 = 0;
+    //defRegion.x1 = gridx-1;
+    //defRegion.y1 = gridy-1;
+
+    // create downsampled overview
+    lowResTerrain->loadElv(terfile, downFactor);
+    lowResTerrain->calcMeanHeight();
+
+    selectedRegion = defRegion;
+
+    std::cout << "\n ****** Lo-res Terrain loaded...\n";
+    std::cout << " ****** Mean height: " << lowResTerrain->getHeightMean() << "\n";
+    lowResTerrain->getTerrainDim(terx, tery);
+    std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+    lowResTerrain->getGridDim(gridx, gridy);
+    std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+    lowResTerrain->getMidPoint(mid);
+    std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
+
+    // create texture/map overlay
+
+    /*
+    // match dimensions for empty overlay
+    int dx, dy;
+    getTerrain()->getGridDim(dx, dy);
+    getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
+    getTypeMap(TypeMapType::TRANSECT)->fill(1);
+    getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
+    getTypeMap(TypeMapType::EMPTY)->clear();
+    */
+
+    // default region extract
+
+    return extractTerrainSubwindow(defRegion);
+}
+
 //// Scene
 
-Scene::Scene(string ddir)
+Scene::Scene(string ddir) : terrain( new Terrain())
 {
-    terrain = new Terrain();
+    //terrain = new Terrain();
     terrain->initGrid(1024, 1024, 10000.0f, 10000.0f);
     eco = new EcoSystem();
     biome = new Biome();
@@ -477,7 +599,7 @@ Scene::Scene(string ddir)
     terrain->getGridDim(dx, dy);
     maps[2]->setRegion(Region(0, 0, dy-1, dx-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
-    nfield = new NoiseField(terrain, 5, 0);
+    nfield = new NoiseField(dx,dy,5, 0);
 
     for(int m = 0; m < 12; m++)
     {
@@ -488,11 +610,13 @@ Scene::Scene(string ddir)
     slope = new basic_types::MapFloat();
     chm = new basic_types::MapFloat();
     cdm = new basic_types::MapFloat();
+
+    masterTerrain = nullptr;
 }
 
 Scene::~Scene()
 {
-    delete terrain;
+    //delete terrain;
 
     // cycle through all typemaps, and if exists, delete and assign nullptr to indicate empty
     for (int t = 0; t < int(TypeMapType::TMTEND); t++)
@@ -678,27 +802,45 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     using namespace data_importer;
 
     std::vector<std::string> timestep_files;
-    std::string terfile = datadir+"/dem.elv";
+    //std::string terfile = datadir+"/dem.elv";
 
     for (int ts = timestep_start; ts <= timestep_end; ts++)
     {
         timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
     }
 
-    // load terrain
-    getTerrain()->loadElv(terfile);
-    getTerrain()->calcMeanHeight();
+    // load terrain (already calld loadElv and calcMeanHeight)
+
+    //terrain = std::move(newTerr);
+
+    //getTerrain()->loadElv(terfile);
+    //getTerrain()->calcMeanHeight();
 
     // match dimensions for empty overlay
+
+    // continue setup for sub-terrain newTerr
+    /*
     int dx, dy;
     getTerrain()->getGridDim(dx, dy);
     getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
     getTypeMap(TypeMapType::TRANSECT)->fill(1);
     getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
     getTypeMap(TypeMapType::EMPTY)->clear();
+    */
 
-    float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
+    // NB: must maintain original terrain dims/size when imposing a sub-region terrain
+    // ****entire**** region plan/eco data read in - later we select out the relevant parts for
+    // rendering
+       Region srcRegion;
+    float sx,ex, sy, ey, parentXdim, parentYdim;
+    terrain->getSourceRegion(srcRegion,
+                             sx, sy, ex, ey,
+                             parentXdim, parentYdim);
+
+    assert(parentXdim > 0.0);
+    assert(parentYdim > 0.0);
+
+    // getTerrain()->getTerrainDim(rw, rh);
 
     if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
     {
@@ -724,7 +866,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     {
         // import cohorts
         try {
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "1.0", species_lookup));
+        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "1.0", species_lookup));
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }
@@ -751,6 +893,8 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
 
 }
 
+// PCM - this won't export properly with overview window since that loads entire ecosystem, and can't deal with sub-regions
+// TBD
 void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect) {
     set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
 
