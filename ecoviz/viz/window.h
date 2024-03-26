@@ -158,6 +158,9 @@ private:
     QWidget * plantPanel;                       ///< Side panel to adjust various plant visualization parameters
     QGridLayout * vizLayout;
 
+    // Specify an OpenGL 3.2 format.
+    QGLFormat glFormat;
+
     // rendering parameters
     float gridSepX, numGridX, gridSepZ, numGridZ, gridWidth, gridIntensity; ///< grid params
     float contourSep, numContours, contourWidth, contourIntensity; ///< contour params
@@ -214,6 +217,16 @@ private:
      * @brief setupVizPanel  Initialize GUI layout of central visualization
      */
     void setupVizPanel();
+
+    /* fine-grained setup for viz panel */
+
+    void setupVizTransect(void);
+    void setupVizPerspective(void);
+    void setupVizChartViews(void);
+    void setupVizTimeline(void);
+    void setupVizOverMap(void);
+    void destroyVizTransects(void); // unmap widgets and call delete on to free up resources
+    void destroyVizPerspective(void);
 
     /**
      * @brief setupGraphModels  set up the data structures for dynamic graphs

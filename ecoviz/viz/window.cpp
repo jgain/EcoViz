@@ -444,36 +444,8 @@ void Window::setupPlantPanel()
 
 }
 
-void Window::setupVizPanel()
+void Window::setupVizTransect(void)
 {
-    vizPanel = new QWidget;
-    vizLayout = new QGridLayout;
-    vizLayout->setSpacing(3);
-    // vizLayout->setMargin(1);
-    vizLayout->setContentsMargins(3, 3, 3, 3);
-
-    // OpenGL widget
-    // Specify an OpenGL 3.2 format.
-    QGLFormat glFormat;
-    glFormat.setVersion( 4, 1 );
-    glFormat.setProfile( QGLFormat::CoreProfile );
-
-    // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
-    //glFormat.setSampleBuffers( true );
-    //glFormat.setSamples(4);
-
-    // vizLayout->setRowStretch(0, 6);
-    vizLayout->setRowStretch(0, 0);
-    vizLayout->setRowStretch(1, 24);
-    vizLayout->setRowStretch(2, 1);
-    vizLayout->setRowStretch(3, 8);
-    // PCM: add overview map
-    vizLayout->setRowStretch(4,6);
-
-    vizLayout->setColumnStretch(0, 600);
-    vizLayout->setColumnStretch(1, 50);
-    vizLayout->setColumnStretch(2, 600);
-
     // transect views
     for(int i = 0; i < 2; i++)
     {
@@ -490,6 +462,26 @@ void Window::setupVizPanel()
     // for(int i = 0; i < 2; i++)
     //    vizLayout->addWidget(transectViews[i], 0, i);
 
+}
+
+void Window::destroyVizTransects(void)
+{
+    clearTransects();
+
+    for (auto v: transectViews)
+        delete v;
+    transectViews.clear();
+
+    for (auto v: transectControls)
+        delete v;
+    transectControls.clear();
+
+    transectsValid = false;
+}
+
+
+void Window::setupVizPerspective(void)
+{
     // main perspective views
     for(int i = 0; i < 2; i++)
     {
@@ -510,7 +502,22 @@ void Window::setupVizPanel()
         perspectiveViews.push_back(pview);
         vizLayout->addWidget(pview, 1, i*2);
     }
+}
 
+void Window::destroyVizPerspective(void)
+{
+    for (auto p : perspectiveViews)
+    {
+        p->hide();
+        vizLayout->removeWidget(p);
+        delete p;
+    }
+    perspectiveViews.clear();
+}
+
+
+void Window::setupVizChartViews(void)
+{
     // chart views
     for(int i = 0; i < 2; i++)
     {
@@ -526,7 +533,10 @@ void Window::setupVizPanel()
         graphModels.push_back( tgs );
         vizLayout->addWidget(cview, 3, i*2);
     }
+}
 
+void Window::setupVizTimeline(void)
+{
     // timeline views
     for(int i = 0; i < 2; i++)
     {
@@ -542,7 +552,10 @@ void Window::setupVizPanel()
         timelineViews.push_back(tview);
         vizLayout->addWidget(tview, 2, i*2);
     }
+}
 
+void Window::setupVizOverMap(void)
+{
     // PCM: overview maps L/R
 
     for(int i = 0; i < 2; i++)
@@ -560,6 +573,35 @@ void Window::setupVizPanel()
         overviewMaps.push_back(oview);
         vizLayout->addWidget(oview, 4, i*2);
     }
+}
+
+
+void Window::setupVizPanel()
+{
+    vizPanel = new QWidget;
+    vizLayout = new QGridLayout;
+    vizLayout->setSpacing(3);
+    // vizLayout->setMargin(1);
+    vizLayout->setContentsMargins(3, 3, 3, 3);
+
+    // vizLayout->setRowStretch(0, 6);
+    vizLayout->setRowStretch(0, 0);
+    vizLayout->setRowStretch(1, 24);
+    vizLayout->setRowStretch(2, 1);
+    vizLayout->setRowStretch(3, 8);
+    // PCM: add overview map
+    vizLayout->setRowStretch(4,6);
+
+    vizLayout->setColumnStretch(0, 600);
+    vizLayout->setColumnStretch(1, 50);
+    vizLayout->setColumnStretch(2, 600);
+
+    // setup widgets for panel
+    setupVizTransect();
+    setupVizPerspective();
+    setupVizChartViews();
+    setupVizTimeline();
+    setupVizOverMap();
 
     // lock buttons
     QVBoxLayout *lockTLayout = new QVBoxLayout;
@@ -663,6 +705,15 @@ Window::Window(string datadir)
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout();
 
+    // Specify an OpenGL 3.2 format for widgets
+    QGLFormat glFormat;
+    glFormat.setVersion( 3, 2 );
+    glFormat.setProfile( QGLFormat::CoreProfile );
+
+    // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
+    //glFormat.setSampleBuffers( true );
+    //glFormat.setSamples(4);
+
     transectsValid = false;
     rendercount = 0;
     mainLayout->setSpacing(1);
@@ -723,14 +774,6 @@ Window::~Window()
     // PCM what about other objects? TBD
 }
 
-/*
-void Window::loadSceneData(void)
-{
-    assert(scenes.size() == 2);
-    for(int i = 0; i < 2; i++)
-        scenes[i]->loadScene(1, 5); // years
-}
-*/
 
 void Window::run_viewer()
 {
