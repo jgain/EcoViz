@@ -444,7 +444,7 @@ void Window::setupPlantPanel()
 
 }
 
-void Window::setupVizTransect(void)
+void Window::setupVizTransect(QGLFormat glFormat)
 {
     // transect views
     for(int i = 0; i < 2; i++)
@@ -480,7 +480,7 @@ void Window::destroyVizTransects(void)
 }
 
 
-void Window::setupVizPerspective(void)
+void Window::setupVizPerspective(QGLFormat glFormat)
 {
     // main perspective views
     for(int i = 0; i < 2; i++)
@@ -516,7 +516,7 @@ void Window::destroyVizPerspective(void)
 }
 
 
-void Window::setupVizChartViews(void)
+void Window::setupVizChartViews(QGLFormat glFormat)
 {
     // chart views
     for(int i = 0; i < 2; i++)
@@ -535,7 +535,7 @@ void Window::setupVizChartViews(void)
     }
 }
 
-void Window::setupVizTimeline(void)
+void Window::setupVizTimeline(QGLFormat glFormat)
 {
     // timeline views
     for(int i = 0; i < 2; i++)
@@ -554,7 +554,7 @@ void Window::setupVizTimeline(void)
     }
 }
 
-void Window::setupVizOverMap(void)
+void Window::setupVizOverMap(QGLFormat glFormat)
 {
     // PCM: overview maps L/R
 
@@ -584,6 +584,10 @@ void Window::setupVizPanel()
     // vizLayout->setMargin(1);
     vizLayout->setContentsMargins(3, 3, 3, 3);
 
+    QGLFormat glFormat;
+    glFormat.setVersion( 4, 1 );
+    glFormat.setProfile( QGLFormat::CoreProfile );
+
     // vizLayout->setRowStretch(0, 6);
     vizLayout->setRowStretch(0, 0);
     vizLayout->setRowStretch(1, 24);
@@ -597,11 +601,11 @@ void Window::setupVizPanel()
     vizLayout->setColumnStretch(2, 600);
 
     // setup widgets for panel
-    setupVizTransect();
-    setupVizPerspective();
-    setupVizChartViews();
-    setupVizTimeline();
-    setupVizOverMap();
+    setupVizTransect(glFormat);
+    setupVizPerspective(glFormat);
+    setupVizChartViews(glFormat);
+    setupVizTimeline(glFormat);
+    setupVizOverMap(glFormat);
 
     // lock buttons
     QVBoxLayout *lockTLayout = new QVBoxLayout;
@@ -705,10 +709,6 @@ Window::Window(string datadir)
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout();
 
-    // Specify an OpenGL 3.2 format for widgets
-    QGLFormat glFormat;
-    glFormat.setVersion( 3, 2 );
-    glFormat.setProfile( QGLFormat::CoreProfile );
 
     // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
     //glFormat.setSampleBuffers( true );
