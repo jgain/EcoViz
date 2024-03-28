@@ -112,6 +112,8 @@ GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect *
     trc->trxstate = -1;
     trc->showtransect = true;
 
+    view = nullptr;
+
     setScene(scn);
     renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
 
@@ -202,6 +204,9 @@ void GLWidget::writePaintMap(std::string paintfile)
 void GLWidget::setScene(Scene * s)
 {
     scene = s;
+
+    if (view != nullptr) delete view;
+
     view = new View();
     view->setForcedFocus(scene->getTerrain()->getFocus());
     view->setViewScale(scene->getTerrain()->longEdgeDist());

@@ -444,20 +444,19 @@ void Window::setupPlantPanel()
 
 }
 
-void Window::setupVizTransect(QGLFormat glFormat)
+void Window::setupVizTransect(QGLFormat glFormat, int i)
 {
     // transect views
-    for(int i = 0; i < 2; i++)
-    {
-        GLTransect * tview = new GLTransect(glFormat, this, scenes[i], transectControls[i]);
-        tview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+
+    GLTransect * tview = new GLTransect(glFormat, this, scenes[i], transectControls[i]);
+    tview->getRenderer()->setRadianceScalingParams(radianceEnhance);
 
         // signal to slot connections
-        connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        transectViews.push_back(tview);
+    connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    transectViews.push_back(tview);
 
         // vizLayout->addWidget(tview, 0, i*2);
-    }
+
 
     // for(int i = 0; i < 2; i++)
     //    vizLayout->addWidget(transectViews[i], 0, i);
@@ -466,10 +465,12 @@ void Window::setupVizTransect(QGLFormat glFormat)
 
 void Window::destroyVizTransects(void)
 {
-    clearTransects();
 
     for (auto v: transectViews)
+    {
+        vizLayout->removeWidget(v);
         delete v;
+    }
     transectViews.clear();
 
     for (auto v: transectControls)
@@ -480,28 +481,31 @@ void Window::destroyVizTransects(void)
 }
 
 
-void Window::setupVizPerspective(QGLFormat glFormat)
+void Window::setupVizPerspective(QGLFormat glFormat, int i)
 {
     // main perspective views
-    for(int i = 0; i < 2; i++)
-    {
-        GLWidget * pview = new GLWidget(glFormat, this, scenes[i], transectControls[i],  (i == 0 ? string("left"): string("right")) );
 
-        numGridX = 1.0f / gridSepX;
-        numGridZ = 1.0f / gridSepZ;
-        pview->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
-        pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
-        pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
 
-        // signal to slot connections
-        connect(pview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
-        connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
-        connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
+    GLWidget * pview = new GLWidget(glFormat, this, scenes[i], transectControls[i],  (i == 0 ? string("left"): string("right")) );
 
-        perspectiveViews.push_back(pview);
-        vizLayout->addWidget(pview, 1, i*2);
-    }
+    numGridX = 1.0f / gridSepX;
+    numGridZ = 1.0f / gridSepZ;
+
+    pview->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
+    pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
+    pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+
+
+    // signal to slot connections
+
+    connect(pview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
+    connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
+    connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
+
+    perspectiveViews.push_back(pview);
+    vizLayout->addWidget(pview, 1, i*2);
+
 }
 
 void Window::destroyVizPerspective(void)
@@ -516,63 +520,57 @@ void Window::destroyVizPerspective(void)
 }
 
 
-void Window::setupVizChartViews(QGLFormat glFormat)
+void Window::setupVizChartViews(QGLFormat glFormat, int i)
 {
     // chart views
-    for(int i = 0; i < 2; i++)
-    {
-        ChartWindow * cview = new ChartWindow(this, 800, 200);
-        cview->setParent(this);
-        //TimelineGraph * gmodel = new TimelineGraph();
 
-        // signal to slot connections
-        // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        std::vector< TimelineGraph* > tgs;
-        chartViews.push_back(cview);
+    ChartWindow * cview = new ChartWindow(this, 800, 200);
+    cview->setParent(this);
+    //TimelineGraph * gmodel = new TimelineGraph();
 
-        graphModels.push_back( tgs );
-        vizLayout->addWidget(cview, 3, i*2);
-    }
+    // signal to slot connections
+    // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    std::vector< TimelineGraph* > tgs;
+    chartViews.push_back(cview);
+
+    graphModels.push_back( tgs );
+    vizLayout->addWidget(cview, 3, i*2);
+
 }
 
-void Window::setupVizTimeline(QGLFormat glFormat)
+void Window::setupVizTimeline(QGLFormat glFormat, int i)
 {
     // timeline views
-    for(int i = 0; i < 2; i++)
-    {
-        TimeWindow * tview = new TimeWindow(this, this, 1, 2, 800, 50);
 
-        // signal to slot connections
-        connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        connect(tview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
-        connect(tview, SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
-        connect(tview, SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
-        connect(tview, SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
+    TimeWindow * tview = new TimeWindow(this, this, 1, 2, 800, 50);
 
-        timelineViews.push_back(tview);
-        vizLayout->addWidget(tview, 2, i*2);
-    }
+    // signal to slot connections
+    connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    connect(tview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
+    connect(tview, SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
+    connect(tview, SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
+    connect(tview, SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
+
+    timelineViews.push_back(tview);
+    vizLayout->addWidget(tview, 2, i*2);
 }
 
-void Window::setupVizOverMap(QGLFormat glFormat)
+void Window::setupVizOverMap(QGLFormat glFormat, int i)
 {
     // PCM: overview maps L/R
 
-    for(int i = 0; i < 2; i++)
-    {
-        GLOverview *oview = new GLOverview(glFormat, this, mapScenes[i]);
+    GLOverview *oview = new GLOverview(glFormat, this, mapScenes[i]);
 
-        // set params
+    // set params
 
-        // signal to slot connections
-        connect(oview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        connect(oview, SIGNAL(signalExtractNewSubTerrain()), this, SLOT(extractNewSubTerrain()) );
-        //connect(oview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
-        //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
+    // signal to slot connections
+    connect(oview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    connect(oview, SIGNAL(signalExtractNewSubTerrain()), this, SLOT(extractNewSubTerrain()) );
+    //connect(oview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
+    //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
 
-        overviewMaps.push_back(oview);
-        vizLayout->addWidget(oview, 4, i*2);
-    }
+    overviewMaps.push_back(oview);
+    vizLayout->addWidget(oview, 4, i*2);
 }
 
 
@@ -601,11 +599,16 @@ void Window::setupVizPanel()
     vizLayout->setColumnStretch(2, 600);
 
     // setup widgets for panel
-    setupVizTransect(glFormat);
-    setupVizPerspective(glFormat);
-    setupVizChartViews(glFormat);
-    setupVizTimeline(glFormat);
-    setupVizOverMap(glFormat);
+    setupVizTransect(glFormat, 0);
+    setupVizTransect(glFormat, 1);
+    setupVizPerspective(glFormat, 0);
+    setupVizPerspective(glFormat, 1);
+    setupVizChartViews(glFormat, 0);
+    setupVizChartViews(glFormat, 1);
+    setupVizTimeline(glFormat, 0);
+    setupVizTimeline(glFormat, 1);
+    setupVizOverMap(glFormat, 0);
+    setupVizOverMap(glFormat, 1);
 
     // lock buttons
     QVBoxLayout *lockTLayout = new QVBoxLayout;
@@ -867,6 +870,7 @@ void Window::repaintAllGL()
         mapviews->repaint();
 }
 
+/*
 void Window::extractNewSubTerrain()
 {
 
@@ -911,6 +915,73 @@ void Window::extractNewSubTerrain()
     // PCM: + signal to clear transect!!!
     repaintAllGL();
 }
+*/
+
+// ISSUES: 1) this does BOTH views, even if only one changes
+//         2) this does not touch the chart/timeline (these were built with  original sub-terrain and stats are for that -
+//            note that the Timeline should br OK since it uses full terrain data, but chart is based on original terrain)
+
+void Window::extractNewSubTerrain()
+{
+
+    // clear transects and widgets
+    destroyVizTransects();
+
+    // destroy perspective views and  associated widgets
+    destroyVizPerspective();
+
+   //overviewMaps[0]->forceUpdate();
+   //overviewMaps[1]->forceUpdate();
+
+    QGLFormat glFormat;
+    glFormat.setVersion( 4, 1 );
+    glFormat.setProfile( QGLFormat::CoreProfile );
+
+    for(int i = 0; i < 2; i++)
+    {
+        // get current region (which should have changed from before)
+        Region newReg = overviewMaps[i]->getScene()->getSelectedRegion();
+        // (0) add check to see if this Region has changed (else wasteful) ...PCM
+        std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
+
+        // (1) set extracted sub-region as the region for this window
+        // (2) pass in a pointer to highres (master) terrain
+        scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
+        vpPoint midPoint;
+        scenes[i]->getTerrain()->getMidPoint(midPoint);
+        scenes[i]->getTerrain()->setFocus(midPoint);
+
+        // rebuild transect control structure
+        Transect * t = new Transect(scenes[i]->getTerrain());
+        transectControls.push_back(t);
+
+
+        // rebuild transect widget
+        setupVizTransect(glFormat, i);
+        transectViews[i]->setVisible(false);
+        transectControls[i]->init(scenes[i]->getTerrain());
+
+        // rebuild perspective widget
+        setupVizPerspective(glFormat, i);
+        perspectiveViews[i]->setScene(scenes[i]);
+
+        // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
+        scenes[i]->getTerrain()->setBufferToDirty();
+
+        //scenes[i]->getTerrain()->updateBuffers(perspectiveViews[i]->getRenderer() ); // should update internal renderer state
+        // (4) fix other state: transects and maps
+        //clearTransects();
+        // change size of image dims as required for new terrain
+        //perspectiveViews[i]->replaceTransectImageMap(scenes[i]->getTerrain());
+
+        perspectiveViews[i]->rebindPlants();
+    }
+
+    rendercount++;
+    // PCM: + signal to clear transect!!!
+    repaintAllGL();
+}
+
 
 void Window::showRenderOptions()
 {
@@ -1195,6 +1266,12 @@ void Window::showContours(int show)
 
 void Window::showTransectViews()
 {
+    if (transectControls.size() == 0 || transectViews.size() == 0)
+    {
+        std::cerr << "\nWindow::showTransectViews - no transect data defined?";
+        return;
+    }
+
     bool transectNowValid = transectControls[0]->getValidFlag() || transectControls[1]->getValidFlag();
     if(transectNowValid && !transectsValid)
     {
@@ -1217,6 +1294,12 @@ void Window::showTransectViews()
 
 void Window::clearTransects()
 {
+    if (transectControls.size() == 0 || transectViews.size() == 0)
+    {
+        std::cerr << "\nWWindow::clearTransects - no transect data defined?";
+        return;
+    }
+
     // change transects back to initial state
     for(int i = 0; i < 2; i++)
     {

@@ -113,6 +113,12 @@ public:
     /// recalculate View params for viewport
     void updateViewParams(void);
 
+    /// force height/normal map recompute
+    void forceUpdate(void)
+    {
+        scene->getLowResTerrain()->setBufferToDirty();
+    }
+
     /// Respond to key press events
     void keyPressEvent(QKeyEvent *event);
 

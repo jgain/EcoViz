@@ -103,6 +103,8 @@ GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWi
 
     setParent(wp);
 
+    view = nullptr;
+
     setScene(scn);
 
     renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
@@ -139,6 +141,9 @@ PMrender::TRenderer * GLOverview::getRenderer()
 void GLOverview::setScene(mapScene * s)
 { 
     scene = s;
+
+    if (view != nullptr) delete view;
+
     view = new View();
 
     scene->getLowResTerrain()->setMidFocus();
@@ -195,6 +200,7 @@ void GLOverview::updateViewParams(void)
     orthoFocusTop.y = 1.1* maxHt + 100.0f; // PCM: for some reason the camera near plane clips even when using maxHt
     // could be the slight near plane offset e=0.01, but that is small and an addiive offset should have fixed that.
     // Possible issue?
+    std::cerr << "GLOverview: Camera front clipping plane height: " << orthoFocusTop.y << std::endl;
     view->setForcedFocus(orthoFocusTop);
     view->setOrthoViewDepth(100000.0f); // make this large to avoid issues!
     view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()*4); // this scales to fit in window
