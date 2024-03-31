@@ -940,7 +940,7 @@ void Window::extractNewSubTerrain()
     for(int i = 0; i < 2; i++)
     {
         // get current region (which should have changed from before)
-        Region newReg = overviewMaps[i]->getScene()->getSelectedRegion();
+        Region newReg = mapScenes[i]->getSelectedRegion(); // overviewMaps[i]->getScene()->getSelectedRegion();
         // (0) add check to see if this Region has changed (else wasteful) ...PCM
         std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
 

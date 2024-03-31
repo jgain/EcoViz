@@ -174,9 +174,9 @@ void GLOverview::setScene(mapScene * s)
 
     scene->getLowResTerrain()->setBufferToDirty();
     
-    winparent->rendercount++;
+    //winparent->rendercount++;
     //signalRepaintAllGL();
-    updateGL();
+    //updateGL();
 }
 
 // the heightfield will change after initial dummy creation (and possible edits later)
@@ -207,6 +207,8 @@ void GLOverview::updateViewParams(void)
 
     view->topdown();
     view->setZoomdist(0.0f);
+    //view->canyonview();
+
     view->apply();
 }
 
@@ -248,8 +250,8 @@ void GLOverview::initializeGL()
     Vector dl = Vector(0.6f, 1.0f, 0.6f);
     dl.normalize();
 
-  //  GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
-     GLfloat pointLight[3] = {1000.0, 3000.0, 1000.0}; // side panel + BASIC lighting
+    //GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
+    GLfloat pointLight[3] = {1000.0, 3000.0, 1000.0}; // side panel + BASIC lighting
     GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
     GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
 
@@ -279,11 +281,11 @@ void GLOverview::initializeGL()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     //glEnable(GL_DEPTH_CLAMP);
-    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_MULTISAMPLE);
     glEnable(GL_TEXTURE_2D);
 
     // overlay - load??
-    paintGL();
+    //paintGL();
 }
 
 void GLOverview::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
@@ -438,6 +440,7 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
 {
     vpPoint pnt;
 
+
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
     float deltaX, deltaY;
@@ -445,6 +448,7 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
     if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
+/*
         float dX = x/W, dY = y/H;
         float midX = W/2, midY = H/2;
         int step = 100;
@@ -465,8 +469,11 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
             deltaY = 0;
         }
 
+
+
+
         Region currentRegion;
-        currentRegion = getScene()->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+        currentRegion = scene->getSelectedRegion(); //  (region: startx, starty, endx, endy);
 
         // bounds check
 
@@ -475,20 +482,39 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
         currentRegion.x1 = currentRegion.x1 + deltaX;
         currentRegion.y1 = currentRegion.y1 + deltaY;
 
-        if (getScene()->subwindowValid(currentRegion) )
+
+        if (scene->subwindowValid(currentRegion) )
         {
-            getScene()->setSelectedRegion(currentRegion);
+            scene->setSelectedRegion(currentRegion);
         }
-        /*
+*/
+
+/*
        else
-            std::cerr << " %%%%%% mouse wheel - inavlid region: [" << currentRegion.x0 << ","
+            std::cerr << " %%%%%% mouse press - inavalid region: [" << currentRegion.x0 << ","
                   <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
                        currentRegion.y1 << "]\n";
-        */
+*/
         //std::cerr<< "---- overview mouse click ----- \n";
     }
     else if (event->buttons() == Qt::LeftButton)
     {
+        Region currentRegion;
+        currentRegion = scene->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+
+        // bounds check
+
+        currentRegion.x0 = currentRegion.x0 + 150;
+        currentRegion.y0 = currentRegion.y0 + 50;
+        currentRegion.x1 = currentRegion.x1 + 150;
+        currentRegion.y1 = currentRegion.y1 + 50;
+
+
+        if (scene->subwindowValid(currentRegion) )
+        {
+            scene->setSelectedRegion(currentRegion);
+        }
+        //forceUpdate();
         // extract the currently  selected region
         signalExtractNewSubTerrain();
         //signalRebindPlants();
@@ -497,6 +523,7 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
     winparent->rendercount++;
 
     updateGL();
+
     lastPos = event->pos();
 }
 
@@ -546,7 +573,7 @@ void GLOverview::mouseMoveEvent(QMouseEvent *event)
 
 
         winparent->rendercount++;
-        signalRepaintAllGL();
+        updateGL();
         lastPos = event->pos();
     }
 
@@ -583,7 +610,7 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
 
     //del /= 360; // scale this to allow slower expansion/contraction
     // prerserve aspect ratio
-    del = (del/30);
+    del = (del/10);
     Ywd = centreY - currentRegion.y0;
     Ywd += del;
     if (Ywd < 50) Ywd = 50;
@@ -619,6 +646,9 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
 */
     winparent->rendercount++;
     //signalRepaintAllGL();
+
+    signalExtractNewSubTerrain();
+
      updateGL();
 }
 
