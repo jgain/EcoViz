@@ -88,7 +88,7 @@ class GLOverview : public QGLWidget
 
 public:
 
-    GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWidget *parent = 0);
+    GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int id, QWidget *parent = 0);
     ~GLOverview();
 
     QSize minimumSizeHint() const;
@@ -123,7 +123,7 @@ public:
     void keyPressEvent(QKeyEvent *event);
 
 signals:
-    void signalExtractNewSubTerrain();
+    void signalExtractNewSubTerrain(int);
     void signalRepaintAllGL();
     //void signalRebindPlants();
 
@@ -146,6 +146,7 @@ private:
     mapScene * scene;      //<overview scene info
     View * view;        //< viewpoint controls
     std::string datadir;
+    int widgetId; // left=0, right = 1 in main window
 
     // render variables
     PMrender::TRenderer * renderer;

@@ -448,12 +448,26 @@ void Window::setupVizTransect(QGLFormat glFormat, int i)
 {
     // transect views
 
+    assert(i>=0 && i < 2);
+
+    if (transectViews.size() == 0)
+    {
+        transectViews.resize(2);
+        transectViews[0] = nullptr;
+        transectViews[1] = nullptr;
+    }
+    else if (transectViews[i] != nullptr)
+    {
+        std::cerr << "Window::setupVizTransect - trying to add new transect where one exists already, must be removed first: index = " << i << std::endl;
+        return;
+    }
+
     GLTransect * tview = new GLTransect(glFormat, this, scenes[i], transectControls[i]);
     tview->getRenderer()->setRadianceScalingParams(radianceEnhance);
 
         // signal to slot connections
     connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-    transectViews.push_back(tview);
+    transectViews[i] = tview;
 
         // vizLayout->addWidget(tview, 0, i*2);
 
@@ -463,21 +477,46 @@ void Window::setupVizTransect(QGLFormat glFormat, int i)
 
 }
 
-void Window::destroyVizTransects(void)
+void Window::destroyVizTransect(int i)
 {
+    assert(i >=0 && i < 2);
 
-    for (auto v: transectViews)
+    if (transectViews.size() != 2 || transectControls.size() != 2)
     {
-        vizLayout->removeWidget(v);
-        delete v;
+        std::cerr << "Window::destroyVizTransects - missing data, arrays need to have 2 elements\n";
+        return;
     }
-    transectViews.clear();
 
-    for (auto v: transectControls)
-        delete v;
-    transectControls.clear();
+    if (transectViews[i] == nullptr)
+    {
+        std::cerr << "Window::destroyVizTransects - transectViews is null at index: " << i << std::endl;
+        return;
+    }
 
-    transectsValid = false;
+    if (transectControls[i] == nullptr)
+    {
+        std::cerr << "Window::destroyVizTransects -transectControls is null at index: " << i << std::endl;
+        return;
+    }
+
+//    vizLayout->setRowStretch(0, 0);
+//    for(int i = 0; i < 2; i++)
+ //   {
+  //
+   //     vizLayout->removeWidget(transectViews[i]);
+   // }
+    vizLayout->removeWidget(lockTGroup);
+    //QApplication::processEvents( QEventLoop::ExcludeUserInputEvents );
+    transectViews[i]->setVisible(false);
+    transectViews[i]->hide();
+    vizLayout->removeWidget(transectViews[i]);
+    delete transectViews[i];
+    transectViews[i] = nullptr;
+
+    delete transectControls[i];
+    transectControls[i] = nullptr;
+
+    //transectsValid = false;
 }
 
 
@@ -485,6 +524,19 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
 {
     // main perspective views
 
+    assert(i >=0 && i < 2);
+
+    if (perspectiveViews.size() == 0)
+    {
+        perspectiveViews.resize(2);
+        perspectiveViews[0] = nullptr;
+        perspectiveViews[1] = nullptr;
+    }
+    else if (perspectiveViews[i] != nullptr)
+    {
+        std::cerr << "Window::setupVizPerspective - trying to add new view where one exists already, must be removed first: index = " << i << std::endl;
+        return;
+    }
 
     GLWidget * pview = new GLWidget(glFormat, this, scenes[i], transectControls[i],  (i == 0 ? string("left"): string("right")) );
 
@@ -503,20 +555,26 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
     connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
     connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
 
-    perspectiveViews.push_back(pview);
+    perspectiveViews[i] = pview;
+    //perspectiveViews.push_back(pview);
     vizLayout->addWidget(pview, 1, i*2);
 
 }
 
-void Window::destroyVizPerspective(void)
+void Window::destroyVizPerspective(int i)
 {
-    for (auto p : perspectiveViews)
+    assert(i >=0 && i < 2);
+
+    if (perspectiveViews[i] == nullptr)
     {
-        p->hide();
-        vizLayout->removeWidget(p);
-        delete p;
+        std::cerr << "Window::destroyVizPerspective - invalid index, view is null: " << i << std::endl;
+        return;
     }
-    perspectiveViews.clear();
+
+    perspectiveViews[i]->hide();
+    vizLayout->removeWidget(perspectiveViews[i]);
+    delete perspectiveViews[i];
+    perspectiveViews[i] = nullptr;
 }
 
 
@@ -559,13 +617,13 @@ void Window::setupVizOverMap(QGLFormat glFormat, int i)
 {
     // PCM: overview maps L/R
 
-    GLOverview *oview = new GLOverview(glFormat, this, mapScenes[i]);
+    GLOverview *oview = new GLOverview(glFormat, this, mapScenes[i], i);
 
     // set params
 
     // signal to slot connections
     connect(oview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-    connect(oview, SIGNAL(signalExtractNewSubTerrain()), this, SLOT(extractNewSubTerrain()) );
+    connect(oview, SIGNAL(signalExtractNewSubTerrain(int)), this, SLOT(extractNewSubTerrain(int)) );
     //connect(oview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
     //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
 
@@ -870,116 +928,76 @@ void Window::repaintAllGL()
         mapviews->repaint();
 }
 
-/*
-void Window::extractNewSubTerrain()
-{
 
-    // clear transects and create new transects
-    clearTransects();
-
-    for (int i = 0; i < 2; ++i)
-        delete transectControls[i];
-    transectControls.clear();
-
-    for(int i = 0; i < 2; i++)
-    {
-        // get current region (which should have changed from before)
-        Region newReg = overviewMaps[i]->getScene()->getSelectedRegion();
-        // (0) add check to see if this Region has changed (else wasteful) ...PCM
-        std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
-        // (1) set extracted sub-region as the region for this window
-        // (2) pass in a pointer to highres (master) terrain
-        scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
-        vpPoint midPoint;
-        scenes[i]->getTerrain()->getMidPoint(midPoint);
-        scenes[i]->getTerrain()->setFocus(midPoint);
-
-        Transect * t = new Transect(scenes[i]->getTerrain());
-        transectControls.push_back(t);
-        transectViews[i]->switchTransectScene(scenes[i], t);
-        perspectiveViews[i]->forceTransect(t);
-
-        // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
-        scenes[i]->getTerrain()->setBufferToDirty();
-        //scenes[i]->getTerrain()->updateBuffers(perspectiveViews[i]->getRenderer() ); // should update internal renderer state
-        // (4) fix other state: transects and maps
-        //clearTransects();
-        // change size of image dims as required for new terrain
-        //perspectiveViews[i]->replaceTransectImageMap(scenes[i]->getTerrain());
-
-
-
-        perspectiveViews[i]->rebindPlants();
-    }
-    rendercount++;
-    // PCM: + signal to clear transect!!!
-    repaintAllGL();
-}
-*/
-
-// ISSUES: 1) this does BOTH views, even if only one changes
+// ISSUES: 1) this may not remove/add transect buttons correctly
 //         2) this does not touch the chart/timeline (these were built with  original sub-terrain and stats are for that -
 //            note that the Timeline should br OK since it uses full terrain data, but chart is based on original terrain)
 
-void Window::extractNewSubTerrain()
+void Window::extractNewSubTerrain(int i)
 {
 
     // clear transects and widgets
-    destroyVizTransects();
+
+    destroyVizTransect(i);
 
     // destroy perspective views and  associated widgets
-    destroyVizPerspective();
+    View *oldView = new View(*perspectiveViews[i]->getView());
 
-   //overviewMaps[0]->forceUpdate();
-   //overviewMaps[1]->forceUpdate();
+    destroyVizPerspective(i);
 
     QGLFormat glFormat;
     glFormat.setVersion( 4, 1 );
     glFormat.setProfile( QGLFormat::CoreProfile );
 
-    for(int i = 0; i < 2; i++)
-    {
-        // get current region (which should have changed from before)
-        Region newReg = mapScenes[i]->getSelectedRegion(); // overviewMaps[i]->getScene()->getSelectedRegion();
-        // (0) add check to see if this Region has changed (else wasteful) ...PCM
-        std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
+    // get current region (which should have changed from before)
+    Region newReg = mapScenes[i]->getSelectedRegion(); // overviewMaps[i]->getScene()->getSelectedRegion();
+    // (0) add check to see if this Region has changed (else wasteful) TBD ...PCM
+    std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
 
-        // (1) set extracted sub-region as the region for this window
-        // (2) pass in a pointer to highres (master) terrain
-        scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
-        vpPoint midPoint;
-        scenes[i]->getTerrain()->getMidPoint(midPoint);
-        scenes[i]->getTerrain()->setFocus(midPoint);
+    // (1) set extracted sub-region as the region for this window
+    // (2) pass in a pointer to highres (master) terrain
+    scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
+    vpPoint midPoint;
+    scenes[i]->getTerrain()->getMidPoint(midPoint);
+    scenes[i]->getTerrain()->setFocus(midPoint);
 
-        // rebuild transect control structure
-        Transect * t = new Transect(scenes[i]->getTerrain());
-        transectControls.push_back(t);
+    // rebuild transect control structure
+    assert(transectControls.size() == 2);
+    assert(transectControls[i] == nullptr);
+    Transect * t = new Transect(scenes[i]->getTerrain());
+    transectControls[i] = t;
 
+    // rebuild transect widget
+    setupVizTransect(glFormat, i);
+    transectViews[i]->setVisible(false);
+    transectControls[i]->init(scenes[i]->getTerrain());
 
-        // rebuild transect widget
-        setupVizTransect(glFormat, i);
-        transectViews[i]->setVisible(false);
-        transectControls[i]->init(scenes[i]->getTerrain());
+    // rebuild perspective widget
+    setupVizPerspective(glFormat, i);
+    perspectiveViews[i]->setScene(scenes[i]);
+    // required to preserve View Mx, will cause issues if left/reight perspective views are 'locked'
+    // NOTE: the glWidget never frees 'view' and thus leaks memory. But changing this would require a
+    // lot more code (should store View not View * and make copies - it's a lightweight object, but embedded
+    // in many places, so lot of rewriting.
+    perspectiveViews[i]->lockView(oldView);
 
-        // rebuild perspective widget
-        setupVizPerspective(glFormat, i);
-        perspectiveViews[i]->setScene(scenes[i]);
+    // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
+    scenes[i]->getTerrain()->setBufferToDirty();
 
-        // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
-        scenes[i]->getTerrain()->setBufferToDirty();
+    perspectiveViews[i]->rebindPlants();
 
-        //scenes[i]->getTerrain()->updateBuffers(perspectiveViews[i]->getRenderer() ); // should update internal renderer state
-        // (4) fix other state: transects and maps
-        //clearTransects();
-        // change size of image dims as required for new terrain
-        //perspectiveViews[i]->replaceTransectImageMap(scenes[i]->getTerrain());
-
-        perspectiveViews[i]->rebindPlants();
-    }
+    // restablish broken connection from timeline widget signals
+    //connect(timelineViews[i], SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    //connect(timelineViews[i], SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
+    //connect(timelineViews[i], SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
+    connect(timelineViews[i], SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
+    connect(timelineViews[i], SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
 
     rendercount++;
     // PCM: + signal to clear transect!!!
-    repaintAllGL();
+    //repaintAllGL();
+
+    perspectiveViews[i]->repaint();
 }
 
 

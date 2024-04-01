@@ -263,7 +263,7 @@ void GLWidget::unlockView()
 
 void GLWidget::lockView(View * imposedView)
 {
-    delete view;
+    if (view) delete view;
     view = imposedView;
 }
 

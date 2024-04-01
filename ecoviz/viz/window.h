@@ -135,8 +135,8 @@ public slots:
     void showTransectViews();
     void clearTransects();
 
-    // PCM: extract new terrain base don current selection
-    void extractNewSubTerrain();
+    // PCM: extract new terrain based on current selection
+    void extractNewSubTerrain(int sceneIdx);
 
 protected:
     void keyPressEvent(QKeyEvent *event);
@@ -223,8 +223,8 @@ private:
     void setupVizChartViews(QGLFormat glFormat, int id);
     void setupVizTimeline(QGLFormat glFormat, int id);
     void setupVizOverMap(QGLFormat glFormat, int id);
-    void destroyVizTransects(void); // unmap widgets and call delete on to free up resources
-    void destroyVizPerspective(void);
+    void destroyVizTransect(int idx); // unmap widgets and call delete on to free up resources
+    void destroyVizPerspective(int idx);
 
     /**
      * @brief setupGraphModels  set up the data structures for dynamic graphs

@@ -92,7 +92,7 @@ using namespace std;
 #define GL_MULTISAMPLE  0x809D
 #endif
 
-GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWidget *parent)
+GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int Id, QWidget *parent)
     : QGLWidget(format, parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
@@ -100,6 +100,7 @@ GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, QWi
 
     active = true;
     timeron = false;
+    widgetId = Id;
 
     setParent(wp);
 
@@ -500,14 +501,17 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
     else if (event->buttons() == Qt::LeftButton)
     {
         Region currentRegion;
+
+
         currentRegion = scene->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+
 
         // bounds check
 
-        currentRegion.x0 = currentRegion.x0 + 150;
-        currentRegion.y0 = currentRegion.y0 + 50;
-        currentRegion.x1 = currentRegion.x1 + 150;
-        currentRegion.y1 = currentRegion.y1 + 50;
+        currentRegion.x0 = currentRegion.x0 + 100;
+        currentRegion.y0 = currentRegion.y0 + 100;
+        currentRegion.x1 = currentRegion.x1 + 100;
+        currentRegion.y1 = currentRegion.y1 + 100;
 
 
         if (scene->subwindowValid(currentRegion) )
@@ -516,7 +520,7 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
         }
         //forceUpdate();
         // extract the currently  selected region
-        signalExtractNewSubTerrain();
+        signalExtractNewSubTerrain(widgetId);
         //signalRebindPlants();
     }
 
@@ -647,7 +651,7 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
     winparent->rendercount++;
     //signalRepaintAllGL();
 
-    signalExtractNewSubTerrain();
+    signalExtractNewSubTerrain(widgetId);
 
      updateGL();
 }
