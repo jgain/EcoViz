@@ -106,6 +106,20 @@ public:
      */
     void setScene(mapScene * s);
 
+    /// set the selecton region (this will then be updated internally)
+    void setSelectionRegion(Region reg)
+    {
+        currRegion = reg;
+        // store dimensions of full terrain grid for bounds checking
+        scene->getHighResTerrain()->getGridDim(mapWidth, mapHeight);
+    }
+
+
+    Region getSelectionRegion(void) const
+    {
+        return currRegion;
+    }
+
     /// getter for various viewing controls
     mapScene * getScene(){ return scene; }
     View * getView(){ return view; }
@@ -123,7 +137,7 @@ public:
     void keyPressEvent(QKeyEvent *event);
 
 signals:
-    void signalExtractNewSubTerrain(int);
+    void signalExtractNewSubTerrain(int, int, int, int, int); // window (left/right) + region corners
     void signalRepaintAllGL();
     //void signalRebindPlants();
 
@@ -147,6 +161,9 @@ private:
     View * view;        //< viewpoint controls
     std::string datadir;
     int widgetId; // left=0, right = 1 in main window
+    Region currRegion; // relative to full resolution input (stored in mapScene)
+    int mapWidth; // entire map for bounds checking extracted sub-regions
+    int mapHeight;
 
     // render variables
     PMrender::TRenderer * renderer;
@@ -171,6 +188,21 @@ private:
 
     // paint on the overview selection window (size and position obtained from Terrain)
     void paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> & drawparams);
+
+    bool isSelectionValid(Region subwindow)
+    {
+        if (subwindow.x0 < 0 || subwindow.x0 > mapWidth-1)
+            return false;
+        if (subwindow.x1 < 0 || subwindow.x1 > mapWidth-1)
+            return false;
+        if (subwindow.y0 < 0 || subwindow.y0 > mapHeight-1)
+            return false;
+        if (subwindow.y1 < 0 || subwindow.y1 > mapHeight-1)
+            return false;
+
+      return true;
+    }
+
 };
 
 #endif

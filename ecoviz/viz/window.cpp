@@ -623,7 +623,8 @@ void Window::setupVizOverMap(QGLFormat glFormat, int i)
 
     // signal to slot connections
     connect(oview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-    connect(oview, SIGNAL(signalExtractNewSubTerrain(int)), this, SLOT(extractNewSubTerrain(int)) );
+    connect(oview, SIGNAL(signalExtractNewSubTerrain(int, int,int,int,int)), this,
+            SLOT(extractNewSubTerrain(int,int,int,int,int)) );
     //connect(oview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
     //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
 
@@ -858,6 +859,7 @@ void Window::run_viewer()
         scenes[i]->loadScene(1, 5); // years
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
+        overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
         setupGraphModels(i);
@@ -933,7 +935,7 @@ void Window::repaintAllGL()
 //         2) this does not touch the chart/timeline (these were built with  original sub-terrain and stats are for that -
 //            note that the Timeline should br OK since it uses full terrain data, but chart is based on original terrain)
 
-void Window::extractNewSubTerrain(int i)
+void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
 {
 
     // clear transects and widgets
@@ -950,7 +952,9 @@ void Window::extractNewSubTerrain(int i)
     glFormat.setProfile( QGLFormat::CoreProfile );
 
     // get current region (which should have changed from before)
-    Region newReg = mapScenes[i]->getSelectedRegion(); // overviewMaps[i]->getScene()->getSelectedRegion();
+    Region newReg = Region(x0,y0,x1,y1);
+
+    mapScenes[i]->setSelectedRegion(newReg); // overviewMaps[i]->getScene()->getSelectedRegion();
     // (0) add check to see if this Region has changed (else wasteful) TBD ...PCM
     std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
 

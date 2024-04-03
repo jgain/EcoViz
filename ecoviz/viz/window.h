@@ -136,7 +136,7 @@ public slots:
     void clearTransects();
 
     // PCM: extract new terrain based on current selection
-    void extractNewSubTerrain(int sceneIdx);
+    void extractNewSubTerrain(int sceneIdx, int x0, int y0, int x1, int y1);
 
 protected:
     void keyPressEvent(QKeyEvent *event);

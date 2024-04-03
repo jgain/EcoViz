@@ -102,6 +102,9 @@ GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int
     timeron = false;
     widgetId = Id;
 
+    currRegion = Region(0,0,0,0);
+    mapWidth = mapHeight = 0;
+
     setParent(wp);
 
     view = nullptr;
@@ -174,7 +177,7 @@ void GLOverview::setScene(mapScene * s)
     view->topdown();
 
     scene->getLowResTerrain()->setBufferToDirty();
-    
+
     //winparent->rendercount++;
     //signalRepaintAllGL();
     //updateGL();
@@ -341,7 +344,7 @@ void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &d
     Region region;
     vpPoint centre;
     float planeHeight, planeWidth;
-    region = getScene()->getSelectedRegion(); //  (region, startx, starty, endx, endy);
+    region = currRegion; //  getScene()->getSelectedRegion(); //  (region, startx, starty, endx, endy);
     float minHt, maxHt;
     scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need global maxHt
     float pointStep = scene->getHighResTerrain()->getPointStep();
@@ -449,7 +452,7 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
     if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
-/*
+
         float dX = x/W, dY = y/H;
         float midX = W/2, midY = H/2;
         int step = 100;
@@ -471,10 +474,8 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
         }
 
 
-
-
-        Region currentRegion;
-        currentRegion = scene->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+        Region currentRegion = currRegion;
+        //currentRegion = scene->getSelectedRegion(); //  (region: startx, starty, endx, endy);
 
         // bounds check
 
@@ -484,11 +485,13 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
         currentRegion.y1 = currentRegion.y1 + deltaY;
 
 
-        if (scene->subwindowValid(currentRegion) )
+        if (isSelectionValid(currentRegion) )
         {
-            scene->setSelectedRegion(currentRegion);
+            currRegion = currentRegion;
+            signalExtractNewSubTerrain(widgetId, currentRegion.x0, currentRegion.y0,
+                                       currentRegion.x1,currentRegion.y1);
         }
-*/
+
 
 /*
        else
@@ -500,28 +503,25 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
     }
     else if (event->buttons() == Qt::LeftButton)
     {
-        Region currentRegion;
-
-
-        currentRegion = scene->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+        Region cReg = currRegion;    //  (region: startx, starty, endx, endy);
 
 
         // bounds check
 
-        currentRegion.x0 = currentRegion.x0 + 100;
-        currentRegion.y0 = currentRegion.y0 + 100;
-        currentRegion.x1 = currentRegion.x1 + 100;
-        currentRegion.y1 = currentRegion.y1 + 100;
+        cReg.x0 = cReg.x0 + 100;
+        cReg.y0 = cReg.y0 + 100;
+        cReg.x1 = cReg.x1 + 100;
+        cReg.y1 = cReg.y1 + 100;
 
 
-        if (scene->subwindowValid(currentRegion) )
+        if (isSelectionValid(cReg) )
         {
-            scene->setSelectedRegion(currentRegion);
-        }
+         currRegion = cReg;
         //forceUpdate();
         // extract the currently  selected region
-        signalExtractNewSubTerrain(widgetId);
+        signalExtractNewSubTerrain(widgetId, cReg.x0, cReg.y0, cReg.x1, cReg.y1);
         //signalRebindPlants();
+        }
     }
 
     winparent->rendercount++;
@@ -603,7 +603,7 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
         del = 0.0;
 
     Region currentRegion;
-    currentRegion = getScene()->getSelectedRegion(); //  (region: startx, starty, endx, endy);
+    currentRegion = currRegion; // getScene()->getSelectedRegion(); //  (region: startx, starty, endx, endy);
     int X0, Y0, X1, Y1, Xwd,Ywd;
     int centreX, centreY;
 
@@ -636,12 +636,13 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
     Ywd = Y1-Y0+1;
 
     // valid window and no side can be less than 50 samples
-    if (getScene()->subwindowValid(currentRegion) && Xwd > 50 && Ywd > 50)
+    if (isSelectionValid(currentRegion) && Xwd > 50 && Ywd > 50)
     {
         //std::cerr << "---%%%%%-- mouse wheel - new region valid: [" << currentRegion.x0 << ","
         //          <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
         //               currentRegion.y1 << "]\n";
-        getScene()->setSelectedRegion(currentRegion);
+        currRegion = currentRegion;
+        signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
     }
 /*   else
         std::cerr << " %%%%%% mouse wheel - inavlid region: [" << currentRegion.x0 << ","
@@ -650,9 +651,6 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
 */
     winparent->rendercount++;
     //signalRepaintAllGL();
-
-    signalExtractNewSubTerrain(widgetId);
-
      updateGL();
 }
 
