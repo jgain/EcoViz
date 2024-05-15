@@ -122,7 +122,7 @@ GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect *
     focuschange = false;
     focusviz = false;
     timeron = false;
-    active = true;
+    active = false;
     rebindplants = true;
     scf = 10000.0f;
     decalTexture = 0;
@@ -230,6 +230,7 @@ void GLWidget::setScene(Scene * s)
     focuschange = !focuschange;
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
+    active = true;
 
     loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
     // loadTypeMap(scene->getSlope(), TypeMapType::SLOPE);

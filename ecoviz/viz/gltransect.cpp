@@ -111,7 +111,7 @@ GLTransect::GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transe
     decalsbound = false;
     focuschange = false;
     timeron = false;
-    active = true;
+    active = false;
     rebindplants = true;
     forceRebindPlants = true;
 
@@ -130,7 +130,6 @@ void GLTransect::switchTransectScene(Scene *newScene, Transect *newTransect)
     viewlock = false;
     decalsbound = false;
     timeron = false;
-    active = true;
     rebindplants = true;
     scf = 10000.0f;
 

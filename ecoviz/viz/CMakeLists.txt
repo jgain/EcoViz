@@ -51,11 +51,9 @@ if (BUILD_GUI)
     target_link_libraries(ecoviz vgui sqlite3)
     add_executable(analyse_cohortmap analyse_cohortmap_main.cpp)
     target_include_directories(analyse_cohortmap PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
-    if(APPLE)
-      target_link_libraries(analyse_cohortmap vgui sqlite3)
-    else()
-      target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
-    endif()
+    #target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
+    target_link_libraries(analyse_cohortmap vgui sqlite3)
+  
     
 # stdc++fs) - causes issue with Clang compilation, looks to be unnecessary for gcc
     ADD_DEFINITIONS(-DSONOMA_DB_FILEPATH="${PROJECT_SOURCE_DIR}/../european.db")

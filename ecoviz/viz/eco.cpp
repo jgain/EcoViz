@@ -617,7 +617,6 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
         {
             plnts = esys->getPopulation(x, y);
 
-
             for(s = 0; s < (int) plnts->pop.size(); s++) // iterate over plant types
             {
                 //std::vector<glm::mat4> xform; // transformation to be applied to each instance
@@ -743,7 +742,6 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
     }
     // DEBUG:
     std::cerr << "bindPlantsSimplified - bound: " << bndplants << "; culled: " << culledplants << std::endl;
-
 }
 
 void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plantvis, PlantGrid * esys, Region region)

@@ -1,7 +1,7 @@
 
 Q: the same data seems to be replicated for each 3D render view - all trees (so 4x the underlying data?)
 
-Q: scaling bug with trees on terrain (Additional scale factior in x/y?)
+Q: scaling bug with trees on terrain (Additional scale factor in x/y?)
 
 Q: basal  area info not displaying  - is this loaded, computed?
 
