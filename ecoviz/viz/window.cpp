@@ -939,7 +939,6 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
 {
 
     // clear transects and widgets
-
     destroyVizTransect(i);
 
     // destroy perspective views and  associated widgets
@@ -964,6 +963,7 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     vpPoint midPoint;
     scenes[i]->getTerrain()->getMidPoint(midPoint);
     scenes[i]->getTerrain()->setFocus(midPoint);
+    // cerr << "MIDPOINT = " << midPoint.x << ", " << midPoint.y << ", " << midPoint.z << endl;
 
     // rebuild transect control structure
     assert(transectControls.size() == 2);
@@ -984,6 +984,7 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     // lot more code (should store View not View * and make copies - it's a lightweight object, but embedded
     // in many places, so lot of rewriting.
     perspectiveViews[i]->lockView(oldView);
+    perspectiveViews[i]->getView()->setForcedFocus(midPoint); // otherwise focus change is not copied from terrain
 
     // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
     scenes[i]->getTerrain()->setBufferToDirty();
@@ -997,11 +998,17 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     connect(timelineViews[i], SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
     connect(timelineViews[i], SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
 
+    /*
+    overviewMaps[i]->updateViewParams();
+    overviewMaps[i]->forceUpdate();
+    */
+
     rendercount++;
     // PCM: + signal to clear transect!!!
     //repaintAllGL();
 
     perspectiveViews[i]->repaint();
+    overviewMaps[i]->repaint();
 }
 
 

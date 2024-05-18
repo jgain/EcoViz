@@ -140,11 +140,7 @@ public:
     inline vpPoint getCOP(){ return cop; }
 
     /// Change the viewpoint to directly above the terrain
-    inline void topdown()
-    {
-        zoomdist = 4.0f * viewscale;
-        trackball(curquat, 0.0f, 0.0f, 0.0f, -1.0f);
-    }
+    void topdown();
 
     /// Change the viewpoint zoomed in and low on the terrain
     inline void closeview()
@@ -214,6 +210,7 @@ public:
 
     /// set the form of viewing
     inline void setViewType(ViewState vs){ viewtype = vs; }
+    inline ViewState getViewType(){ return viewtype; }
 
     /// get and set viewing mode
     inline void setViewMode(ViewMode vm)

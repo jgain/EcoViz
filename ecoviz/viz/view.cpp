@@ -46,12 +46,6 @@ float wallDiffuse[] = {0.225f, 0.225f, 0.75f, 1.0f};
 float wallEdge[] = {0.0f, 0.0f, 0.0f, 0.5f};
 float gridEdge[] = {0.3f, 0.3f, 0.3f, 0.5f};
 
-#ifdef FIGURE
-#define BASE_OFFSET 0.08
-#else
-#define BASE_OFFSET 0.0005
-#endif
-
 float gestureAmbient[] = {0.5f, 0.5f, 0.5f, 1.0f}; //0.2f};
 float gestureDiffuse[] = {0.5f, 0.5f, 0.5f, 1.0f}; //0.2f};
 float gestureEdge[] = {0.3f, 0.3f, 0.3f, 1.0f};
@@ -210,6 +204,14 @@ void View::sundir(Vector sunvec)
     }
 }
 
+void View::topdown()
+{
+    zoomdist = 4.0f * viewscale;
+    float xaxis[] = {-1.0f, 0.0f, 0.0f};
+    axis_to_quat(xaxis, PI/2.0f, curquat);
+    // trackball(curquat, 0.0f, 0.0f, 0.0f, -1.0f);
+}
+
 void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
 {
     // opengl3.2 with glm
@@ -221,16 +223,26 @@ void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
     // cerr << "projecting ray" << endl;
     // cerr << "sx = " << sx << " sy = " << sy << endl;
     // cerr << "screen params: h = " << height << " w = " << width << " startx = " << startx << " starty = " << starty << endl;
+
     // unproject screen point to derive world coordinates
     realy = height + 2.0f * starty - sy; realx = sx;
     win = glm::vec3((float) realx, (float) realy, 0.5f); // 0.5f
     viewport = glm::vec4(startx, starty, width, height);
 
-    wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
-    pnt = vpPoint(wrld.x, wrld.y, wrld.z);
-    start = cop;
-    // cerr << "cop = " << cop.x << ", " << cop.y << ", " << cop.z << endl;
-    dirn.diff(cop, pnt); dirn.normalize();
+     wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
+     pnt = vpPoint(wrld.x, wrld.y, wrld.z);
+     if(viewtype == ViewState::PERSPECTIVE)
+     {
+         start = cop;
+         dirn.diff(cop, pnt);
+     }
+     else // ORTHOGONAL view
+     {
+         start = pnt;
+         dirn = getDir();
+     }
+     dirn.normalize();
+
 /*
     // pre opengl3.2
 
@@ -975,25 +987,25 @@ normalize_quat(float q[4])
 void
 build_rotmatrix(float m[4][4], float q[4])
 {
-    m[0][0] = 1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2]);
-    m[0][1] = 2.0 * (q[0] * q[1] - q[2] * q[3]);
-    m[0][2] = 2.0 * (q[2] * q[0] + q[1] * q[3]);
-    m[0][3] = 0.0;
+    m[0][0] = 1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]);
+    m[0][1] = 2.0f * (q[0] * q[1] - q[2] * q[3]);
+    m[0][2] = 2.0f * (q[2] * q[0] + q[1] * q[3]);
+    m[0][3] = 0.0f;
 
-    m[1][0] = 2.0 * (q[0] * q[1] + q[2] * q[3]);
-    m[1][1]= 1.0 - 2.0 * (q[2] * q[2] + q[0] * q[0]);
-    m[1][2] = 2.0 * (q[1] * q[2] - q[0] * q[3]);
-    m[1][3] = 0.0;
+    m[1][0] = 2.0f * (q[0] * q[1] + q[2] * q[3]);
+    m[1][1]= 1.0f - 2.0f * (q[2] * q[2] + q[0] * q[0]);
+    m[1][2] = 2.0f * (q[1] * q[2] - q[0] * q[3]);
+    m[1][3] = 0.0f;
 
-    m[2][0] = 2.0 * (q[2] * q[0] - q[1] * q[3]);
-    m[2][1] = 2.0 * (q[1] * q[2] + q[0] * q[3]);
-    m[2][2] = 1.0 - 2.0 * (q[1] * q[1] + q[0] * q[0]);
-    m[2][3] = 0.0;
+    m[2][0] = 2.0f * (q[2] * q[0] - q[1] * q[3]);
+    m[2][1] = 2.0f * (q[1] * q[2] + q[0] * q[3]);
+    m[2][2] = 1.0f - 2.0f * (q[1] * q[1] + q[0] * q[0]);
+    m[2][3] = 0.0f;
 
-    m[3][0] = 0.0;
-    m[3][1] = 0.0;
-    m[3][2] = 0.0;
-    m[3][3] = 1.0;
+    m[3][0] = 0.0f;
+    m[3][1] = 0.0f;
+    m[3][2] = 0.0f;
+    m[3][3] = 1.0f;
 }
 
 // ---------------------------------------------

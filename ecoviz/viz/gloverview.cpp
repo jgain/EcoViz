@@ -97,8 +97,6 @@ GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     glformat = format;
-
-    active = true;
     timeron = false;
     widgetId = Id;
 
@@ -110,6 +108,8 @@ GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int
     view = nullptr;
 
     setScene(scn);
+    active = true;
+    pickOnTerrain = false;
 
     renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
    
@@ -194,7 +194,6 @@ void GLOverview::updateViewParams(void)
     scf = scene->getLowResTerrain()->getMaxExtent();
 
     // orthogonal rendering
-
     view->setViewType(ViewState::ORTHOGONAL);
     float minHt, maxHt;
     scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need *global* max height
@@ -204,7 +203,8 @@ void GLOverview::updateViewParams(void)
     orthoFocusTop.y = 1.1* maxHt + 100.0f; // PCM: for some reason the camera near plane clips even when using maxHt
     // could be the slight near plane offset e=0.01, but that is small and an addiive offset should have fixed that.
     // Possible issue?
-    std::cerr << "GLOverview: Camera front clipping plane height: " << orthoFocusTop.y << std::endl;
+
+    // std::cerr << "GLOverview: Camera front clipping plane height: " << orthoFocusTop.y << std::endl;
     view->setForcedFocus(orthoFocusTop);
     view->setOrthoViewDepth(100000.0f); // make this large to avoid issues!
     view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()*4); // this scales to fit in window
@@ -319,7 +319,7 @@ void GLOverview::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     float mheight = 750.0f;
     float arad = mrad / 2.5f;
 
-    shape.genCappedCylinder(scale*arad, 1.5f*scale*arad, scale*(mheight-mrad), 40, 10, tfm, false);
+    shape.genCappedCylinder(scale*arad*50.0f, 1.5f*scale*arad*50.0f, scale*(mheight-mrad)*50.0f, 40, 10, tfm, false);
     if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
     {
         sdd = shape.getDrawParameters();
@@ -349,10 +349,11 @@ void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &d
     scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need global maxHt
     float pointStep = scene->getHighResTerrain()->getPointStep();
 
-    std::cout << "@@@@ paintSelectionPlane: input region [" << region.x0 << "," << region.y0 <<
-                 "," << region.x1 << "," << region.y1 << "]\n";
+    // std::cout << "@@@@ paintSelectionPlane: input region [" << region.x0 << "," << region.y0 <<
+    //              "," << region.x1 << "," << region.y1 << "]\n";
 
     centre.y = 1.1*maxHt + 10.0f; // PCM: hack **** I think the quat rotation is inaccurate and camera is off angle slightly
+    // JG - the quaternion rotation is now fixed
     centre.x = (pointStep*region.y0 + pointStep*region.y1)/2.0; // PCM: again, flip since drawgrid is flipped
     centre.z = (pointStep*region.x0 + pointStep*region.x1)/2.0;
     idt = glm::mat4(1.0f);
@@ -362,10 +363,12 @@ void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &d
     planeWidth  = pointStep*(region.y1 - region.y0 + 1)/2.0f;
     planeHeight = pointStep*(region.x1 - region.x0 + 1);
 
+    /*
     std::cout << "\nSelection plane data:\n";
     std::cout << "centre = (" << centre.x << "," << centre.y << "," << centre.z << ")\n";
     std::cout << "point step: " << pointStep << std::endl;
     std::cout << "(planeWidth, planeHeight) = " << planeWidth << "," << planeHeight << ")\n";
+    */
 
     shape.genPlane(vpPoint(0.0,0.0,1.0), vpPoint(0.0,0.0,0.0), planeWidth, planeHeight, tfm);
     if (shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
@@ -373,6 +376,37 @@ void GLOverview::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &d
         sdd = shape.getDrawParameters();
         sdd.current = false;
         drawparams.push_back(sdd);
+    }
+}
+
+void GLOverview::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
+{
+    ShapeDrawData sdd;
+    float scale;
+    Shape shape;
+    glm::mat4 tfm, idt;
+    glm::vec3 trs, rot;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
+    std::vector<float> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    // place vertical cylinder
+    scale = view->getScaleFactor();
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(p.x, p.y, p.z);
+    rot = glm::vec3(1.0f, 0.0f, 0.0f);
+    tfm = glm::translate(idt, trs);
+    // tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
+    shape.genSphere(scale * transectradius*5.0f, 40, 40, tfm);
+    if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawParams.push_back(sdd);
     }
 }
 
@@ -386,13 +420,16 @@ void GLOverview::paintGL()
     Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
     std::vector<glm::vec4> cinst;
-    GLfloat planeCol[] = {0.325f, 0.235f, 1.0f, 1.0f};
+
+    GLfloat blueish[] = {0.325f, 0.235f, 1.0f, 1.0f};
+    GLfloat purpleish[] = {0.6f, 0.2f, 0.8f, 1.0f};
+    GLfloat pickCol[] = {1.0f, 0.2f, 0.2f, 1.0f};
 
     Timer t;
 
     if(active)
     {
-        std::cout << " ------- GLOverview::paintGL() called ----------\n";
+        // std::cout << " ------- GLOverview::paintGL() called ----------\n";
         drawParams.clear();
         t.start();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -401,8 +438,12 @@ void GLOverview::paintGL()
         updateViewParams();
 
         // build selection plane 'manipulator'
+        if(pickOnTerrain)
+            paintSelectionPlane(purpleish, drawParams);
+        else
+            paintSelectionPlane(blueish, drawParams);
 
-        paintSelectionPlane(planeCol, drawParams);
+        // paintSphere(pickPos, pickCol, drawParams);
 
         // pass in draw params for objects
         renderer->setConstraintDrawParams(drawParams);
@@ -449,86 +490,47 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
     float deltaX, deltaY;
 
-    // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
-    if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
+    // for specifying a new region from scratch, right click and drag
+    if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
     {
-
-        float dX = x/W, dY = y/H;
-        float midX = W/2, midY = H/2;
-        int step = 100;
-
-        // X/Y flipped
-        if (event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier )
+        view->apply();
+        if(scene->getHighResTerrain()->pick(x, y, view, pnt))
         {
-            // translate in Y
-            if (x - midX > 0) deltaY  = step;
-            else deltaY = -step;
-            deltaX = 0;
-        }
-        else
-        {
-            // translate in X
-            if (y - midY > 0) deltaX = step;
-            else deltaX = -step;
-            deltaY = 0;
-        }
-
-
-        Region currentRegion = currRegion;
-        //currentRegion = scene->getSelectedRegion(); //  (region: startx, starty, endx, endy);
-
-        // bounds check
-
-        currentRegion.x0 = currentRegion.x0 + deltaX;
-        currentRegion.y0 = currentRegion.y0 + deltaY;
-        currentRegion.x1 = currentRegion.x1 + deltaX;
-        currentRegion.y1 = currentRegion.y1 + deltaY;
-
-
-        if (isSelectionValid(currentRegion) )
-        {
-            currRegion = currentRegion;
-            signalExtractNewSubTerrain(widgetId, currentRegion.x0, currentRegion.y0,
-                                       currentRegion.x1,currentRegion.y1);
-        }
-
-
-/*
-       else
-            std::cerr << " %%%%%% mouse press - inavalid region: [" << currentRegion.x0 << ","
-                  <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
-                       currentRegion.y1 << "]\n";
-*/
-        //std::cerr<< "---- overview mouse click ----- \n";
-    }
-    else if (event->buttons() == Qt::LeftButton)
-    {
-        Region cReg = currRegion;    //  (region: startx, starty, endx, endy);
-
-
-        // bounds check
-
-        cReg.x0 = cReg.x0 + 100;
-        cReg.y0 = cReg.y0 + 100;
-        cReg.x1 = cReg.x1 + 100;
-        cReg.y1 = cReg.y1 + 100;
-
-
-        if (isSelectionValid(cReg) )
-        {
-         currRegion = cReg;
-        //forceUpdate();
-        // extract the currently  selected region
-        signalExtractNewSubTerrain(widgetId, cReg.x0, cReg.y0, cReg.x1, cReg.y1);
-        //signalRebindPlants();
+            pickPos = pnt;
+            pickOnTerrain = true;
+            // convert to grid coordinates
+            scene->getHighResTerrain()->toGrid(pickPos, pick0y, pick0x);
+            prevRegion = currRegion;
+            currRegion.x0 = pick0x; currRegion.x1 = pick0x;
+            currRegion.y0 = pick0y; currRegion.y1 = pick0y;
         }
     }
 
-    winparent->rendercount++;
+    // for translating an existing region, left click in the region and drag
+    if(event->buttons() == Qt::LeftButton)
+    {
+        view->apply();
+        if(scene->getHighResTerrain()->pick(x, y, view, pnt))
+        {
+            // in terrain bounds, now check region bounds
+            // convert to grid coordinates
+            pickPos = pnt;
+            scene->getHighResTerrain()->toGrid(pickPos, pick0y, pick0x);
 
-    updateGL();
+            if(pick0x < currRegion.x1 && pick0x >= currRegion.x0 && pick0y < currRegion.y1 && pick0y >= currRegion.y0)
+            {
+                 prevRegion = currRegion;
+                 pickOnTerrain = true;
+            }
+        }
+    }
 
-    lastPos = event->pos();
+    if(pickOnTerrain)
+    {
+        winparent->rendercount++;
+        updateGL();
+        lastPos = event->pos();
+    }
 }
 
 void GLOverview::mouseMoveEvent(QMouseEvent *event)
@@ -541,51 +543,105 @@ void GLOverview::mouseMoveEvent(QMouseEvent *event)
     W = (float) width();
     H = (float) height();
 
-    // control translation of viewpoint in the plane of the transect
+    // adjust shape of the region selection
     if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
     {
-        // TO DO translate 
-        // screen to world scaling
-        float scw = view->getOrthoViewExtent() / W;
-
-        float delx = (float) (x - lastPos.x());
-        float dely = (float) (y - lastPos.y());
-        delx *= scw;
-        dely *= scw;
-        /*
-        vpPoint center = trx->getCenter();
-
-        center.x -= delx * trx->getHorizontal().i;
-        center.z -= delx * trx->getHorizontal().k;
-        center.y += dely;
-        trx->setCenter(center);
-
-        // apply the same transformation to the transect inner bounds
-        vpPoint inner[2];
-        inner[0] = trx->getInnerStart(); inner[1] = trx->getInnerEnd();
-        for(int i = 0; i < 2; i++)
+        if(pickOnTerrain)
         {
-            inner[i].x -= delx * trx->getHorizontal().i;
-            inner[i].z -= delx * trx->getHorizontal().k;
-            // reproject onto terrain
-            scene->getTerrain()->drapePnt(inner[i], inner[i]);
+            vpPoint pnt;
+            view->apply();
+            scene->getHighResTerrain()->pick(x, y, view, pnt); // okay to move out of bounds, with edge clipping
+            pickPos = pnt;
+
+            // convert to grid coordinates
+            scene->getHighResTerrain()->toGrid(pickPos, pick1y, pick1x);
+            if(pick1x < pick0x)
+            {
+                currRegion.x0 = pick1x; currRegion.x1 = pick0x;
+            }
+            else
+            {
+                currRegion.x0 = pick0x; currRegion.x1 = pick1x;
+            }
+
+            if(pick1y < pick0y)
+            {
+                currRegion.y0 = pick1y; currRegion.y1 = pick0y;
+            }
+            else
+            {
+                currRegion.y0 = pick0y; currRegion.y1 = pick1y;
+            }
         }
-        trx->setInnerStart(inner[0], scene->getTerrain()); trx->setInnerEnd(inner[1], scene->getTerrain());
+    }
 
-        updateTransectView();
-        */
+    // adjust position of the region selection
+    if(event->buttons() == Qt::LeftButton)
+    {
+        if(pickOnTerrain)
+        {
+            vpPoint pnt;
+            int delx, dely, dx, dy;
+            view->apply();
+            scene->getHighResTerrain()->pick(x, y, view, pnt); // okay to move out of bounds, with edge clipping
+            pickPos = pnt;
 
+            // convert to grid coordinates
+            scene->getHighResTerrain()->toGrid(pickPos, pick1y, pick1x);
+            scene->getHighResTerrain()->getGridDim(dx, dy);
 
+            delx = pick1x - pick0x ;
+            dely = pick1y - pick0y;
+
+            // bound delta to prevent move off the terrain edge
+            int newx0, newx1, newy0, newy1;
+            newx0 = prevRegion.x0 + delx;
+            newx1 = prevRegion.x1 + delx;
+            newy0 = prevRegion.y0 + dely;
+            newy1 = prevRegion.y1 + dely;
+            if(newx0 < 0)
+                delx += newx0 * -1;
+            if(newx1 >= dx)
+                delx -= newx1 - dx + 1;
+            if(newy0 < 0)
+                dely += newy0 * -1;
+            if(newy1 >= dy)
+                dely -= newy1 - dy + 1;
+
+            currRegion.x0 = prevRegion.x0 + delx; currRegion.x1 = prevRegion.x1 + delx;
+            currRegion.y0 = prevRegion.y0 + dely; currRegion.y1 = prevRegion.y1 + dely;
+        }
+    }
+
+    if(pickOnTerrain)
+    {
         winparent->rendercount++;
         updateGL();
         lastPos = event->pos();
     }
+}
 
-   // std::cerr << " ***gloverview: mousemove registered...***\n";
+void GLOverview::mouseReleaseEvent(QMouseEvent *event)
+{
+    if(pickOnTerrain)
+    {
+        int Xwd = currRegion.x1 - currRegion.x0 + 1;
+        int Ywd = currRegion.y1 - currRegion.y0 + 1;
+
+        // restore previous state if window is not valid or sides less than 150 samples
+        if (!isSelectionValid(currRegion) || Xwd < 150 || Ywd < 150)
+            currRegion = prevRegion;
+        pickOnTerrain = false;
+
+        signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
+        winparent->rendercount++;
+        updateGL();
+    }
 }
 
 void GLOverview::wheelEvent(QWheelEvent * wheel)
 {
+    /*
     float del, aspect;
 
     QPoint pix = wheel->pixelDelta();
@@ -619,7 +675,7 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
     Ywd += del;
     if (Ywd < 50) Ywd = 50;
     Xwd = int(aspect*Ywd);
-    std::cerr << "@@@@@ - (XWd, Ywd, deg) =  (" << Xwd << "," << Ywd << "," << del << ")\n";
+    // std::cerr << "@@@@@ - (XWd, Ywd, deg) =  (" << Xwd << "," << Ywd << "," << del << ")\n";
     X0 = centreX - Xwd;
     X1 = centreX + Xwd;
     Y0 = centreY - Ywd;
@@ -644,14 +700,11 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
         currRegion = currentRegion;
         signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
     }
-/*   else
-        std::cerr << " %%%%%% mouse wheel - inavlid region: [" << currentRegion.x0 << ","
-              <<   currentRegion.y0 << "," << currentRegion.x1 << "," <<
-                   currentRegion.y1 << "]\n";
-*/
+
     winparent->rendercount++;
     //signalRepaintAllGL();
-     updateGL();
+    updateGL();
+    */
 }
 
 

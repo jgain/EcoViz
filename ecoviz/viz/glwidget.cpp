@@ -596,7 +596,7 @@ void GLWidget::paintGL()
                 paintSphere(trc->trx->getClampedInnerEnd(), transectCol, drawParams);
                 paintTransect(transectCol, drawParams);
                 // paintCyl(trx->getCenter(), transectCol, drawParams);
-                signalRebindTransectPlants(); // PCM...see if thsi works
+                signalRebindTransectPlants(); // PCM...see if this works
             }
             if(trc->trxstate == 1)
             {

@@ -258,10 +258,10 @@ void Terrain::getMidPoint(vpPoint & mid)
     getGridDim(dx, dy);
     getTerrainDim(sx, sy);
     if(dx > 0 && dy > 0)
-        mid = vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f);
+        // mid = vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f);
+        mid = vpPoint(sy/2.0f, grid->get(dy/2-1,dx/2-1), sx/2.0f);
     else
         mid = vpPoint(0.0f, 0.0f, 0.0f);
-
 }
 
 void Terrain::getGridDim(int & dx, int & dy) const
@@ -513,11 +513,29 @@ bool Terrain::pick(int sx, int sy, View * view, vpPoint & p)
 {
     vpPoint start;
     Vector dirn;
+    bool hit;
+    float maxx, maxy;
 
     // find ray params from viewpoint through screen <sx, sy>
     view->projectingRay(sx, sy, start, dirn);
+    if(view->getViewType() == ViewState::PERSPECTIVE)
+    {
+        hit = rayIntersect(start, dirn, p);
+    }
+    else
+    {
+        // test terrain bounds
+        getTerrainDim(maxy, maxx);
+        p = start; start.y = 0.0f;
+        hit = (p.x > 0.0f && p.x < maxx && p.z > 0.0f && p.z < maxy);
+        if(!hit)
+        {
+            p.x = min(p.x, maxx); p.x = max(0.0f, p.x);
+            p.z = min(p.z, maxy); p.z = max(0.0f, p.z);
+        }
+    }
 
-    return rayIntersect(start, dirn, p);
+    return hit;
 }
 
 bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)

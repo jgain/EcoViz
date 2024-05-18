@@ -46,6 +46,7 @@ The visualizer is divided horizontally into two scenes (these happen at the mome
 2) Next, a 3D scene view. This can be rotated by holding down the right mouse button and moving the cursor. Zooming is with the mouse wheel. Double click with the right mouse button to change the focal point on the terrain. In order to select a transect click using <ctrl><leftmoustbutton> on two points of the terrain. These determine the start and end point of the transect, which will now appear in the transect window. To widen and narrow the transect use <ctl><mousewheel>. 
 3) Below this is the timeline media bar with controls for backtracking a time-step, play/pause, and advancing a time-step.
 4) The final window shows a graph with a bar that corresponds to the current timestep. There are no direct interactions possible in this window at the moment.
+5) The inset mini-map can be used to select a region from the larger domain. The current selection can be translated by left clicking and dragging the selection region. A new region can be defined by right clicking and dragging. The new selection are applied once the mouse button is released. 
 
 The are also two view panels accessible from the view menu: the first controls the terrain viewing and the second controls the display of plants, such as selecting which species are currently displayed. I suggest ignoring these for the moment, except perhaps to experiment with the smoothing level in the plant view.
 

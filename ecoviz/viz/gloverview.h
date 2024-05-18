@@ -151,6 +151,7 @@ protected:
 
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent * wheel);
 
 private:
@@ -160,10 +161,14 @@ private:
     mapScene * scene;      //<overview scene info
     View * view;        //< viewpoint controls
     std::string datadir;
-    int widgetId; // left=0, right = 1 in main window
+    int widgetId; // left=0, right=1 in main window
     Region currRegion; // relative to full resolution input (stored in mapScene)
+    Region prevRegion; // fallback if a new subregion creation fails
+    int pick0x, pick0y, pick1x, pick1y; // region bounds during mouse movement
     int mapWidth; // entire map for bounds checking extracted sub-regions
     int mapHeight;
+    vpPoint pickPos;
+    bool pickOnTerrain; // signals manipulation of selection region
 
     // render variables
     PMrender::TRenderer * renderer;
@@ -188,6 +193,8 @@ private:
 
     // paint on the overview selection window (size and position obtained from Terrain)
     void paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> & drawparams);
+
+    void paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
 
     bool isSelectionValid(Region subwindow)
     {
