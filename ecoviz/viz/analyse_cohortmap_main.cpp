@@ -1,5 +1,6 @@
 #include "data_importer/data_importer.h"
-#include <experimental/filesystem>
+//#include <experimental/filesystem>
+#include <filesystem>
 #include "cohortmaps.h"
 
 using namespace data_importer::ilanddata;
@@ -7,7 +8,7 @@ using namespace data_importer::ilanddata;
 int main(int argc, char * argv [])
 {
 
-    std::experimental::filesystem::directory_iterator diriter("/home/konrad/vizproj/cohorts/datadir");
+    std::filesystem::directory_iterator diriter("/home/konrad/vizproj/cohorts/datadir");
 
     std::vector<std::string> filenames;
 
