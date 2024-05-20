@@ -633,9 +633,10 @@ void GLOverview::mouseReleaseEvent(QMouseEvent *event)
             currRegion = prevRegion;
         pickOnTerrain = false;
 
-        signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
         winparent->rendercount++;
         updateGL();
+
+        signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
     }
 }
 

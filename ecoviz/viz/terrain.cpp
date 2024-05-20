@@ -259,7 +259,8 @@ void Terrain::getMidPoint(vpPoint & mid)
     getTerrainDim(sx, sy);
     if(dx > 0 && dy > 0)
         // mid = vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f);
-        mid = vpPoint(sy/2.0f, grid->get(dy/2-1,dx/2-1), sx/2.0f);
+        //mid = vpPoint(sy/2.0f, grid->get(dy/2-1,dx/2-1), sx/2.0f);
+        mid = vpPoint(sy/2.0f, grid->get(dx/2-1,dy/2-1), sx/2.0f); // PCM: not sure *why* - seems to be flipped grid?
     else
         mid = vpPoint(0.0f, 0.0f, 0.0f);
 }
