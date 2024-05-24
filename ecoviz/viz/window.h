@@ -138,10 +138,14 @@ public slots:
     // PCM: extract new terrain based on current selection
     void extractNewSubTerrain(int sceneIdx, int x0, int y0, int x1, int y1);
 
+    void positionVizOverMap(int id);
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
-    void optionsChanged();
+    void closeEvent(QCloseEvent* event);
+    void optionsChanged(); 
+    bool eventFilter(QObject *obj, QEvent *event);
 
 private:
     std::vector<Scene *> scenes;                ///< scenes for each half
@@ -192,7 +196,7 @@ private:
     LockState viewLock, transectLock, timelineLock;
     QPushButton * lockT1, * lockT2, * lockV1, * lockV2, * lockG1, * lockG2;
     QGroupBox *lockTGroup;
-     QIcon * lockleftIcon, * unlockleftIcon, * lockrightIcon, * unlockrightIcon;
+    QIcon * lockleftIcon, * unlockleftIcon, * lockrightIcon, * unlockrightIcon;
 
     // Map containing the different export profiles (Mitsuba)
     map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;
@@ -200,6 +204,7 @@ private:
     // PCM --- name of image overlay for overview maps (left and right)
     std::string mapOverlayFile[2];
     int mapDownSampleFactor; // default = 4;
+    bool active;
 
     /**
      * @brief setupRenderPanel  Initialize GUI layout of side render panel for controlling various rendering parameters

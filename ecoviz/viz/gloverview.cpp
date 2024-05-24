@@ -116,8 +116,10 @@ GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
+    ovw = 50; ovh = 50;
     resize(sizeHint());
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
+    signalRepaintAllGL();
 }
 
 GLOverview::~GLOverview()
@@ -125,14 +127,32 @@ GLOverview::~GLOverview()
     if (renderer) delete renderer;
 }
 
-QSize GLOverview::minimumSizeHint() const
+QSize GLOverview::minimumSizeHint()
 {
-    return QSize(80, 15);
+    return QSize(50, 50);
 }
 
-QSize GLOverview::sizeHint() const
+QSize GLOverview::sizeHint()
 {
-    return QSize(800, 150);
+    int w, h;
+    if(scene != nullptr)
+    {
+
+        scene->getLowResTerrain()->getGridDim(w, h);
+        // reset window to match aspect ratio of the terrain
+
+        if(h > w)
+        {
+            ovh = (int) (200.0 / (float) h * (float) w);
+            ovw = 200;
+        }
+        else
+        {
+            ovh = 200;
+            ovw = (int) (200.0 / (float) w * (float) h);
+        }
+    }
+    return QSize(ovw, ovh);
 }
 
 PMrender::TRenderer * GLOverview::getRenderer()
@@ -140,14 +160,15 @@ PMrender::TRenderer * GLOverview::getRenderer()
     return renderer;
 }
 
-
-
 void GLOverview::setScene(mapScene * s)
 { 
+    int h, w;
     scene = s;
 
     if (view != nullptr) delete view;
 
+    this->resize(sizeHint());
+    this->setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
     view = new View();
 
     scene->getLowResTerrain()->setMidFocus();
@@ -161,7 +182,7 @@ void GLOverview::setScene(mapScene * s)
     //view->setViewType(ViewState::ORTHOGONAL);
     //view->setZoomdist(0.0f);
     //view->setOrthoViewDepth(2000.0f);
-    //view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist());
+    view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist());
 
     std::cout << "***** setScene(mapScene) - data:\n";
     vpPoint pt = scene->getLowResTerrain()->getFocus();
@@ -207,7 +228,7 @@ void GLOverview::updateViewParams(void)
     // std::cerr << "GLOverview: Camera front clipping plane height: " << orthoFocusTop.y << std::endl;
     view->setForcedFocus(orthoFocusTop);
     view->setOrthoViewDepth(100000.0f); // make this large to avoid issues!
-    view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()*4); // this scales to fit in window
+    view->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()); // this scales to fit in window
 
     view->topdown();
     view->setZoomdist(0.0f);
@@ -485,7 +506,6 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
 {
     vpPoint pnt;
 
-
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
     float deltaX, deltaY;
@@ -527,7 +547,6 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
 
     if(pickOnTerrain)
     {
-        winparent->rendercount++;
         updateGL();
         lastPos = event->pos();
     }
@@ -615,7 +634,6 @@ void GLOverview::mouseMoveEvent(QMouseEvent *event)
 
     if(pickOnTerrain)
     {
-        winparent->rendercount++;
         updateGL();
         lastPos = event->pos();
     }
@@ -634,7 +652,6 @@ void GLOverview::mouseReleaseEvent(QMouseEvent *event)
         pickOnTerrain = false;
 
         signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
-        winparent->rendercount++;
         updateGL();
     }
 }
@@ -701,7 +718,6 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
         signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
     }
 
-    winparent->rendercount++;
     //signalRepaintAllGL();
     updateGL();
     */

@@ -245,6 +245,7 @@ void GLWidget::setScene(Scene * s)
     cerr << "Post update" << endl;*/
 
      refreshViews();
+     signalRepaintAllGL();
 }
 
 void GLWidget::changeViewMode(ViewMode vm)
@@ -699,6 +700,13 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         focusviz = !focusviz;
         winparent->rendercount++;
         updateGL();
+    }
+
+    if(event->key() == Qt::Key_O) // 'O' raise overviewmaps
+    {
+        winparent->positionVizOverMap(0);
+        winparent->positionVizOverMap(1);
+        // updateGL();
     }
 
     /*

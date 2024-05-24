@@ -91,8 +91,8 @@ public:
     GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int id, QWidget *parent = 0);
     ~GLOverview();
 
-    QSize minimumSizeHint() const;
-    QSize sizeHint() const;
+    QSize minimumSizeHint();
+    QSize sizeHint();
 
     void setParent(Window * wp){ winparent = wp; }
 
@@ -123,6 +123,7 @@ public:
     /// getter for various viewing controls
     mapScene * getScene(){ return scene; }
     View * getView(){ return view; }
+    bool getActive(){ return active; }
 
     /// recalculate View params for viewport
     void updateViewParams(void);
@@ -169,6 +170,7 @@ private:
     int mapHeight;
     vpPoint pickPos;
     bool pickOnTerrain; // signals manipulation of selection region
+    int ovw, ovh; // suggested width and height of overview window based on terrain aspect ratio
 
     // render variables
     PMrender::TRenderer * renderer;

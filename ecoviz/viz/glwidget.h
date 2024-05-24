@@ -158,6 +158,7 @@ public:
     /// getter for scene attached to glwidget
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
+    bool getActive(){ return active; }
 
     /// alter the mode of the camera view to either ARBALL or FLY
     void changeViewMode(ViewMode vm);

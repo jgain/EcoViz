@@ -629,7 +629,30 @@ void Window::setupVizOverMap(QGLFormat glFormat, int i)
     //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
 
     overviewMaps.push_back(oview);
-    vizLayout->addWidget(oview, 4, i*2);
+    // vizLayout->addWidget(oview, 4, i*2);
+}
+
+void Window::positionVizOverMap(int i)
+{
+    if(perspectiveViews.size() == 2 && overviewMaps.size() == 2)
+        if(perspectiveViews[i] != nullptr && overviewMaps[i] != nullptr)
+        {
+            overviewMaps[i]->setParent(0);
+            overviewMaps[i]->show();
+            overviewMaps[i]->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+            overviewMaps[i]->setWindowState( (overviewMaps[i]->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+            overviewMaps[i]->raise(); overviewMaps[i]->activateWindow();
+
+            QRect perspectiveRect = perspectiveViews[i]->geometry();
+            QPoint cornerPos = this->mapToGlobal(perspectiveRect.topRight());
+            QRect overviewRect = overviewMaps[i]->geometry();
+
+            // cerr << "cornerpos " << i << " = " << cornerPos.x() << ", " << cornerPos.y() << endl;
+            cornerPos.setX(cornerPos.x() - overviewRect.width()+1);
+            overviewMaps[i]->move(cornerPos);
+            overviewMaps[i]->resize(overviewMaps[i]->sizeHint());
+            // cerr << "cornerpos " << i << " = " << cornerPos.x() << ", " << cornerPos.y() << endl;
+        }
 }
 
 
@@ -651,7 +674,7 @@ void Window::setupVizPanel()
     vizLayout->setRowStretch(2, 1);
     vizLayout->setRowStretch(3, 8);
     // PCM: add overview map
-    vizLayout->setRowStretch(4,6);
+    // vizLayout->setRowStretch(4,6);
 
     vizLayout->setColumnStretch(0, 600);
     vizLayout->setColumnStretch(1, 50);
@@ -742,7 +765,6 @@ void Window::setupVizPanel()
     transectLock = LockState::UNLOCKED;
     timelineLock = LockState::UNLOCKED;
 
-
     /*
     vizPanel->setStyleSheet(QString::fromUtf8("ChartWindow\n"
     "{\n"
@@ -777,6 +799,7 @@ Window::Window(string datadir)
     //glFormat.setSamples(4);
 
     transectsValid = false;
+    active = false;
     rendercount = 0;
     mainLayout->setSpacing(1);
     // mainLayout->setMargin(1);
@@ -818,6 +841,7 @@ Window::Window(string datadir)
     createMenus();
 
     readMitsubaExportProfiles("../../data/mitsubaExportProfiles");
+    this->installEventFilter(this);
 
     mainWidget->setLayout(mainLayout);
     setWindowTitle(tr("EcoViz"));
@@ -832,6 +856,8 @@ Window::~Window()
 {
     // delete transect controllers
     for(auto &it: transectControls)
+        delete(it);
+    for(auto &it: overviewMaps)
         delete(it);
     // PCM what about other objects? TBD
 }
@@ -914,6 +940,18 @@ void Window::mouseMoveEvent(QMouseEvent *event)
 
 void Window::repaintAllGL()
 {
+    // position overmaps on first active render
+    if(!active)
+    {
+        if(perspectiveViews[0]->getActive() && perspectiveViews[1]->getActive() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
+            active = true;
+    }
+    if(active)
+    {
+        positionVizOverMap(0);
+        positionVizOverMap(1);
+    }
+
     if(rendercount > 1)
         cerr << "Queued rendering count = " << rendercount << endl;
     rendercount = 0;
@@ -1722,6 +1760,30 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
 
         cout << "readMitsubaExportProfiles finished !" << endl;
     }
+}
+
+void Window::closeEvent(QCloseEvent* event)
+{
+    for(auto &it: overviewMaps) // floating so need to be closed separately
+        it->close();
+    event->accept();
+}
+
+bool Window::eventFilter(QObject *obj, QEvent *event)
+{
+    QEvent::Type event_type = event->type();
+
+    if(event_type == QEvent::NonClientAreaMouseButtonPress || event_type == QEvent::Move)
+    {
+        for(auto &it: overviewMaps) // floating so need to be closed separately
+            it->hide();
+    }
+    else if(event_type == QEvent::NonClientAreaMouseButtonRelease)
+    {
+        for(int i = 0; i < 2; i++)
+            positionVizOverMap(i);
+    }
+    return QObject::eventFilter(obj, event);
 }
 
 void Window::exportMitsuba()
