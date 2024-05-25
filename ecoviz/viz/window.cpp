@@ -800,6 +800,11 @@ Window::Window(string datadir)
 
     transectsValid = false;
     active = false;
+    visible = true;
+
+    overviewTimer.setSingleShot(true);
+    connect( &overviewTimer, SIGNAL(timeout()), SLOT(overviewShow()) );
+
     rendercount = 0;
     mainLayout->setSpacing(1);
     // mainLayout->setMargin(1);
@@ -946,14 +951,8 @@ void Window::repaintAllGL()
         if(perspectiveViews[0]->getActive() && perspectiveViews[1]->getActive() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
             active = true;
     }
-    if(active)
-    {
-        positionVizOverMap(0);
-        positionVizOverMap(1);
-    }
+    updateOverviews();
 
-    if(rendercount > 1)
-        cerr << "Queued rendering count = " << rendercount << endl;
     rendercount = 0;
     for(auto pview: perspectiveViews)
         pview->repaint();
@@ -1769,19 +1768,69 @@ void Window::closeEvent(QCloseEvent* event)
     event->accept();
 }
 
+void Window::updateOverviews()
+{
+    if(active && visible) // show overviews
+    {
+        for(int i = 0; i < 2; i++)
+            positionVizOverMap(i);
+    }
+    else // hide overview
+    {
+        for(auto &it: overviewMaps)
+            it->hide();
+    }
+}
+
+void Window::overviewShow()
+{
+    visible = true;
+    updateOverviews();
+}
+
+void Window::resizeEvent(QResizeEvent* event)
+{
+    if(active)
+    {
+        visible = false;
+        overviewTimer.start(500);
+        updateOverviews();
+    }
+    event->accept();
+}
+
+void Window::moveEvent(QMoveEvent* event)
+{
+    if(active)
+    {
+        visible = false;
+        // overviewTimer.start(2000);
+        updateOverviews();
+    }
+    event->accept();
+}
+
 bool Window::eventFilter(QObject *obj, QEvent *event)
 {
     QEvent::Type event_type = event->type();
 
-    if(event_type == QEvent::NonClientAreaMouseButtonPress || event_type == QEvent::Move)
+    if(event_type == QEvent::NonClientAreaMouseButtonPress)
     {
-        for(auto &it: overviewMaps) // floating so need to be closed separately
-            it->hide();
+        QMouseEvent* pMouseEvent = dynamic_cast<QMouseEvent*>(event);
+        if (pMouseEvent->button() == Qt::MouseButton::LeftButton)
+        {
+            visible = false;
+            updateOverviews();
+        }
     }
-    else if(event_type == QEvent::NonClientAreaMouseButtonRelease)
+    else if(event_type == QEvent::NonClientAreaMouseButtonRelease || event_type == QEvent::MouseButtonRelease)
     {
-        for(int i = 0; i < 2; i++)
-            positionVizOverMap(i);
+        QMouseEvent* pMouseEvent = dynamic_cast<QMouseEvent*>(event);
+        if (pMouseEvent->button() == Qt::MouseButton::LeftButton)
+        {
+            visible = true;
+            updateOverviews();
+        }
     }
     return QObject::eventFilter(obj, event);
 }

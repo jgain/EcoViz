@@ -140,10 +140,14 @@ public slots:
 
     void positionVizOverMap(int id);
 
+    void overviewShow();
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void closeEvent(QCloseEvent* event);
+    void resizeEvent(QResizeEvent* event);
+    void moveEvent(QMoveEvent* event);
     void optionsChanged(); 
     bool eventFilter(QObject *obj, QEvent *event);
 
@@ -204,7 +208,9 @@ private:
     // PCM --- name of image overlay for overview maps (left and right)
     std::string mapOverlayFile[2];
     int mapDownSampleFactor; // default = 4;
-    bool active;
+    bool active; // whether or not the overviewmaps have been activated
+    bool visible; // whether or not the overviewmaps are hidden
+    QTimer overviewTimer;
 
     /**
      * @brief setupRenderPanel  Initialize GUI layout of side render panel for controlling various rendering parameters
@@ -230,6 +236,7 @@ private:
     void setupVizOverMap(QGLFormat glFormat, int id);
     void destroyVizTransect(int idx); // unmap widgets and call delete on to free up resources
     void destroyVizPerspective(int idx);
+    void updateOverviews(); // hide or display overview maps based on active and visible status
 
     /**
      * @brief setupGraphModels  set up the data structures for dynamic graphs
