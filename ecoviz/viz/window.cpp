@@ -577,6 +577,20 @@ void Window::destroyVizPerspective(int i)
     perspectiveViews[i] = nullptr;
 }
 
+void Window::destroyVizOvermap(int i)
+{
+    assert(i >=0 && i < 2);
+
+    if (overviewMaps[i] == nullptr)
+    {
+        std::cerr << "Window::destroyVizOvermap - invalid index, view is null: " << i << std::endl;
+        return;
+    }
+
+    overviewMaps[i]->hide();
+    delete overviewMaps[i];
+    overviewMaps[i] = nullptr;
+}
 
 void Window::setupVizChartViews(QGLFormat glFormat, int i)
 {
@@ -615,6 +629,18 @@ void Window::setupVizTimeline(QGLFormat glFormat, int i)
 
 void Window::setupVizOverMap(QGLFormat glFormat, int i)
 {
+    if (overviewMaps.size() == 0)
+    {
+        overviewMaps.resize(2);
+        overviewMaps[0] = nullptr;
+        overviewMaps[1] = nullptr;
+    }
+    else if (overviewMaps[i] != nullptr)
+    {
+        std::cerr << "Window::setupVizOverMap - trying to add new view where one exists already, must be removed first: index = " << i << std::endl;
+        return;
+    }
+
     // PCM: overview maps L/R
 
     GLOverview *oview = new GLOverview(glFormat, this, mapScenes[i], i);
@@ -628,7 +654,7 @@ void Window::setupVizOverMap(QGLFormat glFormat, int i)
     //connect(oview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
     //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
 
-    overviewMaps.push_back(oview);
+    overviewMaps[i] = oview;
     // vizLayout->addWidget(oview, 4, i*2);
 }
 
@@ -861,10 +887,8 @@ Window::~Window()
 {
     // delete transect controllers
     for(auto &it: transectControls)
-        delete(it);
-    for(auto &it: overviewMaps)
-        delete(it);
-    // PCM what about other objects? TBD
+        if (it != nullptr) delete it;
+
 }
 
 
@@ -964,7 +988,7 @@ void Window::repaintAllGL()
         cview->repaint();
     // PCM: probbaly not needed mostly...
     for (auto mapviews: overviewMaps)
-        mapviews->repaint();
+        if (mapviews != nullptr) mapviews->repaint();
 }
 
 
@@ -983,9 +1007,15 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
 
     destroyVizPerspective(i);
 
+    // destroy ovrview map widget
+    destroyVizOvermap(i);
+
     QGLFormat glFormat;
     glFormat.setVersion( 4, 1 );
     glFormat.setProfile( QGLFormat::CoreProfile );
+
+    // rebuild overview map
+    setupVizOverMap(glFormat, i);
 
     // get current region (which should have changed from before)
     Region newReg = Region(x0,y0,x1,y1);
@@ -1035,17 +1065,16 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     connect(timelineViews[i], SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
     connect(timelineViews[i], SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
 
-    /*
+    overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
     overviewMaps[i]->updateViewParams();
     overviewMaps[i]->forceUpdate();
-    */
 
     rendercount++;
     // PCM: + signal to clear transect!!!
     //repaintAllGL();
 
     perspectiveViews[i]->repaint();
-    //overviewMaps[i]->repaint();
+    overviewMaps[i]->repaint();
 }
 
 
@@ -1778,7 +1807,7 @@ void Window::updateOverviews()
     else // hide overview
     {
         for(auto &it: overviewMaps)
-            it->hide();
+            if (it != nullptr) it->hide();
     }
 }
 

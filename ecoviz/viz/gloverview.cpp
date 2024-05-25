@@ -648,11 +648,15 @@ void GLOverview::mouseReleaseEvent(QMouseEvent *event)
 
         // restore previous state if window is not valid or sides less than 150 samples
         if (!isSelectionValid(currRegion) || Xwd < 150 || Ywd < 150)
+        {
             currRegion = prevRegion;
-        pickOnTerrain = false;
+            updateGL();
+        }
+        else
+            signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
 
-        signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
-        updateGL();
+        pickOnTerrain = false;
+        //updateGL(); --- will cause crash since extract....() rebulds asynchronously and may be incomplete when paint() event fires.
     }
 }
 

@@ -358,7 +358,7 @@ public:
         // dummy init to avoid issues with early paintGL() which expects valid terrain
         lowResTerrain->initGrid(10, 10, 100.0f, 100.0f);
     }
-    ~mapScene();
+    ~mapScene() {}
 
 
     // getters

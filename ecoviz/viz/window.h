@@ -234,6 +234,7 @@ private:
     void setupVizChartViews(QGLFormat glFormat, int id);
     void setupVizTimeline(QGLFormat glFormat, int id);
     void setupVizOverMap(QGLFormat glFormat, int id);
+    void destroyVizOvermap(int idx);  // destroy overview map so it can br rebuilt
     void destroyVizTransect(int idx); // unmap widgets and call delete on to free up resources
     void destroyVizPerspective(int idx);
     void updateOverviews(); // hide or display overview maps based on active and visible status
