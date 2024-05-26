@@ -159,6 +159,7 @@ public:
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
     bool getActive(){ return active; }
+    bool getPainted(){ return painted; }
 
     /// alter the mode of the camera view to either ARBALL or FLY
     void changeViewMode(ViewMode vm);
@@ -260,6 +261,7 @@ signals:
     void signalShowTransectView();
     void signalSyncPlace(bool firstPoint);
     void signalRebindTransectPlants();
+    void signalUpdateOverviews();
     
 public slots:
     void animUpdate(); // animation step for change of focus
@@ -300,6 +302,7 @@ private:
     bool focusviz;
     bool timeron;
     bool active; //< scene only rendered if this is true
+    bool painted; //< set after first successful paint
     std::vector<bool> plantvis;
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true

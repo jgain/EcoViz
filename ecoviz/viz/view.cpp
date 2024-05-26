@@ -446,7 +446,6 @@ glm::mat4x4 View::getProjMtx()
 
     if(viewtype == ViewState::PERSPECTIVE)
     {
-
         minx = -8.0f / aspect;
         maxx = 8.0f / aspect;
         projMx = glm::frustum(minx, maxx, -8.0f, 8.0f, 50.0f, 100000.0f);
@@ -478,6 +477,7 @@ glm::mat4x4 View::getViewMtx()
         // zoom
         viewMx = glm::mat4x4(1.0f);
         trs = glm::vec3(0.0f, 0.0f, -1.0f * zoomdist);
+        // cerr << "********************** zoomdist = " << zoomdist << endl;
         viewMx = glm::translate(viewMx, trs);
 
         // quaternion to mult matrix from arcball

@@ -123,6 +123,7 @@ GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect *
     focusviz = false;
     timeron = false;
     active = false;
+    painted = false;
     rebindplants = true;
     scf = 10000.0f;
     decalTexture = 0;
@@ -133,8 +134,6 @@ GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect *
 
     resize(sizeHint());
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
-
-
 }
 
 GLWidget::~GLWidget()
@@ -209,9 +208,10 @@ void GLWidget::setScene(Scene * s)
 
     view = new View();
     view->setForcedFocus(scene->getTerrain()->getFocus());
-    view->setViewScale(scene->getTerrain()->longEdgeDist());
+    view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
     scf = scene->getTerrain()->getMaxExtent();
+    cerr << "^^^^^^^^^^^^^ scale factor = " << scf << endl;
     scene->getTerrain()->setBufferToDirty();
 
     // transect setup
@@ -252,7 +252,7 @@ void GLWidget::changeViewMode(ViewMode vm)
 {
     view->setViewMode(vm);
     view->setForcedFocus(scene->getTerrain()->getFocus());
-    view->setViewScale(scene->getTerrain()->longEdgeDist());
+    view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
 }
 
@@ -645,6 +645,15 @@ void GLWidget::paintGL()
 
         if(timeron)
             cerr << "rendering = " << t.peek() << " fps = " << 1.0f / t.peek() << endl;
+        if(!painted)
+            cerr << "first paint" << endl;
+        if(!painted)
+        {
+            painted = true;
+            signalUpdateOverviews();
+            cerr << "update overview signalled" << endl;
+        }
+
     }
 }
 
@@ -704,9 +713,11 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_O) // 'O' raise overviewmaps
     {
+        cerr << "O keypress" << endl;
         winparent->positionVizOverMap(0);
         winparent->positionVizOverMap(1);
-        // updateGL();
+        view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
+        signalRepaintAllGL();
     }
 
     /*

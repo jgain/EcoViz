@@ -174,7 +174,7 @@ void GLOverview::setScene(mapScene * s)
     scene->getLowResTerrain()->setMidFocus();
     view->setViewType(ViewState::ORTHOGONAL);
     view->setForcedFocus(scene->getLowResTerrain()->getFocus());
-    view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
+    // view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
     scf = scene->getLowResTerrain()->getMaxExtent();
 
@@ -211,7 +211,7 @@ void GLOverview::updateViewParams(void)
 {
     scene->getLowResTerrain()->setMidFocus();
     view->setForcedFocus(scene->getLowResTerrain()->getFocus());
-    view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
+    // view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
     scf = scene->getLowResTerrain()->getMaxExtent();
 
     // orthogonal rendering

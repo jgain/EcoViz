@@ -554,6 +554,7 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
     connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
     connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
     connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
+    connect(pview, SIGNAL(signalUpdateOverviews()), this, SLOT(updateOverviews()));
 
     perspectiveViews[i] = pview;
     //perspectiveViews.push_back(pview);
@@ -665,7 +666,7 @@ void Window::positionVizOverMap(int i)
         {
             overviewMaps[i]->setParent(0);
             overviewMaps[i]->show();
-            overviewMaps[i]->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+            overviewMaps[i]->setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
             overviewMaps[i]->setWindowState( (overviewMaps[i]->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
             overviewMaps[i]->raise(); overviewMaps[i]->activateWindow();
 
@@ -970,11 +971,16 @@ void Window::mouseMoveEvent(QMouseEvent *event)
 void Window::repaintAllGL()
 {
     // position overmaps on first active render
+    /*
+    cerr << perspectiveViews[0]->getPainted() << " " << perspectiveViews[1]->getPainted() << " " << overviewMaps[0]->getActive() << " " << overviewMaps[1]->getActive() << endl;
     if(!active)
     {
-        if(perspectiveViews[0]->getActive() && perspectiveViews[1]->getActive() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
+        if(perspectiveViews[0]->getPainted() && perspectiveViews[1]->getPainted() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
+        {
             active = true;
-    }
+            cerr << "^^^^^^^^^^^^ Window Activated ^^^^^^^^^^^^" << endl;
+        }
+    }*/
     updateOverviews();
 
     rendercount = 0;
@@ -998,6 +1004,7 @@ void Window::repaintAllGL()
 
 void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
 {
+    active = false;
 
     // clear transects and widgets
     destroyVizTransect(i);
@@ -1071,10 +1078,10 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
 
     rendercount++;
     // PCM: + signal to clear transect!!!
-    //repaintAllGL();
+    repaintAllGL();
 
-    perspectiveViews[i]->repaint();
-    overviewMaps[i]->repaint();
+    // perspectiveViews[i]->repaint();
+    // overviewMaps[i]->repaint();
 }
 
 
@@ -1799,6 +1806,15 @@ void Window::closeEvent(QCloseEvent* event)
 
 void Window::updateOverviews()
 {
+    bool firstactivation = false;
+
+    if(perspectiveViews[0]->getPainted() && perspectiveViews[1]->getPainted() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
+    {
+         firstactivation = !active; // will need to call paint on first activation
+         active = true;
+    }
+
+    // cerr << perspectiveViews[0]->getPainted() << " " << perspectiveViews[1]->getPainted() << " " << overviewMaps[0]->getActive() << " " << overviewMaps[1]->getActive() << " " << visible << endl;
     if(active && visible) // show overviews
     {
         for(int i = 0; i < 2; i++)
@@ -1809,6 +1825,8 @@ void Window::updateOverviews()
         for(auto &it: overviewMaps)
             if (it != nullptr) it->hide();
     }
+    if(firstactivation)
+        repaintAllGL();
 }
 
 void Window::overviewShow()
@@ -1822,7 +1840,9 @@ void Window::resizeEvent(QResizeEvent* event)
     if(active)
     {
         visible = false;
-        overviewTimer.start(500);
+        for(auto &pview: perspectiveViews)
+            pview->setUpdatesEnabled(false);
+        overviewTimer.start(300);
         updateOverviews();
     }
     event->accept();
@@ -1833,7 +1853,9 @@ void Window::moveEvent(QMoveEvent* event)
     if(active)
     {
         visible = false;
-        // overviewTimer.start(2000);
+        for(auto &pview: perspectiveViews)
+            pview->setUpdatesEnabled(false);
+        overviewTimer.start(300);
         updateOverviews();
     }
     event->accept();
@@ -1849,15 +1871,19 @@ bool Window::eventFilter(QObject *obj, QEvent *event)
         if (pMouseEvent->button() == Qt::MouseButton::LeftButton)
         {
             visible = false;
+            for(auto &pview: perspectiveViews)
+                pview->setUpdatesEnabled(false);
             updateOverviews();
         }
     }
-    else if(event_type == QEvent::NonClientAreaMouseButtonRelease || event_type == QEvent::MouseButtonRelease)
+    else if(event_type == QEvent::NonClientAreaMouseButtonRelease) // || event_type == QEvent::MouseButtonRelease)
     {
         QMouseEvent* pMouseEvent = dynamic_cast<QMouseEvent*>(event);
         if (pMouseEvent->button() == Qt::MouseButton::LeftButton)
         {
             visible = true;
+            for(auto &pview: perspectiveViews)
+                pview->setUpdatesEnabled(true);
             updateOverviews();
         }
     }

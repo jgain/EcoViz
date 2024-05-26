@@ -123,6 +123,7 @@ public:
         cop = vpPoint(0.0f, 0.0f, 1.0f);
         terextent = 1.0f;
         terdepth = 1.0f;
+        cerr << "&&&&&&&&&&&&&& View reset called" << endl;
         updateDir();
     }
 
@@ -185,11 +186,14 @@ public:
     /// Start spinning the viewpoint
     void startSpin();
 
+    inline float getHalfHorizontalFOV(){ return atan(8.0f/50.0f); }
+
     /// Set the terrain scaling factor
     inline void setViewScale(float extent)
     {
-        zoomdist = zoomdist / viewscale * extent; // adjust zoomdist
+        // zoomdist = zoomdist / viewscale * extent; // adjust zoomdist
         viewscale = extent;
+        zoomdist = viewscale / 2.0f / tan(getHalfHorizontalFOV());
     }
 
     /// set the extent of the orthogonal view using the terrain dimensions (tx, ty) in metres

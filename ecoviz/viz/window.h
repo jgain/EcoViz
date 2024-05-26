@@ -141,6 +141,8 @@ public slots:
     void positionVizOverMap(int id);
 
     void overviewShow();
+    void updateOverviews(); // hide or display overview maps based on active and visible status
+
 
 protected:
     void keyPressEvent(QKeyEvent *event);
@@ -237,7 +239,6 @@ private:
     void destroyVizOvermap(int idx);  // destroy overview map so it can br rebuilt
     void destroyVizTransect(int idx); // unmap widgets and call delete on to free up resources
     void destroyVizPerspective(int idx);
-    void updateOverviews(); // hide or display overview maps based on active and visible status
 
     /**
      * @brief setupGraphModels  set up the data structures for dynamic graphs
