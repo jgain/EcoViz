@@ -1050,33 +1050,9 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     
     sx = event->x(); sy = event->y();
 
-    //if(pickOnTerrain)
-    //    {
-            Region currRegion = mapView->getSelectionRegion();
-            int Xwd = currRegion.x1 - currRegion.x0 + 1;
-            int Ywd = currRegion.y1 - currRegion.y0 + 1;
-
-            // hack for now till events work
-            currRegion.x0 += 100;
-            currRegion.x1 += 100;
-            currRegion.y0 += 100;
-            currRegion.y1 += 100;
-
-            // restore previous state if window is not valid or sides less than 150 samples
-            if (!mapView->isSelectionValid(currRegion) || Xwd < 150 || Ywd < 150)
-            {
-                // currRegion = prevRegion;
-                // updateGL();
-            }
-            else
-            {
-                mapView->setSelectionRegion(currRegion);
-                signalExtractNewSubTerrain( (wname=="left" ? 0: 1), currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
-              }
-         //   pickOnTerrain = false;
-            //updateGL(); --- will cause crash since extract....() rebulds asynchronously and may be incomplete when paint() event fires.
-        //}
-
+    // double click in overview should do nothing
+    if(mapView->mouseInOverView(width(), height(), sx, sy))
+        return;
 
     if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
     {
