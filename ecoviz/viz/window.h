@@ -138,20 +138,20 @@ public slots:
     // PCM: extract new terrain based on current selection
     void extractNewSubTerrain(int sceneIdx, int x0, int y0, int x1, int y1);
 
-    void positionVizOverMap(int id);
+    //void positionVizOverMap(int id);
 
-    void overviewShow();
-    void updateOverviews(); // hide or display overview maps based on active and visible status
+    //void overviewShow();
+    //void updateOverviews(); // hide or display overview maps based on active and visible status
 
 
 protected:
     void keyPressEvent(QKeyEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
-    void closeEvent(QCloseEvent* event);
-    void resizeEvent(QResizeEvent* event);
-    void moveEvent(QMoveEvent* event);
+    //void closeEvent(QCloseEvent* event);
+    //void resizeEvent(QResizeEvent* event);
+    //void moveEvent(QMoveEvent* event);
     void optionsChanged(); 
-    bool eventFilter(QObject *obj, QEvent *event);
+    //bool eventFilter(QObject *obj, QEvent *event);
 
 private:
     std::vector<Scene *> scenes;                ///< scenes for each half
@@ -159,7 +159,7 @@ private:
     std::vector<Transect *> transectControls;   ///< Transect controls for each viewing pair
     std::vector<GLWidget *> perspectiveViews;   ///< OpenGL perspective rendering views
     std::vector<GLTransect *> transectViews;    ///< OpenGL transect views
-    std::vector<GLOverview *> overviewMaps;     ///< OpenGL over maps (left and right)
+    //std::vector<GLOverview *> overviewMaps;     ///< OpenGL over maps (left and right)
     std::vector<TimeWindow *> timelineViews;    ///< widget for timeline control
     std::vector<ChartWindow *> chartViews;      ///< widget for displaying graphs
     std::vector<std::vector< TimelineGraph *> > graphModels;   ///< Underlying graph data associated with scene, multiple graphs per scene
@@ -235,8 +235,8 @@ private:
     void setupVizPerspective(QGLFormat glFormat, int id);
     void setupVizChartViews(QGLFormat glFormat, int id);
     void setupVizTimeline(QGLFormat glFormat, int id);
-    void setupVizOverMap(QGLFormat glFormat, int id);
-    void destroyVizOvermap(int idx);  // destroy overview map so it can br rebuilt
+    //void setupVizOverMap(QGLFormat glFormat, int id);
+    //void destroyVizOvermap(int idx);  // destroy overview map so it can br rebuilt
     void destroyVizTransect(int idx); // unmap widgets and call delete on to free up resources
     void destroyVizPerspective(int idx);
 

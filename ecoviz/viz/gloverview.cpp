@@ -652,8 +652,8 @@ void GLOverview::mouseReleaseEvent(QMouseEvent *event)
             currRegion = prevRegion;
             updateGL();
         }
-        else
-            signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
+        //else
+        //    signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
 
         pickOnTerrain = false;
         //updateGL(); --- will cause crash since extract....() rebulds asynchronously and may be incomplete when paint() event fires.

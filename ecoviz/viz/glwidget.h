@@ -94,6 +94,7 @@ const float initmaxt = 40.0f;
 const float mtoft = 3.28084f;
 
 class Window;
+class overviewWindow;
 
 class GLWidget : public QGLWidget
 {
@@ -101,7 +102,7 @@ class GLWidget : public QGLWidget
 
 public:
 
-    GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widgetName, QWidget *parent = 0);
+    GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widgetName, mapScene *mapScene, QWidget *parent = 0);
 
     ~GLWidget();
 
@@ -161,6 +162,9 @@ public:
     bool getActive(){ return active; }
     bool getPainted(){ return painted; }
 
+    /// get internal state object that manages map window
+    overviewWindow *getOverviewWindow(void) { return mapView; }
+
     /// alter the mode of the camera view to either ARBALL or FLY
     void changeViewMode(ViewMode vm);
 
@@ -184,7 +188,7 @@ public:
 
     /// PCM: force new transect data on existing and reset - needs to free existing texture; only
     /// used when a sub-terrain has been extracted since this invalidates existing information
-    void forceTransect(Transect *newTrans);
+    //  void forceTransect(Transect *newTrans);
 
     /// Prepare decal texture
     void loadDecals();
@@ -237,6 +241,7 @@ public:
 
     // replace current FloatImage for the overlay with newly sized version from newTerr
     // PCM: is excisting GL texture is correctly released?
+    /*
     void replaceTransectImageMap(Terrain *newTerr)
     {
         if (trc != nullptr && trc->trx != nullptr)
@@ -255,13 +260,15 @@ public:
         else
             throw  std::runtime_error("replaceTransectImageMap - applied to a null pointer!");
     }
+    */
 
 signals:
     void signalRepaintAllGL();
     void signalShowTransectView();
     void signalSyncPlace(bool firstPoint);
     void signalRebindTransectPlants();
-    void signalUpdateOverviews();
+    //void signalUpdateOverviews();
+    void signalExtractNewSubTerrain(int, int, int, int, int); // window (left/right) + region corners
     
 public slots:
     void animUpdate(); // animation step for change of focus
@@ -285,6 +292,7 @@ private:
     Window * winparent;
     Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
     View * view;        //< viewpoint controls
+    overviewWindow *mapView; //< manage state and render state for overview map attached to this widget
     std::string datadir;
     std::string wname; //< name for this widget
 
@@ -366,6 +374,120 @@ private:
      * @brief refreshViews Signal update to either this view or all views depending on lock state
      */
     void refreshViews();
+};
+
+class overviewWindow {
+    public:
+
+    overviewWindow(mapScene * scn);
+    ~overviewWindow();
+
+    /// getters for currently active view, terrain, typemaps, renderer, ecosystem
+    PMrender::TRenderer * getRenderer() { return mrenderer; }
+
+
+    /**
+     * @brief setScene Change the scene being displayed and initialize a new default view
+     * @param s Scene to display
+     */
+    void setScene(mapScene * s);
+
+    /// set the selecton region (this will then be updated internally)
+    void setSelectionRegion(Region reg)
+    {
+        currRegion = reg;
+        // store dimensions of full terrain grid for bounds checking
+        scene->getHighResTerrain()->getGridDim(mapWidth, mapHeight);
+    }
+
+    bool isSelectionValid(Region subwindow)
+    {
+        if (subwindow.x0 < 0 || subwindow.x0 > mapWidth-1)
+            return false;
+        if (subwindow.x1 < 0 || subwindow.x1 > mapWidth-1)
+            return false;
+        if (subwindow.y0 < 0 || subwindow.y0 > mapHeight-1)
+            return false;
+        if (subwindow.y1 < 0 || subwindow.y1 > mapHeight-1)
+            return false;
+
+      return true;
+    }
+
+    Region getSelectionRegion(void) const
+    {
+        return currRegion;
+    }
+
+    /// getter for various viewing controls
+    mapScene * getScene(){ return scene; }
+    View * getView(){ return mview; }
+    //bool getActive(){ return active; }
+    void getWindowSize(int & width, int & height)
+    {
+        width = ovw; height = ovh;
+    }
+
+    /// recalculate View params for viewport
+    void updateViewParams(void);
+
+    /// force height/normal map recompute
+    void forceUpdate(void)
+    {
+        scene->getLowResTerrain()->setBufferToDirty();
+    }
+
+    /// draw
+    void draw(void);
+
+private:
+
+    mapScene * scene;      //<overview scene info
+    View * mview;        //< viewpoint controls
+    //std::string datadir;
+    //int widgetId; // left render winsow =0, right=1 in main window
+    Region currRegion; // relative to full resolution input (stored in mapScene)
+    Region prevRegion; // fallback if a new subregion creation fails
+    int pick0x, pick0y, pick1x, pick1y; // region bounds during mouse movement
+    int mapWidth; // entire map for bounds checking extracted sub-regions
+    int mapHeight;
+    vpPoint pickPos;
+    bool pickOnTerrain; // signals manipulation of selection region
+    int ovw, ovh; // width and height of overview window based on terrain aspect ratio
+
+    // render variables
+    PMrender::TRenderer * mrenderer;
+
+    // gui variables
+    bool active;
+    bool timeron;
+    float scf;
+
+
+    QPoint lastPos;
+    QColor qtWhite;
+    QLabel * vizpopup;  //< for debug visualisation
+
+    /**
+     * @brief paintCyl  called by PaintGL to display a cylinder
+     * @param p     position of base of cylinder on terrain
+     * @param col   colour of the cylinder
+     * @param drawParams accumulated rendering state
+     */
+    void paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
+
+    // paint on the overview selection window (size and position obtained from Terrain)
+    void paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> & drawparams);
+
+    void paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
+
+
+
+    // set size based on aspect ratio of terrain
+    void setWindowSize(void);
+
+    // set up state for renderer for overview - this will use the context for glwidget for resources
+    void initializeMapRenderer(void);
 };
 
 #endif

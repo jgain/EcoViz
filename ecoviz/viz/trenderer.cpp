@@ -627,7 +627,7 @@ void TRenderer::generateNormalTexture(void)
     glDisable(GL_CULL_FACE); CE();
 
 
-    glClear(GL_COLOR_BUFFER_BIT); CE();
+    //glClear(GL_COLOR_BUFFER_BIT); CE();
 
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport); // save current viewport
@@ -895,13 +895,13 @@ void TRenderer::generateNormalTexture(void)
   // vwd and vht are current viewport width and height, resp.
   // render conext
 
-  void TRenderer::updateRadianceScalingBuffers(int vwd, int vht)
+  void TRenderer::updateRadianceScalingBuffers(int vwd, int vht, bool force)
   {
     if (shadModel != RADIANCE_SCALING && shadModel != RADIANCE_SCALING_TRANSECT &&
             shadModel != RADIANCE_SCALING_OVERVIEW)
       return;
 
-    if (_w == 0 || _h == 0 || vwd != _w || vht != _h)
+    if (_w == 0 || _h == 0 || vwd != _w || vht != _h || force)
       {
         // std::cerr << "Delete old rad scaling buffer\n";
 
@@ -1413,7 +1413,7 @@ void TRenderer::draw(View * view)
     //std::cout << "Viewport chk - [" << viewport[0] << "," << viewport[1] << "," << viewport[3] << "," << viewport[3] << "]\n";
 
     // render at 2X resolution for later linear downsampling (basic anti-aliasing)
-    updateRadianceScalingBuffers(2*viewport[2], 2*viewport[3]);
+    updateRadianceScalingBuffers(2*viewport[2], 2*viewport[3], true);
 
     // Set the clear color to white
     glClearColor( 1.0f, 1.0f, 1.0f, 1.0f ); CE();
@@ -1423,7 +1423,7 @@ void TRenderer::draw(View * view)
     glDepthFunc(GL_LEQUAL); CE();
     glDepthRange(0.0f, 1.0f); CE();
     glEnable(GL_CULL_FACE); CE();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
 
     //glEnable(GL_DEPTH_CLAMP);
 

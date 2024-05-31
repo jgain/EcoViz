@@ -240,7 +240,7 @@ public:
 
     // update radiance scaling FBO textures/attachments if viewport has changed size
     // vwd and vht are current viewport width and height, resp.
-    void updateRadianceScalingBuffers(int vwd, int vht);
+    void updateRadianceScalingBuffers(int vwd, int vht, bool force = false);
 
     // assumes modelling matrix is Identity for terrain
     void setCamera(glm::mat4x4& mx)
@@ -446,6 +446,22 @@ public:
     // will usually be created only once and dirty regions in tmap then be sub'd into the internal texture
     // for performamce reasons.
     void updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo = typeMapInfo::PAINT, bool force = false);
+
+    // when using multiple  renderer instances with one OpenGL context, the height texture is not changed
+    // after creation (unless its dimenson changes). This methods forces the tex uni to be rebound to the
+    // instance texture (which will be unique per object).
+    void forceHeightMapRebind(void)
+    {
+        if (heightmapTexture != 0)
+        {
+             std::cerr << "forceHeightMapRebind -  Heightmap rebound\n";
+             glActiveTexture(htmapTexUnit); CE();
+             glBindTexture(GL_TEXTURE_2D, heightmapTexture); CE();
+        }
+        else
+            std::cerr << "forceHeightMapRebind - Error! Heightmap texture undefined!\n";
+    }
+
 };
 
 }

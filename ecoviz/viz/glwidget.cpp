@@ -91,7 +91,7 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widName, QWidget *parent)
+GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widName, mapScene *mScene, QWidget *parent)
     : QGLWidget(format, parent)
 {
     wname = widName;
@@ -113,6 +113,7 @@ GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect *
     trc->showtransect = true;
 
     view = nullptr;
+    mapView = new overviewWindow(mScene);
 
     setScene(scn);
     renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
@@ -143,6 +144,8 @@ GLWidget::~GLWidget()
     if(vizpopup) delete vizpopup;
 
     if (renderer) delete renderer;
+
+    if (mapView) delete mapView;
 
     if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
 }
@@ -386,6 +389,8 @@ void GLWidget::initializeGL()
 
     // initialise renderer/compile shaders
     renderer->initShaders();
+    // NB: we need an active context to compile the shders...
+    mapView->getRenderer()->initShaders();
 
     // set other render parameters
     // can set terrain colour for radiance scaling etc - check trenderer.h
@@ -564,7 +569,7 @@ void GLWidget::paintGL()
     {
         drawParams.clear();
         t.start();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // note: bindinstances will not work on the first render pass because setup time is needed
 
@@ -576,7 +581,7 @@ void GLWidget::paintGL()
 
         if (focuschange && trc->showtransect)
         {
-            ShapeDrawData sdd;
+            //ShapeDrawData sdd;
 
             GLfloat transectCol[] = {0.9f, 0.1f, 0.1f, 0.2f};
 
@@ -622,6 +627,7 @@ void GLWidget::paintGL()
             }*/
         }
 
+
         // prepare plants for rendering
         if(focuschange)
         {
@@ -633,18 +639,51 @@ void GLWidget::paintGL()
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
+        //renderer->forceHeightMapRebind();
+scene->getTerrain()->setBufferToDirty();
+
         if (drawParams.size() > 0) // DEBUG: PCM
             scene->getTerrain()->updateBuffers(renderer);
 
         if(focuschange)
             renderer->updateTypeMapTexture(scene->getTypeMap(getOverlay())); // only necessary if the texture is changing dynamically
 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         renderer->draw(view);
+
+        // ** overview map draw : draw on resrtricted viewport:
+//QThread::msleep(500);
+        int wd, ht;
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+
+        mapView->getWindowSize(wd,ht);
+        GLint newport[4];
+
+        newport[0] = (GLint)(this->width() - wd);
+        newport[1] = (GLint)(this->height() - ht);
+        newport[2] = (GLint)wd;
+        newport[3] = (GLint)ht;
+
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glEnable(GL_SCISSOR_TEST);
+        //glViewport(viewport[0], viewport[1], viewport[2]-500, viewport[3]-500);
+        //glScissor(viewport[0], viewport[1], viewport[2]-300, viewport[3]-300);
+        //GLint wdim = viewport[2]-600, hdim = viewport[3]-600;
+        //GLint wpos = viewport[0], hpos = viewport[1];
+        //glViewport(wpos, hpos,  wdim, hdim);
+        glViewport(newport[0], newport[1], newport[2], newport[3]);
+        mapView->draw();
+        //glDisable(GL_SCISSOR_TEST);
+        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+//QThread::msleep(1000);
+        // ** end overview map draw **
 
         t.stop();
 
         if(timeron)
             cerr << "rendering = " << t.peek() << " fps = " << 1.0f / t.peek() << endl;
+        /*
         if(!painted)
             cerr << "first paint" << endl;
         if(!painted)
@@ -653,7 +692,7 @@ void GLWidget::paintGL()
             signalUpdateOverviews();
             cerr << "update overview signalled" << endl;
         }
-
+       */
     }
 }
 
@@ -711,6 +750,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         updateGL();
     }
 
+    /*
     if(event->key() == Qt::Key_O) // 'O' raise overviewmaps
     {
         cerr << "O keypress" << endl;
@@ -719,6 +759,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
         signalRepaintAllGL();
     }
+    */
 
     /*
     if(event->key() == Qt::Key_N) // 'N' to toggle display of canopy trees on or off
@@ -980,6 +1021,35 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     int sx, sy;
     
     sx = event->x(); sy = event->y();
+
+    //if(pickOnTerrain)
+    //    {
+            Region currRegion = mapView->getSelectionRegion();
+            int Xwd = currRegion.x1 - currRegion.x0 + 1;
+            int Ywd = currRegion.y1 - currRegion.y0 + 1;
+
+            // hack for now til events work
+            currRegion.x0 += 100;
+            currRegion.x1 += 100;
+            currRegion.y0 += 100;
+            currRegion.y1 += 100;
+
+            // restore previous state if window is not valid or sides less than 150 samples
+            if (!mapView->isSelectionValid(currRegion) || Xwd < 150 || Ywd < 150)
+            {
+                // currRegion = prevRegion;
+                // updateGL();
+            }
+            else
+            {
+                mapView->setSelectionRegion(currRegion);
+                signalExtractNewSubTerrain( (wname=="left" ? 0: 1), currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
+              }
+         //   pickOnTerrain = false;
+            //updateGL(); --- will cause crash since extract....() rebulds asynchronously and may be incomplete when paint() event fires.
+        //}
+
+
     if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
     {
         view->apply();
@@ -1049,6 +1119,7 @@ void GLWidget::seperateTransectCreate(Transect * trx)
     trc = newtrc;
 }
 
+/*
 void GLWidget::forceTransect(Transect *newTrans)
 {
     if (trc) delete trc;
@@ -1058,7 +1129,7 @@ void GLWidget::forceTransect(Transect *newTrans)
     trc->trxstate = -1;
     trc->showtransect = true;
 }
-
+*/
 
 void GLWidget::pointPlaceTransect(bool firstPoint)
 {
@@ -1200,5 +1271,341 @@ void GLWidget::refreshViews()
     {
         winparent->rendercount++;
         updateGL();
+    }
+}
+
+/// overviewmap methods: these methods refer to the part of the main viewport on which the map is overdrawn
+
+overviewWindow::overviewWindow(mapScene * scn)
+{
+    currRegion = Region(0,0,0,0);
+    mapWidth = mapHeight = 0;
+
+    mview = nullptr;
+
+    ovw = 50; ovh = 50;
+
+    setScene(scn);
+    active = true;
+    timeron = false;
+    pickOnTerrain = false;
+
+    mrenderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+
+
+    initializeMapRenderer();
+}
+
+overviewWindow::~overviewWindow()
+{
+    if (mrenderer) delete mrenderer;
+    if (mview) delete mview;
+}
+
+void overviewWindow::setWindowSize(void)
+{
+    int w, h;
+    if(scene != nullptr)
+    {
+
+        scene->getLowResTerrain()->getGridDim(w, h);
+        // reset window to match aspect ratio of the terrain
+
+        if(h > w)
+        {
+            ovh = (int) (200.0 / (float) h * (float) w);
+            ovw = 200;
+        }
+        else
+        {
+            ovh = 200;
+            ovw = (int) (200.0 / (float) w * (float) h);
+        }
+    }
+}
+
+
+void overviewWindow::setScene(mapScene * s)
+{
+    scene = s;
+
+    if (mview != nullptr) delete mview;
+
+    mview = new View();
+
+    setWindowSize();
+
+    scene->getLowResTerrain()->setMidFocus();
+    mview->setViewType(ViewState::ORTHOGONAL);
+    mview->setForcedFocus(scene->getLowResTerrain()->getFocus());
+    mview->setDim(0.0f, 0.0f, ovw, ovh);
+    scf = scene->getLowResTerrain()->getMaxExtent();
+
+    mview->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist());
+
+    std::cout << "***** setScene(mapScene) - data:\n";
+    vpPoint pt = scene->getLowResTerrain()->getFocus();
+    std::cout << " ** focus.x: " << pt.x;
+    std::cout << " ** focus.y: " << pt.y;
+    std::cout << " ** focus.z: " << pt.z;
+    std::cout << " ** scf: " << scf << "\n";
+    std::cout << " ** wd: " << ovw << "\n";
+    std::cout << " ** ht: " << ovh << "\n";
+    std::cout << " ** terrain scale: " << scene->getLowResTerrain()->longEdgeDist() << "\n";
+
+    // scene->getLowResTerrain()->setMidFocus();
+    mview->topdown();
+
+    scene->getLowResTerrain()->setBufferToDirty();
+
+    //winparent->rendercount++;
+    //signalRepaintAllGL();
+    //updateGL();
+}
+
+// the heightfield will change after initial dummy creation (and possible edits later)
+// make sure View params are correct.
+
+void overviewWindow::updateViewParams(void)
+{
+    scene->getLowResTerrain()->setMidFocus();
+    mview->setForcedFocus(scene->getLowResTerrain()->getFocus());
+    // view->setViewScale(scene->getLowResTerrain()->longEdgeDist());
+    scf = scene->getLowResTerrain()->getMaxExtent();
+
+    // orthogonal rendering
+    mview->setViewType(ViewState::ORTHOGONAL);
+    float minHt, maxHt;
+    scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need *global* max height
+
+    vpPoint orthoFocusTop;
+    orthoFocusTop = scene->getLowResTerrain()->getFocus();
+    orthoFocusTop.y = 1.1* maxHt + 100.0f; // PCM: for some reason the camera near plane clips even when using maxHt
+    // could be the slight near plane offset e=0.01, but that is small and an addiive offset should have fixed that.
+    // Possible issue?
+
+    std::cerr << "overviewWindow: Camera front clipping plane height: " << orthoFocusTop.y << std::endl;
+    mview->setForcedFocus(orthoFocusTop);
+    mview->setOrthoViewDepth(100000.0f); // make this large to avoid issues!
+    mview->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()); // this scales to fit in window
+
+    mview->topdown();
+    mview->setZoomdist(0.0f);
+
+    mview->apply();
+}
+
+// this just sets renderer state - not VBOs, textures etc - those need to be set from glwidget,
+// at initialization.Both the renderers share the current graphics context (glwidget in the case)
+void overviewWindow::initializeMapRenderer(void)
+{
+
+    // *** PM Render code - start ***
+
+    PMrender::TRenderer::terrainShadingModel  sMod = PMrender::TRenderer::RADIANCE_SCALING_OVERVIEW;
+
+    // set terrain shading model
+    mrenderer->setTerrShadeModel(sMod);
+
+    // set up light
+    Vector dl = Vector(0.6f, 1.0f, 0.6f);
+    dl.normalize();
+
+    //GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
+    GLfloat pointLight[3] = {1000.0, 3000.0, 1000.0}; // side panel + BASIC lighting
+    GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
+    GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
+
+    mrenderer->setPointLight(pointLight[0],pointLight[1],pointLight[2]);
+    mrenderer->setDirectionalLight(0, dirLight0[0], dirLight0[1], dirLight0[2]);
+    mrenderer->setDirectionalLight(1, dirLight1[0], dirLight1[1], dirLight1[2]);
+
+    // initialise renderer/compile shaders
+    // renderer->initShaders();
+
+    // set other render parameters
+    // can set terrain colour for radiance scaling etc - check trenderer.h
+
+    // terrain contours
+    mrenderer->drawContours(false);
+    mrenderer->drawGridlines(false);
+
+    // turn on terrain type overlay (off by default); NB you can stil call methods to update terrain type,
+    mrenderer->useTerrainTypeTexture(false);
+    mrenderer->useConstraintTypeTexture(false);
+
+    // use manipulator textures (decal'd)
+    mrenderer->textureManipulators(false);
+
+    // overlay - load??
+    //paintGL();
+}
+
+void overviewWindow::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
+{
+    ShapeDrawData sdd;
+    float scale;
+    Shape shape;
+    glm::mat4 tfm, idt;
+    glm::vec3 trs, rot;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
+    std::vector<float> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    // place vertical cylinder
+    scale = mview->getScaleFactor();
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(p.x, p.y, p.z);
+    rot = glm::vec3(1.0f, 0.0f, 0.0f);
+    tfm = glm::translate(idt, trs);
+    tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
+
+    float mrad = 75.0f;
+    float mheight = 750.0f;
+    float arad = mrad / 2.5f;
+
+    shape.genCappedCylinder(scale*arad*50.0f, 1.5f*scale*arad*50.0f, scale*(mheight-mrad)*50.0f, 40, 10, tfm, false);
+    if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawParams.push_back(sdd);
+    }
+}
+
+void overviewWindow::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> &drawparams)
+{
+    ShapeDrawData sdd;
+    Shape shape;
+    glm::mat4 tfm, idt;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
+    std::vector<float> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    Region region;
+    vpPoint centre;
+    float planeHeight, planeWidth;
+    region = currRegion; //  getScene()->getSelectedRegion(); //  (region, startx, starty, endx, endy);
+    float minHt, maxHt;
+    scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need global maxHt
+    float pointStep = scene->getHighResTerrain()->getPointStep();
+
+    std::cout << "@@@@ paintSelectionPlane: input region [" << region.x0 << "," << region.y0 <<
+                  "," << region.x1 << "," << region.y1 << "]\n";
+
+    centre.y = 1.1*maxHt + 10.0f; // PCM: hack **** I think the quat rotation is inaccurate and camera is off angle slightly
+    // JG - the quaternion rotation is now fixed
+    centre.x = (pointStep*region.y0 + pointStep*region.y1)/2.0; // PCM: again, flip since drawgrid is flipped
+    centre.z = (pointStep*region.x0 + pointStep*region.x1)/2.0;
+    idt = glm::mat4(1.0f);
+    tfm = glm::translate(idt, glm::vec3(centre.x, centre.y, centre.z));
+
+    // PCM: this seems to be implied by way plane is defined?
+    planeWidth  = pointStep*(region.y1 - region.y0 + 1)/2.0f;
+    planeHeight = pointStep*(region.x1 - region.x0 + 1);
+
+
+    std::cout << "\nSelection plane data:\n";
+    std::cout << "centre = (" << centre.x << "," << centre.y << "," << centre.z << ")\n";
+    std::cout << "point step: " << pointStep << std::endl;
+    std::cout << "(planeWidth, planeHeight) = " << planeWidth << "," << planeHeight << ")\n";
+
+
+    shape.genPlane(vpPoint(0.0,0.0,1.0), vpPoint(0.0,0.0,0.0), planeWidth, planeHeight, tfm);
+    if (shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawparams.push_back(sdd);
+    }
+}
+
+void overviewWindow::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
+{
+    ShapeDrawData sdd;
+    float scale;
+    Shape shape;
+    glm::mat4 tfm, idt;
+    glm::vec3 trs, rot;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
+    std::vector<float> cinst;
+
+    // create shape
+    shape.clear();
+    shape.setColour(col);
+
+    // place vertical cylinder
+    scale = mview->getScaleFactor();
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(p.x, p.y, p.z);
+    rot = glm::vec3(1.0f, 0.0f, 0.0f);
+    tfm = glm::translate(idt, trs);
+    // tfm = glm::rotate(tfm, glm::radians(-90.0f), rot);
+    shape.genSphere(scale * transectradius*5.0f, 40, 40, tfm);
+    if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    {
+        sdd = shape.getDrawParameters();
+        sdd.current = false;
+        drawParams.push_back(sdd);
+    }
+}
+
+void overviewWindow::draw(void)
+{
+    vpPoint mo;
+    //glm::mat4 tfm, idt;
+    //glm::vec3 trs, rot;
+    std::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
+    Shape shape, planeshape;  // geometry for focus indicator
+    std::vector<glm::mat4> sinst;
+    std::vector<glm::vec4> cinst;
+
+    GLfloat blueish[] = {0.325f, 0.235f, 1.0f, 1.0f};
+    GLfloat purpleish[] = {0.6f, 0.2f, 0.8f, 1.0f};
+    //GLfloat pickCol[] = {1.0f, 0.2f, 0.2f, 1.0f};
+
+    Timer t;
+
+    if(active)
+    {
+        drawParams.clear();
+        t.start();
+        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // viewport is incorrect on creation, this will ensure current is used to match View
+        updateViewParams();
+
+        // build selection plane 'manipulator'
+        if(pickOnTerrain)
+            paintSelectionPlane(purpleish, drawParams);
+        else
+            paintSelectionPlane(blueish, drawParams);
+
+        // pass in draw params for objects
+        mrenderer->setConstraintDrawParams(drawParams);
+
+        // draw terrain
+
+        //mrenderer->forceHeightMapRebind(); // because we have two renderers looking at this openGl context
+        scene->getLowResTerrain()->setBufferToDirty();
+        // draw terrain  with selection plane
+        if (drawParams.size() > 0) // DEBUG: PCM
+            scene->getLowResTerrain()->updateBuffers(mrenderer);
+
+        mrenderer->draw(mview);
+
+        t.stop();
+
+        if(timeron)
+            cerr << "rendering = " << t.peek() << " fps = " << 1.0f / t.peek() << endl;
     }
 }

@@ -538,7 +538,10 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
         return;
     }
 
-    GLWidget * pview = new GLWidget(glFormat, this, scenes[i], transectControls[i],  (i == 0 ? string("left"): string("right")) );
+    GLWidget * pview = new GLWidget(glFormat, this, scenes[i],
+                                    transectControls[i],
+                                    (i == 0 ? string("left"): string("right")),
+                                    mapScenes[i]);
 
     numGridX = 1.0f / gridSepX;
     numGridZ = 1.0f / gridSepZ;
@@ -554,7 +557,9 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
     connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
     connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
     connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
-    connect(pview, SIGNAL(signalUpdateOverviews()), this, SLOT(updateOverviews()));
+    connect(pview, SIGNAL(signalExtractNewSubTerrain(int, int,int,int,int)), this,
+            SLOT(extractNewSubTerrain(int,int,int,int,int)) );
+    //connect(pview, SIGNAL(signalUpdateOverviews()), this, SLOT(updateOverviews()));
 
     perspectiveViews[i] = pview;
     //perspectiveViews.push_back(pview);
@@ -578,6 +583,7 @@ void Window::destroyVizPerspective(int i)
     perspectiveViews[i] = nullptr;
 }
 
+/*
 void Window::destroyVizOvermap(int i)
 {
     assert(i >=0 && i < 2);
@@ -592,6 +598,8 @@ void Window::destroyVizOvermap(int i)
     delete overviewMaps[i];
     overviewMaps[i] = nullptr;
 }
+
+*/
 
 void Window::setupVizChartViews(QGLFormat glFormat, int i)
 {
@@ -628,6 +636,7 @@ void Window::setupVizTimeline(QGLFormat glFormat, int i)
     vizLayout->addWidget(tview, 2, i*2);
 }
 
+/*
 void Window::setupVizOverMap(QGLFormat glFormat, int i)
 {
     if (overviewMaps.size() == 0)
@@ -658,7 +667,9 @@ void Window::setupVizOverMap(QGLFormat glFormat, int i)
     overviewMaps[i] = oview;
     // vizLayout->addWidget(oview, 4, i*2);
 }
+*/
 
+/*
 void Window::positionVizOverMap(int i)
 {
     if(perspectiveViews.size() == 2 && overviewMaps.size() == 2)
@@ -681,7 +692,7 @@ void Window::positionVizOverMap(int i)
             // cerr << "cornerpos " << i << " = " << cornerPos.x() << ", " << cornerPos.y() << endl;
         }
 }
-
+*/
 
 void Window::setupVizPanel()
 {
@@ -716,8 +727,8 @@ void Window::setupVizPanel()
     setupVizChartViews(glFormat, 1);
     setupVizTimeline(glFormat, 0);
     setupVizTimeline(glFormat, 1);
-    setupVizOverMap(glFormat, 0);
-    setupVizOverMap(glFormat, 1);
+    //setupVizOverMap(glFormat, 0);
+    //setupVizOverMap(glFormat, 1);
 
     // lock buttons
     QVBoxLayout *lockTLayout = new QVBoxLayout;
@@ -829,8 +840,8 @@ Window::Window(string datadir)
     active = false;
     visible = true;
 
-    overviewTimer.setSingleShot(true);
-    connect( &overviewTimer, SIGNAL(timeout()), SLOT(overviewShow()) );
+   // overviewTimer.setSingleShot(true);
+   // connect( &overviewTimer, SIGNAL(timeout()), SLOT(overviewShow()) );
 
     rendercount = 0;
     mainLayout->setSpacing(1);
@@ -915,7 +926,8 @@ void Window::run_viewer()
         scenes[i]->loadScene(1, 5); // years
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
-        overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
+        //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
+        perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
         setupGraphModels(i);
@@ -981,7 +993,7 @@ void Window::repaintAllGL()
             cerr << "^^^^^^^^^^^^ Window Activated ^^^^^^^^^^^^" << endl;
         }
     }*/
-    updateOverviews();
+    // updateOverviews();
 
     rendercount = 0;
     for(auto pview: perspectiveViews)
@@ -993,8 +1005,8 @@ void Window::repaintAllGL()
     for(auto cview: chartViews)
         cview->repaint();
     // PCM: probbaly not needed mostly...
-    for (auto mapviews: overviewMaps)
-        if (mapviews != nullptr) mapviews->repaint();
+    //for (auto mapviews: overviewMaps)
+    //    if (mapviews != nullptr) mapviews->repaint();
 }
 
 
@@ -1015,14 +1027,14 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     destroyVizPerspective(i);
 
     // destroy ovrview map widget
-    destroyVizOvermap(i);
+    //destroyVizOvermap(i);
 
     QGLFormat glFormat;
     glFormat.setVersion( 4, 1 );
     glFormat.setProfile( QGLFormat::CoreProfile );
 
     // rebuild overview map
-    setupVizOverMap(glFormat, i);
+    //setupVizOverMap(glFormat, i);
 
     // get current region (which should have changed from before)
     Region newReg = Region(x0,y0,x1,y1);
@@ -1053,6 +1065,7 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     // rebuild perspective widget
     setupVizPerspective(glFormat, i);
     perspectiveViews[i]->setScene(scenes[i]);
+    perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
     // required to preserve View Mx, will cause issues if left/reight perspective views are 'locked'
     // NOTE: the glWidget never frees 'view' and thus leaks memory. But changing this would require a
     // lot more code (should store View not View * and make copies - it's a lightweight object, but embedded
@@ -1062,6 +1075,7 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
 
     // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
     scenes[i]->getTerrain()->setBufferToDirty();
+    mapScenes[i]->getLowResTerrain()->setBufferToDirty();
 
     perspectiveViews[i]->rebindPlants();
 
@@ -1072,9 +1086,9 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     connect(timelineViews[i], SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
     connect(timelineViews[i], SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
 
-    overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
-    overviewMaps[i]->updateViewParams();
-    overviewMaps[i]->forceUpdate();
+    //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
+    //overviewMaps[i]->updateViewParams();
+    //overviewMaps[i]->forceUpdate();
 
     rendercount++;
     // PCM: + signal to clear transect!!!
@@ -1797,12 +1811,14 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
     }
 }
 
+/*
 void Window::closeEvent(QCloseEvent* event)
 {
     for(auto &it: overviewMaps) // floating so need to be closed separately
         it->close();
     event->accept();
 }
+
 
 void Window::updateOverviews()
 {
@@ -1834,7 +1850,9 @@ void Window::overviewShow()
     visible = true;
     updateOverviews();
 }
+*/
 
+/*
 void Window::resizeEvent(QResizeEvent* event)
 {
     if(active)
@@ -1848,6 +1866,7 @@ void Window::resizeEvent(QResizeEvent* event)
     event->accept();
 }
 
+
 void Window::moveEvent(QMoveEvent* event)
 {
     if(active)
@@ -1860,7 +1879,9 @@ void Window::moveEvent(QMoveEvent* event)
     }
     event->accept();
 }
+*/
 
+/*
 bool Window::eventFilter(QObject *obj, QEvent *event)
 {
     QEvent::Type event_type = event->type();
@@ -1889,6 +1910,7 @@ bool Window::eventFilter(QObject *obj, QEvent *event)
     }
     return QObject::eventFilter(obj, event);
 }
+*/
 
 void Window::exportMitsuba()
 {

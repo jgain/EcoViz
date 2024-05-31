@@ -138,7 +138,7 @@ public:
     void keyPressEvent(QKeyEvent *event);
 
 signals:
-    void signalExtractNewSubTerrain(int, int, int, int, int); // window (left/right) + region corners
+    //void signalExtractNewSubTerrain(int, int, int, int, int); // window (left/right) + region corners
     void signalRepaintAllGL();
     //void signalRebindPlants();
 
