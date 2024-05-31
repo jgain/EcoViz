@@ -124,6 +124,7 @@ GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect *
     focusviz = false;
     timeron = false;
     active = false;
+    persRotating = false;
     painted = false;
     rebindplants = true;
     scf = 10000.0f;
@@ -657,13 +658,19 @@ scene->getTerrain()->setBufferToDirty();
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
 
-        mapView->getWindowSize(wd,ht);
+        // mapView->getWindowSize(wd,ht); // JG - viewport and window coordinates are different on Apple
+        mapView->getViewSize(viewport[2], wd, ht);
         GLint newport[4];
 
-        newport[0] = (GLint)(this->width() - wd);
-        newport[1] = (GLint)(this->height() - ht);
+        newport[0] = (GLint)(viewport[2] - wd);
+        newport[1] = (GLint)(viewport[3] - ht);
         newport[2] = (GLint)wd;
         newport[3] = (GLint)ht;
+
+        cerr << "newport = " << newport[0] << ", " << newport[1] << ", " << newport[2] << ", " << newport[3] << endl;
+        cerr << "oldport = " << viewport[0] << ", " << viewport[1] << ", " << viewport[2] << ", " << viewport[3] << endl;
+        cerr << "olddim = " << this->width() << ", " << this->height() << endl;
+        cerr << "newdim = " << wd << ", " << ht << endl;
 
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         //glEnable(GL_SCISSOR_TEST);
@@ -992,22 +999,43 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     float nx, ny;
     vpPoint pnt;
     
-    int x = event->x(); int y = event->y();
+    int sx = event->x(); int sy = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
 
     // ensure this viewport is current for unproject
     refreshViews(); // should not be necessary
 
-    // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
-    if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
+    if(mapView->mouseInOverView(width(), height(), sx, sy))
     {
-        // arc rotate in perspective mode
-  
-        // convert to [0,1] X [0,1] domain
-        nx = (2.0f * (float) x - W) / W;
-        ny = (H - 2.0f * (float) y) / H;
-        lastPos = event->pos();
-        view->startArcRotate(nx, ny);
+        int ox, oy;
+
+        // transform mouse position to overview window coordinates
+        mapView->mouseCoordTransform(width(), height(), sx, sy, ox, oy);
+
+        // for specifying a new region from scratch, right click and drag
+        if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
+            mapView->startRegionDemarcation(ox, oy);
+
+        // for translating an existing region, left click in the region and drag
+        if(event->buttons() == Qt::LeftButton)
+            mapView->startRegionTranslate(ox, oy);
+
+        if(mapView->getPickOnTerrain())
+            updateGL();
+    }
+    else
+    {
+        // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
+        if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
+        {
+            // arc rotate in perspective mode
+            // convert to [0,1] X [0,1] domain
+            nx = (2.0f * (float) sx - W) / W;
+            ny = (H - 2.0f * (float) sy) / H;
+            lastPos = event->pos();
+            view->startArcRotate(nx, ny);
+            persRotating = true;
+        }
     }
 
     lastPos = event->pos();
@@ -1028,7 +1056,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
             int Xwd = currRegion.x1 - currRegion.x0 + 1;
             int Ywd = currRegion.y1 - currRegion.y0 + 1;
 
-            // hack for now til events work
+            // hack for now till events work
             currRegion.x0 += 100;
             currRegion.x1 += 100;
             currRegion.y0 += 100;
@@ -1148,49 +1176,56 @@ void GLWidget::pointPlaceTransect(bool firstPoint)
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    if(event->button() == Qt::LeftButton && event->modifiers() == Qt::ControlModifier) // place transect point
-    {
-        vpPoint pnt;
-        int sx, sy;
+    int sx, sy;
+    sx = event->x(); sy = event->y();
 
-        sx = event->x(); sy = event->y();
-        trc->showtransect = true;
-        switch(trc->trxstate)
+    persRotating = false;
+    if(mapView->mouseInOverView(width(), height(), sx, sy) || mapView->getPickOnTerrain())
+    {
+        persRotating = false;
+        if(mapView->endRegionChange())
         {
-        case -1:
-        case 0: // placement of initial point
-            if(scene->getTerrain()->pick(sx, sy, view, pnt))
-            {
-                trc->t1 = pnt;
-                trc->trxstate = 1;
-                trc->trx->setValidFlag(false);
-                pointPlaceTransect(true);
-                signalSyncPlace(true);
-                winparent->rendercount++;
-                updateGL();
-            }
-            break;
-        case 1: // placement of final point
-            if(scene->getTerrain()->pick(sx, sy, view, pnt))
-            {
-                trc->t2 = pnt;
-                trc->trxstate = 0;
-                trc->trx->derive(trc->t1, trc->t2, scene->getTerrain());
-                pointPlaceTransect(false);
-                signalSyncPlace(false);
-                winparent->rendercount++;
-                signalRepaintAllGL(); // need to also update transect view
-            }
-            break;
+            // now apply change
+            Region currRegion = mapView->getSelectionRegion();
+            signalExtractNewSubTerrain( (wname=="left" ? 0: 1), currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
         }
-        /*
-        if(scene->getTerrain()->pick(sx, sy, view, pnt))
+    }
+    else
+    {
+        if(event->button() == Qt::LeftButton && event->modifiers() == Qt::ControlModifier) // place transect point
         {
-            int x, y;
-            scene->getTerrain()->toGrid(pnt, x, y);
-            pickInfo(x, y);
+            vpPoint pnt;
+
+            trc->showtransect = true;
+            switch(trc->trxstate)
+            {
+            case -1:
+            case 0: // placement of initial point
+                if(scene->getTerrain()->pick(sx, sy, view, pnt))
+                {
+                    trc->t1 = pnt;
+                    trc->trxstate = 1;
+                    trc->trx->setValidFlag(false);
+                    pointPlaceTransect(true);
+                    signalSyncPlace(true);
+                    winparent->rendercount++;
+                    updateGL();
+                }
+                break;
+            case 1: // placement of final point
+                if(scene->getTerrain()->pick(sx, sy, view, pnt))
+                {
+                    trc->t2 = pnt;
+                    trc->trxstate = 0;
+                    trc->trx->derive(trc->t1, trc->t2, scene->getTerrain());
+                    pointPlaceTransect(false);
+                    signalSyncPlace(false);
+                    winparent->rendercount++;
+                    signalRepaintAllGL(); // need to also update transect view
+                }
+                break;
+            }
         }
-        */
     }
 }
 
@@ -1204,16 +1239,41 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     W = (float) width();
     H = (float) height();
 
+    // cerr << "mouse pos = " << x << ", " << y << endl;
+    // cerr << "in overview = " << mapView->mouseInOverView(W, H, x, y);
     // control view orientation with right mouse button or ctrl modifier key and left mouse
-    if(event->buttons() == Qt::RightButton)
+
+    if(mapView->mouseInOverView(width(), height(), x, y))
     {
-        // convert to [0,1] X [0,1] domain
-        nx = (2.0f * (float) x - W) / W;
-        ny = (H - 2.0f * (float) y) / H;
-        view->arcRotate(nx, ny);
-        lastPos = event->pos();
-        refreshViews();
+        int ox, oy;
+
+        // transform mouse position to overview window coordinates
+        mapView->mouseCoordTransform(width(), height(), x, y, ox, oy);
+
+        // adjust shape of the region selection
+        if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
+            mapView->continueRegionDemarcation(ox, oy);
+
+        // adjust position of the region selection
+        if(event->buttons() == Qt::LeftButton)
+            mapView->continueRegionTranslate(ox, oy);
+
+        if(mapView->getPickOnTerrain())
+            updateGL();
     }
+    else
+    {
+        if(persRotating && event->buttons() == Qt::RightButton)
+        {
+            // convert to [0,1] X [0,1] domain
+            nx = (2.0f * (float) x - W) / W;
+            ny = (H - 2.0f * (float) y) / H;
+            view->arcRotate(nx, ny);
+
+            refreshViews();
+        }
+    }
+    lastPos = event->pos();
 }
 
 void GLWidget::wheelEvent(QWheelEvent * wheel)
@@ -1289,6 +1349,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     active = true;
     timeron = false;
     pickOnTerrain = false;
+    perscale = 0.2f;
 
     mrenderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
 
@@ -1609,3 +1670,144 @@ void overviewWindow::draw(void)
             cerr << "rendering = " << t.peek() << " fps = " << 1.0f / t.peek() << endl;
     }
 }
+
+void overviewWindow::mouseCoordTransform(int w, int h, int sx, int sy, int &ox, int &oy)
+{
+    int ix, iy, ow, oh;
+
+    // transform to independent [0,1] coordinates for x and y
+    getViewSize(w, ow, oh);
+    ix = sx - (w - ow);
+    iy = sy;
+
+    ox = (int) ((float) ovw * (float) ix / (float) ow);
+    oy = (int) ((float) ovh * (float) iy / (float) oh);
+}
+
+void overviewWindow::startRegionDemarcation(int x, int y)
+{
+    vpPoint pnt;
+
+    mview->apply();
+    if(scene->getHighResTerrain()->pick(x, y, mview, pnt))
+    {
+        pickPos = pnt;
+        pickOnTerrain = true;
+        // convert to grid coordinates
+        scene->getHighResTerrain()->toGrid(pickPos, pick0y, pick0x);
+        prevRegion = currRegion;
+        currRegion.x0 = pick0x; currRegion.x1 = pick0x;
+        currRegion.y0 = pick0y; currRegion.y1 = pick0y;
+    }
+}
+
+void overviewWindow::startRegionTranslate(int x, int y)
+{
+    vpPoint pnt;
+
+    mview->apply();
+    if(scene->getHighResTerrain()->pick(x, y, mview, pnt))
+    {
+        // in terrain bounds, now check region bounds
+        // convert to grid coordinates
+        pickPos = pnt;
+        scene->getHighResTerrain()->toGrid(pickPos, pick0y, pick0x);
+
+        if(pick0x < currRegion.x1 && pick0x >= currRegion.x0 && pick0y < currRegion.y1 && pick0y >= currRegion.y0)
+        {
+             prevRegion = currRegion;
+             pickOnTerrain = true;
+        }
+    }
+}
+
+void overviewWindow::continueRegionDemarcation(int x, int y)
+{
+    if(pickOnTerrain)
+    {
+        vpPoint pnt;
+        mview->apply();
+        scene->getHighResTerrain()->pick(x, y, mview, pnt); // okay to move out of bounds, with edge clipping
+        pickPos = pnt;
+
+        // convert to grid coordinates
+        scene->getHighResTerrain()->toGrid(pickPos, pick1y, pick1x);
+        if(pick1x < pick0x)
+        {
+            currRegion.x0 = pick1x; currRegion.x1 = pick0x;
+        }
+        else
+        {
+            currRegion.x0 = pick0x; currRegion.x1 = pick1x;
+        }
+
+        if(pick1y < pick0y)
+        {
+            currRegion.y0 = pick1y; currRegion.y1 = pick0y;
+        }
+        else
+        {
+            currRegion.y0 = pick0y; currRegion.y1 = pick1y;
+        }
+    }
+}
+
+void overviewWindow::continueRegionTranslate(int x, int y)
+{
+    if(pickOnTerrain)
+    {
+        vpPoint pnt;
+        int delx, dely, dx, dy;
+        mview->apply();
+        scene->getHighResTerrain()->pick(x, y, mview, pnt); // okay to move out of bounds, with edge clipping
+        pickPos = pnt;
+
+        // convert to grid coordinates
+        scene->getHighResTerrain()->toGrid(pickPos, pick1y, pick1x);
+        scene->getHighResTerrain()->getGridDim(dx, dy);
+
+        delx = pick1x - pick0x ;
+        dely = pick1y - pick0y;
+
+        // bound delta to prevent move off the terrain edge
+        int newx0, newx1, newy0, newy1;
+        newx0 = prevRegion.x0 + delx;
+        newx1 = prevRegion.x1 + delx;
+        newy0 = prevRegion.y0 + dely;
+        newy1 = prevRegion.y1 + dely;
+        if(newx0 < 0)
+            delx += newx0 * -1;
+        if(newx1 >= dx)
+            delx -= newx1 - dx + 1;
+        if(newy0 < 0)
+            dely += newy0 * -1;
+        if(newy1 >= dy)
+            dely -= newy1 - dy + 1;
+
+        currRegion.x0 = prevRegion.x0 + delx; currRegion.x1 = prevRegion.x1 + delx;
+        currRegion.y0 = prevRegion.y0 + dely; currRegion.y1 = prevRegion.y1 + dely;
+    }
+}
+
+
+bool overviewWindow::endRegionChange()
+{
+    bool updateRegion = false;
+
+    if(pickOnTerrain)
+    {
+        int Xwd = currRegion.x1 - currRegion.x0 + 1;
+        int Ywd = currRegion.y1 - currRegion.y0 + 1;
+
+        // restore previous state if window is not valid or sides less than 150 samples
+        if (!isSelectionValid(currRegion) || Xwd < 150 || Ywd < 150)
+            currRegion = prevRegion;
+        else
+            updateRegion = true;
+
+        pickOnTerrain = false;
+    }
+    return updateRegion;
+}
+
+

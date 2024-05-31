@@ -311,6 +311,8 @@ private:
     bool timeron;
     bool active; //< scene only rendered if this is true
     bool painted; //< set after first successful paint
+    bool persRotating; // if arcball rotation of main perspective view is active
+    bool overviewPick; // if a mouse press occurs on the overview map
     std::vector<bool> plantvis;
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true
@@ -428,6 +430,59 @@ class overviewWindow {
         width = ovw; height = ovh;
     }
 
+    void getViewSize(int perswidth, int & width, int & height)
+    {
+        float aspect = (float) ovh / (float) ovw;
+        width = (int) ((float) perswidth * perscale); height = (int) ((float) width * aspect);
+    }
+
+    bool getPickOnTerrain(){ return pickOnTerrain; }
+
+    bool mouseInOverView(int winwd, int winht, int mx, int my)
+    {
+        int wd, ht;
+
+        getViewSize(winwd, wd, ht);
+        return (mx > winwd - wd && my < ht);
+    }
+
+    /// Transform perspective window coordinates (sx, sy) to overview map coordinates (ox, oy)
+    void mouseCoordTransform(int w, int h, int sx, int sy, int &ox, int &oy);
+
+    /**
+     * @brief startRegionDemarcation On mouse down in overview window, start marking out a new sub-region
+     * @param x mouse x-coord
+     * @param y mouse y-coord
+     */
+    void startRegionDemarcation(int x, int y);
+
+    /**
+     * @brief startRegionTranslate On mouse down in overview window over existing sub-region, begin translation
+     * @param x mouse x-coord
+     * @param y mouse y-coord
+     */
+    void startRegionTranslate(int x, int y);
+
+    /**
+     * @brief continueRegionDemarcation Process mouse movement in sub-region demarcation mode
+     * @param x mouse x-coord
+     * @param y mouse y-coord
+     */
+    void continueRegionDemarcation(int x, int y);
+
+    /**
+     * @brief continueRegionTranslate Process mouse movement in sub-region translation mode
+     * @param x mouse x-coord
+     * @param y mouse y-coord
+     */
+    void continueRegionTranslate(int x, int y);
+
+    /**
+     * @brief endRegionChange On mouse up finalise the new sub-region position and dimensions if necessary
+     * @return true if a new terrain needs to be extracted, otherwise false
+     */
+    bool endRegionChange();
+
     /// recalculate View params for viewport
     void updateViewParams(void);
 
@@ -454,6 +509,7 @@ private:
     vpPoint pickPos;
     bool pickOnTerrain; // signals manipulation of selection region
     int ovw, ovh; // width and height of overview window based on terrain aspect ratio
+    float perscale; // what horizontal proportion of the perspective view should be occupied by overview
 
     // render variables
     PMrender::TRenderer * mrenderer;
@@ -462,7 +518,6 @@ private:
     bool active;
     bool timeron;
     float scf;
-
 
     QPoint lastPos;
     QColor qtWhite;
@@ -480,8 +535,6 @@ private:
     void paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData> & drawparams);
 
     void paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
-
-
 
     // set size based on aspect ratio of terrain
     void setWindowSize(void);
