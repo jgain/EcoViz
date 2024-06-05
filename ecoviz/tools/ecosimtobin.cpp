@@ -226,6 +226,15 @@ void cohortmapToBin(const string &in, const string & out, const string & verStr)
   if (!ofs.is_open())
     throw invalid_argument("Could not open file at " + out);
 
+  if (verStr.size() > 0)
+    versionNumber = verStr;
+  
+  int slen = versionNumber.length();
+  cout << "Version string: " << versionNumber << " of length " << slen << endl;
+  ofs.write(reinterpret_cast<const char*>(&slen), sizeof(int));				  
+  ofs.write(versionNumber.c_str(), slen); // don't store null
+  ofs.write(reinterpret_cast<const char*>(&timestep), sizeof(int));
+  ofs.write(reinterpret_cast<const char*>(&ntrees_expected), sizeof(int));
   ofs.write(reinterpret_cast<const char*>(cohortAdata.data()), nBytes);
   if (!ofs)
     throw runtime_error("Something went wrong when writing first part of " + out);
@@ -277,6 +286,7 @@ void cohortmapToBin(const string &in, const string & out, const string & verStr)
   
   long nBytesB = sizeof(cohortB)*cohortBdata.size();
   cout << "Number of bytes in part B of binary file: " << nBytesB << endl;
+  ofs.write(reinterpret_cast<const char*>(&ncohorts_expected), sizeof(int));
   ofs.write(reinterpret_cast<const char*>(cohortBdata.data()), nBytesB);
   if (!ofs)
     throw runtime_error("Something went wrong when writing second part of " + out);
