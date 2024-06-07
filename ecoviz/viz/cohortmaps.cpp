@@ -17,7 +17,13 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
     for (auto &fname : filenames)
     {
-        int timestep = ilanddata::read(fname, minversion,  species_lookup, TIMESTEP_ONLY).timestep;
+        bool binFileRead = false;
+        if (fname.rfind(".pdbb") != std::string::npos)
+            binFileRead = true;
+
+        int timestep =  (binFileRead == false ? ilanddata::read(fname, minversion,  species_lookup, TIMESTEP_ONLY).timestep :
+                                                ilanddata::readbinary(fname, minversion,  species_lookup, TIMESTEP_ONLY).timestep);
+
         timesteps.push_back(timestep);
     }
 
@@ -46,7 +52,12 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
     timestep_mature.resize(filenames.size());
     for (auto &fname : filenames)
     {
-        auto fdata = ilanddata::read(fname, minversion, species_lookup, ALL_FILEDATA);
+        bool binFileRead = false;
+        if (fname.rfind(".pdbb") != std::string::npos)
+            binFileRead = true;
+
+        auto fdata = (binFileRead == false ?  ilanddata::read(fname, minversion, species_lookup, ALL_FILEDATA) :
+                                              ilanddata::readbinary(fname, minversion, species_lookup, ALL_FILEDATA));
         if (dx < 0.0f || dy < 0.0f)
         {
             dx = fdata.dx;

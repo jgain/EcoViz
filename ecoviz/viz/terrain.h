@@ -348,10 +348,16 @@ public:
     void test();
 
     /**
-       * Load a terrain from a file.
+       * Load a terrain from a (text) file. (.elv)
        * @param filename   File to load (simple ascii elevation format)
        */
     void loadElv(const std::string &filename);
+
+    /**
+       * Load a terrain from a binary file (.elvb).
+       * @param filename   File to load (simple ascii elevation format)
+       */
+    void loadElvBinary(const std::string &filename);
 
     /**
        * Load a terrain from a file - pply dwonsampling (skip every nth sample)
@@ -359,6 +365,8 @@ public:
        * @param downsample donsam,pling factor (integer > 1)
        */
     void loadElv(const std::string &filename, int downsample);
+    /* As above, but open a binary file */
+    void loadElvBinary(const std::string &filename, int downsample);
 
     /**
        * Save a terrain to file.

@@ -513,13 +513,31 @@ std::unique_ptr<Terrain> mapScene::extractTerrainSubwindow(Region region)
 std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
 {
 
-    std::string terfile = datadir+"/dem.elv";
+    //std::string terfile = datadir+"/dem.elv";
+    std::string binfile = datadir+"/" + basename + ".elvb";
+    std::string txtfile = datadir+"/" + basename + ".elv";
+    std::string terfile;
+
+    bool binaryElvFile = false;
+
+    if (std::ifstream(binfile).is_open())
+    {
+        binaryElvFile = true;
+        terfile = binfile;
+    }
+    else
+        terfile = txtfile;
+
     float terx, tery;
     int gridx, gridy;
     vpPoint mid;
 
     // load terrain
-    fullResTerrain->loadElv(terfile);
+    if (binaryElvFile)
+        fullResTerrain->loadElvBinary(terfile);
+    else
+        fullResTerrain->loadElv(terfile);
+
     fullResTerrain->calcMeanHeight();
 
     std::cout << "\n ****** Hi-res Terrain loaded...\n";
@@ -547,7 +565,10 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
     //defRegion.y1 = gridy-1;
 
     // create downsampled overview
-    lowResTerrain->loadElv(terfile, downFactor);
+    if (binaryElvFile)
+        lowResTerrain->loadElvBinary(terfile, downFactor);
+    else
+        lowResTerrain->loadElv(terfile, downFactor);
     lowResTerrain->calcMeanHeight();
 
     selectedRegion = defRegion;
@@ -581,7 +602,7 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
 
 //// Scene
 
-Scene::Scene(string ddir) : terrain( new Terrain())
+Scene::Scene(string ddir, string base) : terrain( new Terrain())
 {
     //terrain = new Terrain();
     terrain->initGrid(1024, 1024, 10000.0f, 10000.0f);
@@ -590,6 +611,7 @@ Scene::Scene(string ddir) : terrain( new Terrain())
     tline = new Timeline();
 
     datadir = ddir;
+    basename = base;
     int dx, dy;
     terrain->getGridDim(dx, dy);
 
@@ -806,7 +828,16 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
 
     for (int ts = timestep_start; ts <= timestep_end; ts++)
     {
-        timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
+        //timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
+        string binfile = datadir + "/" + basename + std::to_string(ts) + ".pdbb";
+        string txtfile = datadir + "/" + basename + std::to_string(ts) + ".pdb";
+        string filename;
+        if (ifstream(binfile).is_open()) //prefer binary version
+            filename = binfile;
+        else
+            filename = txtfile;
+
+        timestep_files.push_back(filename); // datadir + "/" + basename + std::to_string(ts) + ".pdbb");
     }
 
     // load terrain (already calld loadElv and calcMeanHeight)

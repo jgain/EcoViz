@@ -826,7 +826,7 @@ void Window::setupGraphModels(int scene_index)
 }
 
 // PCM: add in constructor names for map overlay  - TBD
-Window::Window(string datadir)
+Window::Window(string datadir, string lprefix, string rprefix)
 {
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout();
@@ -863,9 +863,9 @@ Window::Window(string datadir)
     // load scenes
     for(int i = 0; i < 2; i++)
     {
-        Scene * s = new Scene(datadir);
+        Scene * s = new Scene(datadir, (i == 0 ? lprefix : rprefix) );
         scenes.push_back(s);
-        mapScene * ms = new mapScene(datadir, mapOverlayFile[i]);
+        mapScene * ms = new mapScene(datadir, mapOverlayFile[i], (i ==0 ? lprefix : rprefix) );
         mapScenes.push_back(ms);
     }
 

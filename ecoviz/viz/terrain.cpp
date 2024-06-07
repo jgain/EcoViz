@@ -636,6 +636,79 @@ void Terrain::loadElv(const std::string &filename, int dFactor)
         cerr << "Error Terrain::loadElv (with downsample): unable to open file " << filename << endl;
     }
 }
+
+void Terrain::loadElvBinary(const std::string &filename, int dFactor)
+{
+    //float lat;
+    int dx, dy;
+
+    float val;
+    ifstream infile;
+
+    infile.open((char *) filename.c_str(), ios::binary);
+
+    if(infile.is_open())
+    {
+        std::size_t count =0;
+        infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&step), sizeof(float));
+
+        assert(dx > dFactor);
+        assert(dy > dFactor);
+
+        int newdx = int(dx/dFactor) + ( dx % dFactor > 0 ? 1: 0),
+            newdy = int(dy/dFactor) + ( dy % dFactor > 0 ? 1: 0);
+
+        // infile >> lat;
+
+        delGrid();
+        // PCM: think this should be (dx-1)*step etc?
+        // retain original domain size, just sample coarsely
+        init(newdx, newdy, (float) (dx-1) * step, (float) (dy-1) * step);
+        // latitude = lat;
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+
+        std::vector<float> heights;
+        heights.resize(dx*dy);
+
+        infile.read(reinterpret_cast<char*>(heights.data()), dx*dy*sizeof(float));
+        infile.close();
+
+        long ct = 0;
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
+        {
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
+            {
+                //infile >> val;
+                val = heights[ct++];
+                // only take every dFactor'th sample, starting at 0
+                if (x % dFactor == 0 && y % dFactor == 0)
+                {
+                    count++;
+                    grid->set(x/dFactor, y/dFactor, val); //  * 0.3048f); // convert from feet to metres
+                    drawgrid->set(y/dFactor, x/dFactor, val); // * 0.3048f);
+                }
+            }
+        }
+
+        assert(count == newdx*newdy);
+
+        // reflect new sampling for this image - coarsened
+        step = step*dFactor;
+
+        setMidFocus();
+        infile.close();
+    }
+    else
+    {
+        cerr << "Error Terrain::loadElv (with downsample): unable to open file " << filename << endl;
+    }
+}
+
 void Terrain::loadElv(const std::string &filename)
 {
     //float lat;
@@ -671,6 +744,57 @@ void Terrain::loadElv(const std::string &filename)
         }
         setMidFocus();
         infile.close();
+    }
+    else
+    {
+        cerr << "Error Terrain::loadElv:unable to open file " << filename << endl;
+    }
+}
+
+void Terrain::loadElvBinary(const std::string &filename)
+{
+    //float lat;
+    int dx, dy;
+
+    float val;
+    ifstream infile;
+
+    infile.open((char *) filename.c_str(), ios::binary);
+    if(infile.is_open())
+    {
+        infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&step), sizeof(float));
+
+        // infile >> lat;
+
+        delGrid();
+        // PCM: changed dx*step -> (dx-1)*step etc, else looks incorrect?
+        init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
+        // latitude = lat;
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+
+        std::vector<float> heights;
+        heights.resize(dx*dy);
+
+        infile.read(reinterpret_cast<char*>(heights.data()), dx*dy*sizeof(float));
+        infile.close();
+
+        long ct = 0;
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
+        {
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
+            {
+                val = heights[ct++];
+                grid->set(x, y, val); //  * 0.3048f); // convert from feet to metres
+                drawgrid->set(y, x, val); // * 0.3048f);
+            }
+        }
+        setMidFocus();
+
     }
     else
     {
