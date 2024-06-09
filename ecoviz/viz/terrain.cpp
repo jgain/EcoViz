@@ -600,9 +600,9 @@ void Terrain::loadElv(const std::string &filename, int dFactor)
         // infile >> lat;
 
         delGrid();
-        // PCM: think this should be (dx-1)*step etc?
+
         // retain original domain size, just sample coarsely
-        init(newdx, newdy, (float) (dx-1) * step, (float) (dy-1) * step);
+        init(newdx, newdy, (float) (dx) * step, (float) (dy) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
@@ -663,9 +663,9 @@ void Terrain::loadElvBinary(const std::string &filename, int dFactor)
         // infile >> lat;
 
         delGrid();
-        // PCM: think this should be (dx-1)*step etc?
+
         // retain original domain size, just sample coarsely
-        init(newdx, newdy, (float) (dx-1) * step, (float) (dy-1) * step);
+        init(newdx, newdy, (float) (dx) * step, (float) (dy) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
@@ -726,8 +726,8 @@ void Terrain::loadElv(const std::string &filename)
         // infile >> lat;
 
         delGrid();
-        // PCM: changed dx*step -> (dx-1)*step etc, else looks incorrect?
-        init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
+
+        init(dx, dy, (float) (dx) * step, (float) (dy) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
@@ -769,8 +769,8 @@ void Terrain::loadElvBinary(const std::string &filename)
         // infile >> lat;
 
         delGrid();
-        // PCM: changed dx*step -> (dx-1)*step etc, else looks incorrect?
-        init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
+
+        init(dx, dy, (float) (dx) * step, (float) (dy) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
