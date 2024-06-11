@@ -872,10 +872,9 @@ void Scene::loadDataMaps(int timesteps)
     // std::cout << "Datadir before fixing: " << datadir << std::endl;
     while (datadir.back() == '/')
         datadir.pop_back();
-    idxfile = datadir + "/ecoviz_bl_idx.asc";
-    datafile = datadir + "/ecoviz_bl_map.csv";
+    idxfile = datadir + "/" + basename + "_idx.asc";
+    datafile = datadir + "/" + basename + "_map.csv";
 
-     // hardcode srcRegion adjustment for the moment
     dmaps->loadDataMaps(idxfile, datafile, timesteps);
 }
 

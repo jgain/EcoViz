@@ -132,6 +132,7 @@ void parseCommandLine(int argc, char *argv[])
     for (int i = 1; i < argc; ++i)
     {
         string arg = argv[i];
+        cerr << arg << endl;
         if (arg == "-lprefix")
         {
             if (i+1 >= argc) printError("-lprefix must have an argument");
@@ -155,7 +156,7 @@ void parseCommandLine(int argc, char *argv[])
         else
         {
            dir = argv[i];
-           break;
+           // break;
         }
     }
 
