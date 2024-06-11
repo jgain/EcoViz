@@ -333,6 +333,7 @@ private:
     std::unique_ptr<Terrain> lowResTerrain;    // low resolution terrain for overview rendering
     std::unique_ptr<TypeMap> overlay;          // single overlay supported (blended over terrain)
     std::string datadir;                       // directory containing all the scene data
+    std::string basename;                      // the dem name (without extension)
     std::string overlayName;                   // name of overlap image
     Region selectedRegion;                     // current selected sub-region  - relative to hi-res input
                                                //(needed for overview render)
@@ -345,12 +346,13 @@ private:
 
 public:
 
-    mapScene(const std::string & ddir, const std::string overlayNm) :
+    mapScene(const std::string & ddir, const std::string overlayNm, const std::string & base) :
         fullResTerrain(new Terrain), lowResTerrain(new Terrain),
         overlay(new TypeMap)
     {
         overlayName = overlayNm;
         datadir = ddir;
+        basename = base;
         downFactor = 4;
 
         selectedRegion = Region();
@@ -392,6 +394,7 @@ private:
     Terrain *masterTerrain;                     //< a pointer to the large input terrain this one is extracted from
     TypeMap * maps[(int) TypeMapType::TMTEND];  //< underlying type map data
     string datadir;                             //< directory containing all the scene data
+    string basename;                            //< base name for DEM and sequence of PDBs
     Timeline * tline;                           //< timeline
     NoiseField * nfield;                        //< random noise map
     DataMaps * dmaps;                           //< data maps for extracting textures
@@ -409,7 +412,7 @@ public:
     std::unique_ptr<CohortMaps> cohortmaps;     //< agreggate ecosystem data
     std::unique_ptr<cohortsampler> sampler;     //< to derive individual trees from cohort maps
 
-    Scene(string ddir);
+    Scene(string ddir, string base);
 
     ~Scene();
 

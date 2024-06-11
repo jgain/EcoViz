@@ -89,6 +89,8 @@ namespace data_importer
 			bool fileversion_gteq(std::string v1, std::string v2);
 
             filedata read(std::string filename, std::string minversion,  const std::map<std::string, int> &species_lookup, bool timestep_only = false);
+            // binary file input
+            filedata readbinary(std::string filename, std::string minversion,  const std::map<std::string, int> &species_lookup, bool timestep_only = false);
             std::vector<filedata> read_many(const std::vector<std::string> &filename, std::string minversion, const std::map<std::string, int> &species_lookup);
 
             void trim_filedata_spatial(filedata &data, int width, int height);

@@ -37,7 +37,20 @@ Then run make to build. cmake options are sticky.
 
 The executable is ./viz/ecoviz. The system must be run from the build directory because there are some relative paths.
 
-To run the visualizer with test data execute: ./viz/ecoviz ../../data/test2
+To run the visualizer with test data execute: ./viz/ecoviz -prefix ecoviz_ ../../data/test2
+
+This will read an an elevation map (ecoviz_.elv) and the set of simulation files (ecoviz_0.pdb, ecoviz_1.pdb...)  The default simply reads 
+in a set of these that is hardcoded at present). Rather than using these text files as input, you should generate binary file equivalents and copy
+these to test2.  
+
+NOTE: you can set different elevation/terrain files and simulation files for the left and right windows by using -lprefix and -rprefix to set
+different  base file names for the left and right windows. If you use -prefix then the same files are used for both the left and right displays. 
+
+Generating binary input files from text files (preferred):
+
+There is an executable file - ecosimtobin - in the 'tools' sub-directory which can be run to translate text versions of elevation files (.elv extension) to binary (.elvb extension). The program can also translate the cohort simulation files (.pdb format) to their binary equivalents (.pdbb). 
+The binary files load faster and take up less space on disk. For the cohort files, they should have a common basename and an integer sequence number (starting at 0) e.g. ecoviz0.pdb, ecoviz1.pdb.  To see how to invoke the converter, run it with no command line arguments. 
+
 
 GUI
 ---

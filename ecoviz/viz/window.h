@@ -119,7 +119,7 @@ class Window : public QMainWindow
     Q_OBJECT
 
 public:
-    Window(std::string datadir);
+    Window(std::string datadir, std::string lbasename, std::string rbasename);
 
     ~Window();
 
