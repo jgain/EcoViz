@@ -686,5 +686,4 @@ void GLTransect::rebindPlants()
 {
     rebindplants = true;
     forceRebindPlants = true;
-    std::cout << "%%%%%% rebindPlants on Transect called...%%%%%%\n";
 }

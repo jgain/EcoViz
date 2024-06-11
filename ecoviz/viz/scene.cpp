@@ -600,17 +600,7 @@ Scene::Scene(string ddir) : terrain( new Terrain())
     maps[2]->setRegion(Region(0, 0, dy-1, dx-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
     nfield = new NoiseField(dx,dy,5, 0);
-
-    for(int m = 0; m < 12; m++)
-    {
-        moisture.push_back(new basic_types::MapFloat());
-        sunlight.push_back(new basic_types::MapFloat());
-        temperature.push_back(0.0f);
-    }
-    slope = new basic_types::MapFloat();
-    chm = new basic_types::MapFloat();
-    cdm = new basic_types::MapFloat();
-
+    dmaps = new DataMaps();
     masterTerrain = nullptr;
 }
 
@@ -632,14 +622,7 @@ Scene::~Scene()
     delete biome;
     delete tline;
     delete nfield;
-    for(int m = 0; m < 12; m++)
-    {
-        delete sunlight[static_cast<int>(m)];
-        delete moisture[static_cast<int>(m)];
-    }
-    temperature.clear();
-    delete chm;
-    delete cdm;
+    delete dmaps;
 }
 
 std::string Scene::get_dirprefix()
@@ -725,46 +708,6 @@ bool Scene::writeMonthlyMap(std::string filename, std::vector<basic_types::MapFl
 
 }
 
-bool Scene::readSun(std::string filename)
-{
-    return readMonthlyMap(filename, sunlight);
-}
-
-bool Scene::writeSun(std::string filename)
-{
-    return writeMonthlyMap(filename, sunlight);
-}
-
-bool Scene::readMoisture(std::string filename)
-{
-    return readMonthlyMap(filename, moisture);
-}
-
-bool Scene::writeMoisture(std::string filename)
-{
-    return writeMonthlyMap(filename, moisture);
-}
-
-void Scene::calcSlope()
-{
-    int dx, dy;
-    Vector up, n;
-
-    // slope is dot product of terrain normal and up vector
-    up = Vector(0.0f, 1.0f, 0.0f);
-    terrain->getGridDim(dx, dy);
-    slope->setDim(dx, dy);
-    slope->fill(0.0f);
-    for(int x = 0; x < dx; x++)
-        for(int y = 0; y < dy; y++)
-        {
-            terrain->getNormal(x, y, n);
-            float rad = acos(up.dot(n));
-            float deg = RAD2DEG * rad;
-            slope->set(y, x, deg);
-        }
-}
-
 void Scene::reset_sampler(int maxpercell)
 {
     float rw, rh;
@@ -797,11 +740,11 @@ void Scene::loadScene(int timestep_start, int timestep_end)
 
 void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_end)
 {
+    std::vector<std::string> timestep_files;
     bool checkfiles = true;
 
     using namespace data_importer;
 
-    std::vector<std::string> timestep_files;
     //std::string terfile = datadir+"/dem.elv";
 
     for (int ts = timestep_start; ts <= timestep_end; ts++)
@@ -831,7 +774,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     // NB: must maintain original terrain dims/size when imposing a sub-region terrain
     // ****entire**** region plan/eco data read in - later we select out the relevant parts for
     // rendering
-       Region srcRegion;
+    Region srcRegion;
     float sx,ex, sy, ey, parentXdim, parentYdim;
     terrain->getSourceRegion(srcRegion,
                              sx, sy, ex, ey,
@@ -889,8 +832,20 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         cerr << "TimeLine" << endl;
         cerr << "start = " << tline->getTimeStart() << " end = " << tline->getTimeEnd() << " delta = " << tline->getTimeStep() << " current = " << tline->getNow() << endl;
     }
+}
 
+void Scene::loadDataMaps(int timesteps)
+{
+    std::string idxfile, datafile;
 
+    // std::cout << "Datadir before fixing: " << datadir << std::endl;
+    while (datadir.back() == '/')
+        datadir.pop_back();
+    idxfile = datadir + "/ecoviz_bl_idx.asc";
+    datafile = datadir + "/ecoviz_bl_map.csv";
+
+     // hardcode srcRegion adjustment for the moment
+    dmaps->loadDataMaps(idxfile, datafile, timesteps);
 }
 
 // PCM - this won't export properly with overview window since that loads entire ecosystem, and can't deal with sub-regions

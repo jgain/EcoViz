@@ -65,12 +65,32 @@
 
 #include <cmath>
 #include <string>
-#include<QtCharts/QChartView>
+#include <QtCharts/QChartView>
+#include <QButtonGroup>
 
 QT_CHARTS_USE_NAMESPACE
 
 using namespace std;
 
+////
+// PlantPanel
+///
+
+void PlantPanel::closeEvent(QCloseEvent* event)
+{
+    wparent->uncheckPlantPanel();
+    event->accept();
+}
+
+////
+// DataMapPanel
+///
+
+void DataMapPanel::closeEvent(QCloseEvent* event)
+{
+    wparent->uncheckDataMapPanel();
+    event->accept();
+}
 
 ////
 // Window
@@ -100,11 +120,6 @@ void Window::setupRenderPanel()
     // radiance scaling parameters
     radianceTransition = 0.2f;
     radianceEnhance = 3.0f;
-
-    // map parameters
-    sunMonth = 1;
-    wetMonth = 1;
-    tempMonth = 1;
 
     // render panel
     renderPanel = new QWidget;
@@ -281,7 +296,7 @@ void Window::setupPlantPanel()
           delete widget;
     } */
     // plant panel
-    plantPanel = new QWidget;
+    plantPanel = new PlantPanel(this);
     QVBoxLayout *plantLayout = new QVBoxLayout;
 
     // global plant parameters
@@ -359,89 +374,104 @@ void Window::setupPlantPanel()
 
     speciesGroup->setLayout(speciesLayout);
     plantPanel->setLayout(plantLayout);
+}
 
-/*    checkS0 = new QCheckBox(tr("Species 0"));
-    checkS0->setChecked(true);
-    checkS1 = new QCheckBox(tr("Species 1"));
-    checkS1->setChecked(true);
-    checkS2 = new QCheckBox(tr("Species 2"));
-    checkS2->setChecked(true);
-    checkS3 = new QCheckBox(tr("Species 3"));
-    checkS3->setChecked(true);
-    checkS4 = new QCheckBox(tr("Species 4"));
-    checkS4->setChecked(true);
-    checkS5 = new QCheckBox(tr("Species 5"));
-    checkS5->setChecked(true);
-    checkS6 = new QCheckBox(tr("Species 6"));
-    checkS6->setChecked(true);
-    checkS7 = new QCheckBox(tr("Species 7"));
-    checkS7->setChecked(true);
-    checkS8 = new QCheckBox(tr("Species 8"));
-    checkS8->setChecked(true);
-    checkS9 = new QCheckBox(tr("Species 9"));
-    checkS9->setChecked(true);
-    checkS10 = new QCheckBox(tr("Species 10"));
-    checkS10->setChecked(true);
-    checkS11 = new QCheckBox(tr("Species 11"));
-    checkS11->setChecked(true);
-    checkS12 = new QCheckBox(tr("Species 12"));
-    checkS12->setChecked(true);
-    checkS13 = new QCheckBox(tr("Species 13"));
-    checkS13->setChecked(true);
-    checkS14 = new QCheckBox(tr("Species 14"));
-    checkS14->setChecked(true);
-    checkS15 = new QCheckBox(tr("Species 15"));
-    checkS15->setChecked(true);
-    QPushButton * plantsOn = new QPushButton(tr("All Visible"));
-    QPushButton * plantsOff = new QPushButton(tr("None Visible"));;
+void Window::setupDataMapPanel()
+{
+    dataMapPanel = new DataMapPanel(this);
+    QHBoxLayout *dataMapLayout = new QHBoxLayout;
 
-    speciesLayout->addWidget(checkS0, 0, 0);
-    speciesLayout->addWidget(checkS1, 1, 0);
-    speciesLayout->addWidget(checkS2, 2, 0);
-    speciesLayout->addWidget(checkS3, 3, 0);
-    speciesLayout->addWidget(checkS4, 4, 0);
-    speciesLayout->addWidget(checkS5, 5, 0);
-    speciesLayout->addWidget(checkS6, 6, 0);
-    speciesLayout->addWidget(checkS7, 7, 0);
-    speciesLayout->addWidget(checkS8, 8, 0);
-    speciesLayout->addWidget(checkS9, 9, 0);
-    speciesLayout->addWidget(checkS10, 10, 0);
-    speciesLayout->addWidget(checkS11, 11, 0);
-    speciesLayout->addWidget(checkS12, 12, 0);
-    speciesLayout->addWidget(checkS13, 13, 0);
-    speciesLayout->addWidget(checkS14, 14, 0);
-    speciesLayout->addWidget(checkS15, 15, 0);
-    speciesLayout->addWidget(plantsOn, 16, 0);
-    speciesLayout->addWidget(plantsOff, 17, 0);
-    speciesGroup->setLayout(speciesLayout);
+    // Matrices of radio buttons
+    QGroupBox *matrixMapLeftGroup = new QGroupBox(tr("Left Panel"));
+    QGridLayout *matrixMapLeftLayout = new QGridLayout;
+    QGroupBox *matrixMapRightGroup = new QGroupBox(tr("Right Panel"));
+    QGridLayout *matrixMapRightLayout = new QGridLayout;
 
-    plantLayout->addWidget(globalGroup);
-    plantLayout->addWidget(speciesGroup);
+    if (scenes.size() > 0)
+    {
+        int rows = scenes[0]->getDataMaps()->getNumMaps();
+        int cols = numRamps;
 
-    // signal to slot connections
-    connect(plantsOn, SIGNAL(clicked()), this, SLOT(allPlantsOn()));
-    connect(plantsOff, SIGNAL(clicked()), this, SLOT(allPlantsOff()));
-    // connect(checkCanopy, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    // connect(checkUndergrowth, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS0, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS1, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS2, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS3, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS4, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS5, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS6, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS7, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS8, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS9, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS10, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS11, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS12, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS13, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS14, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS15, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(smoothEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange())); */
+        // L and R postfix denotes left and right panels
+        qbmgL = new QButtonGroup(); // exclusive radio button group for map choice
+        QButtonGroup *qbrgL = new QButtonGroup(); // exclusive radio button group for ramp choice
+        qbmgR = new QButtonGroup();
+        QButtonGroup *qbrgR = new QButtonGroup();
 
 
+        // headers
+        QString hdr1 = QString::fromStdString(string("Data Type:"));
+        QLabel *hdl1L = new QLabel(hdr1);
+        matrixMapLeftLayout->addWidget(hdl1L,0,1);
+        QLabel *hdl1R = new QLabel(hdr1);
+        matrixMapRightLayout->addWidget(hdl1R,0,1);
+
+        QString hdr2 = QString::fromStdString(string("Colours:"));
+        QLabel *hdl2L = new QLabel(hdr2);
+        matrixMapLeftLayout->addWidget(hdl2L,0,3);
+        QLabel *hdl2R = new QLabel(hdr2);
+        matrixMapRightLayout->addWidget(hdl2R,0,3);
+
+        for(int r = 0; r <= rows; r++)
+        {
+            // radio button for map selection
+            QRadioButton * qrmbL = new QRadioButton();
+            QRadioButton * qrmbR = new QRadioButton();
+            matrixMapLeftLayout->addWidget(qrmbL,r+1,0);
+            matrixMapRightLayout->addWidget(qrmbR,r+1,0);
+            if(r == 0)
+            {
+                qrmbL->setChecked(true);
+                qrmbR->setChecked(true);
+            }
+            qbmgL->addButton(qrmbL, r);
+            qbmgR->addButton(qrmbR, r);
+
+            // data map name
+            QString dmname = QString::fromStdString((* scenes[0]->getDataMaps()->getNames())[r-1]);
+            if(r == 0)
+                dmname = QString::fromStdString(string("None"));
+            QLabel *dmnlL = new QLabel(dmname);
+            QLabel *dmnlR = new QLabel(dmname);
+
+            matrixMapLeftLayout->addWidget(dmnlL,r+1,1); // name
+            matrixMapRightLayout->addWidget(dmnlR,r+1,1);
+
+            if(r < numRamps)
+            {
+                 // radio button for ramp selection
+                QRadioButton * qrrbL = new QRadioButton();
+                QRadioButton * qrrbR = new QRadioButton();
+                if(r == 0)
+                {
+                    qrrbL->setChecked(true);
+                    qrrbR->setChecked(true);
+                }
+                qbrgL->addButton(qrrbL, r);
+                qbrgR->addButton(qrrbR, r);
+                matrixMapLeftLayout->addWidget(qrrbL,r+1,2);
+                matrixMapRightLayout->addWidget(qrrbR,r+1,2);
+
+                // ramp name label
+                QString rname = QString::fromStdString(ramp_names[r]);
+                QLabel *rnlL = new QLabel(rname);
+                QLabel *rnlR = new QLabel(rname);
+                matrixMapLeftLayout->addWidget(rnlL,r+1,3);
+                matrixMapRightLayout->addWidget(rnlR,r+1,3);
+            }
+        }
+
+        connect(qbmgL, SIGNAL(buttonClicked(int)), this, SLOT(leftDataMapChoice(int)));
+        connect(qbmgR, SIGNAL(buttonClicked(int)), this, SLOT(rightDataMapChoice(int)));
+        connect(qbrgL, SIGNAL(buttonClicked(int)), this, SLOT(leftRampChoice(int)));
+        connect(qbrgR, SIGNAL(buttonClicked(int)), this, SLOT(rightRampChoice(int)));
+    }
+
+    dataMapLayout->addWidget(matrixMapLeftGroup);
+    dataMapLayout->addWidget(matrixMapRightGroup);
+    matrixMapLeftGroup->setLayout(matrixMapLeftLayout);
+    matrixMapRightGroup->setLayout(matrixMapRightLayout);
+    dataMapPanel->setLayout(dataMapLayout);
 }
 
 void Window::setupVizTransect(QGLFormat glFormat, int i)
@@ -559,6 +589,7 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
     connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
     connect(pview, SIGNAL(signalExtractNewSubTerrain(int, int,int,int,int)), this,
             SLOT(extractNewSubTerrain(int,int,int,int,int)) );
+    connect(pview, SIGNAL(signalSyncDataMap()), this, SLOT(syncDataMapPanel()));
     //connect(pview, SIGNAL(signalUpdateOverviews()), this, SLOT(updateOverviews()));
 
     perspectiveViews[i] = pview;
@@ -840,6 +871,9 @@ Window::Window(string datadir)
     active = false;
     visible = true;
 
+    dmapIdx[0] = dmapIdx[1] = 0;
+    rampIdx[0] = rampIdx[1] = 0;
+
    // overviewTimer.setSingleShot(true);
    // connect( &overviewTimer, SIGNAL(timeout()), SLOT(overviewShow()) );
 
@@ -857,6 +891,8 @@ Window::Window(string datadir)
     setupRenderPanel();
     plantPanel = nullptr;
     setupPlantPanel();
+    dataMapPanel = nullptr;
+    setupDataMapPanel();
 
     // mapDownSampleFactor = 4;
 
@@ -878,7 +914,8 @@ Window::Window(string datadir)
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(plantPanel, 0, 1, Qt::AlignTop);
-    mainLayout->addWidget(vizPanel, 0, 2);
+    mainLayout->addWidget(dataMapPanel, 0, 2, Qt::AlignTop);
+    mainLayout->addWidget(vizPanel, 0, 3);
 
     createActions();
     createMenus();
@@ -893,6 +930,7 @@ Window::Window(string datadir)
 
     renderPanel->hide();
     plantPanel->hide();
+    dataMapPanel->hide();
 }
 
 Window::~Window()
@@ -924,6 +962,7 @@ void Window::run_viewer()
         // the original source region extent is stored in scene[i] - this is later queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
         scenes[i]->loadScene(1, 5); // years
+        scenes[i]->loadDataMaps(5);
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
@@ -938,6 +977,7 @@ void Window::run_viewer()
     }
 
     setupPlantPanel();
+    setupDataMapPanel();
     rendercount++;
     repaintAllGL();
 }
@@ -990,7 +1030,6 @@ void Window::repaintAllGL()
         if(perspectiveViews[0]->getPainted() && perspectiveViews[1]->getPainted() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
         {
             active = true;
-            cerr << "^^^^^^^^^^^^ Window Activated ^^^^^^^^^^^^" << endl;
         }
     }*/
     // updateOverviews();
@@ -1091,6 +1130,7 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     //overviewMaps[i]->forceUpdate();
 
     rendercount++;
+    perspectiveViews[i]->setDataMap(dmapIdx[i], convertRampIdx(i), false); // note that update is deferred until texture has been initialized
     // PCM: + signal to clear transect!!!
     repaintAllGL();
 
@@ -1107,6 +1147,11 @@ void Window::showRenderOptions()
 void Window::showPlantOptions()
 {
     plantPanel->setVisible(showPlantAct->isChecked());
+}
+
+void Window::showDataMapOptions()
+{
+    dataMapPanel->setVisible(showDataMapAct->isChecked());
 }
 
 void Window::unlockViews()
@@ -1403,9 +1448,6 @@ void Window::showTransectViews()
     }
     rendercount++;
     repaintAllGL();
-    //    if(transectControls[i]->getValidFlag())
-    //        transectViews[i]->setVisible(true);
-
 }
 
 void Window::clearTransects()
@@ -1454,7 +1496,11 @@ void Window::allPlantsOff()
 {
     for(auto pview: perspectiveViews)
         pview->setAllSpecies(false);
+}
 
+void Window::uncheckPlantPanel()
+{
+    showPlantAct->setChecked(false);
 }
 
 void Window::plantChange(int show)
@@ -1476,6 +1522,72 @@ void Window::plantChange(int show)
         cerr << "Click plant on/off: toggle " << sdata[snum.toInt()].scientific_name << "to " << vis;
     }
 
+}
+
+TypeMapType Window::convertRampIdx(int side)
+{
+    if(dmapIdx[side] == 0)
+    {
+        return TypeMapType::TRANSECT;
+    }
+    else
+    {
+        switch(rampIdx[side])
+        {
+        case 0: return TypeMapType::GREYRAMP;
+            break;
+        case 1: return TypeMapType::HEATRAMP;
+            break;
+        case 2: return TypeMapType::BLUERAMP;
+            break;
+        default: return TypeMapType::GREYRAMP;
+            break;
+        }
+    }
+}
+
+void Window::leftDataMapChoice(int id)
+{
+    dmapIdx[0] = id;
+    perspectiveViews[0]->setDataMap(dmapIdx[0], convertRampIdx(0), true);
+}
+
+void Window::rightDataMapChoice(int id)
+{
+     dmapIdx[1] = id;
+     perspectiveViews[1]->setDataMap(dmapIdx[1], convertRampIdx(1), true);
+}
+
+void Window::leftRampChoice(int id)
+{
+     rampIdx[0] = id;
+     perspectiveViews[0]->setDataMap(dmapIdx[0], convertRampIdx(0), true);
+}
+
+void Window::rightRampChoice(int id)
+{
+     rampIdx[1] = id;
+     perspectiveViews[1]->setDataMap(dmapIdx[1], convertRampIdx(1), true);
+}
+
+void Window::uncheckDataMapPanel()
+{
+    showDataMapAct->setChecked(false);
+}
+
+void Window::syncDataMapPanel()
+{
+    // check state in perspective views and update accordingly
+    for(int i = 0; i < 2; i++)
+        if(perspectiveViews[i]->getOverlay() == TypeMapType::EMPTY || perspectiveViews[i]->getOverlay() == TypeMapType::TRANSECT)
+        {
+            dmapIdx[i] = 0;
+            // update check mark
+            if(i == 0)
+                qbmgL->button(0)->setChecked(true);
+            else
+                qbmgR->button(0)->setChecked(true);
+        }
 }
 
 void Window::lineEditChange()
@@ -1555,36 +1667,6 @@ void Window::lineEditChange()
             radianceEnhance = val;
         }
     }
-    if(sender() == sunMapEdit)
-    {
-        ival = sunMapEdit->text().toInt(&ok);
-        if(ok)
-        {
-            sunMonth = ival;
-            if(sunMonth < 1)
-                sunMonth = 1;
-            if(sunMonth > 12)
-                sunMonth = 12;
-        }
-        if(sunMapRadio->isChecked())
-            for(auto pview: perspectiveViews)
-                pview->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
-    }
-    if(sender() == wetMapEdit)
-    {
-        ival = wetMapEdit->text().toInt(&ok);
-        if(ok)
-        {
-            wetMonth = ival;
-            if(wetMonth < 1)
-                wetMonth = 1;
-            if(wetMonth > 12)
-                wetMonth = 12;
-        }
-        if(wetMapRadio->isChecked())
-            for(auto pview: perspectiveViews)
-                pview->setMap(TypeMapType::WATER, wetMonth-1);
-    }
     if(sender() == smoothEdit)
     {
         ival = smoothEdit->text().toInt(&ok);
@@ -1609,6 +1691,7 @@ void Window::mapChange(bool on)
 {
     for(auto pview: perspectiveViews)
     {
+        /*
         if(sunMapRadio->isChecked() && on)
             pview->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
         if(wetMapRadio->isChecked() && on)
@@ -1617,6 +1700,7 @@ void Window::mapChange(bool on)
             pview->setOverlay(TypeMapType::CHM);
         if(noMapRadio->isChecked() && on)
             pview->setOverlay(TypeMapType::EMPTY);
+        */
     }
 }
 
@@ -1645,6 +1729,12 @@ void Window::createActions()
     showPlantAct->setStatusTip(tr("Hide/Show Plant Options"));
     connect(showPlantAct, SIGNAL(triggered()), this, SLOT(showPlantOptions()));
 
+    showDataMapAct = new QAction(tr("Show DataMap Options"), this);
+    showDataMapAct->setCheckable(true);
+    showDataMapAct->setChecked(false);
+    showDataMapAct->setStatusTip(tr("Hide/Show Data Map Options"));
+    connect(showDataMapAct, SIGNAL(triggered()), this, SLOT(showDataMapOptions()));
+
     clearTransectsAct = new QAction(tr("Clear Transects"), this);
     clearTransectsAct->setCheckable(false);
     clearTransectsAct->setStatusTip(tr("Remove Transects"));
@@ -1660,6 +1750,7 @@ void Window::createMenus()
     viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(showRenderAct);
     viewMenu->addAction(showPlantAct);
+    viewMenu->addAction(showDataMapAct);
     viewMenu->addAction(clearTransectsAct);
 
     // Export Mitsuba

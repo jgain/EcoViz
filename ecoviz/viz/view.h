@@ -123,7 +123,6 @@ public:
         cop = vpPoint(0.0f, 0.0f, 1.0f);
         terextent = 1.0f;
         terdepth = 1.0f;
-        cerr << "&&&&&&&&&&&&&& View reset called" << endl;
         updateDir();
     }
 

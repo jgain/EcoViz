@@ -174,6 +174,13 @@ public:
         return !sourceRegion.empty();
     }
 
+    Region getEntireRegion()
+    {
+        int dx, dy;
+        getGridDim(dx, dy);
+        return Region(0, 0, dx, dy);
+    }
+
     void setHeightMaptextureID(GLuint id) { htMapTextureId = id; }
 
     /**

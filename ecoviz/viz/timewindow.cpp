@@ -179,12 +179,13 @@ void TimeWindow::setScene(Scene * s)
     setSliderBounds(tstart, tend);
 
     //PCM: no idea what this does? Seems to be a map tied to resolution of the terrain? May cause issues.
-    if(scene->getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
+  /*  if(scene->getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
     {
         cerr << "type map error" << endl;
         QMessageBox(QMessageBox::Warning, "Typemap Error", "Type map for cohorts does not have a valid colour table").exec();
     }
-    else if (scene->cohortmaps->get_nmaps() > 0)
+    else*/
+    if (scene->cohortmaps->get_nmaps() > 0)
     {
         int gw, gh;
         float rw, rh;

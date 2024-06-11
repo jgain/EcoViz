@@ -193,12 +193,6 @@ TypeMapType GLWidget::getOverlay()
     return overlay;
 }
 
-void GLWidget::bandCanopyHeightTexture(float mint, float maxt)
-{
-    scene->getTypeMap(TypeMapType::CHM)->bandCHMMap(scene->getCanopyHeightModel(), mint*mtoft, maxt*mtoft);
-    focuschange = true;
-}
-
 void GLWidget::writePaintMap(std::string paintfile)
 {
     scene->getTypeMap(TypeMapType::TRANSECT)->saveToPaintImage(paintfile);
@@ -215,7 +209,6 @@ void GLWidget::setScene(Scene * s)
     view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
     scf = scene->getTerrain()->getMaxExtent();
-    cerr << "^^^^^^^^^^^^^ scale factor = " << scf << endl;
     scene->getTerrain()->setBufferToDirty();
 
     // transect setup
@@ -237,7 +230,6 @@ void GLWidget::setScene(Scene * s)
     active = true;
 
     loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
-    // loadTypeMap(scene->getSlope(), TypeMapType::SLOPE);
 
     /*
     cerr << "Pre refreshOverlay" << endl;
@@ -297,50 +289,52 @@ void GLWidget::loadDecals()
     cerr << "decals bound" << endl;
 }
 
-int GLWidget::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose)
+void GLWidget::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose, float range)
 {
-    int numClusters = 0;
-
     switch(purpose)
     {
         case TypeMapType::EMPTY:
             break;
         case TypeMapType::TRANSECT:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
+            scene->getTypeMap(purpose)->convert(map, purpose);
             break;
-        case TypeMapType::CATEGORY:
-            break;
-        case TypeMapType::SLOPE:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 90.0f);
-            break;
-        case TypeMapType::WATER:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 100.0); // 1000.0f);
-            break;
-        case TypeMapType::SUNLIGHT:
-             numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 13.0f);
-             break;
-        case TypeMapType::TEMPERATURE:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 20.0f);
-            break;
-        case TypeMapType::CHM:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, mtoft*initmaxt);
-            break;
-        case TypeMapType::CDM:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
+        case TypeMapType::GREYRAMP:
+        case TypeMapType::HEATRAMP:
+        case TypeMapType::BLUERAMP:
+            scene->getTypeMap(purpose)->convert(map, purpose, range);
             break;
         default:
             break;
     }
-    return numClusters;
 }
 
-void GLWidget::setMap(TypeMapType type, int mth)
+void GLWidget::setDataMap(int dataIdx, TypeMapType ramp, bool updatenow)
 {
-    if(type == TypeMapType::SUNLIGHT)
-        loadTypeMap(scene->getSunlight(mth), type);
-    if(type == TypeMapType::WATER)
-        loadTypeMap(scene->getMoisture(mth), type);
-    setOverlay(type);
+    if(ramp == TypeMapType::EMPTY || ramp == TypeMapType::TRANSECT) // no data texture
+    {
+        loadTypeMap(trc->trx->getTransectMap(), ramp);
+        if(updatenow) // assuming texture state is initialized
+            setOverlay(ramp);
+        else // defer texture push until after first render
+             overlay = ramp;
+    }
+    else
+    {
+        basic_types::MapFloat * tmpMap = new basic_types::MapFloat();
+
+        int year = getScene()->getTimeline()->getNow()-1;
+        // selected sub region compared to the whole
+        Region subRegion = mapView->getSelectionRegion();
+        Region superRegion = mapView->getEntireRegion();
+
+        getScene()->getDataMaps()->extractRegion(year, dataIdx-1, superRegion, subRegion, tmpMap);
+        loadTypeMap(tmpMap, ramp, getScene()->getDataMaps()->getRange(dataIdx-1));
+        if(updatenow) // assuming texture state is initialized
+            setOverlay(ramp);
+        else // defer texture push until after first render
+             overlay = ramp;
+        delete tmpMap;
+    }
 }
 
 void GLWidget::initializeGL()
@@ -641,10 +635,14 @@ void GLWidget::paintGL()
 
         // draw terrain and plants
         //renderer->forceHeightMapRebind();
-scene->getTerrain()->setBufferToDirty();
+        scene->getTerrain()->setBufferToDirty();
 
         if (drawParams.size() > 0) // DEBUG: PCM
+        {
             scene->getTerrain()->updateBuffers(renderer);
+            // bind textures
+            renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
+        }
 
         if(focuschange)
             renderer->updateTypeMapTexture(scene->getTypeMap(getOverlay())); // only necessary if the texture is changing dynamically
@@ -667,10 +665,12 @@ scene->getTerrain()->setBufferToDirty();
         newport[2] = (GLint)wd;
         newport[3] = (GLint)ht;
 
+        /*
         cerr << "newport = " << newport[0] << ", " << newport[1] << ", " << newport[2] << ", " << newport[3] << endl;
         cerr << "oldport = " << viewport[0] << ", " << viewport[1] << ", " << viewport[2] << ", " << viewport[3] << endl;
         cerr << "olddim = " << this->width() << ", " << this->height() << endl;
         cerr << "newdim = " << wd << ", " << ht << endl;
+        */
 
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         //glEnable(GL_SCISSOR_TEST);
@@ -735,21 +735,15 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         view->incrSideFly(-10.0f);
         refreshViews();
     }
-    /*
-    if(event->key() == Qt::Key_C) // 'C' to show canopy height model texture overlay
-    {
-        setOverlay(TypeMapType::CHM);
-    }*/
     if(event->key() == Qt::Key_D || event->key() == Qt::Key_Right) // 'D' fly right
     {
         view->incrSideFly(10.0f);
         refreshViews();
     }
-    /*
     if(event->key() == Qt::Key_E) // 'E' to remove all texture overlays
     {
-        setOverlay(TypeMapType::EMPTY);
-    }*/
+        setOverlay(TypeMapType::TRANSECT);
+    }
     if(event->key() == Qt::Key_F) // 'F' to toggle focus stick visibility
     {
         focusviz = !focusviz;
@@ -790,25 +784,12 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         updateGL();
     }
     */
-    /*
-    if(event->key() == Qt::Key_R) // 'R' to show temperature texture overlay
-    {
-        setOverlay(TypeMapType::TEMPERATURE);
-    }
-    if(event->key() == Qt::Key_S) // 'S' to show sunlight texture overlay
-    {
-        sun_mth++;
-        if(sun_mth >= 12)
-            sun_mth = 0;
-        loadTypeMap(scene->getSunlight(sun_mth), TypeMapType::SUNLIGHT);
-        setOverlay(TypeMapType::SUNLIGHT);
-    }*/
 
     if(event->key() == Qt::Key_S || event->key() == Qt::Key_Down) // 'S' fly backwards
     {
         view->incrFly(40.0f);
         refreshViews();
-    }
+    }/*
     if(event->key() == Qt::Key_T) // 'T' to toggle transect display on/off
     {
         trc->showtransect = !trc->showtransect;
@@ -821,6 +802,24 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         {
             setOverlay(TypeMapType::EMPTY);
         }
+    }*/
+    if(event->key() == Qt::Key_T) // 'T' to toggle texture on
+    {
+        basic_types::MapFloat * tmpMap = new basic_types::MapFloat();
+
+        // extract map
+        // get current year
+        int year = 0;
+        Region subRegion = mapView->getSelectionRegion();
+        Region superRegion = mapView->getEntireRegion();
+
+        // cerr << "superRegion = " << superRegion.x0 << ", " << superRegion.y0 << " -> " << superRegion.x1 << ", " << superRegion.y1 << endl;
+        // cerr << "subRegion = " << subRegion.x0 << ", " << subRegion.y0 << " -> " << subRegion.x1 << ", " << subRegion.y1 << endl;
+
+        getScene()->getDataMaps()->extractRegion(getScene()->getTimeline()->getNow()-1, 0, superRegion, subRegion, tmpMap);
+        loadTypeMap(tmpMap, TypeMapType::HEATRAMP, getScene()->getDataMaps()->getRange(0));
+        setOverlay(TypeMapType::HEATRAMP);
+        delete tmpMap;
     }
     /*
     if(event->key() == Qt::Key_U) // 'U' toggle undergrowth display on/off
@@ -868,16 +867,6 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         view->incrFly(-40.0f);
         refreshViews();
     }
-    /*
-    if(event->key() == Qt::Key_W) // 'W' to show water texture overlay
-    {
-        wet_mth++;
-
-        if(wet_mth >= 12)
-            wet_mth = 0;
-        loadTypeMap(scene->getMoisture(wet_mth), TypeMapType::WATER);
-        setOverlay(TypeMapType::WATER);
-    }*/
 }
 
 void GLWidget::setAllPlantsVis()
@@ -950,48 +939,21 @@ void GLWidget::toggleSpecies(int p, bool vis)
     }
 }
 
-template<typename T> int GLWidget::loadTypeMap(const T &map, TypeMapType purpose)
+template<typename T> void GLWidget::loadTypeMap(const T &map, TypeMapType purpose, float range)
 {
-    int numClusters = 0;
-
     switch(purpose)
     {
         case TypeMapType::EMPTY:
             break;
         case TypeMapType::TRANSECT:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
-            break;
-        case TypeMapType::CATEGORY:
-            break;
-        case TypeMapType::SLOPE:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 90.0f);
-            break;
-        case TypeMapType::WATER:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 100.0); // 1000.0f);
-            break;
-        case TypeMapType::SUNLIGHT:
-             numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 13.0f);
-             break;
-        case TypeMapType::TEMPERATURE:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 20.0f);
-            break;
-        case TypeMapType::CHM:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, mtoft*initmaxt);
-            break;
-        case TypeMapType::CDM:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 1.0f);
-            break;
-        case TypeMapType::COHORT:
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 60.0f);
-            break;
-        case TypeMapType::SMOOTHING_ACTION:
-            std::cout << "Loading typemap SMOOTHING_ACTION..." << std::endl;
-            numClusters = scene->getTypeMap(purpose)->convert(map, purpose, 2.0f);
+        case TypeMapType::GREYRAMP:
+        case TypeMapType::HEATRAMP:
+        case TypeMapType::BLUERAMP:
+            scene->getTypeMap(purpose)->convert(map, purpose, range);
             break;
         default:
             break;
     }
-    return numClusters;
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
@@ -1147,6 +1109,7 @@ void GLWidget::pointPlaceTransect(bool firstPoint)
         loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
         setOverlay(TypeMapType::TRANSECT);
     }
+    signalSyncDataMap();
     signalShowTransectView();
 }
 
@@ -1325,7 +1288,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     active = true;
     timeron = false;
     pickOnTerrain = false;
-    perscale = 0.2f;
+    perscale = 0.3f;
 
     mrenderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
 
@@ -1421,7 +1384,7 @@ void overviewWindow::updateViewParams(void)
     // could be the slight near plane offset e=0.01, but that is small and an addiive offset should have fixed that.
     // Possible issue?
 
-    std::cerr << "overviewWindow: Camera front clipping plane height: " << orthoFocusTop.y << std::endl;
+    // std::cerr << "overviewWindow: Camera front clipping plane height: " << orthoFocusTop.y << std::endl;
     mview->setForcedFocus(orthoFocusTop);
     mview->setOrthoViewDepth(100000.0f); // make this large to avoid issues!
     mview->setOrthoViewExtent(scene->getLowResTerrain()->longEdgeDist()); // this scales to fit in window
@@ -1535,8 +1498,8 @@ void overviewWindow::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData
     scene->getHighResTerrain()->getHeightBounds(minHt, maxHt); // need global maxHt
     float pointStep = scene->getHighResTerrain()->getPointStep();
 
-    std::cout << "@@@@ paintSelectionPlane: input region [" << region.x0 << "," << region.y0 <<
-                  "," << region.x1 << "," << region.y1 << "]\n";
+    // std::cout << "@@@@ paintSelectionPlane: input region [" << region.x0 << "," << region.y0 <<
+    //               "," << region.x1 << "," << region.y1 << "]\n";
 
     centre.y = 1.1*maxHt + 10.0f; // PCM: hack **** I think the quat rotation is inaccurate and camera is off angle slightly
     // JG - the quaternion rotation is now fixed
@@ -1549,12 +1512,12 @@ void overviewWindow::paintSelectionPlane(GLfloat *col, std::vector<ShapeDrawData
     planeWidth  = pointStep*(region.y1 - region.y0 + 1)/2.0f;
     planeHeight = pointStep*(region.x1 - region.x0 + 1);
 
-
+/*
     std::cout << "\nSelection plane data:\n";
     std::cout << "centre = (" << centre.x << "," << centre.y << "," << centre.z << ")\n";
     std::cout << "point step: " << pointStep << std::endl;
     std::cout << "(planeWidth, planeHeight) = " << planeWidth << "," << planeHeight << ")\n";
-
+*/
 
     shape.genPlane(vpPoint(0.0,0.0,1.0), vpPoint(0.0,0.0,0.0), planeWidth, planeHeight, tfm);
     if (shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
