@@ -113,3 +113,4 @@ endif()
 
 add_subdirectory(common)
 add_subdirectory(viz)
+add_subdirectory(tools)

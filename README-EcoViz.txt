@@ -39,7 +39,7 @@ The executable is ./viz/ecoviz. The system must be run from the build directory 
 
 To run the visualizer with test data execute: ./viz/ecoviz -prefix ecoviz_ ../../data/test2
 
-This will read an an elevation map (ecoviz_.elv) and the set of simulation files (ecoviz_0.pdb, ecoviz_1.pdb...)  The default simply reads 
+This will read an an elevation map (ecoviz.elv) and the set of simulation files (ecoviz0.pdb, ecoviz1.pdb...)  The default simply reads 
 in a set of these that is hardcoded at present). Rather than using these text files as input, you should generate binary file equivalents and copy
 these to test2.  
 
