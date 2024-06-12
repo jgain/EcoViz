@@ -1,4 +1,4 @@
-#version 150
+#version 410
 
 uniform float shiny;
 uniform vec4 specularCol;

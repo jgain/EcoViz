@@ -68,8 +68,6 @@
 #include <QtCharts/QChartView>
 #include <QButtonGroup>
 
-QT_CHARTS_USE_NAMESPACE
-
 using namespace std;
 
 ////
@@ -477,7 +475,7 @@ void Window::setupDataMapPanel()
     dataMapPanel->setLayout(dataMapLayout);
 }
 
-void Window::setupVizTransect(QGLFormat glFormat, int i)
+void Window::setupVizTransect(QSurfaceFormat glFormat, int i)
 {
     // transect views
 
@@ -553,7 +551,7 @@ void Window::destroyVizTransect(int i)
 }
 
 
-void Window::setupVizPerspective(QGLFormat glFormat, int i)
+void Window::setupVizPerspective(QSurfaceFormat glFormat, int i)
 {
     // main perspective views
 
@@ -635,7 +633,7 @@ void Window::destroyVizOvermap(int i)
 
 */
 
-void Window::setupVizChartViews(QGLFormat glFormat, int i)
+void Window::setupVizChartViews(QSurfaceFormat glFormat, int i)
 {
     // chart views
 
@@ -653,7 +651,7 @@ void Window::setupVizChartViews(QGLFormat glFormat, int i)
 
 }
 
-void Window::setupVizTimeline(QGLFormat glFormat, int i)
+void Window::setupVizTimeline(QSurfaceFormat glFormat, int i)
 {
     // timeline views
 
@@ -671,7 +669,7 @@ void Window::setupVizTimeline(QGLFormat glFormat, int i)
 }
 
 /*
-void Window::setupVizOverMap(QGLFormat glFormat, int i)
+void Window::setupVizOverMap(QSurfaceFormat glFormat, int i)
 {
     if (overviewMaps.size() == 0)
     {
@@ -736,9 +734,11 @@ void Window::setupVizPanel()
     // vizLayout->setMargin(1);
     vizLayout->setContentsMargins(3, 3, 3, 3);
 
-    QGLFormat glFormat;
-    glFormat.setVersion( 4, 1 );
-    glFormat.setProfile( QGLFormat::CoreProfile );
+
+    QSurfaceFormat glFormat;
+    glFormat.setProfile( QSurfaceFormat::CoreProfile );
+    glFormat.setVersion(4,1);
+    // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
 
     // vizLayout->setRowStretch(0, 6);
     vizLayout->setRowStretch(0, 0);
@@ -865,6 +865,12 @@ Window::Window(string datadir, string lprefix, string rprefix)
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout();
 
+
+    QSurfaceFormat fmt;
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setVersion(4,1);
+    // fmt.setOptions(QSurfaceFormat::DeprecatedFunctions);
+    QSurfaceFormat::setDefaultFormat(fmt);
 
     // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
     //glFormat.setSampleBuffers( true );
@@ -1016,7 +1022,7 @@ void Window::keyPressEvent(QKeyEvent *e)
 void Window::mouseMoveEvent(QMouseEvent *event)
 {
     QWidget *child=childAt(event->pos());
-    QGLWidget *glwidget = qobject_cast<QGLWidget *>(child);
+    QOpenGLWidget *glwidget = qobject_cast<QOpenGLWidget *>(child);
     if(glwidget) {
         QMouseEvent *glevent=new QMouseEvent(event->type(),glwidget->mapFromGlobal(event->globalPos()),event->button(),event->buttons(),event->modifiers());
         QCoreApplication::postEvent(glwidget,glevent);
@@ -1071,9 +1077,17 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     // destroy ovrview map widget
     //destroyVizOvermap(i);
 
-    QGLFormat glFormat;
+
+    QSurfaceFormat glFormat;
+    glFormat.setProfile( QSurfaceFormat::CoreProfile );
+    glFormat.setVersion(4,1);
+    // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
+
+    /*
     glFormat.setVersion( 4, 1 );
-    glFormat.setProfile( QGLFormat::CoreProfile );
+    // fmt.setSamples(16);
+    // fmt.setDepthBufferSize(24);
+    glFormat.setProfile( QSurfaceFormat::CoreProfile );*/
 
     // rebuild overview map
     //setupVizOverMap(glFormat, i);

@@ -22,7 +22,7 @@
 *****************************************************************************
 * Modified by P Marais, 2014                                                *
 *****************************************************************************/
-#version 330
+#version 410
 #extension GL_ARB_explicit_attrib_location: enable
 
 // pass through vertex shader: screen aligned quad

@@ -64,12 +64,13 @@
 #define GLOVERVIEW_H
 
 #include "glheaders.h" // Must be included before QT opengl headers
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QLabel>
 #include <QTimer>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QPushButton>
+#include <QSurfaceFormat>
 #include <list>
 #include <memory>
 
@@ -82,13 +83,13 @@
 
 class Window;
 
-class GLOverview : public QGLWidget
+class GLOverview : public QOpenGLWidget
 {
     Q_OBJECT
 
 public:
 
-    GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int id, QWidget *parent = 0);
+    GLOverview(const QSurfaceFormat& format, Window * wp, mapScene * scn, int id, QWidget *parent = 0);
     ~GLOverview();
 
     QSize minimumSizeHint();
@@ -157,7 +158,7 @@ protected:
 
 private:
 
-    QGLFormat glformat; //< format for OpenGL
+    QSurfaceFormat glformat; //< format for OpenGL
     Window * winparent;
     mapScene * scene;      //<overview scene info
     View * view;        //< viewpoint controls

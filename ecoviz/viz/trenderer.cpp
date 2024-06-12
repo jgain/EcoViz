@@ -988,7 +988,7 @@ void TRenderer::initInstanceData(void)
       MVP = projMx  * MVmx;
 }
 
-TRenderer::TRenderer(QGLWidget *drawTo, const std::string& dir)
+TRenderer::TRenderer(QOpenGLWidget *drawTo, const std::string& dir)
 {
   canvas = drawTo;
   shaderDir = dir;

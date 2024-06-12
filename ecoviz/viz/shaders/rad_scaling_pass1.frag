@@ -25,7 +25,7 @@
 
 //#version 120
 //#extension GL_ARB_draw_buffers : enable
-#version 150
+#version 410
 #extension GL_ARB_explicit_attrib_location: enable
 
 uniform int drawWalls;

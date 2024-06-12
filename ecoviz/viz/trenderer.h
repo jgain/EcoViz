@@ -38,7 +38,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "shaderProgram.h"
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include "shape.h"
 #include "typemap.h"
 
@@ -63,7 +63,7 @@ class TRenderer
 
  private:
 
-    QGLWidget *canvas;
+    QOpenGLWidget *canvas;
 
     std::string shaderDir; // location of all shaders
 
@@ -208,7 +208,7 @@ class TRenderer
     void destroyInstanceData(void);
 public:
 
-    TRenderer(QGLWidget *drawTo = NULL, const std::string &dir="."); // the QGLwidget is created by the GUI manager
+    TRenderer(QOpenGLWidget *drawTo = NULL, const std::string &dir="."); // the QGLwidget is created by the GUI manager
     ~TRenderer();
 
     // load in new terrain data; this will come from a grid structure. paintMap is the associated

@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         datadir.pop_back();
 
     try
-    {
+    {    
         QApplication app(argc, argv);    
 
         Window * window = new Window(datadir, leftprefix, rightprefix);

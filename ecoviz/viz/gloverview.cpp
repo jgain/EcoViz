@@ -70,7 +70,6 @@
 #include "gloverview.h"
 
 #include <QGridLayout>
-#include <QGLFramebufferObject>
 #include <QImage>
 #include <QCoreApplication>
 #include <QMessageBox>
@@ -92,11 +91,12 @@ using namespace std;
 #define GL_MULTISAMPLE  0x809D
 #endif
 
-GLOverview::GLOverview(const QGLFormat& format, Window * wp, mapScene * scn, int Id, QWidget *parent)
-    : QGLWidget(format, parent)
+GLOverview::GLOverview(const QSurfaceFormat& format, Window * wp, mapScene * scn, int Id, QWidget *parent)
+    : QOpenGLWidget(parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     glformat = format;
+    setFormat(glformat);
     timeron = false;
     widgetId = Id;
 
@@ -201,7 +201,7 @@ void GLOverview::setScene(mapScene * s)
 
     //winparent->rendercount++;
     //signalRepaintAllGL();
-    //updateGL();
+    //update();
 }
 
 // the heightfield will change after initial dummy creation (and possible edits later)
@@ -250,11 +250,11 @@ void GLOverview::initializeGL()
     qDebug() << "                    VERSION:      " << (const char*)glGetString(GL_VERSION);
     qDebug() << "                    GLSL VERSION: " << (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    QGLFormat glFormat = QGLWidget::format();
-    if ( !glFormat.sampleBuffers() )
-        qWarning() << "Could not enable sample buffers";
+    QSurfaceFormat glFormat = QOpenGLWidget::format();
+    // if ( !glFormat.sampleBuffers() )
+    //     qWarning() << "Could not enable sample buffers";
 
-    qglClearColor(qtWhite.light());
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     int mu;
     glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &mu);
@@ -547,7 +547,7 @@ void GLOverview::mousePressEvent(QMouseEvent *event)
 
     if(pickOnTerrain)
     {
-        updateGL();
+        update();
         lastPos = event->pos();
     }
 }
@@ -634,7 +634,7 @@ void GLOverview::mouseMoveEvent(QMouseEvent *event)
 
     if(pickOnTerrain)
     {
-        updateGL();
+        update();
         lastPos = event->pos();
     }
 }
@@ -650,13 +650,13 @@ void GLOverview::mouseReleaseEvent(QMouseEvent *event)
         if (!isSelectionValid(currRegion) || Xwd < 150 || Ywd < 150)
         {
             currRegion = prevRegion;
-            updateGL();
+            update();
         }
         //else
         //    signalExtractNewSubTerrain(widgetId, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
 
         pickOnTerrain = false;
-        //updateGL(); --- will cause crash since extract....() rebulds asynchronously and may be incomplete when paint() event fires.
+        //update(); --- will cause crash since extract....() rebulds asynchronously and may be incomplete when paint() event fires.
     }
 }
 
@@ -723,7 +723,7 @@ void GLOverview::wheelEvent(QWheelEvent * wheel)
     }
 
     //signalRepaintAllGL();
-    updateGL();
+    update();
     */
 }
 

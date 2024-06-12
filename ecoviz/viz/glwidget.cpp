@@ -69,7 +69,6 @@
 #include <sstream>
 #include <string>
 #include <QGridLayout>
-#include <QGLFramebufferObject>
 #include <QImage>
 #include <QCoreApplication>
 #include <QInputDialog>
@@ -91,18 +90,20 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widName, mapScene *mScene, QWidget *parent)
-    : QGLWidget(format, parent)
+GLWidget::GLWidget(const QSurfaceFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widName, mapScene *mScene, QWidget *parent)
+    : QOpenGLWidget(parent)
 {
     wname = widName;
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
+    glformat = format;
+    setFormat(glformat);
     vizpopup = new QLabel();
     atimer = new QTimer(this);
     connect(atimer, SIGNAL(timeout()), this, SLOT(animUpdate()));
 
     rtimer = new QTimer(this);
     connect(rtimer, SIGNAL(timeout()), this, SLOT(rotateUpdate()));
-    glformat = format;
+
 
     setParent(wp);
 
@@ -167,7 +168,7 @@ void GLWidget::screenCapture(QImage * capImg, QSize capSize)
     paintGL();
     glFlush();
 
-    (* capImg) = grabFrameBuffer();
+    (* capImg) = grabFramebuffer();
     (* capImg) = capImg->scaled(capSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }
 
@@ -237,7 +238,7 @@ void GLWidget::setScene(Scene * s)
     refreshOverlay();
     cerr << "Post refreshOverlay" << endl;
     winparent->rendercount++;
-    updateGL();
+    update();
     cerr << "Post update" << endl;*/
 
      refreshViews();
@@ -282,7 +283,7 @@ void GLWidget::loadDecals()
     painter.drawImage( 0, 0, decalImg);
     painter.end();
 
-    t = QGLWidget::convertToGLFormat( fixedImage );
+    // t = QOpenGLWidget::convertToGLFormat( fixedImage );
 
     renderer->bindDecals(t.width(), t.height(), t.bits());
     decalsbound = true;
@@ -353,11 +354,11 @@ void GLWidget::initializeGL()
     qDebug() << "                    VERSION:      " << (const char*)glGetString(GL_VERSION);
     qDebug() << "                    GLSL VERSION: " << (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    QGLFormat glFormat = QGLWidget::format();
-    if ( !glFormat.sampleBuffers() )
-        qWarning() << "Could not enable sample buffers";
+    QSurfaceFormat glFormat = QOpenGLWidget::format();
+    // if ( !glFormat.sampleBuffers() )
+    //    qWarning() << "Could not enable sample buffers";
 
-    qglClearColor(qtWhite.light());
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     int mu;
     glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &mu);
@@ -751,7 +752,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     {
         focusviz = !focusviz;
         winparent->rendercount++;
-        updateGL();
+        update();
     }
 
     /*
@@ -774,7 +775,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         winparent->rendercount++;
-        updateGL();
+        update();
     }
     if(event->key() == Qt::Key_P) // 'P' to toggle plant visibility
     {
@@ -784,7 +785,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         winparent->rendercount++;
-        updateGL();
+        update();
     }
     */
 
@@ -832,7 +833,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         winparent->rendercount++;
-        updateGL();
+        update();
     }*/
 
     if(event->key() == Qt::Key_V) // 'V' for top-down view
@@ -885,7 +886,7 @@ void GLWidget::setCanopyVis(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     winparent->rendercount++;
-    updateGL();
+    update();
 }
 
 void GLWidget::setUndergrowthVis(bool vis)
@@ -895,7 +896,7 @@ void GLWidget::setUndergrowthVis(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     winparent->rendercount++;
-    updateGL();
+    update();
 }
 
 void GLWidget::setAllSpecies(bool vis)
@@ -905,7 +906,7 @@ void GLWidget::setAllSpecies(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     winparent->rendercount++;
-    updateGL();
+    update();
 }
 
 void GLWidget::setSinglePlantVis(int p)
@@ -918,7 +919,7 @@ void GLWidget::setSinglePlantVis(int p)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         winparent->rendercount++;
-        updateGL();
+        update();
     }
     else
     {
@@ -934,7 +935,7 @@ void GLWidget::toggleSpecies(int p, bool vis)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         winparent->rendercount++;
-        updateGL();
+        update();
     }
     else
     {
@@ -986,7 +987,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             mapView->startRegionTranslate(ox, oy);
 
         if(mapView->getPickOnTerrain())
-            updateGL();
+            update();
     }
     else
     {
@@ -1151,7 +1152,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
                     pointPlaceTransect(true);
                     signalSyncPlace(true);
                     winparent->rendercount++;
-                    updateGL();
+                    update();
                 }
                 break;
             case 1: // placement of final point
@@ -1201,7 +1202,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             mapView->continueRegionTranslate(ox, oy);
 
         if(mapView->getPickOnTerrain())
-            updateGL();
+            update();
     }
     else
     {
@@ -1272,7 +1273,7 @@ void GLWidget::refreshViews()
     else
     {
         winparent->rendercount++;
-        updateGL();
+        update();
     }
 }
 
@@ -1363,7 +1364,7 @@ void overviewWindow::setScene(mapScene * s)
 
     //winparent->rendercount++;
     //signalRepaintAllGL();
-    //updateGL();
+    //update();
 }
 
 // the heightfield will change after initial dummy creation (and possible edits later)
