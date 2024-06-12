@@ -320,20 +320,23 @@ void GLWidget::setDataMap(int dataIdx, TypeMapType ramp, bool updatenow)
     }
     else
     {
-        basic_types::MapFloat * tmpMap = new basic_types::MapFloat();
+        if(dataIdx > 0)
+        {
+            basic_types::MapFloat * tmpMap = new basic_types::MapFloat();
 
-        int year = getScene()->getTimeline()->getNow()-1;
-        // selected sub region compared to the whole
-        Region subRegion = mapView->getSelectionRegion();
-        Region superRegion = mapView->getEntireRegion();
+            int year = getScene()->getTimeline()->getNow()-1;
+            // selected sub region compared to the whole
+            Region subRegion = mapView->getSelectionRegion();
+            Region superRegion = mapView->getEntireRegion();
 
-        getScene()->getDataMaps()->extractRegion(year, dataIdx-1, superRegion, subRegion, tmpMap);
-        loadTypeMap(tmpMap, ramp, getScene()->getDataMaps()->getRange(dataIdx-1));
-        if(updatenow) // assuming texture state is initialized
-            setOverlay(ramp);
-        else // defer texture push until after first render
-             overlay = ramp;
-        delete tmpMap;
+            getScene()->getDataMaps()->extractRegion(year, dataIdx-1, superRegion, subRegion, tmpMap);
+            loadTypeMap(tmpMap, ramp, getScene()->getDataMaps()->getRange(dataIdx-1));
+            if(updatenow) // assuming texture state is initialized
+                setOverlay(ramp);
+            else // defer texture push until after first render
+                overlay = ramp;
+            delete tmpMap;
+        }
     }
 }
 

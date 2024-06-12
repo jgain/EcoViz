@@ -428,9 +428,12 @@ void Window::setupDataMapPanel()
             qbmgR->addButton(qrmbR, r);
 
             // data map name
-            QString dmname = QString::fromStdString((* scenes[0]->getDataMaps()->getNames())[r-1]);
+            QString dmname;
             if(r == 0)
                 dmname = QString::fromStdString(string("None"));
+            else
+                dmname = QString::fromStdString((* scenes[0]->getDataMaps()->getNames())[r-1]);
+
             QLabel *dmnlL = new QLabel(dmname);
             QLabel *dmnlR = new QLabel(dmname);
 

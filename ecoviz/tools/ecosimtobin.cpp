@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 
       for (auto &entry : diriter)
 	{
+          cerr << entry.path().filename() << endl;
 	  if (entry.path().extension() == ".pdb" && entry.is_regular_file() )
 	    {
 	      string stem = entry.path().stem();
@@ -96,6 +97,7 @@ int main(int argc, char *argv[])
       for (int i = 0; i < filesToProcess; ++i)
 	{
 	  string fname = base + to_string(i);
+      cerr << fname << endl;
 	  cohortmapToBin(fname + ".pdb", fname + ".pdbb", version);
 	}
        
@@ -334,6 +336,8 @@ void parseCommandLine(int argc, char *argv[])
 	  if (cohortConv || i+1 >= argc) printError("-c can only occur once an must have an argument");
 	  cohortConv = true;
 	  base = argv[++i];
+      cerr << "COHORT CONVERSION ON" << endl;
+      cerr << "BASE = " << base << endl;
 	}
       else if (arg == "-n")
 	{
