@@ -270,12 +270,14 @@ void GLTransect::loadDecals()
     // t = QOpenGLWidget::convertToGLFormat( fixedImage );
     // JG - QT6
 
-    renderer->bindDecals(t.width(), t.height(), t.bits());
+    renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
     decalsbound = true;
 }
 
 void GLTransect::initializeGL()
 {
+    initializeOpenGLFunctions();
+
     // get context opengl-version
     qDebug() << "\nGLTransect initialize....\n";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();

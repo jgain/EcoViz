@@ -65,6 +65,7 @@
 
 #include "glheaders.h" // Must be included before QT opengl headers
 #include <QOpenGLWidget>
+#include <QOpenGLFunctions>
 #include <QLabel>
 #include <QTimer>
 #include <QMouseEvent>
@@ -82,7 +83,7 @@
 
 class Window;
 
-class GLTransect : public QOpenGLWidget
+class GLTransect : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 

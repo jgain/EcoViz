@@ -462,10 +462,10 @@ void Window::setupDataMapPanel()
             }
         }
 
-        connect(qbmgL, SIGNAL(buttonClicked(int)), this, SLOT(leftDataMapChoice(int)));
-        connect(qbmgR, SIGNAL(buttonClicked(int)), this, SLOT(rightDataMapChoice(int)));
-        connect(qbrgL, SIGNAL(buttonClicked(int)), this, SLOT(leftRampChoice(int)));
-        connect(qbrgR, SIGNAL(buttonClicked(int)), this, SLOT(rightRampChoice(int)));
+        connect(qbmgL, SIGNAL(idClicked(int)), this, SLOT(leftDataMapChoice(int)));
+        connect(qbmgR, SIGNAL(idClicked(int)), this, SLOT(rightDataMapChoice(int)));
+        connect(qbrgL, SIGNAL(idClicked(int)), this, SLOT(leftRampChoice(int)));
+        connect(qbrgR, SIGNAL(idClicked(int)), this, SLOT(rightRampChoice(int)));
     }
 
     dataMapLayout->addWidget(matrixMapLeftGroup);
@@ -1571,6 +1571,7 @@ TypeMapType Window::convertRampIdx(int side)
 
 void Window::leftDataMapChoice(int id)
 {
+    cerr << "leftDataMapChoice" << endl;
     dmapIdx[0] = id;
     perspectiveViews[0]->setDataMap(dmapIdx[0], convertRampIdx(0), true);
 }
