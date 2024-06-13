@@ -282,10 +282,10 @@ void GLWidget::loadDecals()
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.drawImage( 0, 0, decalImg);
     painter.end();
+    // t = QGLWidget::convertToGLFormat( fixedImage );
 
-    // t = QOpenGLWidget::convertToGLFormat( fixedImage );
-
-    renderer->bindDecals(t.width(), t.height(), t.bits());
+    // renderer->bindDecals(t.width(), t.height(), t.bits());
+    renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
     decalsbound = true;
     cerr << "decals bound" << endl;
 }
@@ -343,6 +343,8 @@ void GLWidget::setDataMap(int dataIdx, TypeMapType ramp, bool updatenow)
 
 void GLWidget::initializeGL()
 {
+    initializeOpenGLFunctions();
+
     // get context opengl-version
     qDebug() << "GL initialize....";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();
@@ -354,7 +356,7 @@ void GLWidget::initializeGL()
     qDebug() << "                    VERSION:      " << (const char*)glGetString(GL_VERSION);
     qDebug() << "                    GLSL VERSION: " << (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    QSurfaceFormat glFormat = QOpenGLWidget::format();
+    // QSurfaceFormat glFormat = QOpenGLWidget::format();
     // if ( !glFormat.sampleBuffers() )
     //    qWarning() << "Could not enable sample buffers";
 

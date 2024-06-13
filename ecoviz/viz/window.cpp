@@ -737,7 +737,11 @@ void Window::setupVizPanel()
 
     QSurfaceFormat glFormat;
     glFormat.setProfile( QSurfaceFormat::CoreProfile );
+    glFormat.setDepthBufferSize(24);
+    // QSurfaceFormat::setDefaultFormat(format);
     glFormat.setVersion(4,1);
+
+
     // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
 
     // vizLayout->setRowStretch(0, 6);
@@ -869,6 +873,7 @@ Window::Window(string datadir, string lprefix, string rprefix)
     QSurfaceFormat fmt;
     fmt.setProfile(QSurfaceFormat::CoreProfile);
     fmt.setVersion(4,1);
+    fmt.setDepthBufferSize(24);
     // fmt.setOptions(QSurfaceFormat::DeprecatedFunctions);
     QSurfaceFormat::setDefaultFormat(fmt);
 
@@ -1080,6 +1085,7 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
 
     QSurfaceFormat glFormat;
     glFormat.setProfile( QSurfaceFormat::CoreProfile );
+    glFormat.setDepthBufferSize(24);
     glFormat.setVersion(4,1);
     // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
 

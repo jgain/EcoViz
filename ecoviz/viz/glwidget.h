@@ -64,6 +64,7 @@
 
 #include "glheaders.h" // Must be included before QT opengl headers
 #include <QOpenGLWidget>
+#include <QOpenGLFunctions>
 #include <QLabel>
 #include <QTimer>
 #include <QMouseEvent>
@@ -96,7 +97,7 @@ const float mtoft = 3.28084f;
 class Window;
 class overviewWindow;
 
-class GLWidget : public QOpenGLWidget
+class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 

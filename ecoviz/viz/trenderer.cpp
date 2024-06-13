@@ -41,6 +41,8 @@ namespace PMrender {
         return;
       }
 
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
     assert(wd != 0 && ht != 0);
 
     if (width == wd && height == ht && !force) // nothing to do - make sure binding is intact
@@ -50,8 +52,8 @@ namespace PMrender {
         {
              std::cerr << "Error! Heighmap texture undefined!\n";
           }
-        glActiveTexture(htmapTexUnit); CE();
-        glBindTexture(GL_TEXTURE_2D, heightmapTexture); CE();
+        f->glActiveTexture(htmapTexUnit); CE();
+        f->glBindTexture(GL_TEXTURE_2D, heightmapTexture); CE();
         return;
       }
 
@@ -59,31 +61,31 @@ namespace PMrender {
     if(heightmapTexture != 0 && (width != wd || height != ht))
       {
         // std::cerr << "- Delete texture\n";
-        glDeleteTextures(1, &heightmapTexture);  CE();
+        f->glDeleteTextures(1, &heightmapTexture);  CE();
         heightmapTexture = 0;
       }
 
     if (heightmapTexture == 0) // create texture if it does not exist
       {
         std::cerr << "- Create heightmap texture: wd = " << wd << "; ht = " << ht << "\n";
-        glGenTextures(1, &heightmapTexture); CE();
-        glActiveTexture(htmapTexUnit); CE();
-        glBindTexture(GL_TEXTURE_2D, heightmapTexture ); CE();
+        f->glGenTextures(1, &heightmapTexture); CE();
+        f->glActiveTexture(htmapTexUnit); CE();
+        f->glBindTexture(GL_TEXTURE_2D, heightmapTexture ); CE();
 
-        glTexImage2D(GL_TEXTURE_2D, 0,GL_R32F, wd, ht, 0,GL_RED, GL_FLOAT,  (GLfloat*)data); CE();
+        f->glTexImage2D(GL_TEXTURE_2D, 0,GL_R32F, wd, ht, 0,GL_RED, GL_FLOAT,  (GLfloat*)data); CE();
         // no filtering
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+        f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+        f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
         // deal with out of array access
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+        f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+        f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
       }
     else // otherwise sub in new texture data
       {
         // std::cerr << " - sub texture\n";
-        glActiveTexture(htmapTexUnit); CE();
-        glBindTexture(GL_TEXTURE_2D, heightmapTexture ); CE();
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, wd, ht, GL_RED, GL_FLOAT, (GLfloat*)data); CE();
+        f->glActiveTexture(htmapTexUnit); CE();
+        f->glBindTexture(GL_TEXTURE_2D, heightmapTexture ); CE();
+        f->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, wd, ht, GL_RED, GL_FLOAT, (GLfloat*)data); CE();
       }
 
     // test all values for lowest terrain height:
@@ -101,7 +103,6 @@ namespace PMrender {
 
     // rebuild VAO and everything else if this was first image or new
     // dimensions or data in heightmap has changed
-
     deleteTerrainOpenGLbuffers();
     prepareTerrainGeometry(); // set up VBO, IBO, FBO etc
     prepareWalls(); // build capping walls for terrain
@@ -169,20 +170,22 @@ GLuint TRenderer::loadTest(const std::string &filename, GLenum texUnit, int &wd,
     std::cerr << "Maxx Z value = " << biggest << std::endl;
     // create texture for heightmap
 
-    GLuint htId;
-    glGenTextures(1, &htId); CE();
-    glActiveTexture(texUnit); CE();
-    glBindTexture(GL_TEXTURE_2D,  htId ); CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_R32F, wd, ht, 0,GL_RED, GL_FLOAT,  buffer); CE();
+    GLuint htId;
+    f->glGenTextures(1, &htId); CE();
+    f->glActiveTexture(texUnit); CE();
+    f->glBindTexture(GL_TEXTURE_2D,  htId ); CE();
+
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_R32F, wd, ht, 0,GL_RED, GL_FLOAT,  buffer); CE();
     // no filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
 
     // deal with out of array access
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
     if (buffer) delete [] buffer;
 
@@ -242,34 +245,36 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
         indices[2*vidx+1] = (reverse ? 2*width-1-x: x+width);
     }
 
-    glGenVertexArrays(1, &vao); CE();
-    glBindVertexArray(vao); CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+    ef->glGenVertexArrays(1, &vao); CE();
+    ef->glBindVertexArray(vao); CE();
 
     // set up vertex buffer and copy in data
-    glGenBuffers(1, &vbo); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
-    glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*width*2, verts, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &vbo); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
+    f->glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*width*2, verts, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += 5*sizeof(GLfloat)*width*2;
 
     // enable position attribute
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
+    f->glEnableVertexAttribArray(0); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
     // enable texture coord attribute
     const int sz = 3*sizeof(GLfloat);
-    glEnableVertexAttribArray(1); CE();
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
+    f->glEnableVertexAttribArray(1); CE();
+    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
 
     // set up index buffer
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*2*width, indices, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &ibo);
+    f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
+    f->glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*2*width, indices, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += sizeof(GLuint)*2*width;
 
     // unbind everything and clean up
-    glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
-    glBindVertexArray(0); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
+    ef->glBindVertexArray(0); CE();
 
     // std::cout << " -- makeXwall: " << numBytesOnGPU << " bytes on GPU\n";
 }
@@ -308,35 +313,37 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
 
     }
 
-    glGenVertexArrays(1, &vao); CE();
-    glBindVertexArray(vao); CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+    ef->glGenVertexArrays(1, &vao); CE();
+    ef->glBindVertexArray(vao); CE();
 
     // set up vertex buffer an copy in data
-    glGenBuffers(1, &vbo); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
-    glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*height*2, verts, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &vbo); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
+    f->glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*height*2, verts, GL_STATIC_DRAW); CE();
 
     numBytesonGPU += 5*sizeof(GLfloat)*height*2;
 
     // enable position attribute
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
+    f->glEnableVertexAttribArray(0); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
     // enable texture coord attribute
     const int sz = 3*sizeof(GLfloat);
-    glEnableVertexAttribArray(1); CE();
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
+    f->glEnableVertexAttribArray(1); CE();
+    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
 
     // set up index buffer
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*2*height, indices, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &ibo);
+    f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
+    f->glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*2*height, indices, GL_STATIC_DRAW); CE();
 
     numBytesonGPU += sizeof(GLuint)*2*height;
 
     // unbind everything and clean up
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
-    glBindVertexArray(0); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
+    ef->glBindVertexArray(0); CE();
 
     // std::cout << " -- makeYwall: " << numBytesonGPU << " bytes on GPU\n";
 }
@@ -347,6 +354,8 @@ void TRenderer::makeBase(GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, G
 
    size_t numBytesOnGPU = 0;
 
+   QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+   QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
     for (int vidx = 0; vidx < 4; vidx++)
       {
         verts[5*vidx] = coords[vidx][0];
@@ -360,35 +369,35 @@ void TRenderer::makeBase(GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, G
     indices[0] = 1; indices[1] = 3; indices[2] = 0; indices[3] = 2;
 
     // standard VAO/VBO setup
-    glGenVertexArrays(1, &vao); CE();
-    glBindVertexArray(vao); CE();
+    ef->glGenVertexArrays(1, &vao); CE();
+    ef->glBindVertexArray(vao); CE();
 
     // set up vertex buffer an copy in data
-    glGenBuffers(1, &vbo); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
-    glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*4, verts, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &vbo); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, vbo); CE();
+    f->glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*4, verts, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += 5*sizeof(GLfloat)*4;
 
     // enable position attribute
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
+    f->glEnableVertexAttribArray(0); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
     // enable texture coord attribute
     const int sz = 3*sizeof(GLfloat);
-    glEnableVertexAttribArray(1); CE();
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
+    f->glEnableVertexAttribArray(1); CE();
+    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
 
     // set up index buffer
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*4, indices, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &ibo);
+    f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); CE();
+    f->glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*4, indices, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += sizeof(GLuint)*4;
 
     // unbind everything and clean up
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
-    glBindVertexArray(0); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
+    ef->glBindVertexArray(0); CE();
 
     // std::cout << " -- makeBase: " << numBytesOnGPU << " bytes on GPU\n";
  }
@@ -508,30 +517,32 @@ bool TRenderer::prepareTerrainGeometry(void)
 
     // generate index array: set up for triangle strips with degeneraret tris linking strips
 
-    glGenVertexArrays(1, &vaoTerrain); CE();
-    glBindVertexArray(vaoTerrain); CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+    ef->glGenVertexArrays(1, &vaoTerrain); CE();
+    ef->glBindVertexArray(vaoTerrain); CE();
 
     // set up vertex buffer an copy in data
-    glGenBuffers(1, &vboTerrain); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, vboTerrain); CE();
-    glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*width*height, vertexStorage, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &vboTerrain); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, vboTerrain); CE();
+    f->glBufferData(GL_ARRAY_BUFFER, 5*sizeof(GLfloat)*width*height, vertexStorage, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += 5*sizeof(GLfloat)*width*height;
 
     // std::cout << " -- prepareTerrainGeometry -  vertex/tex coords: " << (5*sizeof(GLfloat)*width*height/1024.0/1024.0) << " MB on GPU\n";
 
     // enable position attribute
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
+    f->glEnableVertexAttribArray(0); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
     // enable texture coord attribute
     const int sz = 3*sizeof(GLfloat);
-    glEnableVertexAttribArray(1); CE();
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
+    f->glEnableVertexAttribArray(1); CE();
+    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz) ); CE();
 
     // set up index buffer
-    glGenBuffers(1, &iboTerrain);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboTerrain); CE();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*indexSize, indexStorage, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &iboTerrain);
+    f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboTerrain); CE();
+    f->glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*indexSize, indexStorage, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += sizeof(GLuint)*indexSize;
     // std::cout << " -- prepareTerrainGeometry -  index buffer data: " << (sizeof(GLuint)*indexSize/1024.0/1024.0) << " MB on GPU\n";
@@ -541,17 +552,17 @@ bool TRenderer::prepareTerrainGeometry(void)
     delete [] vertexStorage;
     delete [] indexStorage;
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); CE();
-    glBindVertexArray(0); CE();
+    ef->glBindVertexArray(0); CE();
 
     //set up screen quad for screen rendering
-    glGenVertexArrays(1, &vaoScreenQuad); CE();
-    glBindVertexArray(vaoScreenQuad); CE();
+    ef->glGenVertexArrays(1, &vaoScreenQuad); CE();
+    ef->glBindVertexArray(vaoScreenQuad); CE();
 
-    glGenBuffers(1, &vboScreenQuad); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, vboScreenQuad); CE();
-    glBufferData(GL_ARRAY_BUFFER, sizeof(screenQuad), screenQuad, GL_STATIC_DRAW); CE();
+    f->glGenBuffers(1, &vboScreenQuad); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, vboScreenQuad); CE();
+    f->glBufferData(GL_ARRAY_BUFFER, sizeof(screenQuad), screenQuad, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += sizeof(screenQuad);
 
@@ -559,53 +570,53 @@ bool TRenderer::prepareTerrainGeometry(void)
     //glEnableVertexAttribArray(0); CE();
     //glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)(0)); CE();
     // enable position attribute
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)(0)); CE();
+    f->glEnableVertexAttribArray(0); CE();
+    f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)(0)); CE();
     // enable texture coord attribute
     const int sz2 = 2*sizeof(GLfloat);
-    glEnableVertexAttribArray(1); CE();
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)(sz2) ); CE();
+    f->glEnableVertexAttribArray(1); CE();
+    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)(sz2) ); CE();
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
-    glBindVertexArray(0); CE();
+    f->glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
+    ef->glBindVertexArray(0); CE();
 
 
     // create an FBO for normal map rendering
 
-    glGenFramebuffers(1, &fboNormalMap); CE();
-    glBindFramebuffer(GL_FRAMEBUFFER, fboNormalMap); CE();
+    f->glGenFramebuffers(1, &fboNormalMap); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER, fboNormalMap); CE();
     // create texture target for normal map computation
 
 
-    glActiveTexture(normalMapTexUnit); // normal map is bound to this TIU
-    glGenTextures(1, &normalTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, normalTexture); CE();
+    f->glActiveTexture(normalMapTexUnit); // normal map is bound to this TIU
+    f->glGenTextures(1, &normalTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, normalTexture); CE();
     // set up texture state.
 
     // Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16F, width, height, 0,GL_RGBA, GL_FLOAT, 0); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16F, width, height, 0,GL_RGBA, GL_FLOAT, 0); CE();
 
     numBytesOnGPU += width*height * 4 * 2; // RGBAF16 = 2 bytes per channel
 
     // std::cout << " -- prepareTerrainGeometry -  normalMapTexture: " << (width*height * 4 * 2/1024.0/1024.0) << " MB on GPU\n";
 
     // no filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     // deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
     // configure FBO
 
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, normalTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, normalTexture, 0); CE();
 
     // Set the list of draw buffers.
     GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, DrawBuffers);  CE(); // "1" is the size of DrawBuffers
+    ef->glDrawBuffers(1, DrawBuffers);  CE(); // "1" is the size of DrawBuffers
 
     // Always check that our framebuffer is ok
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if(f->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cerr << "Normal map FBO initialisation failed\n";
         return false;
@@ -613,7 +624,7 @@ bool TRenderer::prepareTerrainGeometry(void)
 
     // unbind FBO
 
-    glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
 
     // std::cout << " -- prepareTerrainGeometry -  Total:" << (numBytesOnGPU/1024.0/1024.0) << " MB on GPU\n";
     return true;
@@ -621,53 +632,54 @@ bool TRenderer::prepareTerrainGeometry(void)
 
 void TRenderer::generateNormalTexture(void)
 {
-    glClearColor( 0.0f, 0.0f, 0.0f, 1.0f ); CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+    f->glClearColor( 0.0f, 0.0f, 0.0f, 1.0f ); CE();
 
-    glDisable(GL_DEPTH_TEST); CE();
-    glDisable(GL_CULL_FACE); CE();
+    f->glDisable(GL_DEPTH_TEST); CE();
+    f->glDisable(GL_CULL_FACE); CE();
 
 
     //glClear(GL_COLOR_BUFFER_BIT); CE();
 
     GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport); // save current viewport
+    f->glGetIntegerv(GL_VIEWPORT, viewport); // save current viewport
 
     // reset current viewport
-    glViewport(0,0,width, height); CE();
+    f->glViewport(0,0,width, height); CE();
 
     std::string shaderName = "normalShader";
 
     GLuint programID = (*shaders[shaderName]).getProgramID();
-    glUseProgram(programID); CE();
+    f->glUseProgram(programID); CE();
 
 
     GLfloat imgDims[2] = {float(width), float(height)};
-    GLuint locDims = glGetUniformLocation(programID, "imgSize");  CE();
-    glUniform2fv(locDims, 1, imgDims); CE();
+    GLuint locDims = f->glGetUniformLocation(programID, "imgSize");  CE();
+    f->glUniform2fv(locDims, 1, imgDims); CE();
 
-    GLuint textur = glGetUniformLocation(programID, "htMap");  CE();
-    glUniform1i(textur, (GLint)(htmapTexUnit - GL_TEXTURE0)); CE(); // assumes heightmap texture is bound to this TIU
+    GLuint textur = f->glGetUniformLocation(programID, "htMap");  CE();
+    f->glUniform1i(textur, (GLint)(htmapTexUnit - GL_TEXTURE0)); CE(); // assumes heightmap texture is bound to this TIU
 
     // pass in scale
     GLfloat terDims[2] = {float(scalex), float(scaley)};
-    GLuint scDims = glGetUniformLocation(programID, "scale");  CE();
-    glUniform2fv(scDims, 1, terDims); CE();
+    GLuint scDims = f->glGetUniformLocation(programID, "scale");  CE();
+    f->glUniform2fv(scDims, 1, terDims); CE();
 
 
     // Render to our framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, fboNormalMap); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER, fboNormalMap); CE();
 
     // set shader program to normal map gen
+    ef->glBindVertexArray(vaoScreenQuad); CE();
 
-    glBindVertexArray(vaoScreenQuad); CE();
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
+    f->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
 
     // unbind everthing
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
-    glBindVertexArray(0);  CE();
-    glUseProgram(0);  CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
+    ef->glBindVertexArray(0);  CE();
+    f->glUseProgram(0);  CE();
 
     /*
     std::vector<unsigned int> texdata(width * height);
@@ -686,7 +698,7 @@ void TRenderer::generateNormalTexture(void)
     */
 
     // reset viewport
-    glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+    f->glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 }
 
  // ******* Radiance Scaling setup **************
@@ -704,31 +716,32 @@ void TRenderer::generateNormalTexture(void)
     // std::cerr << " -- initRadianceScalingBuffers - rebuilding radScaling textures/FBOs with w = " << _w << " and h = " << _h << std::endl;
 
     // Create & Configure FBO: final composite
-
-    glGenFramebuffers(1, &fboRSOutput); CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+    f->glGenFramebuffers(1, &fboRSOutput); CE();
     // std::cout << "Framebuffer2 ID = " << fboRSOutput << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, fboRSOutput); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER, fboRSOutput); CE();
 
     // set up final compositon buffer for radiance scaling
 
-    glActiveTexture(rsDestTexUnit); CE();
-    glGenTextures(1, &destTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, destTexture); CE();
+    f->glActiveTexture(rsDestTexUnit); CE();
+    f->glGenTextures(1, &destTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, destTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, _w, _h, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, _w, _h, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); CE();
 
     numBytesOnGPU += _w*_h * 4;
 
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, destTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, destTexture, 0); CE();
 
     GLenum DestBuffer[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, DestBuffer);  CE();
+    ef->glDrawBuffers(1, DestBuffer);  CE();
 
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if(f->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cerr << "RS FBO (output) - initialisation: failed\n";
         return false;
@@ -736,91 +749,91 @@ void TRenderer::generateNormalTexture(void)
 
     // unbind FBO
 
-    glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
 
     // ****************************************************************************************************
 
     // create an FBO for rendering output
-    glGenFramebuffers(1, &fboRadScaling); CE();
-    glBindFramebuffer(GL_FRAMEBUFFER, fboRadScaling); CE();
+    f->glGenFramebuffers(1, &fboRadScaling); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER, fboRadScaling); CE();
     // std::cout << "Framebuffer1 ID = " << fboRadScaling << std::endl;
 
     // ****** depth texture:: ********************
 
-    glGenTextures(1, &depthTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, depthTexture); CE();
+    f->glGenTextures(1, &depthTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, depthTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, _w, _h, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, _w, _h, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0); CE();
     // - linear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     // - deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     numBytesOnGPU += _w * _h *3; // approx
 
     // ****** gradient texture:: *******************
 
-    glActiveTexture(rsGradTexUnit);
-    glGenTextures(1, &gradTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, gradTexture); CE();
+    f->glActiveTexture(rsGradTexUnit);
+    f->glGenTextures(1, &gradTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, gradTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16F, _w, _h, 0,GL_RGBA, GL_FLOAT, 0); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16F, _w, _h, 0,GL_RGBA, GL_FLOAT, 0); CE();
     // - linear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     // - deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     numBytesOnGPU += _w * _h * 4*2;
 
     // ****** screenspace normal texture:: ********************
 
-    glActiveTexture(rsNormTexUnit);
-    glGenTextures(1, &normTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, normTexture); CE();
+    f->glActiveTexture(rsNormTexUnit);
+    f->glGenTextures(1, &normTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, normTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16F, _w, _h, 0,GL_RGBA, GL_FLOAT, 0); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16F, _w, _h, 0,GL_RGBA, GL_FLOAT, 0); CE();
     // - linear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     // - deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     numBytesOnGPU += _w * _h * 4 * 2;
 
    // ****** colour texture:: ********************
 
-    glActiveTexture(rsColTexUnit);
-    glGenTextures(1, &colTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, colTexture); CE();
+    f->glActiveTexture(rsColTexUnit);
+    f->glGenTextures(1, &colTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, colTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, _w, _h, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, _w, _h, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0); CE();
     // - linear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     // - deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     numBytesOnGPU += _w * _h * 4;
 
     // configure FBO: intermediate
 
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0); CE();
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, gradTexture, 0); CE();
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, normTexture, 0); CE();
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, colTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, gradTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, normTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, colTexture, 0); CE();
 
     // Set the list of draw buffers.
     GLenum DrawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-    glDrawBuffers(3, DrawBuffers);  CE(); // "3" is the size of DrawBuffers
+    ef->glDrawBuffers(3, DrawBuffers);  CE(); // "3" is the size of DrawBuffers
 
     // Always check that our framebuffer is ok
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if(f->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cerr << "RS FBO initialisation: failed\n";
         return false;
@@ -828,64 +841,64 @@ void TRenderer::generateNormalTexture(void)
 
     // unbind FBO
 
-    glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
 
     // ******************************************************************************************************
 
     // create FBO for manipulator transparency overlay; requires depth buffer and colour attachment
 
-    glGenFramebuffers(1, &fboManipLayer); CE();
-    glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
+    f->glGenFramebuffers(1, &fboManipLayer); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
     // std::cout << "FramebufferN ID = " << fboManipLayer << std::endl;
 
     // ****** manipulator depth texture:: ********************
 
-    glActiveTexture(depthTexUnit);
-    glGenTextures(1, &manipDepthTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, manipDepthTexture); CE();
+    f->glActiveTexture(depthTexUnit);
+    f->glGenTextures(1, &manipDepthTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, manipDepthTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, _w, _h, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, _w, _h, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0); CE();
     // - linear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     // - deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     numBytesOnGPU += _w * _h * 3;
 
    // ****** manipulator colour texture:: ********************
 
-    glActiveTexture(manipTranspTexUnit);
-    glGenTextures(1, &manipTranspTexture); CE();
-    glBindTexture(GL_TEXTURE_2D, manipTranspTexture); CE();
+    f->glActiveTexture(manipTranspTexUnit);
+    f->glGenTextures(1, &manipTranspTexture); CE();
+    f->glBindTexture(GL_TEXTURE_2D, manipTranspTexture); CE();
     // - Give an empty image to OpenGL ( the last "0" )
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, _w, _h, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0); CE();
+    f->glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, _w, _h, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0); CE();
     // - linear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
     // - deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     numBytesOnGPU += _w * _h * 4;
 
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, manipDepthTexture, 0); CE();
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, manipTranspTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, manipDepthTexture, 0); CE();
+    ef->glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, manipTranspTexture, 0); CE();
 
     // Set the list of draw buffers.
     GLenum mDrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, mDrawBuffers);  CE(); // "1" is the size of DrawBuffers
+    ef->glDrawBuffers(1, mDrawBuffers);  CE(); // "1" is the size of DrawBuffers
 
     // Always check that our framebuffer is ok
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if(f->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {
         std::cerr << "manip FBO initialisation: failed\n";
         return false;
     }
 
     // unbind FBO
-    glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
+    f->glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
 
     // std::cout << " -- initRadianceScalingBuffers -- " << numBytesOnGPU/1024.0/1024.0 << " MB on GPU\n";
     return true;
@@ -1038,19 +1051,21 @@ TRenderer::TRenderer(QOpenGLWidget *drawTo, const std::string& dir)
 void TRenderer::deleteTerrainOpenGLbuffers(void)
 {
     // delete old VAO etc
-    if (vboTerrain != 0) glDeleteBuffers(1, &vboTerrain);  CE();
-    if (iboTerrain != 0) glDeleteBuffers(1, &iboTerrain);  CE();
-    if (vaoTerrain != 0) glDeleteVertexArrays(1, &vaoTerrain);  CE();
-    if (normalTexture != 0) glDeleteTextures(1, &normalTexture);  CE();
-    if (fboNormalMap != 0) glDeleteFramebuffers(1, &fboNormalMap);  CE();
-    if (vaoScreenQuad != 0) glDeleteVertexArrays(1, &vaoScreenQuad);  CE();
-    if (vboScreenQuad != 0) glDeleteBuffers(1, &vboScreenQuad);  CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+    if (vboTerrain != 0) f->glDeleteBuffers(1, &vboTerrain);  CE();
+    if (iboTerrain != 0) f->glDeleteBuffers(1, &iboTerrain);  CE();
+    if (vaoTerrain != 0) ef->glDeleteVertexArrays(1, &vaoTerrain);  CE();
+    if (normalTexture != 0) f->glDeleteTextures(1, &normalTexture);  CE();
+    if (fboNormalMap != 0) f->glDeleteFramebuffers(1, &fboNormalMap);  CE();
+    if (vaoScreenQuad != 0) ef->glDeleteVertexArrays(1, &vaoScreenQuad);  CE();
+    if (vboScreenQuad != 0) f->glDeleteBuffers(1, &vboScreenQuad);  CE();
 
     for (int i = 0; i < 5; i++)
     {
-        if (vboWalls[i] != 0) glDeleteBuffers(1, &vboWalls[i]); CE();
-        if (iboWalls[i] != 0) glDeleteBuffers(1, &iboWalls[i]); CE();
-        if (vaoWalls[i] != 0) glDeleteVertexArrays(1, &vaoWalls[i]); CE();
+        if (vboWalls[i] != 0) f->glDeleteBuffers(1, &vboWalls[i]); CE();
+        if (iboWalls[i] != 0) f->glDeleteBuffers(1, &iboWalls[i]); CE();
+        if (vaoWalls[i] != 0) ef->glDeleteVertexArrays(1, &vaoWalls[i]); CE();
     }
 }
 
@@ -1058,26 +1073,28 @@ void TRenderer::deleteTerrainOpenGLbuffers(void)
   {
    // Radiance scaling FBO data
 
-    if (depthTexture !=0) glDeleteTextures(1, &depthTexture);  CE();
-    if (gradTexture !=0) glDeleteTextures(1, &gradTexture);  CE();
-    if (normTexture !=0) glDeleteTextures(1, &normTexture);  CE();
-    if (colTexture !=0) glDeleteTextures(1, &colTexture);  CE();
-    if (destTexture != 0)  glDeleteTextures(1, &destTexture);  CE();
-    if (manipTranspTexture != 0)  glDeleteTextures(1, &manipTranspTexture);  CE();
-    if (manipDepthTexture != 0)  glDeleteTextures(1, &manipDepthTexture);  CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    if (depthTexture !=0) f->glDeleteTextures(1, &depthTexture);  CE();
+    if (gradTexture !=0) f->glDeleteTextures(1, &gradTexture);  CE();
+    if (normTexture !=0) f->glDeleteTextures(1, &normTexture);  CE();
+    if (colTexture !=0) f->glDeleteTextures(1, &colTexture);  CE();
+    if (destTexture != 0)  f->glDeleteTextures(1, &destTexture);  CE();
+    if (manipTranspTexture != 0)  f->glDeleteTextures(1, &manipTranspTexture);  CE();
+    if (manipDepthTexture != 0)  f->glDeleteTextures(1, &manipDepthTexture);  CE();
 
-    if (fboRadScaling != 0) glDeleteFramebuffers(1, &fboRadScaling);  CE();
-    if (fboRSOutput != 0) glDeleteFramebuffers(1, &fboRSOutput); CE();
-    if (fboManipLayer != 0) glDeleteFramebuffers(1, &fboManipLayer); CE();
+    if (fboRadScaling != 0) f->glDeleteFramebuffers(1, &fboRadScaling);  CE();
+    if (fboRSOutput != 0) f->glDeleteFramebuffers(1, &fboRSOutput); CE();
+    if (fboManipLayer != 0) f->glDeleteFramebuffers(1, &fboManipLayer); CE();
   }
 
 void TRenderer::destroyInstanceData(void)
 {
     if (typeBuffer != NULL) delete [] typeBuffer;
 
-    if (typeMapTexture != 0)  glDeleteTextures(1, &typeMapTexture);  CE();
-    if (heightmapTexture != 0)	glDeleteTextures(1, &heightmapTexture);  CE();
-    if (constraintTexture != 0) glDeleteTextures(1, &constraintTexture);  CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    if (typeMapTexture != 0)  f->glDeleteTextures(1, &typeMapTexture);  CE();
+    if (heightmapTexture != 0)	f->glDeleteTextures(1, &heightmapTexture);  CE();
+    if (constraintTexture != 0) f->glDeleteTextures(1, &constraintTexture);  CE();
 
     deleteTerrainOpenGLbuffers();
     deleteFBOrscalingBuffers();
@@ -1085,7 +1102,8 @@ void TRenderer::destroyInstanceData(void)
 
 TRenderer::~TRenderer()
 {
-  if (decalTexture != 0) glDeleteTextures(1, &decalTexture);
+   QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+  if (decalTexture != 0) f->glDeleteTextures(1, &decalTexture);
   // delete shaders
   std::map<std::string, shaderProgram*>::iterator it = shaders.begin();
   while (it != shaders.end() )
@@ -1174,7 +1192,8 @@ void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool forc
     default: std::cerr << "TRenderer::updateTypeMapTexture - Illegal type map mode!\n"; return;
     }
 
-  glActiveTexture(texUnit); CE();
+   QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+   f->glActiveTexture(texUnit); CE();
 
     // if grid dimensions have changed:
     if(*texId != 0 && force)
@@ -1183,7 +1202,7 @@ void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool forc
         cerr << "tmap = " << wd << ", " << ht << endl;
         cerr << "terrain = " << width << ", " << height << endl;
         cerr << "updating texture width and height" << endl;*/
-        glDeleteTextures(1, texId);  CE();
+        f->glDeleteTextures(1, texId);  CE();
         *texId = 0;
     }
 
@@ -1201,12 +1220,12 @@ void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool forc
           return;
         }
 
-      glGenTextures(1, texId); CE();
-      glBindTexture(GL_TEXTURE_2D, *texId); CE();
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); CE();
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); CE();
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      f->glGenTextures(1, texId); CE();
+      f->glBindTexture(GL_TEXTURE_2D, *texId); CE();
+      f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); CE();
+      f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); CE();
+      f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       initTexture = true;
       xoff = yoff = 0;
       Rwidth = wd;
@@ -1214,7 +1233,7 @@ void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool forc
     }
   else // need to sub in region - bind texture first
     {
-      glBindTexture(GL_TEXTURE_2D, *texId); CE();
+      f->glBindTexture(GL_TEXTURE_2D, *texId); CE();
     }
 
   // build colour buffer for texture:
@@ -1255,12 +1274,12 @@ void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool forc
   if (initTexture)
     {
       //std::cout << "Overlay texture created at full resolution\n";
-       glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, Rwidth, Rheight, 0,GL_RGBA, GL_FLOAT, typeBuffer); CE();
+       f->glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, Rwidth, Rheight, 0,GL_RGBA, GL_FLOAT, typeBuffer); CE();
     }
   else
     {
       //std::cout << "Overlay textured sub'd\n";
-      glTexSubImage2D(GL_TEXTURE_2D, 0, xoff, yoff, Rwidth, Rheight, GL_RGBA, GL_FLOAT, typeBuffer); CE();
+      f->glTexSubImage2D(GL_TEXTURE_2D, 0, xoff, yoff, Rwidth, Rheight, GL_RGBA, GL_FLOAT, typeBuffer); CE();
     }
   //std::cout << "Overlay created\n";
 }
@@ -1378,26 +1397,28 @@ void TRenderer::bindDecals(int width, int height, unsigned char * buffer)
 {
     GLint maxtexunits;
     GLint boundtexunit;
-    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxtexunits);
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
+    f->glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxtexunits);
     // std::cout << "maximum texture units: " << maxtexunits << std::endl;
 
     // bind texture
-    glEnable(GL_TEXTURE_2D);
-    glActiveTexture(decalTexUnit); CE();
-    glGenTextures( 1, &decalTexture ); CE();
-    glBindTexture( GL_TEXTURE_2D, decalTexture ); CE();
+    f->glEnable(GL_TEXTURE_2D);
+    f->glActiveTexture(decalTexUnit); CE();
+    f->glGenTextures( 1, &decalTexture ); CE();
+    f->glBindTexture( GL_TEXTURE_2D, decalTexture ); CE();
     // int off = 56 * width * 4 + 767 * 4;
     // cerr << "width = " << width << ", height = " << height << endl;
     // cerr << "decal buffer [0][0] = " << (int) buffer[0] << ", " << (int) buffer[1] << ", " << (int) buffer[2] << ", " << (int) buffer[3] << endl;
     // cerr << "decal buffer [767][56] = " << (int) buffer[off] << ", " << (int) buffer[off+1] << ", " << (int) buffer[off+2] << ", " << (int) buffer[off+3] << endl;
 
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer); CE(); // ? is this actually working
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ); CE();
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR ); CE();
+    f->glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer); CE(); // ? is this actually working
+    f->glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ); CE();
+    f->glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR ); CE();
 
     // deal with out of array access
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 }
 
 void TRenderer::draw(View * view)
@@ -1408,8 +1429,10 @@ void TRenderer::draw(View * view)
         initShaders();
     }
 
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
     GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
+    f->glGetIntegerv(GL_VIEWPORT, viewport);
 
     //std::cout << "Viewport chk - [" << viewport[0] << "," << viewport[1] << "," << viewport[3] << "," << viewport[3] << "]\n";
 
@@ -1417,13 +1440,13 @@ void TRenderer::draw(View * view)
     updateRadianceScalingBuffers(2*viewport[2], 2*viewport[3], true);
 
     // Set the clear color to white
-    glClearColor( 1.0f, 1.0f, 1.0f, 1.0f ); CE();
+    f->glClearColor( 1.0f, 1.0f, 1.0f, 1.0f ); CE();
 
-    glEnable(GL_DEPTH_TEST); CE();
-    glDepthMask(GL_TRUE); CE();
-    glDepthFunc(GL_LEQUAL); CE();
-    glDepthRange(0.0f, 1.0f); CE();
-    glEnable(GL_CULL_FACE); CE();
+    f->glEnable(GL_DEPTH_TEST); CE();
+    f->glDepthMask(GL_TRUE); CE();
+    f->glDepthFunc(GL_LEQUAL); CE();
+    f->glDepthRangef(0.0f, 1.0f); CE();
+    f->glEnable(GL_CULL_FACE); CE();
     // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
 
     //glEnable(GL_DEPTH_CLAMP);
@@ -1448,95 +1471,95 @@ void TRenderer::draw(View * view)
       shaderName = "sunShader";
 
     GLuint programID = (*shaders[shaderName]).getProgramID();
-    glUseProgram(programID); CE();
+    f->glUseProgram(programID); CE();
 
-    glUniformMatrix3fv(glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(normalMatrix)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(programID, "MV"), 1, GL_FALSE, glm::value_ptr(MVmx)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(programID, "MVproj"), 1, GL_FALSE, glm::value_ptr(MVP)); CE();
+    f->glUniformMatrix3fv(f->glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(normalMatrix)); CE();
+    f->glUniformMatrix4fv(f->glGetUniformLocation(programID, "MV"), 1, GL_FALSE, glm::value_ptr(MVmx)); CE();
+    f->glUniformMatrix4fv(f->glGetUniformLocation(programID, "MVproj"), 1, GL_FALSE, glm::value_ptr(MVP)); CE();
 
     glm::vec4 lightPos = MVmx * pointLight; // map light pos into camera space
 
     // configure texturing: region texture overlay
     if (terrainTypeTexture == false)
      {
-        glUniform1i(glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); //  turn texture off
+        f->glUniform1i(f->glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); //  turn texture off
      }
     else if (typeMapTexture != 0)
       {
-        glUniform1i(glGetUniformLocation(programID, "useRegionTexture"), 1); CE(); // draw region texture
-        GLuint rtex = glGetUniformLocation(programID, "overlayTexture"); CE();
-        glUniform1i(rtex, (GLint)(typemapTexUnit - GL_TEXTURE0));  CE(); // texture unit for region overlay
+        f->glUniform1i(f->glGetUniformLocation(programID, "useRegionTexture"), 1); CE(); // draw region texture
+        GLuint rtex = f->glGetUniformLocation(programID, "overlayTexture"); CE();
+        f->glUniform1i(rtex, (GLint)(typemapTexUnit - GL_TEXTURE0));  CE(); // texture unit for region overlay
       }
     else
       {
-        glUniform1i(glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); // region texture not yet defined
+        f->glUniform1i(f->glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); // region texture not yet defined
       }
 
     // configure texturing: constraint texture overlay
     if (constraintTypeTexture == false)
      {
-        glUniform1i(glGetUniformLocation(programID, "useConstraintTexture"), 0); CE(); //  turn texture off
+        f->glUniform1i(f->glGetUniformLocation(programID, "useConstraintTexture"), 0); CE(); //  turn texture off
      }
     else if (constraintTexture != 0)
       {
-        glUniform1i(glGetUniformLocation(programID, "useConstraintTexture"), 1); CE(); // draw constraint texture
-        GLuint rtex = glGetUniformLocation(programID, "constraintTexture"); CE();
-        glUniform1i(rtex, (GLint)(constraintTexUnit - GL_TEXTURE0));  CE(); // texture unit for constraint overlay
+        f->glUniform1i(f->glGetUniformLocation(programID, "useConstraintTexture"), 1); CE(); // draw constraint texture
+        GLuint rtex = f->glGetUniformLocation(programID, "constraintTexture"); CE();
+        f->glUniform1i(rtex, (GLint)(constraintTexUnit - GL_TEXTURE0));  CE(); // texture unit for constraint overlay
       }
     else
       {
-        glUniform1i(glGetUniformLocation(programID, "useConstraintTexture"), 0); CE(); // region texture not yet defined
+        f->glUniform1i(f->glGetUniformLocation(programID, "useConstraintTexture"), 0); CE(); // region texture not yet defined
       }
 
     // contouring and grids
-    glUniform1i(glGetUniformLocation(programID, "drawContours"), (int)(contours ? 1 : 0) ); CE(); // draw contours
-    glUniform1i(glGetUniformLocation(programID, "drawGridLines"), (int)(gridlines ? 1 : 0) ); CE(); // draw grdlines
-    glUniform1i(glGetUniformLocation(programID, "drawWallContours"), (int)(contoursWall ? 1 : 0) ); CE(); // draw wall contours
-    glUniform1i(glGetUniformLocation(programID, "drawWallGridLines"), (int)(gridlinesWall ? 1 : 0) ); CE(); // draw wall contours
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawContours"), (int)(contours ? 1 : 0) ); CE(); // draw contours
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawGridLines"), (int)(gridlines ? 1 : 0) ); CE(); // draw grdlines
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawWallContours"), (int)(contoursWall ? 1 : 0) ); CE(); // draw wall contours
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawWallGridLines"), (int)(gridlinesWall ? 1 : 0) ); CE(); // draw wall contours
 
     // change shading for out of bounds heights
-    glUniform1i(glGetUniformLocation(programID, "drawOutOfBounds"), (int)(drawOutOfBounds ? 1 : 0) ); CE(); // draw wall contours
-    glUniform1f(glGetUniformLocation(programID, "outBoundsBlend"), outOfBoundsWeight); CE();
-    glUniform1f(glGetUniformLocation(programID, "outBoundsMax"), outOfBoundsMean + outOfBoundsOffset); CE();
-    glUniform1f(glGetUniformLocation(programID, "outBoundsMin"), outOfBoundsMean - outOfBoundsOffset); CE();
-    glUniform4fv(glGetUniformLocation(programID, "outBoundsCol"), 1, glm::value_ptr(outOfBoundsColour) ); CE();
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawOutOfBounds"), (int)(drawOutOfBounds ? 1 : 0) ); CE(); // draw wall contours
+    f->glUniform1f(f->glGetUniformLocation(programID, "outBoundsBlend"), outOfBoundsWeight); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "outBoundsMax"), outOfBoundsMean + outOfBoundsOffset); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "outBoundsMin"), outOfBoundsMean - outOfBoundsOffset); CE();
+    f->glUniform4fv(f->glGetUniformLocation(programID, "outBoundsCol"), 1, glm::value_ptr(outOfBoundsColour) ); CE();
 
     // set contouring params (not implemented in BASIC at the moment...)
-    glUniform1f(glGetUniformLocation(programID, "gridX"),  gridXsep); CE();
-    glUniform1f(glGetUniformLocation(programID, "gridZ"),  gridZsep); CE();
-    glUniform1f(glGetUniformLocation(programID, "gridColFactor"),  gridColFactor); CE();
-    glUniform1f(glGetUniformLocation(programID, "gridThickness"),  gridThickness); CE();
-    glUniform1f(glGetUniformLocation(programID, "contourSep"),  contourSep); CE();
-    glUniform1f(glGetUniformLocation(programID, "contourColFactor"),  contourColFactor); CE();
-    glUniform1f(glGetUniformLocation(programID, "contourThickness"),  contourThickness); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "gridX"),  gridXsep); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "gridZ"),  gridZsep); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "gridColFactor"),  gridColFactor); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "gridThickness"),  gridThickness); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "contourSep"),  contourSep); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "contourColFactor"),  contourColFactor); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "contourThickness"),  contourThickness); CE();
 
     // pass light and colours to shader
     if (shadModel == BASIC)
       {
-        glUniform4fv(glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
 
         // set colours
-        glUniform4fv(glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(terMatDiffuse) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(terMatAmbient) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "matSpec"), 1, glm::value_ptr(terMatSpec) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(terMatDiffuse) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(terMatAmbient) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "matSpec"), 1, glm::value_ptr(terMatSpec) ); CE();
 
-        glUniform4fv(glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "specularCol"), 1, glm::value_ptr(lightSpecColour) ); CE();
-        glUniform1f(glGetUniformLocation(programID, "shiny"), shinySpec); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "specularCol"), 1, glm::value_ptr(lightSpecColour) ); CE();
+        f->glUniform1f(f->glGetUniformLocation(programID, "shiny"), shinySpec); CE();
       }
     else if (shadModel == FLAT_TRANSECT)
     {
         // needed for two sided lighting
-        glDisable(GL_CULL_FACE); CE();
+        f->glDisable(GL_CULL_FACE); CE();
 
-        glUniform4fv(glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
 
         // set colours
-        glUniform4fv(glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(terMatDiffuse) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(terMatAmbient) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(terMatDiffuse) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(terMatAmbient) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
     }
     else if(shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
             shadModel == RADIANCE_SCALING_OVERVIEW) // radiance scaling
@@ -1544,21 +1567,21 @@ void TRenderer::draw(View * view)
         // map side wall lights into camera space; lights at corners of terrain, moved along diagonal
         glm::vec4 LP1 = MVmx * glm::vec4(2.0*scalex, 0.5, 2.0*scaley, 1.0);
         glm::vec4 LP2 = MVmx * glm::vec4(-scalex, 0.5, -scaley, 1.0);
-        glUniform4fv(glGetUniformLocation(programID, "ptLightPos1"), 1, glm::value_ptr(LP1) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "ptLightPos2"), 1, glm::value_ptr(LP2) ); CE();
-        glUniform4fv(glGetUniformLocation(programID, "surfColour"), 1,  glm::value_ptr(terSurfColour) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "ptLightPos1"), 1, glm::value_ptr(LP1) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "ptLightPos2"), 1, glm::value_ptr(LP2) ); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, "surfColour"), 1,  glm::value_ptr(terSurfColour) ); CE();
       }
     else if(shadModel == SUN) // sun simulator
     {
-        glUniform1f(glGetUniformLocation(programID, "terdim"), (float) (width)); CE();
+        f->glUniform1f(f->glGetUniformLocation(programID, "terdim"), (float) (width)); CE();
     }
 
     //pass height and normal map to shader
-    GLuint textur = glGetUniformLocation(programID, "htMap"); CE();
-    glUniform1i(textur, (GLint)(htmapTexUnit - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
+    GLuint textur = f->glGetUniformLocation(programID, "htMap"); CE();
+    f->glUniform1i(textur, (GLint)(htmapTexUnit - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
 
-    GLuint textur2 = glGetUniformLocation(programID, "normalMap"); CE();
-    glUniform1i(textur2, (GLint)(normalMapTexUnit - GL_TEXTURE0)); CE(); // assumes texture unit 1 is bound to normal map texture
+    GLuint textur2 = f->glGetUniformLocation(programID, "normalMap"); CE();
+    f->glUniform1i(textur2, (GLint)(normalMapTexUnit - GL_TEXTURE0)); CE(); // assumes texture unit 1 is bound to normal map texture
 
     // draw terrain:
 
@@ -1572,58 +1595,58 @@ void TRenderer::draw(View * view)
         GLfloat normClear[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
         // clear manipulator transparency FBO
-        glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
-        glViewport(0,0,_w, _h); CE(); // draw into entire frame
+        f->glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
+        f->glViewport(0,0,_w, _h); CE(); // draw into entire frame
         // clear frame buffer depth/textures
-        glClearBufferfv(GL_DEPTH, 0, &depthClear);
-        glClearBufferfv(GL_COLOR, 0, manipLayerClear);
+        ef->glClearBufferfv(GL_DEPTH, 0, &depthClear);
+        ef->glClearBufferfv(GL_COLOR, 0, manipLayerClear);
 
         // Render to RS FBO; clear buffers first
-        glBindFramebuffer(GL_FRAMEBUFFER, fboRadScaling); CE();
-        glViewport(0,0,_w, _h); CE(); // draw into entire frame
+        f->glBindFramebuffer(GL_FRAMEBUFFER, fboRadScaling); CE();
+        f->glViewport(0,0,_w, _h); CE(); // draw into entire frame
         // clear frame buffer depth/textures
-        glClearBufferfv(GL_DEPTH, 0, &depthClear);
-        glClearBufferfv(GL_COLOR, 0, gradClear); // may be able to ignore this one - gradTexture?
-        glClearBufferfv(GL_COLOR, 1, normClear); // this has to be set to (0,0,0) for RS shader to work
-        glClearBufferfv(GL_COLOR, 2, colClear);
+        ef->glClearBufferfv(GL_DEPTH, 0, &depthClear);
+        ef->glClearBufferfv(GL_COLOR, 0, gradClear); // may be able to ignore this one - gradTexture?
+        ef->glClearBufferfv(GL_COLOR, 1, normClear); // this has to be set to (0,0,0) for RS shader to work
+        ef->glClearBufferfv(GL_COLOR, 2, colClear);
       }
     else
       {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
+        f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
       }
 
     // turn offbackface culling to for terrain draw - transect only
     if (shadModel == FLAT_TRANSECT || shadModel == RADIANCE_SCALING_TRANSECT)
     {
-        glDisable(GL_CULL_FACE); CE();
+        f->glDisable(GL_CULL_FACE); CE();
     }
 
-    glUniform1i(glGetUniformLocation(programID, "drawWalls"), 0); CE(); // do NOT draw walls
-    glBindVertexArray(vaoTerrain); CE();
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawWalls"), 0); CE(); // do NOT draw walls
+    ef->glBindVertexArray(vaoTerrain); CE();
 
-    glDrawElements(GL_TRIANGLE_STRIP, indexSize, GL_UNSIGNED_INT, 0); CE();
+    f->glDrawElements(GL_TRIANGLE_STRIP, indexSize, GL_UNSIGNED_INT, 0); CE();
 
     // *** draw capping walls ***
     // --- move base up/down to avoid edits to surface which 'punch through' base
 
-    glUniform1f(glGetUniformLocation(programID, "terrainBase"), terrainBase); CE();
-    glUniform1f(glGetUniformLocation(programID, "terrainBasePad"), terrainBasePad); CE();
-    glUniform1i(glGetUniformLocation(programID, "drawWalls"), 1); // draw walls - ignore normal map lookup
-    GLuint loc = glGetUniformLocation(programID, "normalWall");
+    f->glUniform1f(f->glGetUniformLocation(programID, "terrainBase"), terrainBase); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "terrainBasePad"), terrainBasePad); CE();
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawWalls"), 1); // draw walls - ignore normal map lookup
+    GLuint loc = f->glGetUniformLocation(programID, "normalWall");
 
     // turn off region layer texturing for walls:
-    glUniform1i(glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); // always off for walls!
+    f->glUniform1i(f->glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); // always off for walls!
 
     for (int i = 0; i < 5; i++)
     {
-        glUniform3fv(loc, 1, glm::value_ptr(normalWalls[i])); CE();
-        glBindVertexArray(vaoWalls[i]); CE();
-        glDrawElements(GL_TRIANGLE_STRIP, wallDrawEls[i], GL_UNSIGNED_INT, 0); CE();
+        f->glUniform3fv(loc, 1, glm::value_ptr(normalWalls[i])); CE();
+        ef->glBindVertexArray(vaoWalls[i]); CE();
+        f->glDrawElements(GL_TRIANGLE_STRIP, wallDrawEls[i], GL_UNSIGNED_INT, 0); CE();
     }
 
     if (shadModel == FLAT_TRANSECT || shadModel == RADIANCE_SCALING_TRANSECT) // generally want this on for all other rendering
     {
-        glEnable(GL_CULL_FACE); CE();
+        f->glEnable(GL_CULL_FACE); CE();
     }
     // **************************** draw manipulators/constraints with phong **********************************
 
@@ -1663,8 +1686,8 @@ void TRenderer::draw(View * view)
 
     if (shadModel == RADIANCE_SCALING_TRANSECT || shadModel == RADIANCE_SCALING_OVERVIEW)
       {
-        glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
-        glViewport(0,0,_w, _h); CE();
+        f->glBindFramebuffer(GL_FRAMEBUFFER, fboManipLayer); CE();
+        f->glViewport(0,0,_w, _h); CE();
       }
 
      drawManipulators(programID);
@@ -1675,8 +1698,8 @@ void TRenderer::draw(View * view)
             shadModel == RADIANCE_SCALING_TRANSECT ||
             shadModel == RADIANCE_SCALING_OVERVIEW)
       {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
-        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]); // reset viewport to system setting
+        f->glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
+        f->glViewport(viewport[0], viewport[1], viewport[2], viewport[3]); // reset viewport to system setting
       }
 
 // **************************** radiance scaling pass 2 ****************************************************
@@ -1684,11 +1707,11 @@ void TRenderer::draw(View * view)
 if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
         shadModel == RADIANCE_SCALING_OVERVIEW)
   {
-    glDisable(GL_DEPTH_TEST); CE(); // not required for screen  aligned quad
+    f->glDisable(GL_DEPTH_TEST); CE(); // not required for screen  aligned quad
 
     // Render to our composition framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, fboRSOutput); CE();
-    glViewport(0,0,_w, _h); // draw into entire frame
+    f->glBindFramebuffer(GL_FRAMEBUFFER, fboRSOutput); CE();
+    f->glViewport(0,0,_w, _h); // draw into entire frame
 
     if (shadModel == RADIANCE_SCALING_OVERVIEW)
         shaderName = "rscale2b";
@@ -1697,23 +1720,23 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
 
     programID = (*shaders[shaderName]).getProgramID();
     //std::cout << "Shader ID (RScaling) = " << programID << std::endl;
-    glUseProgram(programID); CE();
+    f->glUseProgram(programID); CE();
 
     if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
             shadModel == RADIANCE_SCALING_OVERVIEW)
     {
-        GLuint blendTrans = glGetUniformLocation(programID, "blendTransect"); CE();
-        glUniform1i(blendTrans, (shadModel == RADIANCE_SCALING_TRANSECT ? 1 : 0)); CE();
+        GLuint blendTrans = f->glGetUniformLocation(programID, "blendTransect"); CE();
+        f->glUniform1i(blendTrans, (shadModel == RADIANCE_SCALING_TRANSECT ? 1 : 0)); CE();
     }
 
     //glClearColor( 0.5f, 0.0f, 0.0f, 1.0f ); CE();
 
-    glClear(GL_COLOR_BUFFER_BIT); CE();
+    f->glClear(GL_COLOR_BUFFER_BIT); CE();
 
     // set image size to allow tex coordinate gen per rasterized quad fragment
     GLfloat imgDims[2] = {float(_w), float(_h)};
-    GLuint locDims = glGetUniformLocation(programID, "imgSize");  CE();
-    glUniform2fv(locDims, 1, imgDims); CE();
+    GLuint locDims = f->glGetUniformLocation(programID, "imgSize");  CE();
+    f->glUniform2fv(locDims, 1, imgDims); CE();
 
     // light is directional - specified in  ***** WORLD  space ******
     // map DIRECTIONAL light(s)  into camera space
@@ -1723,68 +1746,69 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
         oss << "lightPos" << i;
         glm::vec3 dlight = normalMatrix * glm::vec3(directionalLight[i][0], directionalLight[i][1], directionalLight[i][2]);
         lightPos = glm::vec4(dlight[0], dlight[1], dlight[2], 0.0f);
-        glUniform4fv(glGetUniformLocation(programID, oss.str().c_str()), 1, glm::value_ptr(lightPos)); CE();
+        f->glUniform4fv(f->glGetUniformLocation(programID, oss.str().c_str()), 1, glm::value_ptr(lightPos)); CE();
       }
 
     // use lambertian lighting and params for RS calculation
-    GLuint dispmode = glGetUniformLocation(programID, "display"); CE();
-    glUniform1i(dispmode, 0);  CE();
-    GLuint RSenabled = glGetUniformLocation(programID, "enabled"); CE();
-    glUniform1i(RSenabled, 1);  CE();
-    GLuint invertCurvature = glGetUniformLocation(programID, "invert"); CE();
-    glUniform1i(invertCurvature, (RSinvertCurvature ?  1: 0));  CE();
-    GLuint enhancement = glGetUniformLocation(programID, "enhancement"); CE();
-    glUniform1f(enhancement, RSenhance);  CE();
-    GLuint transition = glGetUniformLocation(programID, "transition"); CE();
-    glUniform1f(transition, RStransition);  CE();
-    GLuint swidth = glGetUniformLocation(programID, "sw"); CE();
-    glUniform1f(swidth, (float)(1.0/_w) );  CE();
-    GLuint sheight = glGetUniformLocation(programID, "sh"); CE();
-    glUniform1f(sheight, (float)(1.0/_h) );  CE();
+    GLuint dispmode = f->glGetUniformLocation(programID, "display"); CE();
+    f->glUniform1i(dispmode, 0);  CE();
+    GLuint RSenabled = f->glGetUniformLocation(programID, "enabled"); CE();
+    f->glUniform1i(RSenabled, 1);  CE();
+    GLuint invertCurvature = f->glGetUniformLocation(programID, "invert"); CE();
+    f->glUniform1i(invertCurvature, (RSinvertCurvature ?  1: 0));  CE();
+    GLuint enhancement = f->glGetUniformLocation(programID, "enhancement"); CE();
+    f->glUniform1f(enhancement, RSenhance);  CE();
+    GLuint transition = f->glGetUniformLocation(programID, "transition"); CE();
+    f->glUniform1f(transition, RStransition);  CE();
+    GLuint swidth = f->glGetUniformLocation(programID, "sw"); CE();
+    f->glUniform1f(swidth, (float)(1.0/_w) );  CE();
+    GLuint sheight = f->glGetUniformLocation(programID, "sh"); CE();
+    f->glUniform1f(sheight, (float)(1.0/_h) );  CE();
 
     // configure FBO textures for render ops
-    GLuint textur = glGetUniformLocation(programID, "grad"); CE();
-    glUniform1i(textur, (GLuint)(rsGradTexUnit - GL_TEXTURE0) );  CE();
-    textur = glGetUniformLocation(programID, "norm"); CE();
-    glUniform1i(textur, (GLuint)(rsNormTexUnit - GL_TEXTURE0) );  CE();
-    textur = glGetUniformLocation(programID, "colormap"); CE();
-    glUniform1i(textur, (GLuint)(rsColTexUnit - GL_TEXTURE0) );  CE();
-    textur = glGetUniformLocation(programID, "manipTTexture"); CE(); // manipulator transparency
-    glUniform1i(textur, (GLuint)(manipTranspTexUnit - GL_TEXTURE0) );  CE();
+    GLuint textur = f->glGetUniformLocation(programID, "grad"); CE();
+    f->glUniform1i(textur, (GLuint)(rsGradTexUnit - GL_TEXTURE0) );  CE();
+    textur = f->glGetUniformLocation(programID, "norm"); CE();
+    f->glUniform1i(textur, (GLuint)(rsNormTexUnit - GL_TEXTURE0) );  CE();
+    textur = f->glGetUniformLocation(programID, "colormap"); CE();
+    f->glUniform1i(textur, (GLuint)(rsColTexUnit - GL_TEXTURE0) );  CE();
+    textur = f->glGetUniformLocation(programID, "manipTTexture"); CE(); // manipulator transparency
+    f->glUniform1i(textur, (GLuint)(manipTranspTexUnit - GL_TEXTURE0) );  CE();
     if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
             shadModel == RADIANCE_SCALING_OVERVIEW)
     {
         // manipulator depth
-        textur = glGetUniformLocation(programID, "depthMap"); CE(); // manipulator depth map
-        glUniform1i(textur, (GLuint)(depthTexUnit - GL_TEXTURE0) );  CE();
+        textur = f->glGetUniformLocation(programID, "depthMap"); CE(); // manipulator depth map
+        f->glUniform1i(textur, (GLuint)(depthTexUnit - GL_TEXTURE0) );  CE();
     }
     // draw screeen aligned quad to compose RS calculations
-    glBindVertexArray(vaoScreenQuad); CE();
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
+    ef->glBindVertexArray(vaoScreenQuad); CE();
+    f->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
 
     // unbind everthing
 
-    glBindVertexArray(0);  CE();
+    ef->glBindVertexArray(0);  CE();
 
     // bind draw buffer (system
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);  CE();
+    f->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);  CE();
     // bind read buffer (fbo)
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fboRSOutput);  CE();
+    f->glBindFramebuffer(GL_READ_FRAMEBUFFER, fboRSOutput);  CE();
     // set draw buffer
-    glDrawBuffer(GL_BACK);
+    GLenum buf = GL_BACK;
+    ef->glDrawBuffers(1, &buf);
     // blit to the default framebuffer/back_buffer
-    glBlitFramebuffer(0, 0, _w, _h,
+    ef->glBlitFramebuffer(0, 0, _w, _h,
                 viewport[0], viewport[1], viewport[0] + viewport[2], viewport[1] + viewport[3], GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     //std::cout << "Blit target: [" << viewport[0] << "," << viewport[1] << "," <<
     //viewport[0] + viewport[2] << "," << viewport[1] + viewport[3] << "]\n";
 
    // reset viewport to system setting
-   glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   f->glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+   f->glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
 
-  glUseProgram(0);  CE();
+  f->glUseProgram(0);  CE();
 }
 
 void TRenderer::drawSun(View * view, int renderPass)
@@ -1795,29 +1819,31 @@ void TRenderer::drawSun(View * view, int renderPass)
         initShaders();
     }
 
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
     GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
+    f->glGetIntegerv(GL_VIEWPORT, viewport);
 
     // render at 2X resolution for later linear downsampling (basic anti-aliasing)
     updateRadianceScalingBuffers(2*viewport[2], 2*viewport[3]);
 
     // Set the clear color to white
-    glClearColor( 1.0f, 1.0f, 1.0f, 1.0f ); CE();
+    f->glClearColor( 1.0f, 1.0f, 1.0f, 1.0f ); CE();
 
 
-    glEnable(GL_DEPTH_TEST); CE();
-    glDepthMask(GL_TRUE); CE();
-    glDepthFunc(GL_LEQUAL); CE();
-    glDepthRange(0.0f, 1.0f); CE();
-    glEnable(GL_CULL_FACE); CE();
+    f->glEnable(GL_DEPTH_TEST); CE();
+    f->glDepthMask(GL_TRUE); CE();
+    f->glDepthFunc(GL_LEQUAL); CE();
+    f->glDepthRangef(0.0f, 1.0f); CE();
+    f->glEnable(GL_CULL_FACE); CE();
 
     if(renderPass == 2) // enable blending
     {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        f->glEnable(GL_BLEND);
+        f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
 
     // configure shading params.
 
@@ -1831,48 +1857,48 @@ void TRenderer::drawSun(View * view, int renderPass)
     std::string shaderName;
     shaderName = "sunShader";
     GLuint programID = (*shaders[shaderName]).getProgramID();
-    glUseProgram(programID); CE();
+    f->glUseProgram(programID); CE();
 
-    glUniform1i(glGetUniformLocation(programID, "drawCanopies"), renderPass-1); CE(); // whether or not to use indexed colours
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawCanopies"), renderPass-1); CE(); // whether or not to use indexed colours
 
     // PHASE 1: Draw Terrain
-    glUniformMatrix3fv(glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(normalMatrix)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(programID, "MV"), 1, GL_FALSE, glm::value_ptr(MVmx)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(programID, "MVproj"), 1, GL_FALSE, glm::value_ptr(MVP)); CE();
+    f->glUniformMatrix3fv(f->glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(normalMatrix)); CE();
+    f->glUniformMatrix4fv(f->glGetUniformLocation(programID, "MV"), 1, GL_FALSE, glm::value_ptr(MVmx)); CE();
+    f->glUniformMatrix4fv(f->glGetUniformLocation(programID, "MVproj"), 1, GL_FALSE, glm::value_ptr(MVP)); CE();
 
-    glUniform1f(glGetUniformLocation(programID, "terdim"), (float) (width)); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "terdim"), (float) (width)); CE();
 
     // pass height and normal map to shader
-    GLuint textur = glGetUniformLocation(programID, "htMap"); CE();
-    glUniform1i(textur, (GLint)(htmapTexUnit - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
+    GLuint textur = f->glGetUniformLocation(programID, "htMap"); CE();
+    f->glUniform1i(textur, (GLint)(htmapTexUnit - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
 
-    GLuint textur2 = glGetUniformLocation(programID, "normalMap"); CE();
-    glUniform1i(textur2, (GLint)(normalMapTexUnit - GL_TEXTURE0)); CE(); // assumes texture unit 1 is bound to normal map texture
+    GLuint textur2 = f->glGetUniformLocation(programID, "normalMap"); CE();
+    f->glUniform1i(textur2, (GLint)(normalMapTexUnit - GL_TEXTURE0)); CE(); // assumes texture unit 1 is bound to normal map texture
 
     // draw terrain:
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
-    glUniform1i(glGetUniformLocation(programID, "drawWalls"), 0); CE(); // do NOT draw walls
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawWalls"), 0); CE(); // do NOT draw walls
 
 
-    glBindVertexArray(vaoTerrain); CE();
-    glDrawElements(GL_TRIANGLE_STRIP, indexSize, GL_UNSIGNED_INT, 0); CE();
+    ef->glBindVertexArray(vaoTerrain); CE();
+    f->glDrawElements(GL_TRIANGLE_STRIP, indexSize, GL_UNSIGNED_INT, 0); CE();
 
     // PHASE 2: Draw capping walls
     // --- move base up/down to avoid edits to surface which 'punch through' base
 
-    glUniform1f(glGetUniformLocation(programID, "terrainBase"), terrainBase); CE();
-    glUniform1f(glGetUniformLocation(programID, "terrainBasePad"), terrainBasePad); CE();
-    glUniform1i(glGetUniformLocation(programID, "drawWalls"), 1); // draw walls - ignore normal map lookup
-    GLuint loc = glGetUniformLocation(programID, "normalWall");
+    f->glUniform1f(f->glGetUniformLocation(programID, "terrainBase"), terrainBase); CE();
+    f->glUniform1f(f->glGetUniformLocation(programID, "terrainBasePad"), terrainBasePad); CE();
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawWalls"), 1); // draw walls - ignore normal map lookup
+    GLuint loc = f->glGetUniformLocation(programID, "normalWall");
 
     // turn off region layer texturing for walls:
-    glUniform1i(glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); // always off for walls!
+    f->glUniform1i(f->glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); // always off for walls!
 
     for (int i = 0; i < 5; i++)
     {
-        glUniform3fv(loc, 1, glm::value_ptr(normalWalls[i])); CE();
-        glBindVertexArray(vaoWalls[i]); CE();
-        glDrawElements(GL_TRIANGLE_STRIP, wallDrawEls[i], GL_UNSIGNED_INT, 0); CE();
+        f->glUniform3fv(loc, 1, glm::value_ptr(normalWalls[i])); CE();
+        ef->glBindVertexArray(vaoWalls[i]); CE();
+        f->glDrawElements(GL_TRIANGLE_STRIP, wallDrawEls[i], GL_UNSIGNED_INT, 0); CE();
     }
 
     // PHASE 3: Draw canopies
@@ -1880,15 +1906,15 @@ void TRenderer::drawSun(View * view, int renderPass)
     if(renderPass == 2)
     {
         // disable depth writes so that more than one canopy can block sunlight
-        glDepthMask(GL_FALSE); CE();
+        f->glDepthMask(GL_FALSE); CE();
 
         programID  = (*shaders["canopyShader"]).getProgramID();
         drawManipulators(programID);
         // revert to previous settings
-        glDepthMask(GL_TRUE); CE();
+        f->glDepthMask(GL_TRUE); CE();
     }
 
-    glUseProgram(0);  CE();
+    f->glUseProgram(0);  CE();
 }
 
 
@@ -1896,7 +1922,9 @@ void TRenderer::drawSun(View * view, int renderPass)
 
 void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
 {
-    glUseProgram(programID); CE();
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+    f->glUseProgram(programID); CE();
 \
     glm::vec4 lightPos = MVmx * pointLight; // map light pos into camera space
 
@@ -1904,11 +1932,11 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
     if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
             shadModel == RADIANCE_SCALING_OVERVIEW)
     {
-        glUniform1i(glGetUniformLocation(programID, "useTexturing"), (manipulatorTextures ? 1:0) ); CE();
+        f->glUniform1i(f->glGetUniformLocation(programID, "useTexturing"), (manipulatorTextures ? 1:0) ); CE();
         if (manipulatorTextures)
         {
-            GLuint mtex = glGetUniformLocation(programID, "decalTexture"); CE();
-            glUniform1i(mtex, (GLint)(decalTexUnit - GL_TEXTURE0));  CE(); // texture unit for manipulators
+            GLuint mtex = f->glGetUniformLocation(programID, "decalTexture"); CE();
+            f->glUniform1i(mtex, (GLint)(decalTexUnit - GL_TEXTURE0));  CE(); // texture unit for manipulators
         }
     }
 
@@ -1928,15 +1956,15 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
                     alpha = manipAlpha;
                 else
                     alpha = 0.0f;
-                glUniform1f(glGetUniformLocation(programID, "manipAlpha"), alpha ); CE();
+                f->glUniform1f(f->glGetUniformLocation(programID, "manipAlpha"), alpha ); CE();
             }
         }
       // we have something to draw...
 
-      glUniformMatrix4fv(glGetUniformLocation(programID, "MV"), 1, GL_FALSE, glm::value_ptr(MVmx) ); CE();
-      glUniformMatrix4fv(glGetUniformLocation(programID, "MVproj"), 1, GL_FALSE, glm::value_ptr(MVP) ); CE();
-      glUniformMatrix3fv(glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(normalMatrix)); CE();
-      //glUniformMatrix3fv(glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(glm::mat3(1.0f))); CE();
+      f->glUniformMatrix4fv(f->glGetUniformLocation(programID, "MV"), 1, GL_FALSE, glm::value_ptr(MVmx) ); CE();
+      f->glUniformMatrix4fv(f->glGetUniformLocation(programID, "MVproj"), 1, GL_FALSE, glm::value_ptr(MVP) ); CE();
+      f->glUniformMatrix3fv(f->glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(normalMatrix)); CE();
+      //f->glUniformMatrix3fv(f->glGetUniformLocation(programID, "normMx"), 1, GL_FALSE, glm::value_ptr(glm::mat3(1.0f))); CE();
 
       glm::vec4 MatDiffuse = glm::vec4(manipDrawCallData[i].diffuse[0], manipDrawCallData[i].diffuse[1],
                 manipDrawCallData[i].diffuse[2], manipDrawCallData[i].diffuse[3]); // diffuse colour of manipulator
@@ -1951,24 +1979,37 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
       glm::vec4 lightSpecCol = glm::vec4(1.0f,1.0f,1.0f,1.0f);
 
       // set colours and light
-      glUniform4fv(glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(MatDiffuse) ); CE();
-      glUniform4fv(glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(MatAmbient) ); CE();
-      glUniform4fv(glGetUniformLocation(programID, "matSpec"), 1, glm::value_ptr(MatSpecular) ); CE();
-      glUniform4fv(glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
-      glUniform4fv(glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
-      glUniform4fv(glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
-      glUniform4fv(glGetUniformLocation(programID, "specularCol"), 1, glm::value_ptr(lightSpecCol) ); CE();
-      glUniform1f(glGetUniformLocation(programID, "shiny"), shinySpec); CE();
+      f->glUniform4fv(f->glGetUniformLocation(programID, "matDiffuse"), 1, glm::value_ptr(MatDiffuse) ); CE();
+      f->glUniform4fv(f->glGetUniformLocation(programID, "matAmbient"), 1, glm::value_ptr(MatAmbient) ); CE();
+      f->glUniform4fv(f->glGetUniformLocation(programID, "matSpec"), 1, glm::value_ptr(MatSpecular) ); CE();
+      f->glUniform4fv(f->glGetUniformLocation(programID, "lightpos"), 1, glm::value_ptr(lightPos)); CE();
+      f->glUniform4fv(f->glGetUniformLocation(programID, "diffuseCol"), 1, glm::value_ptr(lightDiffuseColour) ); CE();
+      f->glUniform4fv(f->glGetUniformLocation(programID, "ambientCol"), 1, glm::value_ptr(lightAmbientColour) ); CE();
+      f->glUniform4fv(f->glGetUniformLocation(programID, "specularCol"), 1, glm::value_ptr(lightSpecCol) ); CE();
+      f->glUniform1f(f->glGetUniformLocation(programID, "shiny"), shinySpec); CE();
 
-      glBindVertexArray(manipDrawCallData[i].VAO); CE();
+      ef->glBindVertexArray(manipDrawCallData[i].VAO); CE();
 
-      glDrawElementsInstanced(GL_TRIANGLES, manipDrawCallData[i].indexBufSize, GL_UNSIGNED_INT, (void*)(0), manipDrawCallData[i].numInstances); CE();
+      ef->glDrawElementsInstanced(GL_TRIANGLES, manipDrawCallData[i].indexBufSize, GL_UNSIGNED_INT, (void*)(0), manipDrawCallData[i].numInstances); CE();
       //glDrawElements(GL_TRIANGLES, manipDrawCallData[i].indexBufSize, GL_UNSIGNED_INT, (void*)(0)); CE();
-      glBindVertexArray(0); CE();
+      ef->glBindVertexArray(0); CE();
     }
 
     // unbind vao
-    glBindVertexArray(0); CE();
+    ef->glBindVertexArray(0); CE();
+}
+
+void TRenderer::forceHeightMapRebind(void)
+{
+    if (heightmapTexture != 0)
+    {
+         QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+         std::cerr << "forceHeightMapRebind -  Heightmap rebound\n";
+         f->glActiveTexture(htmapTexUnit); CE();
+         f->glBindTexture(GL_TEXTURE_2D, heightmapTexture); CE();
+    }
+    else
+        std::cerr << "forceHeightMapRebind - Error! Heightmap texture undefined!\n";
 }
 
 
