@@ -659,6 +659,14 @@ void GLWidget::paintGL()
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
 
+        // PCM fix inital aspect mismatch in overview
+        if (mapView->isTerrainReady() == false)
+        {
+            mapView->setWindowSize();
+            mapView->resetViewDims();
+            mapView->setTerrainReady(true);
+        }
+
         // mapView->getWindowSize(wd,ht); // JG - viewport and window coordinates are different on Apple
         mapView->getViewSize(viewport[2], wd, ht);
         GLint newport[4];
@@ -1292,6 +1300,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     timeron = false;
     pickOnTerrain = false;
     perscale = 0.3f;
+    terrainReady = false;
 
     mrenderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
 
