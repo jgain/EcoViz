@@ -285,6 +285,7 @@ void GLWidget::loadDecals()
     // t = QGLWidget::convertToGLFormat( fixedImage );
 
     // renderer->bindDecals(t.width(), t.height(), t.bits());
+    // JG - this is likely broken, but we don't use decals at the moment.
     renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
     decalsbound = true;
     cerr << "decals bound" << endl;
@@ -405,7 +406,7 @@ void GLWidget::initializeGL()
     renderer->useConstraintTypeTexture(false);
 
     // use manipulator textures (decal'd)
-    renderer->textureManipulators(true);
+    renderer->textureManipulators(false);
 
     // *** PM Render code - end ***
 

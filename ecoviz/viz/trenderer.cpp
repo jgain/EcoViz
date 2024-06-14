@@ -67,7 +67,7 @@ namespace PMrender {
 
     if (heightmapTexture == 0) // create texture if it does not exist
       {
-        std::cerr << "- Create heightmap texture: wd = " << wd << "; ht = " << ht << "\n";
+        // std::cerr << "- Create heightmap texture: wd = " << wd << "; ht = " << ht << "\n";
         f->glGenTextures(1, &heightmapTexture); CE();
         f->glActiveTexture(htmapTexUnit); CE();
         f->glBindTexture(GL_TEXTURE_2D, heightmapTexture ); CE();
@@ -1584,7 +1584,6 @@ void TRenderer::draw(View * view)
     f->glUniform1i(textur2, (GLint)(normalMapTexUnit - GL_TEXTURE0)); CE(); // assumes texture unit 1 is bound to normal map texture
 
     // draw terrain:
-
     if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
             shadModel == RADIANCE_SCALING_OVERVIEW)
       {

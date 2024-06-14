@@ -281,10 +281,10 @@ bool DataMaps::loadDataMaps(const std::string &idxfilename, const std::string &d
                             dmaps[year][col]->set(x, y, val);
                         }
                      }
-                     else
-                     {
-                         cerr << "Error DataMaps::loadDataMaps: index " << idx << " not found in index map " << idxfilename << endl;
-                     }
+                     // else
+                     // {
+                     //     cerr << "Error DataMaps::loadDataMaps: index " << idx << " not found in index map " << idxfilename << endl;
+                     // }
                      // else
                      //     cerr << "Error DataMaps::loadDataMaps: more years in " << datafilename << " than in the rest of the data" << endl;
                  }

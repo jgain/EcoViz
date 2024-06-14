@@ -601,8 +601,8 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
 
     bool parentRegionAvailable = ter->getSourceRegion(parentRegion, parentX0, parentY0,
                                                       parentX1, parentY1, parentDimx, parentDimy);
-    std::cout << " +++++ Parent origin = " << (parentRegionAvailable ? "[DEFINED]" : "[NULL]")
-              << " = (" << parentX0 << "," << parentY0 << ")\n";
+    // std::cout << " +++++ Parent origin = " << (parentRegionAvailable ? "[DEFINED]" : "[NULL]")
+    //          << " = (" << parentX0 << "," << parentY0 << ")\n";
 
     // std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
     std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)

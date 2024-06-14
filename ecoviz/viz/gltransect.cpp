@@ -341,7 +341,7 @@ PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SC
     renderer->useConstraintTypeTexture(false);
 
     // use manipulator textures (decal'd)
-    renderer->textureManipulators(true);
+    renderer->textureManipulators(false);
 
     // *** PM Render code - end ***
 
