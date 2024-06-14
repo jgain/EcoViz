@@ -741,7 +741,7 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
         //shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
     }
     // DEBUG:
-    std::cerr << "bindPlantsSimplified - bound: " << bndplants << "; culled: " << culledplants << std::endl;
+    // std::cerr << "bindPlantsSimplified - bound: " << bndplants << "; culled: " << culledplants << std::endl;
 }
 
 void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plantvis, PlantGrid * esys, Region region)
