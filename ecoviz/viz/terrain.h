@@ -103,7 +103,7 @@ private:
                             ///< *grid* coordinates relative to parent grid - they must be converted to
                             ///< world space for terrain checks.
     int parentGridx;       ///< if source Region is set, this will also be set and indicate parent grid
-    int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as (dim-1)*step
+    int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as dim*step
 
     // PM: terrain renderer
     mutable bool glewSetupDone;
@@ -168,8 +168,8 @@ public:
         ex = src.x1*step;
         ey = src.y1*step;
 
-        parentDimx = (parentGridx-1)*step;
-        parentDimy = (parentGridy-1)*step;
+        parentDimx = (parentGridx)*step;
+        parentDimy = (parentGridy)*step;
 
         return !sourceRegion.empty();
     }
