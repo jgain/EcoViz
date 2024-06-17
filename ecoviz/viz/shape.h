@@ -43,7 +43,7 @@ struct ShapeDrawData
     bool   current;         // set to true if this is part of current manipulator, controls alpha transparency on rendering
 };
 
-class Shape: protected QOpenGLFunctions, protected QOpenGLExtraFunctions
+class Shape: protected QOpenGLExtraFunctions
 {
 private:
     std::vector<float> verts;   //< vertex, texture and normal data

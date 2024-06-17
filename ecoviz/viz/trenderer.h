@@ -30,7 +30,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "glheaders.h"
 
 #define GLM_FORCE_RADIANS
 
@@ -39,14 +38,14 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "shaderProgram.h"
 #include <QOpenGLWidget>
-#include <QOpenGLFunctions>
+//#include <QOpenGLFunctions>
 #include <QOpenGLExtraFunctions>
 #include "shape.h"
 #include "typemap.h"
 
 namespace PMrender {
 
-class TRenderer: protected QOpenGLFunctions, protected QOpenGLExtraFunctions
+class TRenderer: protected QOpenGLExtraFunctions
 {
  public:
     // select which render methos to use for terrain
