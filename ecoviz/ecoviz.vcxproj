@@ -38,7 +38,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -237,6 +237,10 @@
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT5DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\cohortmaps.h" />
     <ClInclude Include="viz\cohortsampler.h" />
