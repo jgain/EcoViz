@@ -271,7 +271,7 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
     glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     glBindVertexArray(0); CE();
 
-    std::cout << " -- makeXwall: " << numBytesOnGPU << " bytes on GPU\n";
+    // std::cout << " -- makeXwall: " << numBytesOnGPU << " bytes on GPU\n";
 }
 
   void TRenderer::makeYwall(int atX, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, GLuint *indices, bool reverse)
@@ -338,7 +338,7 @@ void TRenderer::makeXwall(int atY, GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat
     glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     glBindVertexArray(0); CE();
 
-    std::cout << " -- makeYwall: " << numBytesonGPU << " bytes on GPU\n";
+    // std::cout << " -- makeYwall: " << numBytesonGPU << " bytes on GPU\n";
 }
 
 void TRenderer::makeBase(GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, GLuint *indices)
@@ -390,7 +390,7 @@ void TRenderer::makeBase(GLuint &vao, GLuint&vbo, GLuint& ibo, GLfloat *verts, G
     glBindBuffer(GL_ARRAY_BUFFER, 0); CE();
     glBindVertexArray(0); CE();
 
-    std::cout << " -- makeBase: " << numBytesOnGPU << " bytes on GPU\n";
+    // std::cout << " -- makeBase: " << numBytesOnGPU << " bytes on GPU\n";
  }
 
 bool TRenderer::prepareWalls(void)
@@ -518,7 +518,7 @@ bool TRenderer::prepareTerrainGeometry(void)
 
     numBytesOnGPU += 5*sizeof(GLfloat)*width*height;
 
-    std::cout << " -- prepareTerrainGeometry -  vertex/tex coords: " << (5*sizeof(GLfloat)*width*height/1024.0/1024.0) << " MB on GPU\n";
+    // std::cout << " -- prepareTerrainGeometry -  vertex/tex coords: " << (5*sizeof(GLfloat)*width*height/1024.0/1024.0) << " MB on GPU\n";
 
     // enable position attribute
     glEnableVertexAttribArray(0); CE();
@@ -534,7 +534,7 @@ bool TRenderer::prepareTerrainGeometry(void)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*indexSize, indexStorage, GL_STATIC_DRAW); CE();
 
     numBytesOnGPU += sizeof(GLuint)*indexSize;
-    std::cout << " -- prepareTerrainGeometry -  index buffer data: " << (sizeof(GLuint)*indexSize/1024.0/1024.0) << " MB on GPU\n";
+    // std::cout << " -- prepareTerrainGeometry -  index buffer data: " << (sizeof(GLuint)*indexSize/1024.0/1024.0) << " MB on GPU\n";
 
     // unbind everything and clean up
 
@@ -587,7 +587,7 @@ bool TRenderer::prepareTerrainGeometry(void)
 
     numBytesOnGPU += width*height * 4 * 2; // RGBAF16 = 2 bytes per channel
 
-    std::cout << " -- prepareTerrainGeometry -  normalMapTexture: " << (width*height * 4 * 2/1024.0/1024.0) << " MB on GPU\n";
+    // std::cout << " -- prepareTerrainGeometry -  normalMapTexture: " << (width*height * 4 * 2/1024.0/1024.0) << " MB on GPU\n";
 
     // no filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
@@ -615,7 +615,7 @@ bool TRenderer::prepareTerrainGeometry(void)
 
     glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
 
-    std::cout << " -- prepareTerrainGeometry -  Total:" << (numBytesOnGPU/1024.0/1024.0) << " MB on GPU\n";
+    // std::cout << " -- prepareTerrainGeometry -  Total:" << (numBytesOnGPU/1024.0/1024.0) << " MB on GPU\n";
     return true;
 }
 
@@ -701,7 +701,7 @@ void TRenderer::generateNormalTexture(void)
     _w = vWd;
     _h = vHt;
 
-    std::cerr << " -- initRadianceScalingBuffers - rebuilding radScaling textures/FBOs with w = " << _w << " and h = " << _h << std::endl;
+    // std::cerr << " -- initRadianceScalingBuffers - rebuilding radScaling textures/FBOs with w = " << _w << " and h = " << _h << std::endl;
 
     // Create & Configure FBO: final composite
 
@@ -887,7 +887,7 @@ void TRenderer::generateNormalTexture(void)
     // unbind FBO
     glBindFramebuffer(GL_FRAMEBUFFER,  0); CE();
 
-    std::cout << " -- initRadianceScalingBuffers -- " << numBytesOnGPU/1024.0/1024.0 << " MB on GPU\n";
+    // std::cout << " -- initRadianceScalingBuffers -- " << numBytesOnGPU/1024.0/1024.0 << " MB on GPU\n";
     return true;
   }
 
@@ -1121,14 +1121,14 @@ void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool forc
 {
   if (tmap == NULL)
     {
-      // std::cerr << "TRenderer::updateTypeMapTexture - tmap is NULL\n";
+      std::cerr << "TRenderer::updateTypeMapTexture - tmap is NULL\n";
       return;
     }
 
   basic_types::MapInt * tm =  tmap->getMap();
   if (tm == NULL)
     {
-      // std::cerr << "TRenderer::updateTypeMapTexture - Map buffer is NULL, map ignored\n";
+      std::cerr << "TRenderer::updateTypeMapTexture - Map buffer is NULL, map ignored\n";
       return;
     }
 
@@ -1148,7 +1148,8 @@ void TRenderer::updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo, bool forc
   // width and height of terrain must match the width and height of type map buffer
 
   // assert(wd == width && ht == height);
-  if(wd != width || ht != height)
+  // actually off by 1 can also be accepted
+  if(wd > width+1 || wd < width-1 || ht > height+1 || ht < height-1)
   {
       cerr << "TERRAIN TEXTURE mismatch" << endl;
       cerr << "wd = " << wd << " and width = " << width << endl;
@@ -1358,19 +1359,19 @@ void TRenderer::initShaders(void)
       }
 // #endif
 
-    std::cout << "Compiling shaders...\n";
+    // std::cout << "Compiling shaders...\n";
     std::map<std::string, shaderProgram*>::iterator it = shaders.begin();
     while (it != shaders.end() )
     {
-        std::cout << " -- shader: " << (*it).first << " -- ";
+        // std::cout << " -- shader: " << (*it).first << " -- ";
         (void)((*it).second)->compileAndLink();
-        std::cout << "ID = " << ((*it).second)->getProgramID() << std::endl;
+        // std::cout << "ID = " << ((*it).second)->getProgramID() << std::endl;
         it++;
     }
 
     shadersReady = true;
 
-    std::cout << "done!\n";
+    // std::cout << "done!\n";
 }
 
 void TRenderer::bindDecals(int width, int height, unsigned char * buffer)
@@ -1378,7 +1379,7 @@ void TRenderer::bindDecals(int width, int height, unsigned char * buffer)
     GLint maxtexunits;
     GLint boundtexunit;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxtexunits);
-    std::cout << "maximum texture units: " << maxtexunits << std::endl;
+    // std::cout << "maximum texture units: " << maxtexunits << std::endl;
 
     // bind texture
     glEnable(GL_TEXTURE_2D);

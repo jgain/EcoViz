@@ -129,14 +129,6 @@ public:
     void refreshOverlay();
     void setOverlay(TypeMapType purpose);
     TypeMapType getOverlay();
-    void setMap(TypeMapType type, int mth);
-
-    /**
-     * @brief bandCanopyHeightTexture   Recolour the canopy height texture according to a band of min and max tree heights
-     * @param mint  Minimum tree height (below which heights are coloured black)
-     * @param maxt  Maximum tree height (above which heights are coloured red)
-     */
-    void bandCanopyHeightTexture(float mint, float maxt);
 
     /**
      * @brief writePaintMap Output image file encoding the paint texture layer. Paint codes are converted to greyscale values
@@ -161,6 +153,7 @@ public:
     View * getView(){ return view; }
     bool getActive(){ return active; }
     bool getPainted(){ return painted; }
+    bool getTextureActive(){ return decalsbound; }
 
     /// get internal state object that manages map window
     overviewWindow *getOverviewWindow(void) { return mapView; }
@@ -176,6 +169,16 @@ public:
 
     /// toggle lock flag
     void setViewLockState(bool state){ viewlock = state; }
+
+    /// control the texture overlay
+
+    /**
+     * @brief setDataMap  Load a data map into the texture
+     * @param dataIdx     Which data map to use (indexed from 1, with 0 meaning none)
+     * @param ramp        Which colour map to use
+     * @param updatenow   Push the texture update immediately if true
+     */
+    void setDataMap(int dataIdx, TypeMapType ramp, bool updatenow);
 
     /// get Transect
     TransectCreation * getTransectCreate(){ return trc; }
@@ -194,7 +197,7 @@ public:
     void loadDecals();
 
     /// Load from file to appropriate TypeMap depending on purpose
-    int loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose);
+    void loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose, float range = 1.0f);
 
     /// Respond to key press events
     void keyPressEvent(QKeyEvent *event);
@@ -221,7 +224,7 @@ public:
     void toggleSpecies(int p, bool vis);
 
     template<typename T>
-    int loadTypeMap(const T &map, TypeMapType purpose);
+    void loadTypeMap(const T &map, TypeMapType purpose, float range);
 
     /**
      * @brief pointPlaceTransect    GUI actions related to transect point placement
@@ -269,6 +272,7 @@ signals:
     void signalRebindTransectPlants();
     //void signalUpdateOverviews();
     void signalExtractNewSubTerrain(int, int, int, int, int); // window (left/right) + region corners
+    void signalSyncDataMap();
     
 public slots:
     void animUpdate(); // animation step for change of focus
@@ -421,10 +425,18 @@ class overviewWindow {
         return currRegion;
     }
 
+    Region getEntireRegion(void)
+    {
+        return getScene()->getHighResTerrain()->getEntireRegion();
+    }
+
     /// getter for various viewing controls
     mapScene * getScene(){ return scene; }
     View * getView(){ return mview; }
     //bool getActive(){ return active; }
+    bool isTerrainReady(void) const { return terrainReady; }
+    void setTerrainReady(bool v) { terrainReady = v; }
+
     void getWindowSize(int & width, int & height)
     {
         width = ovw; height = ovh;
@@ -495,6 +507,15 @@ class overviewWindow {
     /// draw
     void draw(void);
 
+    /// set size based on aspect ratio of terrain
+    void setWindowSize(void);
+
+    /// set view dim
+    void resetViewDims(void)
+    {
+        mview->setDim(0.0f, 0.0f, ovw, ovh);
+    }
+
 private:
 
     mapScene * scene;      //<overview scene info
@@ -510,6 +531,9 @@ private:
     bool pickOnTerrain; // signals manipulation of selection region
     int ovw, ovh; // width and height of overview window based on terrain aspect ratio
     float perscale; // what horizontal proportion of the perspective view should be occupied by overview
+
+    // set to true once terrain is actually loaded (default dims used when widget created)
+    bool terrainReady;
 
     // render variables
     PMrender::TRenderer * mrenderer;
@@ -536,8 +560,6 @@ private:
 
     void paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams);
 
-    // set size based on aspect ratio of terrain
-    void setWindowSize(void);
 
     // set up state for renderer for overview - this will use the context for glwidget for resources
     void initializeMapRenderer(void);

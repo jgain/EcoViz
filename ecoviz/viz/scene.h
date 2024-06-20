@@ -333,6 +333,7 @@ private:
     std::unique_ptr<Terrain> lowResTerrain;    // low resolution terrain for overview rendering
     std::unique_ptr<TypeMap> overlay;          // single overlay supported (blended over terrain)
     std::string datadir;                       // directory containing all the scene data
+    std::string basename;                      // the dem name (without extension)
     std::string overlayName;                   // name of overlap image
     Region selectedRegion;                     // current selected sub-region  - relative to hi-res input
                                                //(needed for overview render)
@@ -345,12 +346,13 @@ private:
 
 public:
 
-    mapScene(const std::string & ddir, const std::string overlayNm) :
+    mapScene(const std::string & ddir, const std::string overlayNm, const std::string & base) :
         fullResTerrain(new Terrain), lowResTerrain(new Terrain),
         overlay(new TypeMap)
     {
         overlayName = overlayNm;
         datadir = ddir;
+        basename = base;
         downFactor = 4;
 
         selectedRegion = Region();
@@ -368,6 +370,7 @@ public:
     std::unique_ptr<TypeMap> & getOverlayMap(void) { return overlay; }
     void setSelectedRegion(Region reg) { selectedRegion = reg; } // NOTE: after this, sub-terr must be extracted again
     Region getSelectedRegion(void) const { return selectedRegion; }
+    Region getEntireRegion() { return fullResTerrain->getEntireRegion(); }
 
     bool subwindowValid(Region subwindow);
 
@@ -387,19 +390,16 @@ public:
 class Scene
 {
 private:
-    std::unique_ptr<Terrain> terrain;                          //< underlying terrain
+    std::unique_ptr<Terrain> terrain;           //< underlying terrain
     Terrain *masterTerrain;                     //< a pointer to the large input terrain this one is extracted from
     TypeMap * maps[(int) TypeMapType::TMTEND];  //< underlying type map data
-    basic_types::MapFloat * slope, * chm, * cdm;             //< condition maps
-    std::vector<basic_types::MapFloat *> sunlight;           //< local per cell illumination for each month
-    std::vector<basic_types::MapFloat *> moisture;           //< local per cell moisture for each month
-    std::vector<float> temperature;             //< average monthly temperature
     string datadir;                             //< directory containing all the scene data
+    string basename;                            //< base name for DEM and sequence of PDBs
     Timeline * tline;                           //< timeline
     NoiseField * nfield;                        //< random noise map
+    DataMaps * dmaps;                           //< data maps for extracting textures
 
     ValueGridMap<std::vector<data_importer::ilanddata::cohort> > before_mod_map;
-
 
     EcoSystem * eco;
     Biome * biome;
@@ -412,7 +412,7 @@ public:
     std::unique_ptr<CohortMaps> cohortmaps;     //< agreggate ecosystem data
     std::unique_ptr<cohortsampler> sampler;     //< to derive individual trees from cohort maps
 
-    Scene(string ddir);
+    Scene(string ddir, string base);
 
     ~Scene();
 
@@ -421,14 +421,10 @@ public:
     Terrain *  getMasterTerrain() { return masterTerrain; }
     TypeMap * getTypeMap(TypeMapType purpose){ return maps[static_cast<int>(purpose)]; }
     EcoSystem * getEcoSys(){ return eco; }
-    basic_types::MapFloat * getSunlight(int month){ return sunlight[month]; }
-    basic_types::MapFloat * getSlope(){ return slope; }
-    basic_types::MapFloat * getMoisture(int month){ return moisture[month]; }
-    basic_types::MapFloat * getCanopyHeightModel(){ return chm; }
-    basic_types::MapFloat * getCanopyDensityModel(){ return cdm; }
     Biome * getBiome(){ return biome; }
     Timeline * getTimeline(){ return tline; }
     NoiseField * getNoiseField(){ return nfield; }
+    DataMaps * getDataMaps(){ return dmaps; }
 
     // set new Terrain core data; assumes newTerr has internal state set up
     void setNewTerrainData(std::unique_ptr<Terrain> newTerr, Terrain *master)
@@ -487,6 +483,13 @@ public:
      */
     void loadScene(int timestep_start, int timestep_end);
     void loadScene(std::string dirprefix, int timestep_start, int timestep_end);
+
+    /**
+     * @brief loadDataMaps Load all data maps for texturing from file
+     * @param totRegion Region covered by the full terrain
+     * @param total number of simulation timesteps
+     */
+    void loadDataMaps(int timesteps);
 
      /**
       * Export the scene (for Mitsuba) to the XML specified

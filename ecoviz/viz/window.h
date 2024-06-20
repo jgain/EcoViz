@@ -83,12 +83,43 @@ enum LockState
     LOCKEDFROMRIGHT     //< right panel dictates behaviour of left panel
 };
 
+// only needed so that onClose can be overriden
+class PlantPanel: public QWidget
+{
+    Q_OBJECT
+
+private:
+    Window * wparent;
+
+public:
+    PlantPanel(Window * parent) { wparent = parent; }
+    virtual ~PlantPanel() {}
+
+protected:
+    void closeEvent(QCloseEvent* event);
+};
+
+class DataMapPanel: public QWidget
+{
+    Q_OBJECT
+
+private:
+    Window * wparent;
+
+public:
+    DataMapPanel(Window * parent) { wparent = parent; }
+    virtual ~DataMapPanel() {}
+
+protected:
+    void closeEvent(QCloseEvent* event);
+};
+
 class Window : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    Window(std::string datadir);
+    Window(std::string datadir, std::string lbasename, std::string rbasename);
 
     ~Window();
 
@@ -110,6 +141,7 @@ public slots:
     // menu items
     void showRenderOptions();
     void showPlantOptions();
+    void showDataMapOptions();
     void showContours(int show);
     void showGridLines(int show);
     void exportMitsuba();
@@ -123,6 +155,15 @@ public slots:
     void plantChange(int show);
     void allPlantsOn();
     void allPlantsOff();
+    void uncheckPlantPanel();
+
+    // data map panel
+    void leftDataMapChoice(int id);
+    void rightDataMapChoice(int id);
+    void leftRampChoice(int id);
+    void rightRampChoice(int id);
+    void uncheckDataMapPanel(); // on close change view menu item to unchecked state
+    void syncDataMapPanel(); // if a perspective view goes into transect view update datamap params
 
     // locking
     void lockViewsFromLeft();
@@ -165,31 +206,39 @@ private:
     std::vector<std::vector< TimelineGraph *> > graphModels;   ///< Underlying graph data associated with scene, multiple graphs per scene
     QWidget * vizPanel;                         ///< Central panel with visualization subwidgets
     QWidget * renderPanel;                      ///< Side panel to adjust various rendering style parameters
-    QWidget * plantPanel;                       ///< Side panel to adjust various plant visualization parameters
+    PlantPanel * plantPanel;                    ///< Side panel to adjust various plant visualization parameters
+    QWidget * dataMapPanel;                     ///< Side panel to adjust various texture visualization parameters
     QGridLayout * vizLayout;
 
+
+    // data map parameters
+    int dmapIdx[2];
+    int rampIdx[2];
+
+    // data map widgets
+    QButtonGroup * qbmgL, * qbmgR;
 
     // rendering parameters
     float gridSepX, numGridX, gridSepZ, numGridZ, gridWidth, gridIntensity; ///< grid params
     float contourSep, numContours, contourWidth, contourIntensity; ///< contour params
     float radianceTransition, radianceEnhance; ///< radiance scaling params
 
-    // map parameters
-    int sunMonth, wetMonth, tempMonth;
-
     // render panel widgets
     QLineEdit * gridSepXEdit, * gridSepZEdit, * gridWidthEdit, * gridIntensityEdit, * contourSepEdit, * contourWidthEdit, * contourIntensityEdit, * radianceEnhanceEdit;
     QComboBox * cameraDropDown;
 
+
     // plant viz panel widgets
+    /*
     QLineEdit * sunMapEdit, * wetMapEdit;
-    QRadioButton * sunMapRadio, * wetMapRadio, * chmMapRadio, * noMapRadio;
+    QRadioButton * sunMapRadio, * wetMapRadio, * chmMapRadio, * noMapRadio;*/
     QLineEdit * smoothEdit;
 
     // menu widgets and actions
     QMenu *viewMenu;
     QAction *showRenderAct;
     QAction *showPlantAct;
+    QAction *showDataMapAct;
     QAction *exportMitsubaAct;
     QAction *fromLeftTransectAct, *fromRightTransectAct;
     QAction *clearTransectsAct;
@@ -214,6 +263,9 @@ private:
     bool visible; // whether or not the overviewmaps are hidden
     QTimer overviewTimer;
 
+    /// Convert from internal ramp index to typemap representation
+    TypeMapType convertRampIdx(int side);
+
     /**
      * @brief setupRenderPanel  Initialize GUI layout of side render panel for controlling various rendering parameters
      */
@@ -223,6 +275,11 @@ private:
      * @brief setupPlantPanel  Initialize GUI layout of side plant viz panel for controlling various plant display parameters
      */
     void setupPlantPanel();
+
+    /**
+     * @brief setupDataMapPanel  Initialize GUI layout of side data map viz panel for controlling texture map display parameters
+     */
+    void setupDataMapPanel();
 
     /**
      * @brief setupVizPanel  Initialize GUI layout of central visualization

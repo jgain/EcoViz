@@ -74,25 +74,28 @@
 
 #include "window.h"
 
+void parseCommandLine(int agc, char *argv[]);
+void printUsage(void);
+void printError(const std::string & s);
+
+std::string leftprefix="", rightprefix="";
+std::string dir = "";
+
 int main(int argc, char *argv[])
 {
-    int run_id, nyears;
+    //int run_id, nyears;
 
-    if (argc != 2)
-    {
-        std::cerr << "Usage: ecoviz <data directory>" << std::endl;
-        return 1;
-    }
+    parseCommandLine(argc, argv);
+
+    std::string datadir = dir;
+    while (datadir.back() == '/')
+        datadir.pop_back();
 
     try
     {
-        QApplication app(argc, argv);
+        QApplication app(argc, argv);    
 
-        std::string datadir = argv[1];
-        while (datadir.back() == '/')
-            datadir.pop_back();
-
-        Window * window = new Window(datadir);
+        Window * window = new Window(datadir, leftprefix, rightprefix);
 
         QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedKingdom));
 
@@ -119,4 +122,65 @@ int main(int argc, char *argv[])
         std::cerr << e.what() << std::endl;
         return 1;
     }
+}
+
+void parseCommandLine(int argc, char *argv[])
+{
+    // parse command line
+    if (argc < 4) printUsage();
+
+    for (int i = 1; i < argc; ++i)
+    {
+        string arg = argv[i];
+        cerr << arg << endl;
+        if (arg == "-lprefix")
+        {
+            if (i+1 >= argc) printError("-lprefix must have an argument");
+            leftprefix = argv[++i];
+        }
+        if (arg == "-rprefix")
+        {
+            if (i+1 >= argc) printError("-rprefix must have an argument");
+            rightprefix = argv[++i];
+        }
+        else if (arg == "-prefix")
+        {
+            if (i+1 >= argc) printError("-prefix must have an argument");
+            leftprefix = argv[++i];
+            rightprefix = leftprefix;
+        }
+        else if (arg[0] == '-')
+        {
+            if (i+1 >= argc)  printError("invalid paramter specified");
+        }
+        else
+        {
+           dir = argv[i];
+           // break;
+        }
+    }
+
+    if (leftprefix == "" || rightprefix == "")
+        printError("Scene files basename not specied for left or right");
+}
+
+void printUsage(void)
+{
+ char info[] = "Usage: ecoviz <params> <data directory>\n\
+parameters:\n\
+-lprefix <string>     --- the base name of elevation file and for sequence of cohort maps in left window\n\
+-rprefix <string>     --- the base name of elevation file and for sequence of cohort maps in right window\n\
+-prefix <string>      --- the base name of elevation file and for sequence of cohort maps in the left and right windows (the same files used)\n\
+where -[l|r]prefix specifies the prefix of files for left, right or both scenes. The elevation file will have this prefix as its name\n\
+and the extension .elv or .elvb (the latter for a binary version). The cohort files will be <prefix>i.pdb where i starts at 0. If the\n\
+binary version are to be loaded, the program will search for <prefix>i.pdbb. These files must be in the specified directory.\n";
+
+   std::cerr<< info;
+    exit(0);
+}
+
+void printError(const std::string & mesg)
+{
+  std::cerr << mesg << std::endl;
+  exit(0);
 }

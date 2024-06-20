@@ -408,9 +408,9 @@ namespace basic_types
         /// return the row-major linearized value of a grid position
         inline int flatten(int dx, int dy) const
         {
-            // PCM: these asserts (which I added while debugging) cause someold  code to crash, which shows logic errors elsewhere - I have removed to make some progress
-            //assert(dx>=0 && dx < gx);
-            //assert(dy>=0 && dy < gy);
+            // PCM: these asserts (which I added while debugging) cause some old  code to crash,  now seem pk
+            assert(dx>=0 && dx < gx);
+            assert(dy>=0 && dy < gy);
             return dy * gx + dx;
         }
 

@@ -97,6 +97,227 @@ float boulders[] = {0.671f, 0.331f, 0.221f, 1.0f};          // 19
 // transect colour
 float redcol[] = {1.0f, 0.5f, 0.5f, 1.0f};
 
+//// DATAMAPS ////
+
+void DataMaps::initMaps(int numYears, int numMaps, int dx, int dy)
+{
+    dimx = dx; dimy = dy;
+    for(int y = 0; y < numYears; y++)
+    {
+        std::vector<basic_types::MapFloat *> yearmaps;
+        for(int m = 0; m < numMaps; m++)
+        {
+            basic_types::MapFloat * map = new basic_types::MapFloat();
+            map->setDim(dimx, dimy);
+            map->fill(-1.0f);
+            yearmaps.push_back(map);
+        }
+        dmaps.push_back(yearmaps);
+    }
+}
+
+void DataMaps::clearMaps()
+{
+    for(auto yearmaps: dmaps)
+    {
+        for(auto map: yearmaps)
+            if(map != nullptr)
+                delete map;
+        yearmaps.clear();
+    }
+    dmaps.clear();
+}
+
+bool DataMaps::indexToLoc(basic_types::MapInt & idxmap, int idx, int & x, int & y)
+{
+    bool found = false, fin = false;
+    int dimx, dimy;
+
+    x = 0; y = 0;
+    idxmap.getDim(dimx, dimy);
+
+    // convert to hashmap if this starts impacting performance, which is unlikely given the size of data cells
+    while(!found && !fin)
+    {
+        found = (idxmap.get(x,y) == idx);
+        if(!found)
+        {
+            x++;
+            if(x == dimx)
+            {
+                y++; x = 0;
+            }
+        }
+        fin = (y == dimy);
+    }
+    return found;
+}
+
+bool DataMaps::loadIndexMap(const std::string & idxfilename, basic_types::MapInt & idxmap)
+{
+    int width, height, xcorner, ycorner, idx;
+    ifstream infile;
+    float val, step, nodata;
+    std::string skp;
+
+    infile.open((char *) idxfilename.c_str(), ios_base::in);
+    if(infile.is_open())
+    {
+        infile >> skp >> width >> skp >> height;
+        infile >> skp >> xcorner >> skp >> ycorner;
+        infile >> skp >> step;
+        infile >> skp >> nodata;
+
+        idxmap.setDim(height, width);
+        idxmap.fill(-1); // set to empty
+
+         for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                infile >> val;
+                if (val < minuszero) // empty index = -1, should probably test for no-data value instead
+                    idx = -1;
+                else
+                    idx = (int) val;
+                idxmap.set(y,x,idx); // orientation swap to match internal terrain representation
+            }
+        infile.close();
+
+        return true;
+    }
+    else
+    {
+        cerr << "Error DataMaps::loadIndexMap: unable to open file" << idxfilename << endl;
+        return false;
+    }
+}
+
+float DataMaps::getTerVal(int year, int midx, int tx, int ty)
+{
+    if(tx < cover.x0 || tx >= cover.x1 || ty < cover.y0 || ty >= cover.y1 ) // out of bounds
+    {
+        // cerr << "OOB " << tx << ", " << ty << " cover = " << cover.x0 << ", " << cover.y0 << " -> " << cover.x1 << ", " << cover.y1 << endl;
+        return -1.0f; // empty value
+    }
+
+    // find coordinates in datamap space
+    float ex = (float) (cover.x1 - cover.x0);
+    float ey = (float) (cover.y1 - cover.y0);
+    // normalized coordinates
+    float x = (float) (tx - cover.x0) / ex;
+    float y = (float) (ty - cover.y0) / ey;
+
+    // coord swap
+    int mx = (int) (x * (float) dimx);
+    int my = (int) (y * (float) dimy);
+    return dmaps[year][midx]->get(mx, my);
+}
+
+bool DataMaps::loadDataMaps(const std::string &idxfilename, const std::string &datafilename, int numyears)
+{
+     basic_types::MapInt idxmap;
+     ifstream infile;
+     int nummaps, numcols, year, idx, dx, dy, x, y;
+     float val;
+     string str;
+
+     if(loadIndexMap(idxfilename, idxmap))
+     {
+         // indices loaded now turn to the data
+         infile.open((char *) datafilename.c_str(), ios_base::in);
+         if(infile.is_open())
+         {
+             infile >> nummaps;
+
+             // setup dmaps structure based on number of years and number of maps
+             numcols = nummaps+2;
+
+             // initialize data maps
+             idxmap.getDim(dx, dy);
+             initMaps(numyears, nummaps, dx, dy);
+
+             // get names of maps
+             for(int col = 0; col < numcols; col++)
+             {
+                 if(col < numcols-1) // all but last are comma terminated
+                     getline(infile, str, ',');
+                 else // last is newline terminated
+                     getline(infile, str);
+                 if(col >= 2) // discard entries for year and index
+                 {
+                     dnames.push_back(str);
+                     dmax.push_back(0.0f);
+                 }
+             }
+
+             // read in data ranges
+
+             // get map data
+             while(infile.peek() != EOF)
+             {
+                 // process year string already read
+                 getline(infile, str, ','); // prime the pump
+                 year = stoi(str);
+
+                 // map index
+                 getline(infile, str, ',');
+                 idx = stoi(str);
+
+                 // data fields
+                 for(int col = 0; col < nummaps; col++)
+                 {
+                     if(col < nummaps-1) // all but last are comma terminated
+                         getline(infile, str, ',');
+                     else
+                         getline(infile, str);
+                     val = stof(str);
+
+                     if(indexToLoc(idxmap, idx, x, y)) // search in the index map for the correct entry
+                     {
+                        if(year < numyears)
+                        {
+                            if(val > dmax[col])
+                                dmax[col] = val;
+                            dmaps[year][col]->set(x, y, val);
+                        }
+                     }
+                     else
+                     {
+                         cerr << "Error DataMaps::loadDataMaps: index " << idx << " not found in index map " << idxfilename << endl;
+                     }
+                     // else
+                     //     cerr << "Error DataMaps::loadDataMaps: more years in " << datafilename << " than in the rest of the data" << endl;
+                 }
+             }
+             infile.close();
+             return true;
+         }
+         else
+         {
+             cerr << "Error DataMaps::loadDataMaps: unable to open file" << datafilename << endl;
+             return false;
+         }
+
+     }
+     else
+         return false;
+}
+
+void DataMaps::extractRegion(int year, int midx, Region superRegion, Region subRegion, basic_types::MapFloat * subMap)
+{
+    cover = superRegion;
+    subMap->setDim(subRegion.width(), subRegion.height());
+
+    for(int x = subRegion.x0; x < subRegion.x1; x++)
+          for(int y = subRegion.y0; y < subRegion.y1; y++)
+          {
+              float val = getTerVal(year, midx, x, y); // internal map oriented differently to region
+              subMap->set(x-subRegion.x0, y-subRegion.y0, val);
+          }
+}
+
+//// TYPEMAP ////
+
 TypeMap::TypeMap(TypeMapType purpose)
 {
     tmap = new basic_types::MapInt;
@@ -165,37 +386,6 @@ void TypeMap::initTransectColTable()
 int TypeMap::getNumSamples()
 {
     return numSamples;
-}
-
-void TypeMap::initCategoryColTable()
-{
-    GLfloat *col;
-
-    for(int i = 0; i < 32; i++) // set all colours in table to black initially
-    {
-        col = new GLfloat[4];
-        col[0] = col[1] = col[2] = 0.0f; col[3] = 1.0f;
-        colmap.push_back(col);
-    }
-
-    // entry 0 is reserved as transparent
-    numSamples = 16;
-    colmap[1] = hardwood;
-    colmap[2] = conifer;
-    colmap[3] = mixed;
-    colmap[4] = riparian;
-    colmap[5] = nonnative;
-    colmap[6] = sliver;
-    colmap[7] = shrubery;
-    colmap[8] = ripshrub;
-    colmap[9] = herb;
-    colmap[10] = herbwet;
-    colmap[11] = aquatic;
-    colmap[12] = salt;
-    colmap[13] = barrenland;
-    colmap[14] = agriculture;
-    colmap[15] = wet;
-    colmap[16] = developed;
 }
 
 void TypeMap::initNaturalColTable()
@@ -309,6 +499,10 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
     // first and last samples map to the beginning and end of the scale
     step = (int) ((256.0f * truncend) / (float) (samples-1));
     pos = 0;
+
+    /* colmap[0] = freecol;
+    colmap[1] = freecol;
+    colmap[2] = redcol;*/
     for(i = 1; i <= samples; i++)
     {
         colmap[i][0] = (GLfloat) r[pos]; colmap[i][1] = (GLfloat) g[pos]; colmap[i][2] = (GLfloat) b[pos];
@@ -349,40 +543,6 @@ void TypeMap::replaceMap(basic_types::MapInt * newmap)
             tmap->set(y,x, newmap->get(y,x));
 }
 
-void TypeMap::bandCHMMap(basic_types::MapFloat * chm, float mint, float maxt)
-{
-    int tp;
-    float val;
-
-    if(maxt > mint)
-    {
-        for (int x = 0; x < tmap->width(); x++)
-            for (int y = 0; y < tmap->height(); y++)
-            {
-                val = chm->get(y, x);
-
-                // discretise into ranges of height values
-                if(val <= 0.0f) // transparent
-                {
-                    tp = 1;
-                }
-                else if(val <= mint) // black
-                {
-                    tp = 2;
-                }
-                else if(val >= maxt) // red
-                {
-                    tp = numSamples+2;
-                }
-                else // green range
-                {
-                    tp = (int) ((val-mint) / (maxt-mint+pluszero) * (numSamples-1))+2;
-                }
-                tmap->set(y,x,tp);
-            }
-    }
-}
-
 int TypeMap::load(const std::string &filename, TypeMapType purpose)
 {
     int tp, maxtp = 0; // mintp = 100;
@@ -407,86 +567,20 @@ int TypeMap::load(const std::string &filename, TypeMapType purpose)
                     case TypeMapType::EMPTY: // do nothing
                         break;
                     case TypeMapType::TRANSECT: // do nothing
-                        break;
-                    case TypeMapType::CATEGORY:
-                        infile >> tp;
-                        tp++;
-                        break;
-                    case TypeMapType::SLOPE:
-                        infile >> val;
-                        if(val > maxval)
-                            maxval = val;
-
-                         // discretise into ranges of slope values
-                        range = 90.0f; // maximum slope is 90 degrees
-                        // clamp values to range
-                        if(val < 0.0f) val = 0.0f;
-                        if(val > range) val = range;
-                        tp = (int) (val / (range+pluszero) * (numSamples-1))+1;
-                        break;
-                    case TypeMapType::WATER:
+                        break;   
+                    case TypeMapType::GREYRAMP:
+                    case TypeMapType::HEATRAMP:
+                    case TypeMapType::BLUERAMP:
                         infile >> val;
                         if(val > maxval)
                             maxval = val;
 
                         // discretise into ranges of water values
-                        range = 100.0f;
+                        range = 1000.0f;
                         // clamp values to range
                         if(val < 0.0f) val = 0.0f;
                         if(val > range) val = range;
                         tp = (int) (val / (range+pluszero) * (numSamples-1))+1;
-                        break;
-                    case TypeMapType::SUNLIGHT:
-                        infile >> val;
-                        if(val > maxval)
-                            maxval = val;
-
-                        // discretise into ranges of illumination values
-                        range = 12.0f; // hours of sunlight
-                        // clamp values to range
-                        if(val < 0.0f) val = 0.0f;
-                        if(val > range) val = range;
-                        tp = (int) (val / (range+pluszero) * (numSamples-1))+1;
-                        break;
-                    case TypeMapType::TEMPERATURE:
-                        infile >> val;
-                        if(val > maxval)
-                            maxval = val;
-
-                        // discretise into ranges of temperature values
-
-                        range = 20.0f; //10
-                        // clamp values to range, temperature is bidrectional
-                        if(val < -range) val = -range;
-                        if(val > range) val = range;
-                        tp = (int) ((val+range) / (2.0f*range+pluszero) * (numSamples-1))+1;
-
-                        break;
-                    case TypeMapType::CHM:
-                        infile >> val;
-                        if(val > maxval)
-                            maxval = val;
-
-                        // discretise into ranges of height values
-                        range = 75.0f; // maximum tree height in feet
-                        // clamp values to range
-                        if(val < 0.0f) val = 0.0f;
-                        if(val > range) val = range;
-                        tp = (int) (val / (range+pluszero) * (numSamples-1))+1;
-                        break;
-                    case TypeMapType::CDM:
-                       infile >> val;
-                       if(val > maxval)
-                            maxval = val;
-
-                        // discretise into ranges of illumination values
-                        range = 1.0f; // maximum density
-                        // clamp values to range
-                        if(val < 0.0f) val = 0.0f;
-                        if(val > range) val = range;
-                        tp = (int) (val / (range+pluszero) * (numSamples-1))+1;
-                        break;
-                    case TypeMapType::SUITABILITY:
                         break;
                     default:
                         break;
@@ -540,26 +634,11 @@ bool TypeMap::loadCategoryImage(const std::string &filename)
     return true;
 }
 
-void TypeMap::setWater(basic_types::MapFloat * wet, float wetthresh)
-{
-    int gx, gy;
-
-    wet->getDim(gx, gy);
-    for(int x = 0; x < gx; x++)
-        for(int y = 0; y < gy; y++)
-        {
-            if(wet->get(x, y) >= wetthresh)
-            {
-                tmap->set(y,x,0);
-            }
-        }
-}
-
 int TypeMap::convert(basic_types::MapFloat * map, TypeMapType purpose, float range)
 {
     int tp, maxtp = 0;
     int width, height;
-    float val, maxval = 0.0f;
+    float val;
 
     map->getDim(width, height);
     matchDim(height, width);
@@ -583,105 +662,23 @@ int TypeMap::convert(basic_types::MapFloat * map, TypeMapType purpose, float ran
                     else
                         tp = 0;
                     break;
-                case TypeMapType::CATEGORY: // do nothing, since categories are integers not floats
-                    break;
-                case TypeMapType::SLOPE:
+                case TypeMapType::GREYRAMP:
+                case TypeMapType::HEATRAMP:
+                case TypeMapType::BLUERAMP:
                     val = map->get(x, y);
-                    if(val > maxval)
-                        maxval = val;
-
-                    // discretise into ranges of illumination values
-                    // clamp values to range
-                    if(val < 0.0f) val = 0.0f;
-                    if(val > range) val = range;
-                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
-                    break;
-                case TypeMapType::WATER:
-                    val = map->get(x, y);
-                    if(val > maxval)
-                        maxval = val;
 
                     // discretise into ranges of water values
                     // clamp values to range
-                    if(val < 0.0f) val = 0.0f;
-                    if(val > range) val = range;
-                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
-                    break;
-                case TypeMapType::SUNLIGHT:
-                     val = map->get(x, y);
-                    if(val > maxval)
-                        maxval = val;
-
-                    // discretise into ranges of illumination values
-                    // clamp values to range
-                    if(val < 0.0f) val = 0.0f;
-                    if(val > range) val = range;
-                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
-                    break;
-                case TypeMapType::TEMPERATURE:
-                    val = map->get(x, y);
-                    if(val > maxval)
-                        maxval = val;
-
-                    // discretise into ranges of temperature values
-                    // clamp values to range, temperature is bidrectional
-                    if(val < -range) val = -range;
-                    if(val > range) val = range;
-                    tp = (int) ((val+range) / (2.0f*range+pluszero) * (numSamples-2)) + 1;
-
-                    break;
-                case TypeMapType::CHM:
-                     val = map->get(y, x);
-                     if(val > maxval)
-                        maxval = val;
-
-                    // discretise into ranges of tree height values
-                    // clamp values to range
-                    if(val < 0.0f) val = 0.0f;
-                    if(val > range) val = range;
-                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
-                    if(tp < mincm)
-                        mincm = tp;
-                    if(tp > maxcm)
-                        maxcm = tp;
-                    break;         
-                case TypeMapType::CDM:
-                    val = map->get(y, x);
-                    if(val > maxval)
-                        maxval = val;
-
-                    // discretise into ranges of tree density values
-                    // clamp values to range
-                    if(val < 0.0f) val = 0.0f;
-                    if(val > range) val = range;
-                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
-                    if(tp < mincm)
-                        mincm = tp;
-                    if(tp > maxcm)
-                        maxcm = tp;
-                    break;
-                case TypeMapType::SUITABILITY:
-                    val = map->get(x, y);
-                    if(val > maxval)
-                        maxval = val;
-                    // discretise into ranges of illumination values
-                    // clamp values to range
-                    if(val < 0.0f) val = 0.0f;
-                    if(val > range) val = range;
-                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
-                    break;
-                case TypeMapType::SMOOTHING_ACTION:
-                    val = map->get(x, y);
-                    if(val > maxval)
-                        maxval = val;
-                    // discretise into ranges of illumination values
-                    // clamp values to range
-                    if(val < 0.0f) val = 0.0f;
-                    if(val > range) val = range;
-                    //std::cout << "numSamples smoothing action: " << numSamples << std::endl;
-                    //std::cout << "val: " << val << std::endl;
-                    tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
-                    //std::cout << "tp: " << tp << std::endl;
+                    if(val < 0.0f) // empty cell
+                    {
+                        tp = 0;
+                    }
+                    else
+                    {
+                        if(val > range)
+                            val = range;
+                        tp = (int) (val / (range+pluszero) * (numSamples-2)) + 1;
+                    }
                     break;
                 default:
                     break;
@@ -691,12 +688,6 @@ int TypeMap::convert(basic_types::MapFloat * map, TypeMapType purpose, float ran
             if(tp > maxtp)
                 maxtp = tp;
         }
-    /*
-    if(purpose == TypeMapType::CDM)
-    {
-        cerr << "Minimum colour value = " << mincm << endl;
-        cerr << "Maxiumum colour value = " << maxcm << endl;
-    }*/
     return maxtp;
 }
 
@@ -781,44 +772,14 @@ void TypeMap::setPurpose(TypeMapType purpose)
         case TypeMapType::TRANSECT:
             initTransectColTable();
             break;
-        case TypeMapType::CATEGORY:
-            initCategoryColTable();
+        case TypeMapType::GREYRAMP:
+            initPerceptualColTable("../../common/colourmaps/linear_grey_10-95_c0_n256.csv", 10);
             break;
-        case TypeMapType::SLOPE:
-            initPerceptualColTable("../../common/colourmaps/linear_kry_5-95_c72_n256.csv", 10);
+        case TypeMapType::HEATRAMP:
+            initPerceptualColTable("../../common/colourmaps/linear_kryw_5-100_c67_n256.csv", 10);
             break;
-        case TypeMapType::WATER:
+        case TypeMapType::BLUERAMP:
             initPerceptualColTable("../../common/colourmaps/linear_blue_95-50_c20_n256.csv", 10);
-            break;
-        case TypeMapType::SUNLIGHT:
-            initPerceptualColTable("../../common/colourmaps/linear_kry_5-95_c72_n256.csv", 10);
-            break;
-        case TypeMapType::TEMPERATURE:
-            initPerceptualColTable("../../common/colourmaps/diverging_bwr_55-98_c37_n256.csv", 10);
-            break;
-        case TypeMapType::CHM:
-            // initPerceptualColTable("../colourmaps/linear_ternary-green_0-46_c42_n256.csv", 20);
-            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
-            // replace 0 with natural terrain colour
-            colmap[1][0] = 0.7f; colmap[1][1] = 0.6f; colmap[1][2] = 0.5f; // transparent
-            colmap[2][0] = 0.0f; colmap[2][1] = 0.0f; colmap[2][2] = 1.0f; // black
-            colmap[numSamples+2][0] = 1.0f; colmap[numSamples+2][1] = 0.0f; colmap[numSamples+2][2] = 0.0f; // red
-            break;
-        case TypeMapType::CDM:
-            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
-            // replace 0 with natural terrain colour
-            colmap[1][0] = 0.7f; colmap[1][1] = 0.6f; colmap[1][2] = 0.5f;
-            break;
-        case TypeMapType::SUITABILITY:
-            initPerceptualColTable("../../common/colourmaps/linear_gow_60-85_c27_n256.csv", 20, 0.8f);
-            // initPerceptualColTable("../../colourmaps/isoluminant_cgo_70_c39_n256.csv", 10);
-            break;
-        case TypeMapType::COHORT:
-            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
-            // replace 0 with natural terrain colour
-            colmap[1][0] = 0.7f; colmap[1][1] = 0.6f; colmap[1][2] = 0.5f;
-        case TypeMapType::SMOOTHING_ACTION:
-            initPerceptualColTable("../../common/colourmaps/linear_green_5-95_c69_n256.csv", 20);
             break;
         default:
             break;

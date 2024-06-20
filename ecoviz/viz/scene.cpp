@@ -343,7 +343,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
     ElapsedTimer tmr("extractDBHSums");
     int vmax = 0;
     int nspecies = s->getBiome()->numPFTypes();
-    float hectares = s->getTerrain()->getTerrainHectArea();
+    float hectares = s->getMasterTerrain()->getTerrainHectArea();
     setNumSeries(nspecies);
 
     for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
@@ -354,7 +354,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
         tmr.elapsed("sampler");
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         tmr.elapsed("build list");
@@ -382,7 +382,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
     ElapsedTimer tmr("extractbasal area");
     float vmax = 0.0f;
     int nspecies = s->getBiome()->numPFTypes();
-    float hectares = s->getTerrain()->getTerrainHectArea();
+    float hectares = s->getMasterTerrain()->getTerrainHectArea();
 
     setNumSeries(nspecies);
 
@@ -392,7 +392,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         cerr << "num trees = " << (int) trees.size() << " t = " << t << endl;
@@ -438,7 +438,7 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         for(int spc = 0; spc < nspecies; spc++) // iterate over species
@@ -513,13 +513,31 @@ std::unique_ptr<Terrain> mapScene::extractTerrainSubwindow(Region region)
 std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
 {
 
-    std::string terfile = datadir+"/dem.elv";
+    //std::string terfile = datadir+"/dem.elv";
+    std::string binfile = datadir+"/" + basename + ".elvb";
+    std::string txtfile = datadir+"/" + basename + ".elv";
+    std::string terfile;
+
+    bool binaryElvFile = false;
+
+    if (std::ifstream(binfile).is_open())
+    {
+        binaryElvFile = true;
+        terfile = binfile;
+    }
+    else
+        terfile = txtfile;
+
     float terx, tery;
     int gridx, gridy;
     vpPoint mid;
 
     // load terrain
-    fullResTerrain->loadElv(terfile);
+    if (binaryElvFile)
+        fullResTerrain->loadElvBinary(terfile);
+    else
+        fullResTerrain->loadElv(terfile);
+
     fullResTerrain->calcMeanHeight();
 
     std::cout << "\n ****** Hi-res Terrain loaded...\n";
@@ -547,7 +565,10 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
     //defRegion.y1 = gridy-1;
 
     // create downsampled overview
-    lowResTerrain->loadElv(terfile, downFactor);
+    if (binaryElvFile)
+        lowResTerrain->loadElvBinary(terfile, downFactor);
+    else
+        lowResTerrain->loadElv(terfile, downFactor);
     lowResTerrain->calcMeanHeight();
 
     selectedRegion = defRegion;
@@ -581,7 +602,7 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
 
 //// Scene
 
-Scene::Scene(string ddir) : terrain( new Terrain())
+Scene::Scene(string ddir, string base) : terrain( new Terrain())
 {
     //terrain = new Terrain();
     terrain->initGrid(1024, 1024, 10000.0f, 10000.0f);
@@ -590,6 +611,7 @@ Scene::Scene(string ddir) : terrain( new Terrain())
     tline = new Timeline();
 
     datadir = ddir;
+    basename = base;
     int dx, dy;
     terrain->getGridDim(dx, dy);
 
@@ -600,17 +622,7 @@ Scene::Scene(string ddir) : terrain( new Terrain())
     maps[2]->setRegion(Region(0, 0, dy-1, dx-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
     nfield = new NoiseField(dx,dy,5, 0);
-
-    for(int m = 0; m < 12; m++)
-    {
-        moisture.push_back(new basic_types::MapFloat());
-        sunlight.push_back(new basic_types::MapFloat());
-        temperature.push_back(0.0f);
-    }
-    slope = new basic_types::MapFloat();
-    chm = new basic_types::MapFloat();
-    cdm = new basic_types::MapFloat();
-
+    dmaps = new DataMaps();
     masterTerrain = nullptr;
 }
 
@@ -632,14 +644,7 @@ Scene::~Scene()
     delete biome;
     delete tline;
     delete nfield;
-    for(int m = 0; m < 12; m++)
-    {
-        delete sunlight[static_cast<int>(m)];
-        delete moisture[static_cast<int>(m)];
-    }
-    temperature.clear();
-    delete chm;
-    delete cdm;
+    delete dmaps;
 }
 
 std::string Scene::get_dirprefix()
@@ -725,50 +730,10 @@ bool Scene::writeMonthlyMap(std::string filename, std::vector<basic_types::MapFl
 
 }
 
-bool Scene::readSun(std::string filename)
-{
-    return readMonthlyMap(filename, sunlight);
-}
-
-bool Scene::writeSun(std::string filename)
-{
-    return writeMonthlyMap(filename, sunlight);
-}
-
-bool Scene::readMoisture(std::string filename)
-{
-    return readMonthlyMap(filename, moisture);
-}
-
-bool Scene::writeMoisture(std::string filename)
-{
-    return writeMonthlyMap(filename, moisture);
-}
-
-void Scene::calcSlope()
-{
-    int dx, dy;
-    Vector up, n;
-
-    // slope is dot product of terrain normal and up vector
-    up = Vector(0.0f, 1.0f, 0.0f);
-    terrain->getGridDim(dx, dy);
-    slope->setDim(dx, dy);
-    slope->fill(0.0f);
-    for(int x = 0; x < dx; x++)
-        for(int y = 0; y < dy; y++)
-        {
-            terrain->getNormal(x, y, n);
-            float rad = acos(up.dot(n));
-            float deg = RAD2DEG * rad;
-            slope->set(y, x, deg);
-        }
-}
-
 void Scene::reset_sampler(int maxpercell)
 {
     float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
+    getMasterTerrain()->getTerrainDim(rw, rh);
     int gw, gh;
     cohortmaps->get_grid_dims(gw, gh);
     float tw, th;
@@ -797,16 +762,25 @@ void Scene::loadScene(int timestep_start, int timestep_end)
 
 void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_end)
 {
+    std::vector<std::string> timestep_files;
     bool checkfiles = true;
 
     using namespace data_importer;
 
-    std::vector<std::string> timestep_files;
     //std::string terfile = datadir+"/dem.elv";
 
     for (int ts = timestep_start; ts <= timestep_end; ts++)
     {
-        timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
+        //timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
+        string binfile = datadir + "/" + basename + std::to_string(ts) + ".pdbb";
+        string txtfile = datadir + "/" + basename + std::to_string(ts) + ".pdb";
+        string filename;
+        if (ifstream(binfile).is_open()) //prefer binary version
+            filename = binfile;
+        else
+            filename = txtfile;
+
+        timestep_files.push_back(filename); // datadir + "/" + basename + std::to_string(ts) + ".pdbb");
     }
 
     // load terrain (already calld loadElv and calcMeanHeight)
@@ -831,7 +805,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     // NB: must maintain original terrain dims/size when imposing a sub-region terrain
     // ****entire**** region plan/eco data read in - later we select out the relevant parts for
     // rendering
-       Region srcRegion;
+    Region srcRegion;
     float sx,ex, sy, ey, parentXdim, parentYdim;
     terrain->getSourceRegion(srcRegion,
                              sx, sy, ex, ey,
@@ -889,8 +863,19 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         cerr << "TimeLine" << endl;
         cerr << "start = " << tline->getTimeStart() << " end = " << tline->getTimeEnd() << " delta = " << tline->getTimeStep() << " current = " << tline->getNow() << endl;
     }
+}
 
+void Scene::loadDataMaps(int timesteps)
+{
+    std::string idxfile, datafile;
 
+    // std::cout << "Datadir before fixing: " << datadir << std::endl;
+    while (datadir.back() == '/')
+        datadir.pop_back();
+    idxfile = datadir + "/" + basename + "_idx.asc";
+    datafile = datadir + "/" + basename + "_map.csv";
+
+    dmaps->loadDataMaps(idxfile, datafile, timesteps);
 }
 
 // PCM - this won't export properly with overview window since that loads entire ecosystem, and can't deal with sub-regions

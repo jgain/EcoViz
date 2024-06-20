@@ -103,7 +103,7 @@ private:
                             ///< *grid* coordinates relative to parent grid - they must be converted to
                             ///< world space for terrain checks.
     int parentGridx;       ///< if source Region is set, this will also be set and indicate parent grid
-    int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as (dim-1)*step
+    int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as dim*step
 
     // PM: terrain renderer
     mutable bool glewSetupDone;
@@ -168,10 +168,17 @@ public:
         ex = src.x1*step;
         ey = src.y1*step;
 
-        parentDimx = (parentGridx-1)*step;
-        parentDimy = (parentGridy-1)*step;
+        parentDimx = (parentGridx)*step;
+        parentDimy = (parentGridy)*step;
 
         return !sourceRegion.empty();
+    }
+
+    Region getEntireRegion()
+    {
+        int dx, dy;
+        getGridDim(dx, dy);
+        return Region(0, 0, dx, dy);
     }
 
     void setHeightMaptextureID(GLuint id) { htMapTextureId = id; }
@@ -348,10 +355,16 @@ public:
     void test();
 
     /**
-       * Load a terrain from a file.
+       * Load a terrain from a (text) file. (.elv)
        * @param filename   File to load (simple ascii elevation format)
        */
     void loadElv(const std::string &filename);
+
+    /**
+       * Load a terrain from a binary file (.elvb).
+       * @param filename   File to load (simple ascii elevation format)
+       */
+    void loadElvBinary(const std::string &filename);
 
     /**
        * Load a terrain from a file - pply dwonsampling (skip every nth sample)
@@ -359,6 +372,8 @@ public:
        * @param downsample donsam,pling factor (integer > 1)
        */
     void loadElv(const std::string &filename, int downsample);
+    /* As above, but open a binary file */
+    void loadElvBinary(const std::string &filename, int downsample);
 
     /**
        * Save a terrain to file.
