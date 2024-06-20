@@ -43,7 +43,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -339,13 +339,16 @@
     <Import Project="packages\boost.1.76.0.0\build\boost.targets" Condition="Exists('packages\boost.1.76.0.0\build\boost.targets')" />
     <Import Project="packages\glm.0.9.9.800\build\native\glm.targets" Condition="Exists('packages\glm.0.9.9.800\build\native\glm.targets')" />
     <Import Project="packages\boost_serialization-vc142.1.76.0.0\build\boost_serialization-vc142.targets" Condition="Exists('packages\boost_serialization-vc142.1.76.0.0\build\boost_serialization-vc142.targets')" />
+    <Import Project="packages\glm.1.0.1\build\native\glm.targets" Condition="Exists('packages\glm.1.0.1\build\native\glm.targets')" />
+    <Import Project="packages\boost.1.85.0\build\boost.targets" Condition="Exists('packages\boost.1.85.0\build\boost.targets')" />
+    <Import Project="packages\boost_serialization-vc143.1.85.0\build\boost_serialization-vc143.targets" Condition="Exists('packages\boost_serialization-vc143.1.85.0\build\boost_serialization-vc143.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>Ce projet fait référence à des packages NuGet qui sont manquants sur cet ordinateur. Utilisez l'option de restauration des packages NuGet pour les télécharger. Pour plus d'informations, consultez http://go.microsoft.com/fwlink/?LinkID=322105. Le fichier manquant est : {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\boost.1.76.0.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost.1.76.0.0\build\boost.targets'))" />
-    <Error Condition="!Exists('packages\glm.0.9.9.800\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\glm.0.9.9.800\build\native\glm.targets'))" />
-    <Error Condition="!Exists('packages\boost_serialization-vc142.1.76.0.0\build\boost_serialization-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_serialization-vc142.1.76.0.0\build\boost_serialization-vc142.targets'))" />
+    <Error Condition="!Exists('packages\glm.1.0.1\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\glm.1.0.1\build\native\glm.targets'))" />
+    <Error Condition="!Exists('packages\boost.1.85.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost.1.85.0\build\boost.targets'))" />
+    <Error Condition="!Exists('packages\boost_serialization-vc143.1.85.0\build\boost_serialization-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_serialization-vc143.1.85.0\build\boost_serialization-vc143.targets'))" />
   </Target>
 </Project>
