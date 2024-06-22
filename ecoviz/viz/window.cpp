@@ -610,6 +610,8 @@ void Window::destroyVizPerspective(int i)
         return;
     }
 
+    perspectiveViews[i]->makeCurrent(); // PCM - requried to esnure the previous context is not current
+
     perspectiveViews[i]->hide();
     vizLayout->removeWidget(perspectiveViews[i]);
     delete perspectiveViews[i];
