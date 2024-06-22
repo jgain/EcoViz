@@ -149,7 +149,8 @@ GLWidget::~GLWidget()
 
     if (mapView) delete mapView;
 
-    if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
+    // PCM removed - this seems like it should not be here?
+   // if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
 }
 
 QSize GLWidget::minimumSizeHint() const
