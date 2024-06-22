@@ -539,6 +539,7 @@ void Window::destroyVizTransect(int i)
     vizLayout->removeWidget(lockTGroup);
     //QApplication::processEvents( QEventLoop::ExcludeUserInputEvents );
     transectViews[i]->setVisible(false);
+    transectViews[i]->setActive(false);
     transectViews[i]->hide();
     vizLayout->removeWidget(transectViews[i]);
     delete transectViews[i];
@@ -1468,6 +1469,7 @@ void Window::showTransectViews()
     for(int i = 0; i < 2; i++)
     {
         transectViews[i]->setVisible(transectControls[i]->getValidFlag());
+        transectViews[i]->setActive(transectControls[i]->getValidFlag());
     }
     rendercount++;
     repaintAllGL();
@@ -1492,6 +1494,7 @@ void Window::clearTransects()
     for(int i = 0; i < 2; i++)
     {
         transectViews[i]->setVisible(false);
+        transectViews[i]->setActive(false);
         vizLayout->removeWidget(transectViews[i]);
     }
     vizLayout->removeWidget(lockTGroup);

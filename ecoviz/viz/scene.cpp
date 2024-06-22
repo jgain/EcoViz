@@ -343,7 +343,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
     ElapsedTimer tmr("extractDBHSums");
     int vmax = 0;
     int nspecies = s->getBiome()->numPFTypes();
-    float hectares = s->getTerrain()->getTerrainHectArea();
+    float hectares = s->getMasterTerrain()->getTerrainHectArea();
     setNumSeries(nspecies);
 
     for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
@@ -354,7 +354,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
         tmr.elapsed("sampler");
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         tmr.elapsed("build list");
@@ -382,7 +382,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
     ElapsedTimer tmr("extractbasal area");
     float vmax = 0.0f;
     int nspecies = s->getBiome()->numPFTypes();
-    float hectares = s->getTerrain()->getTerrainHectArea();
+    float hectares = s->getMasterTerrain()->getTerrainHectArea();
 
     setNumSeries(nspecies);
 
@@ -392,7 +392,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         cerr << "num trees = " << (int) trees.size() << " t = " << t << endl;
@@ -438,7 +438,7 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         for(int spc = 0; spc < nspecies; spc++) // iterate over species
@@ -733,7 +733,7 @@ bool Scene::writeMonthlyMap(std::string filename, std::vector<basic_types::MapFl
 void Scene::reset_sampler(int maxpercell)
 {
     float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
+    getMasterTerrain()->getTerrainDim(rw, rh);
     int gw, gh;
     cohortmaps->get_grid_dims(gw, gh);
     float tw, th;

@@ -663,6 +663,14 @@ void GLWidget::paintGL()
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
 
+        // PCM fix inital aspect mismatch in overview
+        if (mapView->isTerrainReady() == false)
+        {
+            mapView->setWindowSize();
+            mapView->resetViewDims();
+            mapView->setTerrainReady(true);
+        }
+
         // mapView->getWindowSize(wd,ht); // JG - viewport and window coordinates are different on Apple
         mapView->getViewSize(viewport[2], wd, ht);
         GLint newport[4];
@@ -1167,6 +1175,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
                     pointPlaceTransect(false);
                     signalSyncPlace(false);
                     winparent->rendercount++;
+                    signalRebindTransectPlants();
                     signalRepaintAllGL(); // need to also update transect view
                 }
                 break;
@@ -1243,6 +1252,7 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         del /= 60.0f;
         trc->trx->setThickness(trc->trx->getThickness()+del, scene->getTerrain());
         signalRebindTransectPlants(); // PCM...see if this works
+        signalRepaintAllGL();
     }
     else // otherwise adjust view zoom
         view->incrZoom(del);
@@ -1296,6 +1306,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     timeron = false;
     pickOnTerrain = false;
     perscale = 0.3f;
+    terrainReady = false;
 
     mrenderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
 
