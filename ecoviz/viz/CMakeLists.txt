@@ -41,7 +41,7 @@ if (BUILD_GUI)
         ${GLEW_LIBRARIES} ${Qt6Widgets_LIBRARIES} ${Qt6OpenGL_LIBRARIES} ${Qt6Charts_LIBRARIES}
         ${OPENGL_LIBRARIES} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt6Widgets_EXECUTABLE_COMPILE_FLAGS}")
     add_executable(ecoviz main.cpp)
     target_include_directories(ecoviz PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(ecoviz vgui sqlite3)

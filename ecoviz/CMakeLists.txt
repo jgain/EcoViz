@@ -5,7 +5,7 @@ include(CheckLibraryExists)
 #set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/5.7/gcc_64)
 #set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/6.7/gcc_64)
 set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@6/lib/cmake/Qt6")
-set(Qt5Widgets_DIR $/opt/homebrew/opt/qt@6/lib/cmake/Qt6Widgets)
+set(Qt6Widgets_DIR $/opt/homebrew/opt/qt@6/lib/cmake/Qt6Widgets)
 
 
 option(SMOKE_TEST "run a smoke test on every build" 1)
@@ -47,7 +47,7 @@ link_directories(
     ${Boost_LIB_DIRS}
 )
 
-if (Qt5Widgets_FOUND)
+if (Qt6Widgets_FOUND)
     include_directories(${Qt6Widgets_INCLUDE_DIRS})
     add_definitions(${Qt6Widgets_DEFINITIONS})
 endif()
