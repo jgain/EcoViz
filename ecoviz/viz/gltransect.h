@@ -111,6 +111,9 @@ public:
      */
     void setScene(Scene * s);
 
+    /// set active status of transect (i.e. should this view be painted)
+    void setActive(bool v) { active = v; }
+
     /// getter for various viewing controls
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }

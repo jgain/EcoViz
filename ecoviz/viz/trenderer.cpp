@@ -1102,6 +1102,11 @@ void TRenderer::destroyInstanceData(void)
 
 TRenderer::~TRenderer()
 {
+    if (QOpenGLContext::currentContext() == nullptr)
+    {
+        std::cerr << "Graphics context is null in destructor ~TRenderer!\n";
+    }
+
    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
   if (decalTexture != 0) f->glDeleteTextures(1, &decalTexture);
   // delete shaders

@@ -149,7 +149,8 @@ GLWidget::~GLWidget()
 
     if (mapView) delete mapView;
 
-    if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
+    // PCM removed - this seems like it should not be here?
+   // if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
 }
 
 QSize GLWidget::minimumSizeHint() const
@@ -1175,6 +1176,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
                     pointPlaceTransect(false);
                     signalSyncPlace(false);
                     winparent->rendercount++;
+                    signalRebindTransectPlants();
                     signalRepaintAllGL(); // need to also update transect view
                 }
                 break;
@@ -1251,6 +1253,7 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         del /= 60.0f;
         trc->trx->setThickness(trc->trx->getThickness()+del, scene->getTerrain());
         signalRebindTransectPlants(); // PCM...see if this works
+        signalRepaintAllGL();
     }
     else // otherwise adjust view zoom
         view->incrZoom(del);

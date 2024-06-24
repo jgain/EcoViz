@@ -539,6 +539,7 @@ void Window::destroyVizTransect(int i)
     vizLayout->removeWidget(lockTGroup);
     //QApplication::processEvents( QEventLoop::ExcludeUserInputEvents );
     transectViews[i]->setVisible(false);
+    transectViews[i]->setActive(false);
     transectViews[i]->hide();
     vizLayout->removeWidget(transectViews[i]);
     delete transectViews[i];
@@ -608,6 +609,8 @@ void Window::destroyVizPerspective(int i)
         std::cerr << "Window::destroyVizPerspective - invalid index, view is null: " << i << std::endl;
         return;
     }
+
+    perspectiveViews[i]->makeCurrent(); // PCM - requried to esnure the previous context is not current
 
     perspectiveViews[i]->hide();
     vizLayout->removeWidget(perspectiveViews[i]);
@@ -1468,6 +1471,7 @@ void Window::showTransectViews()
     for(int i = 0; i < 2; i++)
     {
         transectViews[i]->setVisible(transectControls[i]->getValidFlag());
+        transectViews[i]->setActive(transectControls[i]->getValidFlag());
     }
     rendercount++;
     repaintAllGL();
@@ -1492,6 +1496,7 @@ void Window::clearTransects()
     for(int i = 0; i < 2; i++)
     {
         transectViews[i]->setVisible(false);
+        transectViews[i]->setActive(false);
         vizLayout->removeWidget(transectViews[i]);
     }
     vizLayout->removeWidget(lockTGroup);
