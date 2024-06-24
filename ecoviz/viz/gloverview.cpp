@@ -239,6 +239,8 @@ void GLOverview::updateViewParams(void)
 
 void GLOverview::initializeGL()
 {
+    initializeOpenGLFunctions();
+
     // get context opengl-version
     qDebug() << "\nGLOverview initialize....\n";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();

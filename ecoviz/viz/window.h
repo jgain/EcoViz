@@ -162,6 +162,8 @@ public slots:
     void rightDataMapChoice(int id);
     void leftRampChoice(int id);
     void rightRampChoice(int id);
+    void leftGraphChoice(int id);
+    void rightGraphChoice(int id);
     void uncheckDataMapPanel(); // on close change view menu item to unchecked state
     void syncDataMapPanel(); // if a perspective view goes into transect view update datamap params
 
@@ -214,9 +216,13 @@ private:
     // data map parameters
     int dmapIdx[2];
     int rampIdx[2];
+    int grphIdx[2];
 
     // data map widgets
     QButtonGroup * qbmgL, * qbmgR;
+
+    // graph button group
+    QButtonGroup * bggL, * bggR;
 
     // rendering parameters
     float gridSepX, numGridX, gridSepZ, numGridZ, gridWidth, gridIntensity; ///< grid params

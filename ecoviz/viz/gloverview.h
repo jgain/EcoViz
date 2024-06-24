@@ -83,7 +83,7 @@
 
 class Window;
 
-class GLOverview : public QOpenGLWidget
+class GLOverview : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 

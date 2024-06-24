@@ -39,6 +39,7 @@ ChartWindow::ChartWindow(QWidget *parent, int width, int height)
     vbox->setSpacing(0);
 
 
+    /*
     QHBoxLayout *optlayout = new QHBoxLayout;
 
     QComboBox *vistype = new QComboBox;
@@ -56,8 +57,8 @@ ChartWindow::ChartWindow(QWidget *parent, int width, int height)
     optlayout->addWidget(vistype);
     optlayout->addWidget(chart_help_label);
 
+    vbox->addLayout(optlayout);*/
 
-    vbox->addLayout(optlayout);
     vbox->addLayout(hbox, 1);
 
     setLayout(vbox);
@@ -72,11 +73,11 @@ void ChartWindow::updateTimeBar()
 void ChartWindow::chartSelected(int index)
 {
     if (index<0) {
-        chart_help_label->setText("");
+        // chart_help_label->setText("");
         return;
     }
 
-    chart_help_label->setText(chart_desc[index]);
+    // chart_help_label->setText(chart_desc[index]);
 
     // switch graph
     // chartViews[i]->setData(graphModels[i].front()); // set to first visualization

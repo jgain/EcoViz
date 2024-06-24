@@ -51,6 +51,8 @@ public:
     void setScene(Scene * s){ scene = s; }
     void setData(TimelineGraph * gdata);
     void setGraphs(std::vector<TimelineGraph*> all_gr) { all_graphs = all_gr; }
+    int getNumGraphs(){ return (int) all_graphs.size(); }
+    string getGraphName(int idx){ return all_graphs[idx]->getTitle(); }
 };
 
 #endif // TIMEWINDOW_H

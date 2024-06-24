@@ -279,7 +279,7 @@ void Window::setupRenderPanel()
     connect(wetMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(chmMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));*/
-    connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
+    // connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
 
     renderPanel->setLayout(renderLayout);
 }
@@ -400,15 +400,15 @@ void Window::setupDataMapPanel()
         // headers
         QString hdr1 = QString::fromStdString(string("Data Type:"));
         QLabel *hdl1L = new QLabel(hdr1);
-        matrixMapLeftLayout->addWidget(hdl1L,0,1);
+        matrixMapLeftLayout->addWidget(hdl1L,0,0);
         QLabel *hdl1R = new QLabel(hdr1);
-        matrixMapRightLayout->addWidget(hdl1R,0,1);
+        matrixMapRightLayout->addWidget(hdl1R,0,0);
 
         QString hdr2 = QString::fromStdString(string("Colours:"));
         QLabel *hdl2L = new QLabel(hdr2);
-        matrixMapLeftLayout->addWidget(hdl2L,0,3);
+        matrixMapLeftLayout->addWidget(hdl2L,0,2);
         QLabel *hdl2R = new QLabel(hdr2);
-        matrixMapRightLayout->addWidget(hdl2R,0,3);
+        matrixMapRightLayout->addWidget(hdl2R,0,2);
 
         for(int r = 0; r <= rows; r++)
         {
@@ -462,10 +462,57 @@ void Window::setupDataMapPanel()
             }
         }
 
+        // headers
+        QString hdr3 = QString::fromStdString(string("Graph:"));
+        QLabel *hdl3L = new QLabel(hdr3);
+        matrixMapLeftLayout->addWidget(hdl3L,rows+2,0);
+        QLabel *hdl3R = new QLabel(hdr3);
+        matrixMapRightLayout->addWidget(hdl3R,rows+2,0);
+
+        // left panel graphs
+        int grows = chartViews[0]->getNumGraphs();
+        bggL = new QButtonGroup();
+        // get access to graphs
+        for(int r = 0; r < grows; r++)
+        {
+            // radio button for map selection
+            QRadioButton * qrmbL = new QRadioButton();
+            matrixMapLeftLayout->addWidget(qrmbL,rows+r+3,0);
+            if(r == 0)
+                qrmbL->setChecked(true);
+            bggL->addButton(qrmbL, r);
+
+            // graph names
+            QString gname = QString::fromStdString(chartViews[0]->getGraphName(r));
+            QLabel *dmnlL = new QLabel(gname);
+            matrixMapLeftLayout->addWidget(dmnlL,rows+r+3,1);
+        }
+
+        // right panel graphs
+        grows = chartViews[1]->getNumGraphs();
+        bggR = new QButtonGroup();
+        // get access to graphs
+        for(int r = 0; r < grows; r++)
+        {
+            // radio button for map selection
+            QRadioButton * qrmbR = new QRadioButton();
+            matrixMapRightLayout->addWidget(qrmbR,rows+r+3,0);
+            if(r == 0)
+                qrmbR->setChecked(true);
+            bggR->addButton(qrmbR, r);
+
+            // graph names
+            QString gname = QString::fromStdString(chartViews[0]->getGraphName(r));
+            QLabel *dmnlR = new QLabel(gname);
+            matrixMapRightLayout->addWidget(dmnlR,rows+r+3,1);
+        }
+
         connect(qbmgL, SIGNAL(idClicked(int)), this, SLOT(leftDataMapChoice(int)));
         connect(qbmgR, SIGNAL(idClicked(int)), this, SLOT(rightDataMapChoice(int)));
         connect(qbrgL, SIGNAL(idClicked(int)), this, SLOT(leftRampChoice(int)));
         connect(qbrgR, SIGNAL(idClicked(int)), this, SLOT(rightRampChoice(int)));
+        connect(bggL, SIGNAL(idClicked(int)), this, SLOT(leftGraphChoice(int)));
+        connect(bggR, SIGNAL(idClicked(int)), this, SLOT(rightGraphChoice(int)));
     }
 
     dataMapLayout->addWidget(matrixMapLeftGroup);
@@ -890,6 +937,7 @@ Window::Window(string datadir, string lprefix, string rprefix)
 
     dmapIdx[0] = dmapIdx[1] = 0;
     rampIdx[0] = rampIdx[1] = 0;
+    grphIdx[0] = grphIdx[1] = 0;
 
    // overviewTimer.setSingleShot(true);
    // connect( &overviewTimer, SIGNAL(timeout()), SLOT(overviewShow()) );
@@ -908,8 +956,6 @@ Window::Window(string datadir, string lprefix, string rprefix)
     setupRenderPanel();
     plantPanel = nullptr;
     setupPlantPanel();
-    dataMapPanel = nullptr;
-    setupDataMapPanel();
 
     // mapDownSampleFactor = 4;
 
@@ -928,6 +974,8 @@ Window::Window(string datadir, string lprefix, string rprefix)
         transectControls.push_back(t);
     }
     setupVizPanel();
+    dataMapPanel = nullptr;
+    setupDataMapPanel();
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(plantPanel, 0, 1, Qt::AlignTop);
@@ -1585,6 +1633,18 @@ void Window::rightDataMapChoice(int id)
 {
      dmapIdx[1] = id;
      perspectiveViews[1]->setDataMap(dmapIdx[1], convertRampIdx(1), true);
+}
+
+void Window::leftGraphChoice(int id)
+{
+    grphIdx[0] = id;
+    chartViews[0]->chartSelected(id);
+}
+
+void Window::rightGraphChoice(int id)
+{
+     grphIdx[1] = id;
+     chartViews[1]->chartSelected(id);
 }
 
 void Window::leftRampChoice(int id)
