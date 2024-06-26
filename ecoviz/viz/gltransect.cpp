@@ -428,6 +428,8 @@ void GLTransect::paintGL()
             rebindplants = false;
             forceRebindPlants = false;
         }
+        else
+            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, false, transectPlanes);
 
         // pass in draw params for objects
         renderer->setConstraintDrawParams(drawParams);
