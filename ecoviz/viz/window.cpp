@@ -583,7 +583,10 @@ void Window::destroyVizTransect(int i)
   //
    //     vizLayout->removeWidget(transectViews[i]);
    // }
-    vizLayout->removeWidget(lockTGroup);
+
+    unlockTransects();
+
+    //vizLayout->removeWidget(lockTGroup);
     //QApplication::processEvents( QEventLoop::ExcludeUserInputEvents );
     transectViews[i]->setVisible(false);
     transectViews[i]->setActive(false);
