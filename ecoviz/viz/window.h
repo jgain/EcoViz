@@ -318,6 +318,9 @@ private:
     void createActions();
     void createMenus();
 
+    // test is transects are lockable
+    bool canLockTransects(void) const;
+
     /**
       * @brief unlockTimelines Unlink timelines so that graphs and play controls are no longer synchronized
       */

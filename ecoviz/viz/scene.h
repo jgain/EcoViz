@@ -371,7 +371,7 @@ public:
     void setSelectedRegion(Region reg) { selectedRegion = reg; } // NOTE: after this, sub-terr must be extracted again
     Region getSelectedRegion(void) const { return selectedRegion; }
     Region getEntireRegion() { return fullResTerrain->getEntireRegion(); }
-
+    std::string getBaseName(void) const { return basename; }
     bool subwindowValid(Region subwindow);
 
     void setDownsampleFactor(int factor) { downFactor = factor; }

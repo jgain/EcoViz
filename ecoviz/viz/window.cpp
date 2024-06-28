@@ -1305,6 +1305,19 @@ void Window::lockViewsFromRight()
     }
 }
 
+// for transect locking, the same DEM must be used in both left/right views and the selection boxes must be identical
+bool Window::canLockTransects(void) const
+{
+    bool canLock = true;
+    Region left = mapScenes[0]->getSelectedRegion();
+    Region right = mapScenes[1]->getSelectedRegion();
+    if (left.x0 != right.x0 || left.x1 != right.x1 || left.y0 != right.y0 || left.y1 != right.y1)
+        return false;
+    if (mapScenes[0]->getBaseName() != mapScenes[1]->getBaseName())
+        return false;
+    return canLock;
+}
+
 void Window::unlockTransects()
 {
     if((int) transectViews.size() == 2)
@@ -1333,6 +1346,13 @@ void Window::unlockTransects()
 void Window::lockTransectFromLeft()
 {
     cerr << "LockTransectFromLeft" << endl;
+
+    if (canLockTransects() == false)
+    {
+        cerr << "can't lock transects - the selection boxes and or DEMs differ\n";
+        return;
+    }
+
     if((int) transectViews.size() == 2)
     {
         if(transectLock == LockState::LOCKEDFROMLEFT)
@@ -1367,6 +1387,13 @@ void Window::lockTransectFromLeft()
 void Window::lockTransectFromRight()
 {
     cerr << "LockTransectFromRight" << endl;
+
+    if (canLockTransects() == false)
+    {
+        cerr << "can't lock transects - the selection boxes and or DEMs differ\n";
+        return;
+    }
+
     if((int) transectViews.size() == 2)
     {
         if(transectLock == LockState::LOCKEDFROMRIGHT)
