@@ -547,11 +547,7 @@ void Window::setupVizTransect(QSurfaceFormat glFormat, int i)
     connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
     transectViews[i] = tview;
 
-        // vizLayout->addWidget(tview, 0, i*2);
-
-
-    // for(int i = 0; i < 2; i++)
-    //    vizLayout->addWidget(transectViews[i], 0, i);
+    vizLayout->addWidget(tview, 0, i*2);
 
 }
 
