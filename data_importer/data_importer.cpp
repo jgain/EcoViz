@@ -194,6 +194,11 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 	}
 	fdata.version = lstr;
 
+    // ecosystem location
+    std::getline(ifs, lstr);
+    std::stringstream locss(lstr);
+    locss >> fdata.locx >> fdata.locy;
+    // std::cout << "LOC = (" << fdata.locx << ", " << fdata.locy << ")" << std::endl;
 	std::getline(ifs, lstr);
     fdata.timestep = std::stoi(lstr);
 
@@ -359,6 +364,10 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
         throw std::invalid_argument("File version " + lstr + " is not up to date with minimum version " + minversion + ". Aborting import.");
     }
     fdata.version = lstr;
+
+    // ecosystem location
+    ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
+    ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
 
     ifs.read(reinterpret_cast<char*>(&fdata.timestep), sizeof(int));
 

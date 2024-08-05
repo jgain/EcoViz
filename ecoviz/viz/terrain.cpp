@@ -216,6 +216,7 @@ void Terrain::delGrid()
     getGridDim(parentXdim, parentYdim);
     newTerrain->parentGridx = parentXdim;
     newTerrain->parentGridy = parentYdim;
+    newTerrain->locx = locx; newTerrain->locy = locy;
     // other state that may have changed since init()?
 
     // copy data
@@ -280,6 +281,11 @@ void Terrain::getGridDim(uint & dx, uint & dy)
 void Terrain::getTerrainDim(float &tx, float &ty) const
 {
     tx = dimx; ty = dimy;
+}
+
+void Terrain::getTerrainLoc(long &lx, long &ly)
+{
+    lx = locx; ly = locy;
 }
 
 void Terrain::setTerrainDim(float tx, float ty)
@@ -590,6 +596,7 @@ void Terrain::loadElv(const std::string &filename, int dFactor)
         std::size_t count =0;
         infile >> dx >> dy;
         infile >> step;
+        infile >> locx >> locy;
 
         assert(dx > dFactor);
         assert(dy > dFactor);
@@ -653,6 +660,8 @@ void Terrain::loadElvBinary(const std::string &filename, int dFactor)
         infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
         infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
         infile.read(reinterpret_cast<char*>(&step), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locx), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locy), sizeof(float));
 
         assert(dx > dFactor);
         assert(dy > dFactor);
@@ -722,6 +731,7 @@ void Terrain::loadElv(const std::string &filename)
     {
         infile >> dx >> dy;
         infile >> step;
+        infile >> locx >> locy;
 
         // infile >> lat;
 
@@ -765,6 +775,9 @@ void Terrain::loadElvBinary(const std::string &filename)
         infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
         infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
         infile.read(reinterpret_cast<char*>(&step), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locx), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locy), sizeof(float));
+
 
         // infile >> lat;
 

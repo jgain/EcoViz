@@ -840,7 +840,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     {
         // import cohorts
         try {
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "1.0", species_lookup));
+        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "3.0", species_lookup));
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }

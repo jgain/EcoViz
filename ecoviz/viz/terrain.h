@@ -79,6 +79,7 @@ private:
     vpPoint focus;                          ///< focal point fo view
 
     float dimx, dimy;                       ///< dimensions of terrain in metres
+    long locx, locy;                        ///< location of the top-left corner of the terrain
     float synthx, synthy;                   ///< offset to allow for synthesis in metres
     float scfac;                            ///< artificial vertical scaling to make large terrains more discernable
     float step;                             ///< interval between grid vertices in meters
@@ -255,11 +256,13 @@ public:
 
     /// Obtain grid size @a dx and @a dy
     void getGridDim(int & dx, int & dy) const;
-
     void getGridDim(uint &dx, uint & dy);
 
     /// Obtain terrain extents in metres
     void getTerrainDim(float &tx, float &ty) const;
+
+    // Obtain the global corner position
+    void getTerrainLoc(long &lx, long &ly);
 
     /// Set terrain extents in metres
     void setTerrainDim(float tx, float ty);

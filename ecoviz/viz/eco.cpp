@@ -586,7 +586,7 @@ void ShapeGrid:: genPlants()
 }
 
 
-void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<bool> * plantvis, std::vector<Plane> cullPlanes)
+void ShapeGrid::bindPlantsSimplified(Terrain * ter,  PlantGrid *esys, std::vector<bool> * plantvis, std::vector<Plane> cullPlanes)
 {
     int x, y, s, p, sx, sy, ex, ey, f;
     PlantPopulation * plnts;
@@ -611,7 +611,6 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
 
     vpPoint loc;
     float rad;
-
     for(x = sx; x <= ex; x++)
         for(y = sy; y <= ey; y++)
         {
@@ -946,7 +945,7 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
     // dirtyPlants = true;
 }
 
-void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis,
+void EcoSystem::bindPlantsSimplified(Terrain * ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis,
                                     bool rebind, std::vector<Plane> cullPlanes)
 {
     bool applyToTransect = false; // is this bind call for main window or transect window?
@@ -969,15 +968,31 @@ void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &d
         transectShapes.drawPlants(drawParams);
 }
 
-void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree)
+void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const basic_tree &tree)
 {
     float tx, ty;
     int gx, gy;
     // cerr << "x = " << tree.x << " y = " << tree.y << endl;
     ter->getTerrainDim(tx, ty);
     ter->getGridDim(gx, gy);
-    float h = ter->getHeightFromReal(tx - tree.y, tree.x);
-    vpPoint pos(tree.x, h, tx - tree.y);
+
+    // Apply offset of ecosystem relative to terrain
+    float offx, offy;
+    long terlocx, terlocy, ecolocx, ecolocy;
+
+    ter->getTerrainLoc(terlocx, terlocy);
+    cohortmaps->getCohortLoc(ecolocx, ecolocy);
+
+    // cerr << "terloc = " << terlocx << ", " << terlocy << endl;
+    // cerr << "ecoloc = " << ecolocx << ", " << ecolocy << endl;
+    // cerr << "xoffset = " << (ecolocx - terlocx) << ", yoffset = " << (ecolocy - terlocy) << endl;
+
+    // calculate offset of ecosystem corner from terrain corner in global reference
+    offx = (float) (ecolocx-terlocx);
+    offy = (float) (ecolocy-terlocy) * -1.0f;
+
+    float h = ter->getHeightFromReal(tx - tree.y+offy, tree.x+offx);
+    vpPoint pos(tree.x+offx, h, tx - tree.y+offy);
     // cerr << "h = " << h << endl;
 
     int spc = tree.species;
@@ -985,7 +1000,7 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
     // introduce small random variation in colour
     // PCM: I swapped x/y for call to getNoise: I am not sure what correct order is, but this avoid out-of-range error in coordinate lookup (and
     // we really just want a random numbetr).
-    float rndoff = nfield->getNoise(vpPoint(tx-tree.y,h,tree.x), tx, ty)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
+    float rndoff = nfield->getNoise(vpPoint(tx-tree.y+offy,h,tree.x+offx), tx, ty)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
     // glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
     // PCM: now done in shader!
     /*
@@ -1004,11 +1019,11 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
     esys.placePlant(ter, spc, plnt);
 }
 
-void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, const std::vector<basic_tree> &trees)
+void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const std::vector<basic_tree> &trees)
 {
     for (int i = 0; i < int(trees.size()); i++)
     {
         // std::cerr << i << std::endl;
-        placePlant(ter, nfield, trees[i]);
+        placePlant(ter, nfield, cohortmaps, trees[i]);
     }
 }

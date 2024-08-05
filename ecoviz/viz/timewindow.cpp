@@ -242,7 +242,7 @@ void TimeWindow::updateSingleScene(int t)
 
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
-     scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), trees);
+     scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), scene->cohortmaps, trees);
      signalRebindPlants();
      winparent->rendercount++;
      signalRepaintAllGL();

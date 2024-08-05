@@ -75,6 +75,8 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
         int idx = timestep_indices.at(fdata.timestep - min_timestep);
 
+        locx = fdata.locx; locy = fdata.locy;
+
         int maxx = 0, maxy = 0;
         for(auto &tree: fdata.trees)
         {

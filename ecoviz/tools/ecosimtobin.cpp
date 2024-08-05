@@ -115,6 +115,7 @@ void elevationToBin(const string & in, const string & out)
     int dx, dy;
 
     float val, step;
+    long locx, locy;
     ifstream infile;
     vector<float> heights;
 
@@ -123,6 +124,7 @@ void elevationToBin(const string & in, const string & out)
     {
         infile >> dx >> dy;
         infile >> step;
+        infile >> locx >> locy;
 
 	for (size_t idx = 0; idx < dx*dy; ++idx)
 	  {
@@ -144,6 +146,8 @@ void elevationToBin(const string & in, const string & out)
 	ofile.write(reinterpret_cast<const char*>(&dx), sizeof(int));
 	ofile.write(reinterpret_cast<const char*>(&dy), sizeof(int));
 	ofile.write(reinterpret_cast<const char*>(&step), sizeof(float));
+    ofile.write(reinterpret_cast<const char*>(&locx), sizeof(long));
+    ofile.write(reinterpret_cast<const char*>(&locy), sizeof(long));
 	ofile.write(reinterpret_cast<const char*>(heights.data()), sizeof(float)*heights.size());
 	if (!ofile)
 	  {
@@ -174,6 +178,9 @@ void cohortmapToBin(const string &in, const string & out, const string & verStr)
 
   string versionNumber;
   ifs >> versionNumber;
+  long locx, locy;
+  ifs >> locx;
+  ifs >> locy;
   int timestep;
   ifs >> timestep;
   int ntrees_expected;
@@ -235,6 +242,8 @@ void cohortmapToBin(const string &in, const string & out, const string & verStr)
   cout << "Version string: " << versionNumber << " of length " << slen << endl;
   ofs.write(reinterpret_cast<const char*>(&slen), sizeof(int));				  
   ofs.write(versionNumber.c_str(), slen); // don't store null
+  ofs.write(reinterpret_cast<const char*>(&locx), sizeof(long));
+  ofs.write(reinterpret_cast<const char*>(&locy), sizeof(long));
   ofs.write(reinterpret_cast<const char*>(&timestep), sizeof(int));
   ofs.write(reinterpret_cast<const char*>(&ntrees_expected), sizeof(int));
   ofs.write(reinterpret_cast<const char*>(cohortAdata.data()), nBytes);

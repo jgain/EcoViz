@@ -41,6 +41,7 @@ public:
     ValueGridMap<float> get_actionmap_floats(int gw, int gh, float rw, float rh);
     ValueGridMap<CohortMaps::DonateAction> get_actionmap();
     const std::vector<basic_tree> &get_maturetrees(int timestep_idx) const; // get mature trees for timestep t
+    void getCohortLoc(long &lx, long &ly){ lx = locx; ly = locy; }
 
     void compute_specset_map();
     std::unique_ptr<ValueGridMap<std::set<int> > > move_specset_map();
@@ -66,6 +67,7 @@ private:
     float rw, rh;
     int gw, gh;
     float dx, dy;
+    long locx, locy; // global corner location
 
     bool action_applied = false;
 

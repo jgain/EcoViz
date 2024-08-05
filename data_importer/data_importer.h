@@ -82,6 +82,7 @@ namespace data_importer
 				std::vector<cohort> cohorts;
                 std::vector<basic_tree> trees;
                 float dx, dy;
+                long locx, locy;
                 float minx, miny;
                 float maxx, maxy;
 			};

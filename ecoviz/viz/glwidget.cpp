@@ -564,8 +564,8 @@ void GLWidget::paintGL()
 
     Timer t;
 
-    if(winparent->rendercount > 1)
-        cerr << "Queued rendering count = " << winparent->rendercount << endl;
+    // if(winparent->rendercount > 1)
+    //     cerr << "Queued rendering count = " << winparent->rendercount << endl;
     winparent->rendercount = 0;
 
     if(active)

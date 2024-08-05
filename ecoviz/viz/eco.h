@@ -31,6 +31,7 @@
 
 #include "pft.h"
 #include "dice_roller.h"
+#include "cohortmaps.h"
 #include "common/basic_types.h"
 #include "unordered_map"
 #include "boost/functional/hash.hpp"
@@ -373,7 +374,7 @@ public:
      * @param region        A bound on the region to be updated
      */
     void bindPlants(View * view, Terrain * ter, std::vector<bool> * plantvis, PlantGrid * esys, Region region);
-    void bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<bool> * plantvis, std::vector<Plane> cullPlanes = {});
+    void bindPlantsSimplified(Terrain * ter, PlantGrid *esys, std::vector<bool> * plantvis, std::vector<Plane> cullPlanes = {});
 
     /**
      * @brief drawPlants    Bundle rendering parameters for instancing lists
@@ -475,9 +476,9 @@ public:
      * @param drawParams    parameters for drawing plant species, appended to the current drawing parameters
      * @param bind          whether or not the plants need to be recreated after a change
      */
-    void bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool bind=false, std::vector<Plane> cullPlanes = {});
-    void placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree);
-    void placeManyPlants(Terrain *ter, NoiseField * nfield, const std::vector<basic_tree> &trees);
+    void bindPlantsSimplified(Terrain * ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool bind=false, std::vector<Plane> cullPlanes = {});
+    void placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const basic_tree &tree);
+    void placeManyPlants(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const std::vector<basic_tree> &trees);
 };
 
 #endif
