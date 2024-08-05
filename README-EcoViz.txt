@@ -5,12 +5,12 @@ for Ubuntu 18.10. For newer versions of Ubuntu you might not need all the PPAs.
 
 CMake 2.8.7+, make, automake 1.9+, pkg-config, QT5.7+, Boost1.49+, SQLite3
 
-sudo apt-get install cmake automake pkg-config libglm-dev qtbase5-dev libqt5charts5-dev libboost-all-dev libglew-dev qtcreator sqlite3 sqlitebrowser libsqlite3-dev
+sudo apt-get install cmake automake pkg-config libglm-dev qtbase5-dev libqt5charts5-dev libboost-all-dev libglew-dev qtcreator sqlite3 sqlitebrowser libsqlite3-dev libxcb-cursor-dev
 
-To install a particular version of g++ (e.g. g++8):
+To install a particular version of g++ (e.g. g++9):
 
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-sudo apt install gcc-8 g++-8
+sudo apt install gcc-9 g++-9
 then make sure to set the correct version in the build script (buildecoviz.sh)
 
 NOTE: the latest version of g++ should work. 
@@ -37,7 +37,7 @@ Then run make to build. cmake options are sticky.
 
 The executable is ./viz/ecoviz. The system must be run from the build directory because there are some relative paths.
 
-To run the visualizer with test data execute: ./viz/ecoviz -prefix ecoviz_ ../../data/test2
+To run the visualizer with test data execute: ./viz/ecoviz -prefix ecoviz ../../data/test2
 
 This will read an an elevation map (ecoviz.elv) and the set of simulation files (ecoviz0.pdb, ecoviz1.pdb...)  The default simply reads 
 in a set of these that is hardcoded at present). Rather than using these text files as input, you should generate binary file equivalents and copy
