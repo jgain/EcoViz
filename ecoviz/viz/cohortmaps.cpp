@@ -651,6 +651,9 @@ ValueGridMap<CohortMaps::DonateDir> CohortMaps::get_actionmap_actions(int gw, in
 
 ValueGridMap<float> CohortMaps::get_actionmap_floats(int gw, int gh, float rw, float rh)
 {
+   // std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+   // std::cerr << "GET ACTION MAP FLOATS: " << gw << " " << gh << " " << rw << " " << rh << std::endl;
+
     auto tempmap = get_actionmap_actions(gw, gh, rw, rh);
     ValueGridMap<float> map;
     map.setDim(tempmap);

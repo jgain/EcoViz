@@ -192,8 +192,7 @@ void TimeWindow::setScene(Scene * s)
         //PCM: changed to get params of master/high res terrain from which this is extracted
         scene->getMasterTerrain()->getGridDim(gw, gh);
         scene->getMasterTerrain()->getTerrainDim(rw, rh);
-
-        auto amap = scene->cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
+        // auto amap = scene->cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
         updateScene(scene->getTimeline()->getNow());
     }
     else
@@ -239,7 +238,6 @@ void TimeWindow::updateSingleScene(int t)
              cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
      }
 
-
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
      scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), scene->cohortmaps, trees);
@@ -260,4 +258,5 @@ void TimeWindow::updateSingleScene(int t)
      // std::cout << "Overall time: " << overalltime << std::endl;
      // std::cout << "Sample time: " << sampletime << std::endl;
      // std::cout << "Render time: " << rendertime << std::endl;
+
  }

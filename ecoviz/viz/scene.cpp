@@ -821,6 +821,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         // loading plant distribution
         getEcoSys()->setBiome(getBiome());
     }
+
     auto species_lookup = getBiome()->getSpeciesIndexLookupMap();
 
     // check that pdb files exist
@@ -846,8 +847,6 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         }
         before_mod_map = cohortmaps->get_map(0);
         //cohortmaps->do_adjustments(2);
-
-        cerr << "after pdb load" << endl;
 
         if (cohortmaps->get_nmaps() > 0)
         {

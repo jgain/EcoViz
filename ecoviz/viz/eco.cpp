@@ -972,7 +972,9 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<Co
 {
     float tx, ty;
     int gx, gy;
-    // cerr << "x = " << tree.x << " y = " << tree.y << endl;
+
+    //  cerr << "x = " << tree.x << " y = " << tree.y << endl;
+
     ter->getTerrainDim(tx, ty);
     ter->getGridDim(gx, gy);
 
@@ -990,7 +992,6 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<Co
     // calculate offset of ecosystem corner from terrain corner in global reference
     offx = (float) (ecolocx-terlocx);
     offy = (float) (ecolocy-terlocy) * -1.0f;
-
     float h = ter->getHeightFromReal(tx - tree.y+offy, tree.x+offx);
     vpPoint pos(tree.x+offx, h, tx - tree.y+offy);
     // cerr << "h = " << h << endl;
