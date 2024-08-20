@@ -572,7 +572,7 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
         return;
     }
 
-    GLWidget * pview = new GLWidget(glFormat, this, scenes[i],
+    GLWidgetAdrien * pview = new GLWidgetAdrien(glFormat, this, scenes[i],
                                     transectControls[i],
                                     (i == 0 ? string("left"): string("right")),
                                     mapScenes[i]);
@@ -924,7 +924,7 @@ Window::Window(string datadir, string lprefix, string rprefix)
     createActions();
     createMenus();
 
-    readMitsubaExportProfiles("../../data/mitsubaExportProfiles");
+    readMitsubaExportProfiles("../../data/Mitsuba/ModelSpecies");
     this->installEventFilter(this);
 
     mainWidget->setLayout(mainLayout);
@@ -1748,7 +1748,7 @@ void Window::createActions()
 
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
-    connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsuba()));
+    connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsubaJSON()));
 }
 
 void Window::createMenus()
@@ -2011,6 +2011,8 @@ bool Window::eventFilter(QObject *obj, QEvent *event)
 
 void Window::exportMitsuba()
 {
+	std::cout << "Obsolete function exportMitsuba() called" << std::endl;
+  /*
     QStringList allProfiles;
 
     map<string, map<string, vector<MitsubaModel>>>::iterator it;
@@ -2027,7 +2029,7 @@ void Window::exportMitsuba()
     }
 
     bool ok = false;
-    ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, &ok);
+    ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, ok);
 
     if (ok)
     {
@@ -2054,5 +2056,93 @@ void Window::exportMitsuba()
 
         sceneXml.close();
         cout << "Export finished !" << endl;
-    }
+    }*/
+}
+
+
+void Window::exportMitsubaJSON()
+{
+  QStringList allProfiles;
+
+  map<string, map<string, vector<MitsubaModel>>>::iterator it;
+  for (it = this->profileToSpeciesMap.begin(); it != this->profileToSpeciesMap.end(); it++)
+  {
+    allProfiles.append(it->first.data());
+  }
+
+  if (allProfiles.isEmpty())
+  {
+    QMessageBox messageBox;
+    messageBox.warning(this, "No profile found", "No export profile was found.\nPlease check that you have created at least one profile in the folder \"data/mitsubaExportProfiles\"");
+    return;
+  }
+
+  bool ok = false;
+  ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, ok);
+
+  if (ok)
+  {
+    cout << "Export started !" << endl;
+
+		string jsonDirPath = exportSettings.path;
+
+    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Terrain");
+    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Instances");
+
+		map<string, vector<MitsubaModel>> speciesMap = this->profileToSpeciesMap.find(exportSettings.profile)->second;
+
+
+    if (exportSettings.sceneLeft)
+		{
+			const int left = 0;
+
+			// Data
+			Scene* sceneLeft = this->scenes[left];
+      Transect* transectLeft = this->transectControls[left];
+
+			// Export Cameras JSON
+			cout << "- Export camera left" << endl;
+			this->perspectiveViews[left]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameLeft + "_cameraLeft");
+          
+			// Export Terrain JSON
+			cout << "- Export terrain left" << endl;
+			sceneLeft->exportTerrainJSON( jsonDirPath + "/Terrain/", exportSettings.filenameLeft + "_terrainLeft");
+
+			// Export Instances
+			cout << "- Export vegetation instances" << endl;
+			sceneLeft->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameLeft + "_instancesLeft", sceneLeft, transectLeft);
+
+      // Export Scene JSON 
+			cout << "- Export scene left" << endl;
+			sceneLeft->exportSceneJSON(jsonDirPath, exportSettings.filenameLeft + "_cameraLeft", "Lights", exportSettings.filenameLeft + "_terrainLeft", exportSettings.filenameLeft + "_instancesLeft",
+        exportSettings.filenameLeft, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
+		}
+
+		if (exportSettings.sceneRight)
+		{
+      const int right = 1;
+      // Data
+			Scene* sceneRight = this->scenes[right];
+			Transect* transectRight = this->transectControls[right];
+
+      // Export Cameras JSON
+			cout << "- Export camera right" << endl;
+			this->perspectiveViews[right]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameRight + "_cameraRight");
+
+			// Export Terrain JSON
+			cout << "- Export terrain right" << endl;
+			sceneRight->exportTerrainJSON(jsonDirPath + "/Terrain/", exportSettings.filenameRight + "_terrainRight");
+
+      // Export Instances
+      cout << "- Export vegetation instances" << endl;
+      sceneRight->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameRight+"_instancesRight", sceneRight, transectRight);
+
+			// Export Scene JSON
+			cout << "- Export scene right" << endl;
+			sceneRight->exportSceneJSON(jsonDirPath, exportSettings.filenameRight + "_cameraRight", "Lights", exportSettings.filenameRight + "_terrainRight", exportSettings.filenameRight + "_instancesRight",
+				exportSettings.filenameRight, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
+
+		}
+    cout << "Export finished !" << endl;
+  }
 }

@@ -1351,12 +1351,14 @@ void TRenderer::initShaders(void)
 */
 
 // #ifdef _WIN32
+      glewExperimental = GL_TRUE;
       GLenum err = glewInit();
       if (GLEW_OK != err)
       {
           /* Problem: glewInit failed, something is seriously wrong. */
           std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
       }
+      glGetError(); // clear error
 // #endif
 
     // std::cout << "Compiling shaders...\n";

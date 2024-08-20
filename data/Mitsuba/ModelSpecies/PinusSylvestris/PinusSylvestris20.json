@@ -1,0 +1,47 @@
+{
+	"Objects": [
+		{
+			"Name":"PinusSylvestris20",
+			"Definition":[
+				{
+					"Name":"PinusSylvestris20_TheGroveBranches",
+					"File":"PinusSylvestris20_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"PinusSylvestris.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [-1.5708,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"PinusSylvestris20_1",
+					"File":"PinusSylvestris20_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Pinus_sylvestris_branch_1_diffuse.jpg",
+						"OpacityMap":"Pinus_sylvestris_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [-1.5708,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"PinusSylvestris20_1",
+					"File":"PinusSylvestris20_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Pinus_sylvestris_branch_1_diffuse.jpg",
+						"OpacityMap":"Pinus_sylvestris_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [-1.5708,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

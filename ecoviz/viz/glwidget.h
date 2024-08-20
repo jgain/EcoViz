@@ -96,15 +96,15 @@ const float mtoft = 3.28084f;
 class Window;
 class overviewWindow;
 
-class GLWidget : public QGLWidget
+class GLWidgetAdrien : public QGLWidget
 {
     Q_OBJECT
 
 public:
 
-    GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widgetName, mapScene *mapScene, QWidget *parent = 0);
+    GLWidgetAdrien(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widgetName, mapScene *mapScene, QWidget *parent = 0);
 
-    ~GLWidget();
+    ~GLWidgetAdrien();
 
     QSize minimumSizeHint() const;
     QSize sizeHint() const;

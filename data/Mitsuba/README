@@ -1,0 +1,7 @@
+Installation
+- Mitsuba3
+- Python XX
+
+Execution
+- cmd : python render_scene.py .\sceneLeft.JSON
+- cmd : python render_scene.py .\sceneRight.JSON

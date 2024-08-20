@@ -382,9 +382,26 @@ public:
        */
     void saveElv(const std::string &filename);
 
+    /**
+       * Save a terrain to OBJ file.
+       * @param filename   File to save (simple ascii elevation format)
+       * @see @ref MemMap for exception information
+       */
+    void saveOBJ(const std::string& filename);
+
+    /**
+       * Save the border of the terrain region to OBJ file.
+       * @param filename   File to save (simple ascii elevation format)
+       * @see @ref MemMap for exception information
+       */
+    void saveOBJ_Border(const std::string& filename);
+
     /// Recalculate the mean height over the terrain
     void calcMeanHeight();
     float getHeightFromReal(float x, float y);
+
+    void calcSlopeMap(basic_types::MapFloat *slopeMap);
+    void calcAO(basic_types::MapFloat* slopeMap);
 
     /// PCM - build new terrain from sub-region -
     /// calling function must assume responsibility for memory

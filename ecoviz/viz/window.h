@@ -74,7 +74,7 @@
 class QAction;
 class QMenu;
 class QLineEdit;
-class GLWidget;
+class GLWidgetAdrien;
 
 enum LockState
 {
@@ -145,6 +145,7 @@ public slots:
     void showContours(int show);
     void showGridLines(int show);
     void exportMitsuba();
+    void exportMitsubaJSON();
 
     // render panel
     void lineEditChange();
@@ -198,7 +199,7 @@ private:
     std::vector<Scene *> scenes;                ///< scenes for each half
     std::vector<mapScene *> mapScenes;          ///< map scenes for each half
     std::vector<Transect *> transectControls;   ///< Transect controls for each viewing pair
-    std::vector<GLWidget *> perspectiveViews;   ///< OpenGL perspective rendering views
+    std::vector<GLWidgetAdrien *> perspectiveViews;   ///< OpenGL perspective rendering views
     std::vector<GLTransect *> transectViews;    ///< OpenGL transect views
     //std::vector<GLOverview *> overviewMaps;     ///< OpenGL over maps (left and right)
     std::vector<TimeWindow *> timelineViews;    ///< widget for timeline control

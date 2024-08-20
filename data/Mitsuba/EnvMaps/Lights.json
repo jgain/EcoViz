@@ -1,0 +1,16 @@
+{
+  "Lights": [
+    {
+      "Name": "light1",
+      "Type": "Envmap",
+      "File": "drakensberg_solitary_mountain_puresky_2k.hdr",
+      "Instances": [
+          {
+              "Rotate":    [0,	0, 0],
+              "Intensity": 0.5
+          }
+      ]
+    }
+  ]
+}
+

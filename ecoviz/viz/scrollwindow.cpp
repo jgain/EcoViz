@@ -66,7 +66,7 @@ scrollwindow::scrollwindow(QWidget *parent, int step_start, int step_end, int wi
 
     setLayout(vbox);
 
-    GLWidget *p = dynamic_cast<GLWidget *>(parent);
+    GLWidgetAdrien *p = dynamic_cast<GLWidgetAdrien *>(parent);
 
     if (p)
     {
