@@ -23,12 +23,6 @@
 // author: James Gain
 // date: 17 December 2012
 
-#ifdef _WIN32
-#include <glew.h>
-#else
-#include <GL/glew.h>
-#endif
-
 #include "terrain.h"
 #include <sstream>
 #include <streambuf>
@@ -393,18 +387,6 @@ void Terrain::updateBuffers(PMrender::TRenderer * renderer)
     float scx, scy;
 
     getTerrainDim(scx, scy);
-
-    glewExperimental = GL_TRUE;
-    if(!glewSetupDone)
-      {
-         GLenum err = glewInit();
-         if (GLEW_OK != err)
-         {
-            std::cerr<< "GLEW: initialization failed\n\n";
-         }
-         glGetError(); // clear error
-         glewSetupDone = true;
-      }
 
     if (bufferState == BufferState::REALLOCATE || bufferState == BufferState::DIRTY )
     {
@@ -961,9 +943,9 @@ void Terrain::saveOBJ_Border(const std::string& filename)
 
     // test all values for lowest terrain height:
     float terrainBase = 1000000.0f; // +infinity
-    for (int x = 0; x < gx; x++)
-      for (int y = 0; y < gy; y++)
-        terrainBase = min(terrainBase, grid->get(x, 0));
+    for (int x = 0; x < gx; x=x+2)
+      for (int y = 0; y < gy; y=y+2)
+        terrainBase = min(terrainBase, grid->get(x, y));
 
 		terrainBase -= 50.0f; // add a little margin
 

@@ -106,7 +106,6 @@ private:
     int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as dim*step
 
     // PM: terrain renderer
-    mutable bool glewSetupDone;
     mutable GLuint htMapTextureId;
 
     /// re-build sphere acceleration structure when terrain is changed
@@ -138,7 +137,7 @@ public:
     /// Constructor
     Terrain(Region source = Region()) // empty source region by default
     {
-        glewSetupDone = false; dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0;
+        dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0;
         hghtrange = 0.0f; hghtmean = 0.0f; accelValid = false;
         grid = new basic_types::MapFloat();
         drawgrid = new basic_types::MapFloat();

@@ -27,6 +27,8 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+
+#include "glheaders.h"
 //#include "glwidget.h"
 //#include <QGLWidget>
 //#include <QTextStream>
@@ -37,15 +39,40 @@
 
 #include "shaderProgram.h"
 
-#define FailGLError(X) {int err = (int)glGetError(); \
-        if (err != GL_NO_ERROR) \
-                {std::cerr << (X); std::cerr << " error " << err << std::endl; \
-        const char* err_str = reinterpret_cast<const char *>(gluErrorString(err));\
-        std::cerr << " - GL Error message: " << err_str << std::endl;\
-        return err;} }
-
 namespace PMrender
 {
+
+  // Function to convert OpenGL error codes to a string
+  QString getOpenGLErrorString(GLenum error) {
+    switch (error) {
+    case GL_NO_ERROR:
+      return "GL_NO_ERROR: No error has been recorded.";
+    case GL_INVALID_ENUM:
+      return "GL_INVALID_ENUM: An unacceptable value is specified for an enumerated argument.";
+    case GL_INVALID_VALUE:
+      return "GL_INVALID_VALUE: A numeric argument is out of range.";
+    case GL_INVALID_OPERATION:
+      return "GL_INVALID_OPERATION: The specified operation is not allowed in the current state.";
+    case GL_STACK_OVERFLOW:
+      return "GL_STACK_OVERFLOW: This command would cause a stack overflow.";
+    case GL_STACK_UNDERFLOW:
+      return "GL_STACK_UNDERFLOW: This command would cause a stack underflow.";
+    case GL_OUT_OF_MEMORY:
+      return "GL_OUT_OF_MEMORY: There is not enough memory left to execute the command.";
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+      return "GL_INVALID_FRAMEBUFFER_OPERATION: The framebuffer object is not complete.";
+    default:
+      return QString("Unknown error code: %1").arg(error);
+    }
+  }
+
+  // Function to check for OpenGL errors and print them
+  void shaderProgram::checkGLError(const char* function) {
+    GLenum error;
+    while ((error = glGetError()) != GL_NO_ERROR) {
+			qCritical() << "OpenGL error in" << function << ":" << getOpenGLErrorString(error);
+		}
+	}
 
 GLenum shaderProgram::compileProgram(GLenum target, GLchar* sourcecode, GLuint & shader)
 {
@@ -53,29 +80,31 @@ GLenum shaderProgram::compileProgram(GLenum target, GLchar* sourcecode, GLuint &
         GLint   compiled  = 0;
 
         if (sourcecode != 0)
-        {            
-        shader = glCreateShader(target);
-                FailGLError("Failed to create fragment shader");
-                glShaderSource(shader,1,(const GLchar **)&sourcecode,0);
-                FailGLError("Failed glShaderSource")
-                glCompileShader(shader);
-                FailGLError("Failed glCompileShader")
+        {
+          QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+
+        shader = f->glCreateShader(target);
+        checkGLError("Failed to create fragment shader");
+                f->glShaderSource(shader,1,(const GLchar **)&sourcecode,0);
+                checkGLError("Failed glShaderSource");
+                  f->glCompileShader(shader);
+                  checkGLError("Failed glCompileShader");
 
 
-                glGetShaderiv(shader,GL_COMPILE_STATUS,&compiled);
-                glGetShaderiv(shader,GL_INFO_LOG_LENGTH,&logLength);
+                  f->glGetShaderiv(shader,GL_COMPILE_STATUS,&compiled);
+                f->glGetShaderiv(shader,GL_INFO_LOG_LENGTH,&logLength);
 
         if (logLength > 1)
                 {
             GLint       charsWritten;
                         GLchar *log = new char [logLength+128];
-            glGetShaderInfoLog(shader, logLength, &charsWritten, log);
+                        f->glGetShaderInfoLog(shader, logLength, &charsWritten, log);
             std::cerr << "Compilation log: nchars=(" << logLength << "): "<< (char*)log << std::endl;
                         delete [] log;
                 }
 
-                if (compiled == 0)
-                        FailGLError("shader could not compile")
+        if (compiled == 0)
+          checkGLError("shader could not compile");
 
         }
         return GL_NO_ERROR;
@@ -86,23 +115,25 @@ GLenum shaderProgram::linkProgram(GLuint program)
         GLint   logLength = 0;
         GLint linked = 0;
 
-        glLinkProgram(program);
-        FailGLError("Failed glLinkProgram")
-        glGetProgramiv(program,GL_LINK_STATUS ,&linked);
-        glGetProgramiv(program,GL_INFO_LOG_LENGTH,&logLength);
+        QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+
+        f->glLinkProgram(program);
+        checkGLError("Failed glLinkProgram");
+          f->glGetProgramiv(program,GL_LINK_STATUS ,&linked);
+        f->glGetProgramiv(program,GL_INFO_LOG_LENGTH,&logLength);
 
     if (logLength > 1)
         {
                 GLint   charsWritten;
         GLchar *log = new char [logLength+128];
 
-                glGetProgramInfoLog(program, logLength, &charsWritten, log);
+        f->glGetProgramInfoLog(program, logLength, &charsWritten, log);
         std::cerr << "Link GetProgramInfoLog: nchars=(" << charsWritten << "): " << (char*)log << std::endl;
                 delete [] log;
         }
 
-        if (linked == 0)
-                FailGLError("shader did not link")
+    if (linked == 0)
+      checkGLError("shader did not link");
 
         return GL_NO_ERROR;
 }
@@ -223,10 +254,13 @@ bool shaderProgram::compileAndLink(void)
                 return false;
         }
 
-        program_ID = glCreateProgram();
+
+        QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+
+        program_ID = f->glCreateProgram();
         //std::cout << "Shader ID = " << program_ID << std::endl;
-        glAttachShader(program_ID, vert_ID);
-        glAttachShader(program_ID, frag_ID);
+        f->glAttachShader(program_ID, vert_ID);
+        f->glAttachShader(program_ID, frag_ID);
 
         err = linkProgram(program_ID);
         if (GL_NO_ERROR != err)
@@ -238,14 +272,14 @@ bool shaderProgram::compileAndLink(void)
         // detach and delete shader objects, we don't need them anymore (NB: may cause issues with dodgy drivers)
         if (frag_ID != 0)
         {
-                glDetachShader(program_ID, frag_ID);
-                glDeleteShader(frag_ID);
+          f->glDetachShader(program_ID, frag_ID);
+          f->glDeleteShader(frag_ID);
                 frag_ID = 0;
         }
         if (vert_ID != 0)
         {
-                glDetachShader(program_ID, vert_ID);
-                glDeleteShader(vert_ID);
+          f->glDetachShader(program_ID, vert_ID);
+          f->glDeleteShader(vert_ID);
                 vert_ID = 0;
         }
     shaderReady = true;

@@ -21,13 +21,13 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
     QGridLayout* layoutScene = new QGridLayout(this);
 
     // - Scene lights
-		QLabel* comboboxLightsLabel = new QLabel(QString("Scene lights"), this);
+		/*QLabel* comboboxLightsLabel = new QLabel(QString("Scene lights"), this);
 		layoutScene->addWidget(comboboxLightsLabel, 0, 0);
 
     comboboxSceneLights = new QComboBox(this);
     comboboxSceneLights->addItem("Daylight");
     comboboxSceneLights->addItem("Nightlight");
-		layoutScene->addWidget(comboboxSceneLights, 0, 1);
+		layoutScene->addWidget(comboboxSceneLights, 0, 1);*/
 
     // - Biome Profile selection
     QLabel* comboboxProfilesLabel = new QLabel(QString("Biome profile"), this);
@@ -202,7 +202,7 @@ ExportSettings ExportDialog::getExportSettings(QWidget* parent, QStringList allP
       ret.profile = dialog->comboboxProfiles->currentText().toUtf8().data();
       ret.sceneLeft = dialog->exportLeftScene->isChecked();
       ret.sceneRight = dialog->exportRightScene->isChecked();
-      ret.sceneLight = dialog->comboboxSceneLights->currentText().toUtf8().data();
+      //ret.sceneLight = dialog->comboboxSceneLights->currentText().toUtf8().data();
 
       ret.filenameLeft = dialog->lineEditMitsubaSceneLeft->text().toUtf8().data();
       ret.filenameRight = dialog->lineEditMitsubaSceneRight->text().toUtf8().data();
@@ -211,7 +211,7 @@ ExportSettings ExportDialog::getExportSettings(QWidget* parent, QStringList allP
       ret.resolutionW = dialog->spinBoxMitsubaResolutionW->value();
       ret.resolutionH = dialog->spinBoxMitsubaResolutionH->value();
       ret.samples = dialog->comboboxMitsubaSamples->currentText().toInt();
-      ret.threads = dialog->comboboxMitsubaSamples->currentText().toInt();
+      ret.threads = dialog->spinBoxMitsubaThreads->value();
 
       //ret.transect = dialog->onlyTransectRadioButton->isChecked();
     }

@@ -24,11 +24,6 @@
 // date: 5 November 2013
 //       21 January 2013 - curve constraints
 
-#ifdef _WIN32
-#include <glew.h>
-#else
-#include <GL/glew.h>
-#endif
 #include "shape.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
