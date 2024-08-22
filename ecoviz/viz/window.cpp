@@ -637,6 +637,8 @@ void Window::setupVizPerspective(QSurfaceFormat glFormat, int i)
     connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
     connect(pview, SIGNAL(signalExtractNewSubTerrain(int, int,int,int,int)), this,
             SLOT(extractNewSubTerrain(int,int,int,int,int)) );
+    connect(pview, SIGNAL(signalExtractOtherSubTerrain(int, int,int,int,int)), this,
+            SLOT(extractNewSubTerrain(int,int,int,int,int)) );
     connect(pview, SIGNAL(signalSyncDataMap()), this, SLOT(syncDataMapPanel()));
     //connect(pview, SIGNAL(signalUpdateOverviews()), this, SLOT(updateOverviews()));
 
@@ -1123,93 +1125,99 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
     active = false;
 
     // clear transects and widgets
-    destroyVizTransect(i);
+    for(int j = 0; j < 2; j++)
+    {
+        if(i == 2 || i == j) // one (i == 0 or i == 1) or both (i == 3) perspective views
+        {
+            destroyVizTransect(j);
 
-    // destroy perspective views and  associated widgets
-    View *oldView = new View(*perspectiveViews[i]->getView());
+            // destroy perspective views and  associated widgets
+            View *oldView = new View(*perspectiveViews[j]->getView());
+            bool oldLock = perspectiveViews[j]->getViewLockState();
 
-    destroyVizPerspective(i);
+            destroyVizPerspective(j);
 
-    // destroy ovrview map widget
-    //destroyVizOvermap(i);
+            QSurfaceFormat glFormat;
+            glFormat.setProfile( QSurfaceFormat::CoreProfile );
+            glFormat.setDepthBufferSize(24);
+            glFormat.setVersion(4,1);
+            // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
 
+            /*
+            glFormat.setVersion( 4, 1 );
+            // fmt.setSamples(16);
+            // fmt.setDepthBufferSize(24);
+            glFormat.setProfile( QSurfaceFormat::CoreProfile );*/
 
-    QSurfaceFormat glFormat;
-    glFormat.setProfile( QSurfaceFormat::CoreProfile );
-    glFormat.setDepthBufferSize(24);
-    glFormat.setVersion(4,1);
-    // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
+            // get current region (which should have changed from before)
+            Region newReg = Region(x0,y0,x1,y1);
 
-    /*
-    glFormat.setVersion( 4, 1 );
-    // fmt.setSamples(16);
-    // fmt.setDepthBufferSize(24);
-    glFormat.setProfile( QSurfaceFormat::CoreProfile );*/
+            mapScenes[j]->setSelectedRegion(newReg);
+            // (0) add check to see if this Region has changed (else wasteful) TBD ...PCM
+            std::unique_ptr<Terrain> subTerr = mapScenes[j]->extractTerrainSubwindow(newReg);
 
-    // rebuild overview map
-    //setupVizOverMap(glFormat, i);
+            // (1) set extracted sub-region as the region for this window
+            // (2) pass in a pointer to highres (master) terrain
+            scenes[j]->setNewTerrainData(std::move(subTerr), mapScenes[j]->getHighResTerrain().get());
+            vpPoint midPoint;
+            scenes[j]->getTerrain()->getMidPoint(midPoint);
+            scenes[j]->getTerrain()->setFocus(midPoint);
+            // cerr << "MIDPOINT = " << midPoint.x << ", " << midPoint.y << ", " << midPoint.z << endl;
 
-    // get current region (which should have changed from before)
-    Region newReg = Region(x0,y0,x1,y1);
+            // rebuild transect control structure
+            assert(transectControls.size() == 2);
+            assert(transectControls[j] == nullptr);
+            Transect * t = new Transect(scenes[j]->getTerrain());
+            transectControls[j] = t;
 
-    mapScenes[i]->setSelectedRegion(newReg); // overviewMaps[i]->getScene()->getSelectedRegion();
-    // (0) add check to see if this Region has changed (else wasteful) TBD ...PCM
-    std::unique_ptr<Terrain> subTerr = mapScenes[i]->extractTerrainSubwindow(newReg);
+            // rebuild transect widget
+            setupVizTransect(glFormat, j);
+            transectViews[j]->setVisible(false);
+            transectControls[j]->init(scenes[j]->getTerrain());
 
-    // (1) set extracted sub-region as the region for this window
-    // (2) pass in a pointer to highres (master) terrain
-    scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
-    vpPoint midPoint;
-    scenes[i]->getTerrain()->getMidPoint(midPoint);
-    scenes[i]->getTerrain()->setFocus(midPoint);
-    // cerr << "MIDPOINT = " << midPoint.x << ", " << midPoint.y << ", " << midPoint.z << endl;
+            // rebuild perspective widget
+            setupVizPerspective(glFormat, j);
+            perspectiveViews[j]->setScene(scenes[j]);
+            perspectiveViews[j]->getOverviewWindow()->setSelectionRegion(mapScenes[j]->getSelectedRegion());
+            // required to preserve View Mx, will cause issues if left/reight perspective views are 'locked'
+            // NOTE: the glWidget never frees 'view' and thus leaks memory. But changing this would require a
+            // lot more code (should store View not View * and make copies - it's a lightweight object, but embedded
+            // in many places, so lot of rewriting.
+            perspectiveViews[j]->lockView(oldView);
+            perspectiveViews[j]->getView()->setForcedFocus(midPoint); // otherwise focus change is not copied from terrain
 
-    // rebuild transect control structure
-    assert(transectControls.size() == 2);
-    assert(transectControls[i] == nullptr);
-    Transect * t = new Transect(scenes[i]->getTerrain());
-    transectControls[i] = t;
+            // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
+            scenes[j]->getTerrain()->setBufferToDirty();
+            mapScenes[j]->getLowResTerrain()->setBufferToDirty();
 
-    // rebuild transect widget
-    setupVizTransect(glFormat, i);
-    transectViews[i]->setVisible(false);
-    transectControls[i]->init(scenes[i]->getTerrain());
+            perspectiveViews[j]->rebindPlants();
 
-    // rebuild perspective widget
-    setupVizPerspective(glFormat, i);
-    perspectiveViews[i]->setScene(scenes[i]);
-    perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
-    // required to preserve View Mx, will cause issues if left/reight perspective views are 'locked'
-    // NOTE: the glWidget never frees 'view' and thus leaks memory. But changing this would require a
-    // lot more code (should store View not View * and make copies - it's a lightweight object, but embedded
-    // in many places, so lot of rewriting.
-    perspectiveViews[i]->lockView(oldView);
-    perspectiveViews[i]->getView()->setForcedFocus(midPoint); // otherwise focus change is not copied from terrain
+            // restablish broken connection from timeline widget signals
+            //connect(timelineViews[i], SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+            //connect(timelineViews[i], SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
+            //connect(timelineViews[i], SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
+            connect(timelineViews[j], SIGNAL(signalRebindPlants()), perspectiveViews[j], SLOT(rebindPlants()));
+            connect(timelineViews[j], SIGNAL(signalRebindPlants()), transectViews[j], SLOT(rebindPlants()));
 
-    // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
-    scenes[i]->getTerrain()->setBufferToDirty();
-    mapScenes[i]->getLowResTerrain()->setBufferToDirty();
+            //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
+            //overviewMaps[i]->updateViewParams();
+            //overviewMaps[i]->forceUpdate();
 
-    perspectiveViews[i]->rebindPlants();
+            rendercount++;
+            perspectiveViews[j]->setDataMap(dmapIdx[j], convertRampIdx(i), false); // note that update is deferred until texture has been initialized
+            perspectiveViews[j]->setViewLockState(oldLock);
+        }
+        // PCM: + signal to clear transect!!!
 
-    // restablish broken connection from timeline widget signals
-    //connect(timelineViews[i], SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-    //connect(timelineViews[i], SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
-    //connect(timelineViews[i], SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
-    connect(timelineViews[i], SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
-    connect(timelineViews[i], SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
+    }
 
-    //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
-    //overviewMaps[i]->updateViewParams();
-    //overviewMaps[i]->forceUpdate();
+    // if the views are locked then resync
+    if(viewLock == LockState::LOCKEDFROMLEFT)
+        perspectiveViews[1]->lockView(perspectiveViews[0]->getView());
+    if(viewLock == LockState::LOCKEDFROMRIGHT)
+        perspectiveViews[0]->lockView(perspectiveViews[1]->getView());
 
-    rendercount++;
-    perspectiveViews[i]->setDataMap(dmapIdx[i], convertRampIdx(i), false); // note that update is deferred until texture has been initialized
-    // PCM: + signal to clear transect!!!
     repaintAllGL();
-
-    // perspectiveViews[i]->repaint();
-    // overviewMaps[i]->repaint();
 }
 
 
@@ -1230,6 +1238,7 @@ void Window::showDataMapOptions()
 
 void Window::unlockViews()
 {
+    cerr << "((((((( UNLOCK VIEWS ))))))))" << endl;
     if((int) perspectiveViews.size() == 2)
     {
         perspectiveViews[0]->unlockView();
@@ -1257,11 +1266,13 @@ void Window::lockViewsFromLeft()
         {
             if(viewLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
                 unlockViews();
-            perspectiveViews[1]->lockView(perspectiveViews[0]->getView());
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
+            perspectiveViews[1]->lockMap(perspectiveViews[0]->getMapRegion());
+            perspectiveViews[1]->lockView(perspectiveViews[0]->getView()); // Do not re-order this and previous line
             viewLock = LockState::LOCKEDFROMLEFT;
             lockV1->setIcon((* lockleftIcon));
+
         }
 
         rendercount++;
@@ -1286,11 +1297,13 @@ void Window::lockViewsFromRight()
         {
             if(viewLock == LockState::LOCKEDFROMLEFT) // need to unlock first
                 unlockViews();
-            perspectiveViews[0]->lockView(perspectiveViews[1]->getView());
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
+            perspectiveViews[0]->lockMap(perspectiveViews[1]->getMapRegion());
+            perspectiveViews[0]->lockView(perspectiveViews[1]->getView()); // Do not re-order this and previous line
             viewLock = LockState::LOCKEDFROMRIGHT;
             lockV2->setIcon((* lockrightIcon));
+
         }
 
         rendercount++;

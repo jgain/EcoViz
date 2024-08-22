@@ -254,6 +254,11 @@ void GLWidget::changeViewMode(ViewMode vm)
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
 }
 
+Region GLWidget::getMapRegion()
+{
+    return mapView->getSelectionRegion();
+}
+
 void GLWidget::unlockView()
 {
     View * preview = view;
@@ -265,6 +270,13 @@ void GLWidget::lockView(View * imposedView)
 {
     if (view) delete view;
     view = imposedView;
+}
+
+void GLWidget::lockMap(Region reg)
+{
+    mapView->lockMap(reg);
+    Region currRegion = mapView->getSelectionRegion();
+    signalExtractNewSubTerrain( (wname=="left" ? 0: 1), currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
 }
 
 void GLWidget::loadDecals()
@@ -1140,9 +1152,16 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         persRotating = false;
         if(mapView->endRegionChange())
         {
+            int i;
             // now apply change
             Region currRegion = mapView->getSelectionRegion();
-            signalExtractNewSubTerrain( (wname=="left" ? 0: 1), currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
+            if(viewlock)
+                i = 2; // signal change to both perspective views
+            else
+                i = (wname=="left" ? 0: 1);
+            cerr << "REGION = " << currRegion.x0 << ", " << currRegion.y0 << " - " << currRegion.x1 << ", " << currRegion.y1 << endl;
+            cerr << "SIGNAL = " << i << endl;
+            signalExtractNewSubTerrain(i, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
         }
     }
     else
@@ -1412,6 +1431,24 @@ void overviewWindow::updateViewParams(void)
     mview->setZoomdist(0.0f);
 
     mview->apply();
+}
+
+void overviewWindow::unlockMap()
+{
+    /*
+    View * preview = view; // PCM: likely a leak of Viewe object at some point
+    view = new View();
+    (* view) = (* preview);
+
+    trx = imposedTrx; // pointer managed externally so no need to delete previous
+    */
+}
+
+void overviewWindow::lockMap(Region reg)
+{
+    // copy accross inset region and signal redraw
+    currRegion.x0 = reg.x0; currRegion.x1 = reg.x1;
+    currRegion.y0 = reg.y0; currRegion.y1 = reg.y1;
 }
 
 // this just sets renderer state - not VBOs, textures etc - those need to be set from glwidget,

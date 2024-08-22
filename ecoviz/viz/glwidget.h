@@ -155,6 +155,7 @@ public:
     bool getActive(){ return active; }
     bool getPainted(){ return painted; }
     bool getTextureActive(){ return decalsbound; }
+    Region getMapRegion();
 
     /// get internal state object that manages map window
     overviewWindow *getOverviewWindow(void) { return mapView; }
@@ -167,9 +168,11 @@ public:
 
     /// create a locked view object by overwriting the current view
     void lockView(View * imposedView);
+    void lockMap(Region reg);
 
     /// toggle lock flag
     void setViewLockState(bool state){ viewlock = state; }
+    bool getViewLockState(){ return viewlock; }
 
     /// control the texture overlay
 
@@ -273,6 +276,7 @@ signals:
     void signalRebindTransectPlants();
     //void signalUpdateOverviews();
     void signalExtractNewSubTerrain(int, int, int, int, int); // window (left/right) + region corners
+    void signalExtractOtherSubTerrain(int, int, int, int, int);
     void signalSyncDataMap();
     
 public slots:
@@ -434,9 +438,19 @@ class overviewWindow {
     /// getter for various viewing controls
     mapScene * getScene(){ return scene; }
     View * getView(){ return mview; }
+
     //bool getActive(){ return active; }
     bool isTerrainReady(void) const { return terrainReady; }
     void setTerrainReady(bool v) { terrainReady = v; }
+
+    /// seperate state
+    void unlockMap();
+
+    /// create a locked map through synchronisation of state
+    void lockMap(Region reg);
+
+    /// toggle lock flag
+    void setMapLockState(bool state){ maplock = state; }
 
     void getWindowSize(int & width, int & height)
     {
@@ -519,7 +533,7 @@ class overviewWindow {
 
 private:
 
-    mapScene * scene;      //<overview scene info
+    mapScene * scene;    //<overview scene info
     View * mview;        //< viewpoint controls
     //std::string datadir;
     //int widgetId; // left render winsow =0, right=1 in main window
@@ -540,6 +554,7 @@ private:
     PMrender::TRenderer * mrenderer;
 
     // gui variables
+    bool maplock;
     bool active;
     bool timeron;
     float scf;
