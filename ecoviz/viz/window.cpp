@@ -572,7 +572,7 @@ void Window::setupVizPerspective(QGLFormat glFormat, int i)
         return;
     }
 
-    GLWidgetAdrien * pview = new GLWidgetAdrien(glFormat, this, scenes[i],
+    GLWidget * pview = new GLWidget(glFormat, this, scenes[i],
                                     transectControls[i],
                                     (i == 0 ? string("left"): string("right")),
                                     mapScenes[i]);

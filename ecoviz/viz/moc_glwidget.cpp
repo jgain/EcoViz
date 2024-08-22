@@ -96,10 +96,10 @@ static const uint qt_meta_data_GLWidgetAdrien[] = {
        0        // eod
 };
 
-void GLWidgetAdrien::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+void GLWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
-        auto *_t = static_cast<GLWidgetAdrien *>(_o);
+        auto *_t = static_cast<GLWidget *>(_o);
         Q_UNUSED(_t)
         switch (_id) {
         case 0: _t->signalRepaintAllGL(); break;
@@ -116,43 +116,43 @@ void GLWidgetAdrien::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
     } else if (_c == QMetaObject::IndexOfMethod) {
         int *result = reinterpret_cast<int *>(_a[0]);
         {
-            using _t = void (GLWidgetAdrien::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidgetAdrien::signalRepaintAllGL)) {
+            using _t = void (GLWidget::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalRepaintAllGL)) {
                 *result = 0;
                 return;
             }
         }
         {
-            using _t = void (GLWidgetAdrien::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidgetAdrien::signalShowTransectView)) {
+            using _t = void (GLWidget::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalShowTransectView)) {
                 *result = 1;
                 return;
             }
         }
         {
-            using _t = void (GLWidgetAdrien::*)(bool );
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidgetAdrien::signalSyncPlace)) {
+            using _t = void (GLWidget::*)(bool );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalSyncPlace)) {
                 *result = 2;
                 return;
             }
         }
         {
-            using _t = void (GLWidgetAdrien::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidgetAdrien::signalRebindTransectPlants)) {
+            using _t = void (GLWidget::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalRebindTransectPlants)) {
                 *result = 3;
                 return;
             }
         }
         {
-            using _t = void (GLWidgetAdrien::*)(int , int , int , int , int );
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidgetAdrien::signalExtractNewSubTerrain)) {
+            using _t = void (GLWidget::*)(int , int , int , int , int );
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalExtractNewSubTerrain)) {
                 *result = 4;
                 return;
             }
         }
         {
-            using _t = void (GLWidgetAdrien::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidgetAdrien::signalSyncDataMap)) {
+            using _t = void (GLWidget::*)();
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalSyncDataMap)) {
                 *result = 5;
                 return;
             }
@@ -160,7 +160,7 @@ void GLWidgetAdrien::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
     }
 }
 
-QT_INIT_METAOBJECT const QMetaObject GLWidgetAdrien::staticMetaObject = { {
+QT_INIT_METAOBJECT const QMetaObject GLWidget::staticMetaObject = { {
     QMetaObject::SuperData::link<QGLWidget::staticMetaObject>(),
     qt_meta_stringdata_GLWidgetAdrien.data,
     qt_meta_data_GLWidgetAdrien,
@@ -170,12 +170,12 @@ QT_INIT_METAOBJECT const QMetaObject GLWidgetAdrien::staticMetaObject = { {
 } };
 
 
-const QMetaObject *GLWidgetAdrien::metaObject() const
+const QMetaObject *GLWidget::metaObject() const
 {
     return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
 }
 
-void *GLWidgetAdrien::qt_metacast(const char *_clname)
+void *GLWidget::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
     if (!strcmp(_clname, qt_meta_stringdata_GLWidgetAdrien.stringdata0))
@@ -183,7 +183,7 @@ void *GLWidgetAdrien::qt_metacast(const char *_clname)
     return QGLWidget::qt_metacast(_clname);
 }
 
-int GLWidgetAdrien::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+int GLWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
     _id = QGLWidget::qt_metacall(_c, _id, _a);
     if (_id < 0)
@@ -201,39 +201,39 @@ int GLWidgetAdrien::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 }
 
 // SIGNAL 0
-void GLWidgetAdrien::signalRepaintAllGL()
+void GLWidget::signalRepaintAllGL()
 {
     QMetaObject::activate(this, &staticMetaObject, 0, nullptr);
 }
 
 // SIGNAL 1
-void GLWidgetAdrien::signalShowTransectView()
+void GLWidget::signalShowTransectView()
 {
     QMetaObject::activate(this, &staticMetaObject, 1, nullptr);
 }
 
 // SIGNAL 2
-void GLWidgetAdrien::signalSyncPlace(bool _t1)
+void GLWidget::signalSyncPlace(bool _t1)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
     QMetaObject::activate(this, &staticMetaObject, 2, _a);
 }
 
 // SIGNAL 3
-void GLWidgetAdrien::signalRebindTransectPlants()
+void GLWidget::signalRebindTransectPlants()
 {
     QMetaObject::activate(this, &staticMetaObject, 3, nullptr);
 }
 
 // SIGNAL 4
-void GLWidgetAdrien::signalExtractNewSubTerrain(int _t1, int _t2, int _t3, int _t4, int _t5)
+void GLWidget::signalExtractNewSubTerrain(int _t1, int _t2, int _t3, int _t4, int _t5)
 {
     void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t3))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t4))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t5))) };
     QMetaObject::activate(this, &staticMetaObject, 4, _a);
 }
 
 // SIGNAL 5
-void GLWidgetAdrien::signalSyncDataMap()
+void GLWidget::signalSyncDataMap()
 {
     QMetaObject::activate(this, &staticMetaObject, 5, nullptr);
 }

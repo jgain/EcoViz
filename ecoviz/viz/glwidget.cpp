@@ -91,7 +91,7 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLWidgetAdrien::GLWidgetAdrien(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widName, mapScene *mScene, QWidget *parent)
+GLWidget::GLWidget(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, const std::string &widName, mapScene *mScene, QWidget *parent)
     : QGLWidget(format, parent)
 {
     wname = widName;
@@ -138,7 +138,7 @@ GLWidgetAdrien::GLWidgetAdrien(const QGLFormat& format, Window * wp, Scene * scn
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
 }
 
-GLWidgetAdrien::~GLWidgetAdrien()
+GLWidget::~GLWidget()
 {
     delete atimer;
     delete rtimer;
@@ -151,18 +151,18 @@ GLWidgetAdrien::~GLWidgetAdrien()
     if (decalTexture != 0)	glDeleteTextures(1, &decalTexture);
 }
 
-QSize GLWidgetAdrien::minimumSizeHint() const
+QSize GLWidget::minimumSizeHint() const
 {
     return QSize(80, 60);
 }
 
-QSize GLWidgetAdrien::sizeHint() const
+QSize GLWidget::sizeHint() const
 {
     return QSize(800, 600);
 }
 
 
-void GLWidgetAdrien::screenCapture(QImage * capImg, QSize capSize)
+void GLWidget::screenCapture(QImage * capImg, QSize capSize)
 {
     paintGL();
     glFlush();
@@ -171,34 +171,34 @@ void GLWidgetAdrien::screenCapture(QImage * capImg, QSize capSize)
     (* capImg) = capImg->scaled(capSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }
 
-PMrender::TRenderer * GLWidgetAdrien::getRenderer()
+PMrender::TRenderer * GLWidget::getRenderer()
 {
     return renderer;
 }
 
-void GLWidgetAdrien::refreshOverlay()
+void GLWidget::refreshOverlay()
 {
     renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, false);
 }
 
-void GLWidgetAdrien::setOverlay(TypeMapType purpose)
+void GLWidget::setOverlay(TypeMapType purpose)
 {
     overlay = purpose;
     renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
     refreshViews();
 }
 
-TypeMapType GLWidgetAdrien::getOverlay()
+TypeMapType GLWidget::getOverlay()
 {
     return overlay;
 }
 
-void GLWidgetAdrien::writePaintMap(std::string paintfile)
+void GLWidget::writePaintMap(std::string paintfile)
 {
     scene->getTypeMap(TypeMapType::TRANSECT)->saveToPaintImage(paintfile);
 }
 
-void GLWidgetAdrien::setScene(Scene * s)
+void GLWidget::setScene(Scene * s)
 {
     scene = s;
 
@@ -244,7 +244,7 @@ void GLWidgetAdrien::setScene(Scene * s)
      signalRepaintAllGL();
 }
 
-void GLWidgetAdrien::changeViewMode(ViewMode vm)
+void GLWidget::changeViewMode(ViewMode vm)
 {
     view->setViewMode(vm);
     view->setForcedFocus(scene->getTerrain()->getFocus());
@@ -252,20 +252,20 @@ void GLWidgetAdrien::changeViewMode(ViewMode vm)
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
 }
 
-void GLWidgetAdrien::unlockView()
+void GLWidget::unlockView()
 {
     View * preview = view;
     view = new View();
     (* view) = (* preview);
 }
 
-void GLWidgetAdrien::lockView(View * imposedView)
+void GLWidget::lockView(View * imposedView)
 {
     if (view) delete view;
     view = imposedView;
 }
 
-void GLWidgetAdrien::loadDecals()
+void GLWidget::loadDecals()
 {
     QImage decalImg, t;
 
@@ -289,7 +289,7 @@ void GLWidgetAdrien::loadDecals()
     cerr << "decals bound" << endl;
 }
 
-void GLWidgetAdrien::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose, float range)
+void GLWidget::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose, float range)
 {
     switch(purpose)
     {
@@ -308,7 +308,7 @@ void GLWidgetAdrien::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpos
     }
 }
 
-void GLWidgetAdrien::setDataMap(int dataIdx, TypeMapType ramp, bool updatenow)
+void GLWidget::setDataMap(int dataIdx, TypeMapType ramp, bool updatenow)
 {
     if(ramp == TypeMapType::EMPTY || ramp == TypeMapType::TRANSECT) // no data texture
     {
@@ -340,7 +340,7 @@ void GLWidgetAdrien::setDataMap(int dataIdx, TypeMapType ramp, bool updatenow)
     }
 }
 
-void GLWidgetAdrien::initializeGL()
+void GLWidget::initializeGL()
 {
     // get context opengl-version
     qDebug() << "GL initialize....";
@@ -416,7 +416,7 @@ void GLWidgetAdrien::initializeGL()
     paintGL();
 }
 
-void GLWidgetAdrien::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
+void GLWidget::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     ShapeDrawData sdd;
     float scale;
@@ -447,7 +447,7 @@ void GLWidgetAdrien::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawDat
     }
 }
 
-void GLWidgetAdrien::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
+void GLWidget::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     ShapeDrawData sdd;
     float scale;
@@ -478,7 +478,7 @@ void GLWidgetAdrien::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDraw
     }
 }
 
-void GLWidgetAdrien::createLine(vector<vpPoint> * line, vpPoint start, vpPoint end, float hghtoffset)
+void GLWidget::createLine(vector<vpPoint> * line, vpPoint start, vpPoint end, float hghtoffset)
 {
     vpPoint pnt;
     Vector del;
@@ -509,7 +509,7 @@ void GLWidgetAdrien::createLine(vector<vpPoint> * line, vpPoint start, vpPoint e
         (* line)[j].y += hghtoffset;
 }
 
-void GLWidgetAdrien::createTransectShape(float hghtoffset)
+void GLWidget::createTransectShape(float hghtoffset)
 {
     vector<vpPoint> line[3];
     float tol, tx, ty;
@@ -531,7 +531,7 @@ void GLWidgetAdrien::createTransectShape(float hghtoffset)
     }
 }
 
-void GLWidgetAdrien::paintTransect(GLfloat * col, std::vector<ShapeDrawData> &drawParams)
+void GLWidget::paintTransect(GLfloat * col, std::vector<ShapeDrawData> &drawParams)
 {
     // assumes that the transect shape has already been created
     ShapeDrawData sdd[3];
@@ -553,7 +553,7 @@ void GLWidgetAdrien::paintTransect(GLfloat * col, std::vector<ShapeDrawData> &dr
     }
 }
 
-void GLWidgetAdrien::paintGL()
+void GLWidget::paintGL()
 {
     std::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
 
@@ -714,7 +714,7 @@ void GLWidgetAdrien::paintGL()
     }
 }
 
-void GLWidgetAdrien::resizeGL(int width, int height)
+void GLWidget::resizeGL(int width, int height)
 {
     // TO DO: fix resizing
     // int side = qMin(width, height);
@@ -726,7 +726,7 @@ void GLWidgetAdrien::resizeGL(int width, int height)
 }
 
 
-void GLWidgetAdrien::keyPressEvent(QKeyEvent *event)
+void GLWidget::keyPressEvent(QKeyEvent *event)
 {
     /*
     if(event->key() == Qt::Key_Right)
@@ -880,13 +880,13 @@ void GLWidgetAdrien::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void GLWidgetAdrien::setAllPlantsVis()
+void GLWidget::setAllPlantsVis()
 {
     for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
         plantvis[i] = true;
 }
 
-void GLWidgetAdrien::setCanopyVis(bool vis)
+void GLWidget::setCanopyVis(bool vis)
 {
     setAllPlantsVis();
     canopyvis = vis; // toggle canopy visibility
@@ -896,7 +896,7 @@ void GLWidgetAdrien::setCanopyVis(bool vis)
     updateGL();
 }
 
-void GLWidgetAdrien::setUndergrowthVis(bool vis)
+void GLWidget::setUndergrowthVis(bool vis)
 {
     setAllPlantsVis();
     undervis = vis;
@@ -906,7 +906,7 @@ void GLWidgetAdrien::setUndergrowthVis(bool vis)
     updateGL();
 }
 
-void GLWidgetAdrien::setAllSpecies(bool vis)
+void GLWidget::setAllSpecies(bool vis)
 {
     for(int i = 0; i < static_cast<int>(plantvis.size()); i++)
         plantvis[i] = vis;
@@ -916,7 +916,7 @@ void GLWidgetAdrien::setAllSpecies(bool vis)
     updateGL();
 }
 
-void GLWidgetAdrien::setSinglePlantVis(int p)
+void GLWidget::setSinglePlantVis(int p)
 {
     if(p < (int) plantvis.size())
     {
@@ -934,7 +934,7 @@ void GLWidgetAdrien::setSinglePlantVis(int p)
     }
 }
 
-void GLWidgetAdrien::toggleSpecies(int p, bool vis)
+void GLWidget::toggleSpecies(int p, bool vis)
 {
     if(p < static_cast<int>(plantvis.size()))
     {
@@ -950,7 +950,7 @@ void GLWidgetAdrien::toggleSpecies(int p, bool vis)
     }
 }
 
-template<typename T> void GLWidgetAdrien::loadTypeMap(const T &map, TypeMapType purpose, float range)
+template<typename T> void GLWidget::loadTypeMap(const T &map, TypeMapType purpose, float range)
 {
     switch(purpose)
     {
@@ -967,7 +967,7 @@ template<typename T> void GLWidgetAdrien::loadTypeMap(const T &map, TypeMapType 
     }
 }
 
-void GLWidgetAdrien::mousePressEvent(QMouseEvent *event)
+void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     float nx, ny;
     vpPoint pnt;
@@ -1014,7 +1014,7 @@ void GLWidgetAdrien::mousePressEvent(QMouseEvent *event)
     lastPos = event->pos();
 }
 
-void GLWidgetAdrien::mouseDoubleClickEvent(QMouseEvent *event)
+void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     // set the focus for arcball rotation
     // pick point on terrain or zero plane if outside the terrain bounds
@@ -1049,7 +1049,7 @@ void GLWidgetAdrien::mouseDoubleClickEvent(QMouseEvent *event)
     }
 }
 
-void GLWidgetAdrien::pickInfo(int x, int y)
+void GLWidget::pickInfo(int x, int y)
 {
    std::string catName;
 
@@ -1064,7 +1064,7 @@ void GLWidgetAdrien::pickInfo(int x, int y)
    //cerr << "Moisture: " << getMoisture(wet_mth)->get(x,y) << endl;
 }
 
-void GLWidgetAdrien::setTransectCreate(TransectCreation * newtrc)
+void GLWidget::setTransectCreate(TransectCreation * newtrc)
 {
     if(trc != nullptr)
         delete trc;
@@ -1088,7 +1088,7 @@ void GLWidgetAdrien::setTransectCreate(TransectCreation * newtrc)
     signalRepaintAllGL(); // need to also update transect view
 }
 
-void GLWidgetAdrien::seperateTransectCreate(Transect * trx)
+void GLWidget::seperateTransectCreate(Transect * trx)
 {
     TransectCreation * newtrc = new TransectCreation;
     (* newtrc) = (* trc);
@@ -1108,7 +1108,7 @@ void GLWidget::forceTransect(Transect *newTrans)
 }
 */
 
-void GLWidgetAdrien::pointPlaceTransect(bool firstPoint)
+void GLWidget::pointPlaceTransect(bool firstPoint)
 {
     if(firstPoint)
     {
@@ -1124,7 +1124,7 @@ void GLWidgetAdrien::pointPlaceTransect(bool firstPoint)
     signalShowTransectView();
 }
 
-void GLWidgetAdrien::mouseReleaseEvent(QMouseEvent *event)
+void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     int sx, sy;
     sx = event->x(); sy = event->y();
@@ -1180,7 +1180,7 @@ void GLWidgetAdrien::mouseReleaseEvent(QMouseEvent *event)
     }
 }
 
-void GLWidgetAdrien::mouseMoveEvent(QMouseEvent *event)
+void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
     float nx, ny, W, H;
 
@@ -1227,7 +1227,7 @@ void GLWidgetAdrien::mouseMoveEvent(QMouseEvent *event)
     lastPos = event->pos();
 }
 
-void GLWidgetAdrien::wheelEvent(QWheelEvent * wheel)
+void GLWidget::wheelEvent(QWheelEvent * wheel)
 {
     float del;
  
@@ -1255,24 +1255,24 @@ void GLWidgetAdrien::wheelEvent(QWheelEvent * wheel)
     refreshViews();
 }
 
-void GLWidgetAdrien::animUpdate()
+void GLWidget::animUpdate()
 {
     if(view->animate())
          refreshViews();
 }
 
-void GLWidgetAdrien::rotateUpdate()
+void GLWidget::rotateUpdate()
 {
     if(view->spin())
         refreshViews();
 }
 
-void GLWidgetAdrien::rebindPlants()
+void GLWidget::rebindPlants()
 {
     rebindplants = true;
 }
 
-void GLWidgetAdrien::refreshViews()
+void GLWidget::refreshViews()
 {
     if(viewlock)
     {
