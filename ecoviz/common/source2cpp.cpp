@@ -7,7 +7,7 @@
 static const uts::unordered_map<uts::string, uts::string> g_sources{
 
     std::pair<uts::string, uts::string>("basic.vert",
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader: basicShader; simple Phong Model lighting\n"
@@ -88,7 +88,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("basic.frag",
-        "#version 150\n"
+        "#version 410\n"
         "\n"
         "uniform vec4 specularCol;\n"
         "uniform float shiny;\n"
@@ -158,7 +158,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("genNormal.vert",
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader: genNormals\n"
@@ -170,7 +170,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("genNormal.frag",
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// fragment shader: gennormal\n"
@@ -226,7 +226,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("simple.vert",
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "layout (location=0) in vec4 vertex;\n"
@@ -237,7 +237,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("simple.frag",
-        "#version 150\n"
+        "#version 410\n"
         "\n"
         "//layout(location = 0, index = 0)\n"
         "out vec4 fragColor;\n"
@@ -248,7 +248,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("phong.vert",
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader: basicShader; simple Phong Model lighting\n"
@@ -302,7 +302,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("phong.frag",
-        "#version 150\n"
+        "#version 410\n"
         "\n"
         "uniform float shiny;\n"
         "uniform vec4 specularCol;\n"
@@ -354,7 +354,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("phongRS.vert",
-        "#version 330\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader: basicShader; simple Phong Model lighting\n"
@@ -420,7 +420,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("phongRS.frag",
-        "#version 330\n"
+        "#version 410\n"
         "\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
@@ -484,7 +484,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("phongRSmanip.vert",
-        "#version 330\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader: basicShader; simple Phong Model lighting\n"
@@ -549,7 +549,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("phongRSmanip.frag",
-        "#version 330\n"
+        "#version 410\n"
         "\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
@@ -636,7 +636,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "*****************************************************************************/\n"
         "\n"
         "//#version 120\n"
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader data: positions and texture coords only\n"
@@ -758,7 +758,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "\n"
         "//#version 120\n"
         "//#extension GL_ARB_draw_buffers : enable\n"
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "uniform int drawWalls;\n"
@@ -905,7 +905,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "*****************************************************************************\n"
         "* Modified by P Marais, 2014                                                *\n"
         "*****************************************************************************/\n"
-        "#version 330\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// pass through vertex shader: screen aligned quad\n"
@@ -948,7 +948,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "*****************************************************************************/\n"
         "//#version 120\n"
         "//#extension GL_EXT_gpu_shader4 : enable\n"
-        "#version 330\n"
+        "#version 410\n"
         "//#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "out vec4 fcolour;\n"
@@ -1236,7 +1236,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("sun.vert",
-        "#version 150\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader: for sunlight, simple indexed colour per triangle, passed through directly\n"
@@ -1281,7 +1281,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("sun.frag",
-        "#version 150\n"
+        "#version 410\n"
         "\n"
         "uniform float terdim;\n"
         "uniform int drawWalls;\n"
@@ -1315,7 +1315,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("canopy.vert",
-        "#version 330\n"
+        "#version 410\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"
         "// vertex shader: basicShader; simple Phong Model lighting\n"
@@ -1344,7 +1344,7 @@ static const uts::unordered_map<uts::string, uts::string> g_sources{
         "}\n"
     ),
     std::pair<uts::string, uts::string>("canopy.frag",
-        "#version 330\n"
+        "#version 410\n"
         "\n"
         "#extension GL_ARB_explicit_attrib_location: enable\n"
         "\n"

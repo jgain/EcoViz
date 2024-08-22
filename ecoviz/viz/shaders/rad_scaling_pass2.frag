@@ -24,7 +24,7 @@
 *****************************************************************************/
 //#version 120
 //#extension GL_EXT_gpu_shader4 : enable
-#version 330
+#version 410
 //#extension GL_ARB_explicit_attrib_location: enable
 
 out vec4 fcolour;

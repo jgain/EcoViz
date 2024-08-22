@@ -1,4 +1,4 @@
-#version 330
+#version 410
 #extension GL_ARB_explicit_attrib_location: enable
 
 // vertex shader: flat shade, two-sides (for terrain transect - NOTE: must turn OFF face culling)

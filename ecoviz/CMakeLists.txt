@@ -2,7 +2,11 @@
 project(EcoViz)
 cmake_minimum_required(VERSION 3.5)
 include(CheckLibraryExists)
-set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/5.7/gcc_64)
+#set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/5.7/gcc_64)
+#set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/6.7/gcc_64)
+set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@6/lib/cmake/Qt6")
+set(Qt5Widgets_DIR $/opt/homebrew/opt/qt@6/lib/cmake/Qt6Widgets)
+
 
 option(SMOKE_TEST "run a smoke test on every build" 1)
 option(COVERAGE "compile for use with gcov" 0)
@@ -19,9 +23,9 @@ add_definitions(-DBOOST_FILESYSTEM_VERSION=3)
 find_package(Boost REQUIRED COMPONENTS filesystem program_options serialization system)
 find_package(PkgConfig REQUIRED)
 find_package(PythonInterp)
-find_package(Qt5 COMPONENTS Core Gui Charts REQUIRED)
-find_package(Qt5Widgets 5.7 REQUIRED)
-find_package(Qt5OpenGL 5.7 REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Charts REQUIRED)
+find_package(Qt6Widgets 6.7 REQUIRED)
+find_package(Qt6OpenGL 6.7 REQUIRED)
 cmake_policy(SET CMP0072 NEW)
 find_package(OpenGL)
 pkg_check_modules(GLEW glew)
@@ -44,16 +48,16 @@ link_directories(
 )
 
 if (Qt5Widgets_FOUND)
-    include_directories(${Qt5Widgets_INCLUDE_DIRS})
-    add_definitions(${Qt5Widgets_DEFINITIONS})
+    include_directories(${Qt6Widgets_INCLUDE_DIRS})
+    add_definitions(${Qt6Widgets_DEFINITIONS})
 endif()
 if (GLEW_FOUND)
     include_directories(${GLEW_INCLUDE_DIRS})
     link_directories(${GLEW_LIBRARY_DIRS})
 endif()
-if (Qt5OpenGL_FOUND)
-    include_directories(${Qt5OpenGL_INCLUDE_DIRS})
-    add_definitions(${Qt5OpenGL_DEFINITIONS})
+if (Qt6OpenGL_FOUND)
+    include_directories(${Qt6OpenGL_INCLUDE_DIRS})
+    add_definitions(${Qt6OpenGL_DEFINITIONS})
 endif()
 if (OPENGL_FOUND)
     include_directories(${OPENGL_INCLUDE_DIR})
@@ -63,8 +67,8 @@ endif()
 if (PYTHONINTERP_FOUND AND OPENGL_FOUND)
     set(BUILD_SOURCE2CPP TRUE)
 endif()
-if (Qt5Widgets_FOUND
-        AND Qt5OpenGL_FOUND
+if (Qt6Widgets_FOUND
+        AND Qt6OpenGL_FOUND
         AND OPENGL_FOUND
         AND GLEW_FOUND
         AND BUILD_SYNTHESIZER)

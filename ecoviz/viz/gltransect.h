@@ -64,7 +64,8 @@
 #define GLTRANSECT_H
 
 #include "glheaders.h" // Must be included before QT opengl headers
-#include <QGLWidget>
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions>
 #include <QLabel>
 #include <QTimer>
 #include <QMouseEvent>
@@ -82,13 +83,13 @@
 
 class Window;
 
-class GLTransect : public QGLWidget
+class GLTransect : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 
 public:
 
-    GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent = 0);
+    GLTransect(const QSurfaceFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent = 0);
     ~GLTransect();
 
     QSize minimumSizeHint() const;
@@ -174,7 +175,7 @@ protected:
 
 private:
 
-    QGLFormat glformat; //< format for OpenGL
+    QSurfaceFormat glformat; //< format for OpenGL
     Window * winparent;
     Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
     View * view;        //< viewpoint controls

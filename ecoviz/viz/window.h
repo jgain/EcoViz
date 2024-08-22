@@ -289,11 +289,11 @@ private:
 
     /* fine-grained setup for viz panel */
 
-    void setupVizTransect(QGLFormat glFormat, int id);
-    void setupVizPerspective(QGLFormat glFormat, int id);
-    void setupVizChartViews(QGLFormat glFormat, int id);
-    void setupVizTimeline(QGLFormat glFormat, int id);
-    //void setupVizOverMap(QGLFormat glFormat, int id);
+    void setupVizTransect(QSurfaceFormat glFormat, int id);
+    void setupVizPerspective(QSurfaceFormat glFormat, int id);
+    void setupVizChartViews(QSurfaceFormat glFormat, int id);
+    void setupVizTimeline(QSurfaceFormat glFormat, int id);
+    //void setupVizOverMap(QSurfaceFormat glFormat, int id);
     //void destroyVizOvermap(int idx);  // destroy overview map so it can br rebuilt
     void destroyVizTransect(int idx); // unmap widgets and call delete on to free up resources
     void destroyVizPerspective(int idx);

@@ -14,8 +14,6 @@
 
 class Window;
 
-QT_CHARTS_USE_NAMESPACE
-
 class ChartWindow : public QWidget
 {
     Q_OBJECT

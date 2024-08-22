@@ -13,8 +13,6 @@
 #include<QStyleOption>
 #include<QComboBox>
 
-QT_CHARTS_USE_NAMESPACE
-
 ChartWindow::ChartWindow(QWidget *parent, int width, int height)
     : QWidget(parent, Qt::Window)
 {
@@ -89,7 +87,7 @@ void ChartWindow::chartSelected(int index)
 void ChartWindow::paintEvent(QPaintEvent * ev)
 {
     QStyleOption opt;
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }

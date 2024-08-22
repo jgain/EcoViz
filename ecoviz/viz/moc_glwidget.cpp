@@ -1,63 +1,62 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'glwidget.h'
 **
-** Created by: The Qt Meta Object Compiler version 67 (Qt 5.15.2)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.7.2)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include <memory>
 #include "glwidget.h"
-#include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
+
+#include <QtCore/qtmochelpers.h>
+
+#include <memory>
+
+
+#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'glwidget.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 67
-#error "This file was generated using the moc from 5.15.2. It"
+#elif Q_MOC_OUTPUT_REVISION != 68
+#error "This file was generated using the moc from 6.7.2. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
 
-QT_BEGIN_MOC_NAMESPACE
+#ifndef Q_CONSTINIT
+#define Q_CONSTINIT
+#endif
+
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
-struct qt_meta_stringdata_GLWidgetAdrien_t {
-    QByteArrayData data[12];
-    char stringdata0[194];
-};
-#define QT_MOC_LITERAL(idx, ofs, len) \
-    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
-    qptrdiff(offsetof(qt_meta_stringdata_GLWidgetAdrien_t, stringdata0) + ofs \
-        - idx * sizeof(QByteArrayData)) \
-    )
-static const qt_meta_stringdata_GLWidgetAdrien_t qt_meta_stringdata_GLWidgetAdrien = {
-    {
-QT_MOC_LITERAL(0, 0, 14), // "GLWidgetAdrien"
-QT_MOC_LITERAL(1, 15, 18), // "signalRepaintAllGL"
-QT_MOC_LITERAL(2, 34, 0), // ""
-QT_MOC_LITERAL(3, 35, 22), // "signalShowTransectView"
-QT_MOC_LITERAL(4, 58, 15), // "signalSyncPlace"
-QT_MOC_LITERAL(5, 74, 10), // "firstPoint"
-QT_MOC_LITERAL(6, 85, 26), // "signalRebindTransectPlants"
-QT_MOC_LITERAL(7, 112, 26), // "signalExtractNewSubTerrain"
-QT_MOC_LITERAL(8, 139, 17), // "signalSyncDataMap"
-QT_MOC_LITERAL(9, 157, 10), // "animUpdate"
-QT_MOC_LITERAL(10, 168, 12), // "rotateUpdate"
-QT_MOC_LITERAL(11, 181, 12) // "rebindPlants"
+QT_WARNING_DISABLE_GCC("-Wuseless-cast")
+namespace {
 
-    },
-    "GLWidgetAdrien\0signalRepaintAllGL\0\0"
-    "signalShowTransectView\0signalSyncPlace\0"
-    "firstPoint\0signalRebindTransectPlants\0"
-    "signalExtractNewSubTerrain\0signalSyncDataMap\0"
-    "animUpdate\0rotateUpdate\0rebindPlants"
-};
-#undef QT_MOC_LITERAL
+#ifdef QT_MOC_HAS_STRINGDATA
+struct qt_meta_stringdata_CLASSGLWidgetENDCLASS_t {};
+constexpr auto qt_meta_stringdata_CLASSGLWidgetENDCLASS = QtMocHelpers::stringData(
+    "GLWidget",
+    "signalRepaintAllGL",
+    "",
+    "signalShowTransectView",
+    "signalSyncPlace",
+    "firstPoint",
+    "signalRebindTransectPlants",
+    "signalExtractNewSubTerrain",
+    "signalSyncDataMap",
+    "animUpdate",
+    "rotateUpdate",
+    "rebindPlants"
+);
+#else  // !QT_MOC_HAS_STRINGDATA
+#error "qtmochelpers.h not found or too old."
+#endif // !QT_MOC_HAS_STRINGDATA
+} // unnamed namespace
 
-static const uint qt_meta_data_GLWidgetAdrien[] = {
+Q_CONSTINIT static const uint qt_meta_data_CLASSGLWidgetENDCLASS[] = {
 
  // content:
-       8,       // revision
+      12,       // revision
        0,       // classname
        0,    0, // classinfo
        9,   14, // methods
@@ -67,18 +66,18 @@ static const uint qt_meta_data_GLWidgetAdrien[] = {
        0,       // flags
        6,       // signalCount
 
- // signals: name, argc, parameters, tag, flags
-       1,    0,   59,    2, 0x06 /* Public */,
-       3,    0,   60,    2, 0x06 /* Public */,
-       4,    1,   61,    2, 0x06 /* Public */,
-       6,    0,   64,    2, 0x06 /* Public */,
-       7,    5,   65,    2, 0x06 /* Public */,
-       8,    0,   76,    2, 0x06 /* Public */,
+ // signals: name, argc, parameters, tag, flags, initial metatype offsets
+       1,    0,   68,    2, 0x06,    1 /* Public */,
+       3,    0,   69,    2, 0x06,    2 /* Public */,
+       4,    1,   70,    2, 0x06,    3 /* Public */,
+       6,    0,   73,    2, 0x06,    5 /* Public */,
+       7,    5,   74,    2, 0x06,    6 /* Public */,
+       8,    0,   85,    2, 0x06,   12 /* Public */,
 
- // slots: name, argc, parameters, tag, flags
-       9,    0,   77,    2, 0x0a /* Public */,
-      10,    0,   78,    2, 0x0a /* Public */,
-      11,    0,   79,    2, 0x0a /* Public */,
+ // slots: name, argc, parameters, tag, flags, initial metatype offsets
+       9,    0,   86,    2, 0x0a,   13 /* Public */,
+      10,    0,   87,    2, 0x0a,   14 /* Public */,
+      11,    0,   88,    2, 0x0a,   15 /* Public */,
 
  // signals: parameters
     QMetaType::Void,
@@ -96,17 +95,54 @@ static const uint qt_meta_data_GLWidgetAdrien[] = {
        0        // eod
 };
 
+Q_CONSTINIT const QMetaObject GLWidget::staticMetaObject = { {
+    QMetaObject::SuperData::link<QOpenGLWidget::staticMetaObject>(),
+    qt_meta_stringdata_CLASSGLWidgetENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSGLWidgetENDCLASS,
+    qt_static_metacall,
+    nullptr,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSGLWidgetENDCLASS_t,
+        // Q_OBJECT / Q_GADGET
+        QtPrivate::TypeAndForceComplete<GLWidget, std::true_type>,
+        // method 'signalRepaintAllGL'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'signalShowTransectView'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'signalSyncPlace'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<bool, std::false_type>,
+        // method 'signalRebindTransectPlants'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'signalExtractNewSubTerrain'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        // method 'signalSyncDataMap'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'animUpdate'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'rotateUpdate'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'rebindPlants'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>
+    >,
+    nullptr
+} };
+
 void GLWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
         auto *_t = static_cast<GLWidget *>(_o);
-        Q_UNUSED(_t)
+        (void)_t;
         switch (_id) {
         case 0: _t->signalRepaintAllGL(); break;
         case 1: _t->signalShowTransectView(); break;
-        case 2: _t->signalSyncPlace((*reinterpret_cast< bool(*)>(_a[1]))); break;
+        case 2: _t->signalSyncPlace((*reinterpret_cast< std::add_pointer_t<bool>>(_a[1]))); break;
         case 3: _t->signalRebindTransectPlants(); break;
-        case 4: _t->signalExtractNewSubTerrain((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4])),(*reinterpret_cast< int(*)>(_a[5]))); break;
+        case 4: _t->signalExtractNewSubTerrain((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[4])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[5]))); break;
         case 5: _t->signalSyncDataMap(); break;
         case 6: _t->animUpdate(); break;
         case 7: _t->rotateUpdate(); break;
@@ -117,58 +153,48 @@ void GLWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
         int *result = reinterpret_cast<int *>(_a[0]);
         {
             using _t = void (GLWidget::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalRepaintAllGL)) {
+            if (_t _q_method = &GLWidget::signalRepaintAllGL; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 0;
                 return;
             }
         }
         {
             using _t = void (GLWidget::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalShowTransectView)) {
+            if (_t _q_method = &GLWidget::signalShowTransectView; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 1;
                 return;
             }
         }
         {
             using _t = void (GLWidget::*)(bool );
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalSyncPlace)) {
+            if (_t _q_method = &GLWidget::signalSyncPlace; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 2;
                 return;
             }
         }
         {
             using _t = void (GLWidget::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalRebindTransectPlants)) {
+            if (_t _q_method = &GLWidget::signalRebindTransectPlants; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 3;
                 return;
             }
         }
         {
             using _t = void (GLWidget::*)(int , int , int , int , int );
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalExtractNewSubTerrain)) {
+            if (_t _q_method = &GLWidget::signalExtractNewSubTerrain; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 4;
                 return;
             }
         }
         {
             using _t = void (GLWidget::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLWidget::signalSyncDataMap)) {
+            if (_t _q_method = &GLWidget::signalSyncDataMap; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 5;
                 return;
             }
         }
     }
 }
-
-QT_INIT_METAOBJECT const QMetaObject GLWidget::staticMetaObject = { {
-    QMetaObject::SuperData::link<QGLWidget::staticMetaObject>(),
-    qt_meta_stringdata_GLWidgetAdrien.data,
-    qt_meta_data_GLWidgetAdrien,
-    qt_static_metacall,
-    nullptr,
-    nullptr
-} };
-
 
 const QMetaObject *GLWidget::metaObject() const
 {
@@ -178,14 +204,16 @@ const QMetaObject *GLWidget::metaObject() const
 void *GLWidget::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_GLWidgetAdrien.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSGLWidgetENDCLASS.stringdata0))
         return static_cast<void*>(this);
-    return QGLWidget::qt_metacast(_clname);
+    if (!strcmp(_clname, "QOpenGLFunctions"))
+        return static_cast< QOpenGLFunctions*>(this);
+    return QOpenGLWidget::qt_metacast(_clname);
 }
 
 int GLWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
-    _id = QGLWidget::qt_metacall(_c, _id, _a);
+    _id = QOpenGLWidget::qt_metacall(_c, _id, _a);
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
@@ -194,7 +222,7 @@ int GLWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         _id -= 9;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 9)
-            *reinterpret_cast<int*>(_a[0]) = -1;
+            *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 9;
     }
     return _id;
@@ -238,4 +266,3 @@ void GLWidget::signalSyncDataMap()
     QMetaObject::activate(this, &staticMetaObject, 5, nullptr);
 }
 QT_WARNING_POP
-QT_END_MOC_NAMESPACE

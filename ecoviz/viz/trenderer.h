@@ -30,7 +30,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "glheaders.h"
 
 #define GLM_FORCE_RADIANS
 
@@ -38,13 +37,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "shaderProgram.h"
-#include <QGLWidget>
+#include <QOpenGLWidget>
+//#include <QOpenGLFunctions>
+#include <QOpenGLExtraFunctions>
 #include "shape.h"
 #include "typemap.h"
 
 namespace PMrender {
 
-class TRenderer
+class TRenderer: protected QOpenGLExtraFunctions
 {
  public:
     // select which render methos to use for terrain
@@ -63,7 +64,7 @@ class TRenderer
 
  private:
 
-    QGLWidget *canvas;
+    QOpenGLWidget *canvas;
 
     std::string shaderDir; // location of all shaders
 
@@ -208,7 +209,7 @@ class TRenderer
     void destroyInstanceData(void);
 public:
 
-    TRenderer(QGLWidget *drawTo = NULL, const std::string &dir="."); // the QGLwidget is created by the GUI manager
+    TRenderer(QOpenGLWidget *drawTo = NULL, const std::string &dir="."); // the QGLwidget is created by the GUI manager
     ~TRenderer();
 
     // load in new terrain data; this will come from a grid structure. paintMap is the associated
@@ -450,18 +451,7 @@ public:
     // when using multiple  renderer instances with one OpenGL context, the height texture is not changed
     // after creation (unless its dimenson changes). This methods forces the tex uni to be rebound to the
     // instance texture (which will be unique per object).
-    void forceHeightMapRebind(void)
-    {
-        if (heightmapTexture != 0)
-        {
-             std::cerr << "forceHeightMapRebind -  Heightmap rebound\n";
-             glActiveTexture(htmapTexUnit); CE();
-             glBindTexture(GL_TEXTURE_2D, heightmapTexture); CE();
-        }
-        else
-            std::cerr << "forceHeightMapRebind - Error! Heightmap texture undefined!\n";
-    }
-
+    void forceHeightMapRebind(void);
 };
 
 }

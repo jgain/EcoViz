@@ -69,7 +69,6 @@
 #include <sstream>
 #include <string>
 #include <QGridLayout>
-#include <QGLFramebufferObject>
 #include <QImage>
 #include <QCoreApplication>
 #include <QMessageBox>
@@ -93,11 +92,12 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLTransect::GLTransect(const QGLFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent)
-    : QGLWidget(format, parent)
+GLTransect::GLTransect(const QSurfaceFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent)
+    : QOpenGLWidget(parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     glformat = format;
+    // setFormat(glformat);
 
     view = nullptr;
 
@@ -267,14 +267,17 @@ void GLTransect::loadDecals()
     painter.drawImage( 0, 0, decalImg);
     painter.end();
 
-    t = QGLWidget::convertToGLFormat( fixedImage );
+    // t = QOpenGLWidget::convertToGLFormat( fixedImage );
+    // JG - QT6
 
-    renderer->bindDecals(t.width(), t.height(), t.bits());
+    renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
     decalsbound = true;
 }
 
 void GLTransect::initializeGL()
 {
+    initializeOpenGLFunctions();
+
     // get context opengl-version
     qDebug() << "\nGLTransect initialize....\n";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();
@@ -286,11 +289,11 @@ void GLTransect::initializeGL()
     qDebug() << "                    VERSION:      " << (const char*)glGetString(GL_VERSION);
     qDebug() << "                    GLSL VERSION: " << (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    QGLFormat glFormat = QGLWidget::format();
-    if ( !glFormat.sampleBuffers() )
-        qWarning() << "Could not enable sample buffers";
+    QSurfaceFormat glFormat = QOpenGLWidget::format();
+    // if ( !glFormat.sampleBuffers() )
+    //     qWarning() << "Could not enable sample buffers";
 
-    qglClearColor(qtWhite.light());
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     int mu;
     glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &mu);
@@ -338,7 +341,7 @@ PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SC
     renderer->useConstraintTypeTexture(false);
 
     // use manipulator textures (decal'd)
-    renderer->textureManipulators(true);
+    renderer->textureManipulators(false);
 
     // *** PM Render code - end ***
 
@@ -478,7 +481,7 @@ void GLTransect::setCanopyVis(bool vis)
     else
     {
         winparent->rendercount++;
-        updateGL();
+        update();
     }
 }
 
@@ -496,7 +499,7 @@ void GLTransect::setUndergrowthVis(bool vis)
     else
     {
         winparent->rendercount++;
-        updateGL();
+        update();
     }
 }
 
@@ -514,7 +517,7 @@ void GLTransect::setAllSpecies(bool vis)
     else
     {
         winparent->rendercount++;
-        updateGL();
+        update();
     }
 }
 
@@ -535,7 +538,7 @@ void GLTransect::setSinglePlantVis(int p)
         else
         {
             winparent->rendercount++;
-            updateGL();
+            update();
         }
     }
     else
@@ -559,7 +562,7 @@ void GLTransect::toggleSpecies(int p, bool vis)
         else
         {
             winparent->rendercount++;
-            updateGL();
+            update();
         }
     }
     else
@@ -597,7 +600,7 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
     else
     {
         winparent->rendercount++;
-        updateGL();
+        update();
     }
 
 
