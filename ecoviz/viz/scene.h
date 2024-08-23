@@ -498,6 +498,44 @@ public:
       * @param transect        Transect control in case the export concerns only the transect view, nullptr instead
       */
      void exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect = nullptr);
+
+     /**
+      * Export the scene (for Mitsuba) to the JSON specified
+      * @param speciesMap      Correspondence map between the plant type and a vector binding a height to a mitsuba id
+      * @param xmlFile         XML file in which the scene will be exported
+      * @param transect        Transect control in case the export concerns only the transect view, nullptr instead
+      */
+     void exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, const string urlInstances, const string nameInstances, Scene* scene, Transect* transect = nullptr);
+
+     /**
+			* @brief expoert the scene parameters to the JSON specified
+      * @param jsonFile 
+      * @param cameraName 
+      * @param lightsName 
+      * @param terrainName 
+      * @param instancesName 
+      * @param sceneName 
+      * @param resX 
+      * @param resY 
+      * @param quality 
+      * @param threads 
+      */
+     void exportSceneJSON(const string jsonDirPath, const string cameraName, const string lightsName, const string terrainName, const string instancesName, const string sceneName, const int resX, const int resY, const int quality, const int threads);
+
+     /**
+      * Export the terrain (for Mitsuba) to the JSON specified and OBJ File
+      * @param xmlFile         XML file in which the scene will be exported
+      * @param transect        Transect control in case the export concerns only the transect view, nullptr instead
+      */
+     void exportTerrainJSON(const string terrainURL, const string terrainName, Transect* transect = nullptr);
+
+     /**
+			* @brief compute the slope of the terrain and export it to a texture
+      * @param URL 
+      * @param slopeMin 
+      * @param slopeMax 
+      */
+     void exportTextureSlope(const string URL, float slopeMin, float slopeMax);
 };
 
 #endif // SCENE_H

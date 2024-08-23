@@ -23,12 +23,6 @@
 // author: James Gain
 // date: 17 December 2012
 
-#ifdef _WIN32
-#include <glew.h>
-#else
-#include <GL/glew.h>
-#endif
-
 #include "terrain.h"
 #include <sstream>
 #include <streambuf>
@@ -399,17 +393,6 @@ void Terrain::updateBuffers(PMrender::TRenderer * renderer)
     float scx, scy;
 
     getTerrainDim(scx, scy);
-
-    glewExperimental = GL_TRUE;
-    if(!glewSetupDone)
-      {
-         GLenum err = glewInit();
-         if (GLEW_OK != err)
-         {
-            std::cerr<< "GLEW: initialization failed\n\n";
-         }
-         glewSetupDone = true;
-      }
 
     if (bufferState == BufferState::REALLOCATE || bufferState == BufferState::DIRTY )
     {
@@ -841,6 +824,222 @@ void Terrain::saveElv(const std::string &filename)
         cerr << "Error Terrain::loadElv:unable to open file " << filename << endl;
     }
 }
+
+
+void Terrain::calcSlopeMap(basic_types::MapFloat* slopeMap)
+{
+  int dx, dy;
+  float slope;
+  Vector norm;
+
+  getGridDim(dx, dy);
+
+  for (int x = 0; x < dx; x++)
+  {
+    for (int y = 0; y < dy; y++)
+    {
+      getNormal(x, y, norm);
+      slope = 90.0f - acosf(norm.j) * 180.0f / M_PI;
+
+      slopeMap->set(x, y, slope);
+    }
+  }
+}
+
+// Compute ambiant occlusion map
+void Terrain::calcAO(basic_types::MapFloat* slopeMap)
+{
+	int dx, dy;
+	float ao;
+	Vector norm;
+
+	getGridDim(dx, dy);
+
+	for (int x = 0; x < dx; x++)
+	{
+		for (int y = 0; y < dy; y++)
+		{
+      // Compute ambiant occlusion with raycasting in a demi sphere
+      // 1. Get the normal at the point
+      
+      
+      // 2. Cast rays in a hemisphere above the point
+
+      // 3. Compute the number of rays that hit the terrain
+      
+      // 4. Compute the ratio of rays that hit the terrain
+      // 5. Set the value in the map
+
+		}
+	}
+}
+
+
+void Terrain::saveOBJ(const std::string& filename)
+{
+  int gx, gy;
+
+  ofstream outfile;
+  outfile.open((char*)filename.c_str(), ios_base::out);
+  if (outfile.is_open())
+  {
+    getGridDim(gx, gy);
+    //outfile << gx << " " << gy << " " << step << " " << latitude << endl;
+
+    // Vertexes
+    for (int x = 0; x < gx; x++)
+    {
+      for (int y = 0; y < gy; y++)
+      {
+        outfile << "v " << y * step  << " " << grid->get(x, y) << " " << x * step << "\n";
+      }
+    }
+    // Normals
+    for (int x = 0; x < gx; x++)
+    {
+      for (int y = 0; y < gy; y++)
+      {
+        Vector norm;
+        getNormal(x, y, norm);
+
+				outfile << "vn " << norm.k << " " << norm.j << " " << norm.i << "\n"; // JGBUG - may be wrong direction ??
+      }
+    }
+    // UV
+    for (int x = 0; x < gx; x++)
+    {
+      for (int y = 0; y < gy; y++)
+      {
+        outfile << "vt " << float(x)/float(gx)  << " " << float(y) / float(gy) << "\n";
+      }
+    }
+    // Faces
+    for (int x = 0; x < gx - 1; x++)
+		{
+			for (int y = 0; y < gy - 1; y++)
+			{
+        int ij = x * gy + y;
+        int ij1 = x * gy + y + 1;
+        int i1j = (x + 1) * gy + y;
+        int i1j1 = (x + 1) * gy + y + 1;
+
+        outfile << "f " << ij + 1 << "/" << ij + 1 << "/" << ij + 1 << " ";
+        outfile << ij1 + 1 << "/" << ij1 + 1 << "/" << ij1 + 1 << " ";
+        outfile << i1j1 + 1 << "/" << i1j1 + 1 << "/" << i1j1 + 1 << "\n";
+
+        outfile << "f " << ij + 1 << "/" << ij + 1 << "/" << ij + 1 << " ";
+        outfile << i1j1 + 1 << "/" << i1j1 + 1 << "/" << i1j1 + 1 << " ";
+        outfile << i1j + 1 << "/" << i1j + 1 << "/" << i1j + 1 << "\n";
+
+			}
+		}
+    outfile << endl;
+    outfile.close();
+  }
+  else
+  {
+    cerr << "Error Terrain::loadOBJ:unable to open file " << filename << endl;
+  }
+}
+
+
+void Terrain::saveOBJ_Border(const std::string& filename)
+{
+  int gx, gy;
+
+  ofstream outfile;
+  outfile.open((char*)filename.c_str(), ios_base::out);
+  if (outfile.is_open())
+  {
+    getGridDim(gx, gy);
+
+
+    // test all values for lowest terrain height:
+    float terrainBase = 1000000.0f; // +infinity
+    for (int x = 0; x < gx; x=x+2)
+      for (int y = 0; y < gy; y=y+2)
+        terrainBase = min(terrainBase, grid->get(x, y));
+
+		terrainBase -= 50.0f; // add a little margin
+
+
+    // Vertexes
+    for (int x = 0; x < gx; x++) // First X line
+    {
+      outfile << "v " << 0 << " " << terrainBase << " " << x * step << "\n";
+      outfile << "v " << 0 << " " << grid->get(x, 0) << " " << x * step << "\n";
+    }
+
+    for (int x = 0; x < gx; x++) // First X line
+    {
+      outfile << "v " << (gy-1) * step << " " << terrainBase << " " << x * step << "\n";
+      outfile << "v " << (gy-1) * step << " " << grid->get(x, gy-1) << " " << x * step << "\n";
+    }
+
+    for (int y = 0; y < gy; y++)
+    {
+      outfile << "v " << y * step << " " << terrainBase << " " << 0 << "\n";
+      outfile << "v " << y * step << " " << grid->get(0, y) << " " << 0 << "\n";
+    }
+
+		for (int y = 0; y < gy; y++)
+		{
+			outfile << "v " << y * step << " " << terrainBase << " " << (gx - 1) * step << "\n";
+			outfile << "v " << y * step << " " << grid->get((gx - 1), y) << " " << (gx - 1) * step << "\n";
+		}
+
+    // Normals
+
+    outfile << "vn " << -1 << " " << 0 << " " << 0 << "\n";
+		outfile << "vn " << 1 << " " << 0 << " " << 0 << "\n";
+		outfile << "vn " << 0 << " " << 0 << " " << -1 << "\n";
+		outfile << "vn " << 0 << " " << 0 << " " << 1 << "\n";
+    outfile << "vn " << 0 << " " << -1 << " " << 0 << "\n";
+
+
+    // Faces
+		for (int x = 0; x < gx - 1; x++)
+		{
+			outfile << "f " << 2 * x + 1 << "//" << 1 << " ";
+			outfile << 2 * x + 2 << "//" << 1 << " ";
+			outfile << 2 * x + 4 << "//" << 1 << " ";
+			outfile << 2 * x + 3 << "//" << 1 << "\n";
+
+			outfile << "f " << 2 * x + 1 + gx*2 << "//" << 2 << " ";
+			outfile << 2 * x + 2 + gx*2 << "//" << 2 << " ";
+			outfile << 2 * x + 4 + gx*2 << "//" << 2 << " ";
+			outfile << 2 * x + 3 + gx*2 << "//" << 2 << "\n";
+		}
+
+		for (int y = 0; y < gy - 1; y++)
+		{
+			outfile << "f " << 4 * gx + 2 * y + 1 << "//" << 3 << " ";
+			outfile << 4 * gx + 2 * y + 2 << "//" << 3 << " ";
+			outfile << 4 * gx + 2 * y + 4 << "//" << 3 << " ";
+			outfile << 4 * gx + 2 * y + 3 << "//" << 3 << "\n";
+
+			outfile << "f " << 4 * gx  + 2 * y + 1 + 2*gy << "//" << 4 << " ";
+			outfile << 4 * gx + 2 * y + 2 + 2*gy << "//" << 4 << " ";
+			outfile << 4 * gx + 2 * y + 4 + 2*gy << "//" << 4 << " ";
+			outfile << 4 * gx + 2 * y + 3 + 2*gy << "//" << 4 << "\n";
+		}
+
+    //bottom
+		outfile << "f " << 1 << "//" << 5 << " ";
+		outfile << gx*2 - 1 << "//" << 5 << " ";
+		outfile << gx*4 - 1 << "//" << 5 << " ";
+		outfile << gx * 2 + 1 << "//" << 5 << "\n";
+
+
+    outfile << endl;
+    outfile.close();
+  }
+  else
+  {
+    cerr << "Error Terrain::loadOBJ:unable to open file " << filename << endl;
+  }
+}
+
 
 void Terrain::calcMeanHeight()
 {

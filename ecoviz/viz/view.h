@@ -364,5 +364,7 @@ public:
     /// print view stats to cerr
     void print();
     void flatview(float rad);
+
+    void exportCameraJSON(const string url, const string filename);
 };
 # endif // _INC_VIEW

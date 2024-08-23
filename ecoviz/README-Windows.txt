@@ -1,4 +1,4 @@
-To use the Visual Studio projet on Windows, you must :
+To use the Visual Studio project on Windows, you must :
 - Install Qt5 (including QtCharts) and set the environment variable "QT5DIR" with the path to the Qt5 installation folder as value
 - Launch the "copydll.bat" script located in the "script" folder
 - Open the Visual Studio solution and install (with the NuGet package manager) the following libraries :

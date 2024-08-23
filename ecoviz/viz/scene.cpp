@@ -33,6 +33,7 @@
 #include "data_importer/map_procs.h"
 #include <QMessageBox>
 #include <QElapsedTimer>
+#include <qdir.h>
 
 class ElapsedTimer
 {
@@ -939,12 +940,12 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
                         xmlFile << "\t<shape type=\"instance\">\n";
                         xmlFile << "\t\t<ref id=\"" << vectMitsubaModel[indexNearestHeightMax].id << "\"/>\n";
                         xmlFile << "\t\t<transform name=\"toWorld\">\n";
-                        // Scale
-                        xmlFile << "\t\t\t<scale value=\"" << plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight << "\"/>\n";
                         // Rotation
                         xmlFile << "\t\t\t<rotate y=\"1\" angle=\"" << rotate << "\"/>\n";
                         // Translation
                         xmlFile << "\t\t\t<translate x=\"" << plant.pos.x << "\" y=\"" << plant.pos.y << "\" z=\"" << plant.pos.z << "\"/>\n";
+                        // Scale
+                        xmlFile << "\t\t\t<scale value=\"" << plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight << "\"/>\n";
                         xmlFile << "\t\t</transform>\n";
                         xmlFile << "\t</shape>\n\n";
                     }
@@ -968,4 +969,338 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
         }
         messageBox.warning(0, "Plant code not found", warningMessage);
     }
+}
+
+
+/*
+ * Export the scene to JSON format
+ * @param speciesMap: Map containing the species metadata
+ * @param jsonFile: The JSON file to write to
+ * @param scene: The scene to export
+ * @param transect: The transect to export
+ */
+void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, string urlInstances, string nameInstances, Scene* scene, Transect* transect) 
+{
+
+  QDir().mkpath(QString::fromStdString(urlInstances + nameInstances) + "/");
+
+  ofstream jsonFile;
+  jsonFile.open(urlInstances + nameInstances +".json");
+
+  set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
+
+  map<string, ofstream> streams;
+
+
+  Region parentRegion;
+  float parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy;
+
+  bool parentRegionAvailable = scene->getTerrain()->getSourceRegion(parentRegion, parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy);
+
+  PlantGrid* pg = this->getEcoSys()->getPlants();
+  for (int x = 0; x < pg->gx; x++)
+  {
+    for (int y = 0; y < pg->gy; y++)
+    {
+			auto ppopulation = pg->getPopulation(x, y); // Get the population of the current cell
+      for (int s = 0; s < (int)ppopulation->pop.size(); s++)
+      {
+        for (int p = 0; p < (int)ppopulation->pop[s].size(); p++)
+        {
+					Plant plant = ppopulation->pop[s][p]; // Get the current plant
+
+					if (parentRegionAvailable)
+					{
+						if (plant.pos.x < parentY0 || plant.pos.x > parentY1 || plant.pos.z < parentX0 || plant.pos.z > parentX1)
+						{
+							continue;
+						}
+					}
+
+          string code = this->biome->getSpeciesMetaData()[s].scientific_name;
+
+          map<string, vector<MitsubaModel>>::iterator it;
+					if ((it = speciesMap.find(code)) != speciesMap.end()) // If the plant code is found in the profile
+          {
+            int indexNearestHeightMax = 0;
+            vector<MitsubaModel>& vectMitsubaModel = it->second;
+
+            for (int i = 0; i < vectMitsubaModel.size(); i++)
+            {
+              if (vectMitsubaModel[i].maxHeight <= plant.height )
+              {
+                indexNearestHeightMax = i;
+              }
+            }
+
+            int xHash = plant.pos.x * 100;
+            int zHash = plant.pos.z * 100;
+            int rotate = hashTable[(int)(hashTable[(int)((xHash) & 0xfffL)] ^ ((zHash) & 0xfffL))] % 360;
+            double scale = plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight;
+
+            // Current Instance
+            string key = vectMitsubaModel[indexNearestHeightMax].id;
+            if (streams.find(key) != streams.end())
+						{
+              streams[key] << ",\n";
+						}
+            else
+            {
+              // Create Stream
+              streams.emplace(key, ofstream());
+
+              // Init stream
+              streams[key].open(urlInstances + "/" + nameInstances + "/" + nameInstances + "_" + key + ".json");
+              streams[key] << "{\n";
+              streams[key] << "\t\"ObjectsInstances\": [\n";
+              streams[key] << "\t{\n";
+              streams[key] << "\t\t\"Ref\": \"" << key << "\",\n";
+              streams[key] << "\t\t\"Instances\": [\n";
+            }
+
+            ofstream& stream = streams[key];
+
+            stream << "\t\t\t{";
+            stream << "\"Rotate\": [ 0, " << std::to_string(rotate/10.) << ", 0 ],";// Rotation Y
+            stream << "\"Translate\": [ " << std::to_string(plant.pos.x - parentY0) << ", " << std::to_string(plant.pos.y) << ", " << std::to_string(plant.pos.z - parentX0) << " ],";// Translation
+            stream << "\"Scale\": [ "<< std::to_string(scale) <<", "<< std::to_string(scale) <<", "+ std::to_string(scale) <<" ]";// Scale
+            stream << "}";
+
+          }
+          else if (plantCodeNotFound.find(code) == plantCodeNotFound.end())
+          {
+            // Plant code was not found in the profile
+            plantCodeNotFound.insert(code);
+          }
+        }
+      }
+    }
+  }
+  
+  if (!streams.empty())
+	{
+    jsonFile << "{\n";
+    jsonFile << "\t\"Import\": [\n";
+	}
+
+  bool first = true;
+  for (auto const &ent : streams)
+  {
+
+    if(!first)
+			jsonFile << ",\n";
+    jsonFile << "\t\t\"./"<<nameInstances<<"/"<< nameInstances <<"_" << ent.first << ".json\"";
+
+    ofstream& stream = streams[ent.first];
+    stream << "\n\t\t]\n";
+    stream << "\t}]\n";
+    stream << "}\n";
+    stream.close();
+    first = false;
+  }
+
+  if (!streams.empty())
+  {
+    jsonFile << "\n\t]\n";
+    jsonFile << "}\n";
+  }
+
+
+  if (!plantCodeNotFound.empty())
+  {
+    QMessageBox messageBox;
+    QString warningMessage = "The following plant codes were not found and have been skipped :";
+    for (string code : plantCodeNotFound)
+    {
+      warningMessage += QString("\n - ") + code.data();
+    }
+    messageBox.warning(0, "Plant code not found", warningMessage);
+  }
+}
+
+
+/*
+ * Export the terrain
+ * @param jsonFile: The JSON file to write to
+ * @param transect: The transect to export
+*/
+void Scene::exportSceneJSON(const string jsonDirPath, const string cameraName, const string lightsName,
+  const string terrainName, const string instancesName, const string sceneName, const int resX, 
+  const int resY, const int quality, const int threads)
+{
+
+	ofstream jsonFile;
+  jsonFile.open(jsonDirPath + "/"+ sceneName +".json");
+
+	// Write JSON
+  jsonFile << "{\n";
+
+  jsonFile << "\t\"Import\":\n";
+  jsonFile << "\t[\n";
+  jsonFile << "\t\t\"ModelSpecies/Species.json\",\n";
+  jsonFile << "\t\t\"Cameras/" << cameraName <<".json\",\n";
+  jsonFile << "\t\t\"EnvMaps/" << lightsName << ".json\",\n";
+  jsonFile << "\t\t\"Terrain/" << terrainName << ".json\",\n";
+  jsonFile << "\t\t\"Instances/" << instancesName << ".json\"\n";
+  jsonFile << "\t],\n";
+  jsonFile << "\t\"Scene\":\n"; 
+  jsonFile << "\t{\n";
+  jsonFile << "\t\t\"Name\": \""<< sceneName <<"\",\n";
+  jsonFile << "\t\t\"Resolution\": [" << resX << ","<<resY << "],\n";
+  jsonFile << "\t\t\"Quality\": " << quality << ",\n";
+  jsonFile << "\t\t\"M3Backend\": \"scalar_rgb\",\n";
+  jsonFile << "\t\t\"Threads\": " << threads << ",\n";
+  jsonFile << "\t\t\"Frames\": [0, 0],\n";
+  jsonFile << "\t\t\"OutputDir\": \".\"\n";
+  jsonFile << "\t}\n";
+
+  jsonFile << "}\n";
+
+	jsonFile.close();
+
+}
+
+/*
+ * Export the terrain 
+ * @param jsonFile: The JSON file to write to
+ * @param transect: The transect to export 
+*/
+void Scene::exportTerrainJSON(const string terrainURL, const string terrainName, Transect* transect)
+{
+
+  QDir().mkdir(QString::fromStdString(terrainURL) + "/OBJ");
+  QDir().mkdir(QString::fromStdString(terrainURL) + "/Masks");
+
+  // Export OBJ
+  Terrain* terrain = getTerrain();
+  terrain->saveOBJ(terrainURL + "OBJ/" + terrainName + ".obj");
+  terrain->saveOBJ_Border(terrainURL + "OBJ/" + terrainName+"_Border.obj");
+
+  // Create terrain texture
+  // - Save Masks according to a specific slope
+  exportTextureSlope(terrainURL + "Masks/"+ terrainName + "maskSlopeBedrock.png", 50.,55.);
+  exportTextureSlope(terrainURL + "Masks/" + terrainName + "maskSlopeGround.png", 60., 78.);
+
+  // Export JSON
+  ofstream jsonFile;
+  jsonFile.open(terrainURL + "/" + terrainName + ".json");
+
+  jsonFile << "{\n";
+
+  // Terrain Object
+  jsonFile << "\t\"Objects\":\n";
+  jsonFile << "\t[{\n";
+  jsonFile << "\t\t\"Name\": \"terrain\",\n";
+  jsonFile << "\t\t\"Definition\" : \n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Name\": \"Terrain\",\n";
+  jsonFile << "\t\t\t\"File\" : \"OBJ/"<< terrainName <<".obj\",\n";
+  jsonFile << "\t\t\t\"Material\" : {\n";
+  jsonFile << "\t\t\t\t\"Type\":   \"Blended\",\n";
+  jsonFile << "\t\t\t\t\"Layers\" : [\n";
+  jsonFile << "\t\t\t\t\t{\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/Grass_BaseColor.png\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/coast_sand_rocks_02_nor_gl_2k.exr\",\n";
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 100.0\n"; //,\n";
+  //jsonFile << "\t\t\t\t\t\t\"OpacityMap\" : \"Terrain/Textures/Grass_Opacity.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Terrain/Textures/Grass_Normal.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMap\" : \"Terrain/Textures/Grass_Height.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMapIntensity\" : 1.0\n";
+  jsonFile << "\t\t\t\t\t},\n";
+  jsonFile << "\t\t\t\t\t{\n";
+  jsonFile << "\t\t\t\t\t\t\"AlphaMap\" : \"Masks/" + terrainName + "maskSlopeGround.png\",\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/Grass_Dry_BaseColor.jpg\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/aerial_rocks_04_nor_gl_2k.exr\",\n";
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 100.0\n";
+  jsonFile << "\t\t\t\t\t},\n";
+  jsonFile << "\t\t\t\t\t{\n";
+  jsonFile << "\t\t\t\t\t\t\"AlphaMap\" : \"Masks/" + terrainName + "maskSlopeBedrock.png\",\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/T_rock02_DS.tga\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/T_rock01_N.tga\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMap\" : \"Terrain/Textures/Bedrock_Stone_B.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMapIntensity\" : 1.0,\n";
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 30.0\n";
+  jsonFile << "\t\t\t\t\t}\n";
+  jsonFile << "\t\t\t\t]\n";
+  jsonFile << "\t\t\t},\n";
+  jsonFile << "\t\t\t\"Instances\": \n";
+  jsonFile << "\t\t\t[{\n";
+  jsonFile << "\t\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t\t}]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t},\n";
+
+  jsonFile << "\t{\n";
+  jsonFile << "\t\t\"Name\": \"terrainBorder\",\n";
+  jsonFile << "\t\t\"Definition\" : \n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Name\": \"Terrain\",\n";
+  jsonFile << "\t\t\t\"File\" : \"OBJ/"<< terrainName <<"_Border.obj\",\n";
+  jsonFile << "\t\t\t\"Material\" : {\n";
+  jsonFile << "\t\t\t\t\"Type\":   \"DiffuseColor\",\n";
+  jsonFile << "\t\t\t\t\"Color\" : [0.8, 0.8, 0.8]\n";
+  jsonFile << "\t\t\t},\n";
+  jsonFile << "\t\t\t\"Instances\": \n";
+  jsonFile << "\t\t\t[{\n";
+  jsonFile << "\t\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t\t}]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t}],\n";
+
+
+  // Onjects Instances
+  jsonFile << "\t\"ObjectsInstances\": \n";
+  jsonFile << "\t[{\n";
+  jsonFile << "\t\t\"Ref\": \"terrain\", \n";
+  jsonFile << "\t\t\"Instances\" :\n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t},\n";
+  jsonFile << "\t{\n";
+  jsonFile << "\t\t\"Ref\": \"terrainBorder\", \n";
+  jsonFile << "\t\t\"Instances\" :\n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t}]\n";
+
+  // End JSON
+  jsonFile << "}\n";
+}
+
+
+void Scene::exportTextureSlope(string URL, float slopeMin, float slopeMax)
+{
+  // - Extract terrain slope map
+  int x, y;
+  terrain->getGridDim(x, y);
+  basic_types::MapFloat* slopeMap = new basic_types::MapFloat();
+  slopeMap->setDim(x, y);
+  slopeMap->fill(0.0f);
+
+  terrain->calcSlopeMap(slopeMap);
+
+  QImage slopeImage(x, y, QImage::Format_RGB32);
+  for (int i = 0; i < x; i++)
+  {
+    for (int j = 0; j < y; j++)
+    {
+      float slope = slopeMap->get(i, j);
+      // clamp slope to 0-90
+      slope = std::max(slopeMin, slope);
+      slope = std::min(slopeMax, slope);
+      slopeImage.setPixel(i, (y-1)-j, qRgb(255 - 255 * (slope- slopeMin) / (slopeMax-slopeMin), 255 - 255 * (slope - slopeMin) / (slopeMax - slopeMin), 255 - 255 * (slope - slopeMin) / (slopeMax - slopeMin)));
+    }
+  }
+
+  slopeImage.save(QString(URL.data()) );
 }

@@ -35,6 +35,7 @@
 #include <string>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <qdir.h>
 
 using namespace std;
 
@@ -628,6 +629,32 @@ bool View::save(const char * filename)
     }
     else
         return false;
+}
+
+
+void View::exportCameraJSON(const string url, const string filename)
+{
+
+  QDir().mkpath(QString::fromStdString(url) + "/");
+
+  ofstream jsonFile;
+  jsonFile.open(url + "/" + filename + ".json");
+
+  //print parameters 
+  jsonFile << "{\n";
+  jsonFile << "\t\"Cameras\":\n";
+  jsonFile << "\t[{\n";
+  jsonFile << "\t\t\"Name\":  \"camera\",\n";
+  jsonFile << "\t\t\"FOV\" : "<<  18<<", \n";
+  jsonFile << "\t\t\"Focal\": " << 50 << ", \n";
+  jsonFile << "\t\t\"Instances\": \n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Eye\": ["<< cop.x << "," << cop.y << "," << cop.z << "],\n";
+  jsonFile << "\t\t\t\"At\" : [" << currfocus.x << ", " << currfocus.y << ", " << currfocus.z << "],\n";
+  jsonFile << "\t\t\t\"Up\" : [" << dir.i << ", " << dir.j+0.0001 << ", " << dir.k << "]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t}]\n";
+  jsonFile << "}\n";
 }
 
 bool View::load(const char * filename)

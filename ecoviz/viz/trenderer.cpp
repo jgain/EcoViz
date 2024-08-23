@@ -1374,15 +1374,6 @@ void TRenderer::initShaders(void)
       shaders["flatTransectShader"] = s;
 */
 
-// #ifdef _WIN32
-      GLenum err = glewInit();
-      if (GLEW_OK != err)
-      {
-          /* Problem: glewInit failed, something is seriously wrong. */
-          std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
-      }
-// #endif
-
     // std::cout << "Compiling shaders...\n";
     std::map<std::string, shaderProgram*>::iterator it = shaders.begin();
     while (it != shaders.end() )

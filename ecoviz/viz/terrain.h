@@ -107,7 +107,6 @@ private:
     int parentGridy;       ///< samples in x/y (NOTE: float terrain extent can be recovered as dim*step
 
     // PM: terrain renderer
-    mutable bool glewSetupDone;
     mutable GLuint htMapTextureId;
 
     /// re-build sphere acceleration structure when terrain is changed
@@ -139,7 +138,7 @@ public:
     /// Constructor
     Terrain(Region source = Region()) // empty source region by default
     {
-        glewSetupDone = false; dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0;
+        dimx = dimy = synthx = synthy = 0.0f; numspx = numspy = 0;
         hghtrange = 0.0f; hghtmean = 0.0f; accelValid = false;
         grid = new basic_types::MapFloat();
         drawgrid = new basic_types::MapFloat();
@@ -385,9 +384,26 @@ public:
        */
     void saveElv(const std::string &filename);
 
+    /**
+       * Save a terrain to OBJ file.
+       * @param filename   File to save (simple ascii elevation format)
+       * @see @ref MemMap for exception information
+       */
+    void saveOBJ(const std::string& filename);
+
+    /**
+       * Save the border of the terrain region to OBJ file.
+       * @param filename   File to save (simple ascii elevation format)
+       * @see @ref MemMap for exception information
+       */
+    void saveOBJ_Border(const std::string& filename);
+
     /// Recalculate the mean height over the terrain
     void calcMeanHeight();
     float getHeightFromReal(float x, float y);
+
+    void calcSlopeMap(basic_types::MapFloat *slopeMap);
+    void calcAO(basic_types::MapFloat* slopeMap);
 
     /// PCM - build new terrain from sub-region -
     /// calling function must assume responsibility for memory
