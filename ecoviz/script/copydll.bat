@@ -11,5 +11,5 @@ XCOPY /Y "..\windows_extern_packages\glew\glew32.dll" 				"..\out\Release\"
 XCOPY /Y "..\windows_extern_packages\sqlite3\sqlite3.dll" 			"..\out\Release\"
 
 :: Deploy
-%QT6DIR%\bin\windeployqt.exe --release ..\Out\Release\ecoviz.exe
-%QT6DIR%\bin\windeployqt.exe ..\Out\Debug\ecoviz.exe
+%QT6DIR%\bin\windeployqt.exe --release ..\out\Release\ecoviz.exe
+%QT6DIR%\bin\windeployqt.exe ..\out\Debug\ecoviz.exe
