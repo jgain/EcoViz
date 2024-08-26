@@ -30,6 +30,7 @@
 #include <cmath>
 #include <algorithm>
 #include <string>
+#include <cassert>
 
 #ifdef __CUDACC__
 #define CUDA_CALLABLE_MEMBER __host__ __device__
@@ -405,7 +406,13 @@ namespace basic_types
         ~MapFloat(){ delMap(); }
 
         /// return the row-major linearized value of a grid position
-        inline int flatten(int dx, int dy) const { return dy * gx + dx; }
+        inline int flatten(int dx, int dy) const
+        {
+            // PCM: these asserts (which I added while debugging) cause some old  code to crash,  now seem pk
+            assert(dx>=0 && dx < gx);
+            assert(dy>=0 && dy < gy);
+            return dy * gx + dx;
+        }
 
         inline void idx_to_xy(int idx, int &x, int &y) const
         {
@@ -455,7 +462,7 @@ namespace basic_types
         void fill(float h){ fmap.clear(); fmap.resize(gx*gy, h); }
 
         /// getter and setter for map elements
-        float get(int x, int y) const { return fmap[flatten(x, y)]; }
+        float get(int x, int y) const { return fmap.at( flatten(x, y) ); }
         float get(int idx) const{ return fmap[idx]; }
         void set(int x, int y, float val){ fmap[flatten(x, y)] = val; }
 

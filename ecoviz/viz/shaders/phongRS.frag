@@ -1,4 +1,4 @@
-#version 330
+#version 410
 
 #extension GL_ARB_explicit_attrib_location: enable
 
@@ -10,6 +10,8 @@ uniform int drawWalls;
 uniform sampler2D decalTexture;
 uniform int useTexturing;
 
+
+// norm set (0,0,0) to force RS off for manips; grad ignored (no output); color is used
 layout (location = 0) out vec4 grad;
 layout (location = 1) out vec4 norm;
 layout (location = 2) out vec4 color;
@@ -30,8 +32,7 @@ void main(void)
 
     vec3 n, halfV,viewV,ldir;
     float NdotL,NdotHV;
-    color = ambient; //global ambient
-    //float att;
+    color =  ambient; //global ambient
 
     n = normalize(normal);
 
@@ -40,11 +41,7 @@ void main(void)
     NdotL = max(dot(n, normalize(lightDir)), 0.0);
 
     if (NdotL > 0.0) {
-
-        //att = 1.0 / (gl_LightSource[0].constantAttenuation +
-        //    gl_LightSource[0].linearAttenuation * dist +
-        //    gl_LightSource[0].quadraticAttenuation * dist * dist);
-        //color += att * (diffuse * NdotL + ambient);
+    
         color += diffuse * NdotL; // + ambient;
 
         halfV = normalize(halfVector);
@@ -59,5 +56,7 @@ void main(void)
         // color = vec4(texel.r, texel.g, texel.b, color.a); // GL_REPLACE
         color = vec4(mix(color.rgb, texel.rgb, texel.a), color.a); // GL_DECAL
      }
-     norm = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+    // turn of radiance scaling calculations for this in Pass 2
+    norm = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 }

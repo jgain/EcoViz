@@ -28,6 +28,8 @@
 
 #include "glheaders.h"
 #include "view.h"
+#include <QOpenGLFunctions>
+#include <QOpenGLExtraFunctions>
 
 struct ShapeDrawData
 {
@@ -41,14 +43,16 @@ struct ShapeDrawData
     bool   current;         // set to true if this is part of current manipulator, controls alpha transparency on rendering
 };
 
-class Shape
+class Shape: protected QOpenGLExtraFunctions
 {
 private:
     std::vector<float> verts;   //< vertex, texture and normal data
     GLuint vaoConstraint;       //< openGL handles for various buffers
     GLuint vboConstraint;
     GLuint iboConstraint;
-    GLuint iBuffer;             //< handle for the transform instance buffer
+    // GLuint iBuffer;             //< handles for the transform instance buffer
+    GLuint iTranslBuffer;
+    GLuint iScaleBuffer;
     GLuint cBuffer;             //< handle for the colour variation instance buffer
     GLfloat diffuse[4], ambient[4], specular[4]; // material properties
     int numInstances;
@@ -91,6 +95,38 @@ public:
         clear();
     }
 
+    // copy assignment - no buffers are bound, only geometry and other data is copied
+    // (this is therefore not a true copy assignment....but suitable for our special use case)
+
+    Shape& operator=(const Shape & old)
+    {
+        if (this != &old)
+        {
+            clear();
+            numInstances = 0;
+
+            verts = old.verts;
+            indices = old.indices;
+            vaoConstraint = 0;
+            vboConstraint = 0;
+            iboConstraint = 0;
+            // iBuffer = 0;
+            iTranslBuffer = 0;
+            iScaleBuffer = 0;
+            cBuffer = 0;
+            numInstances = old.numInstances;
+
+            for (std::size_t i = 0; i < 4; ++i)
+            {
+                diffuse[i] = old.diffuse[i];
+                ambient[i] = old.ambient[i];
+                specular[i] = old.specular[i];
+            }
+        }
+
+        return *this;
+    }
+
     void clear()
     {
         verts.clear();
@@ -101,6 +137,7 @@ public:
     {
         numInstances = 0;
     }
+
 
     /// getter for shape colour
     GLfloat * getColour(){ return diffuse; }
@@ -221,11 +258,13 @@ public:
     /**
      * Bind the appropriate OpenGL buffers for rendering instances. Only needs to be done if
      * the instances attributes change.
-     * @param iforms    transformation applied to each instance. If this is empty assume a single instance with identity transformation.
-     * @param icols     colour offset applied to each instance. Must match the size of iforms.
+     * @param iTransl    translation applied to each instance. If this is empty assume a single instance with identity transformation.
+     * @param iScale    scaling applied (first) to each instance. If this is empty assume a single instance with identity transformation.
+     * @param icols     scale colour offset applied to each instance in shader. Must match the size of iforms.
      * @retval @c true if buffers successfully bound
      */
-    bool bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols);
+    // bool bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols);
+    bool bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<float> * icols);
 };
 
 #endif

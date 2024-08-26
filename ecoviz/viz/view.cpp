@@ -35,6 +35,7 @@
 #include <string>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <qdir.h>
 
 using namespace std;
 
@@ -45,12 +46,6 @@ float wallAmbient[] = {0.7f, 0.7f, 1.0f, 1.0f};
 float wallDiffuse[] = {0.225f, 0.225f, 0.75f, 1.0f};
 float wallEdge[] = {0.0f, 0.0f, 0.0f, 0.5f};
 float gridEdge[] = {0.3f, 0.3f, 0.3f, 0.5f};
-
-#ifdef FIGURE
-#define BASE_OFFSET 0.08
-#else
-#define BASE_OFFSET 0.0005
-#endif
 
 float gestureAmbient[] = {0.5f, 0.5f, 0.5f, 1.0f}; //0.2f};
 float gestureDiffuse[] = {0.5f, 0.5f, 0.5f, 1.0f}; //0.2f};
@@ -210,6 +205,14 @@ void View::sundir(Vector sunvec)
     }
 }
 
+void View::topdown()
+{
+    zoomdist = 4.0f * viewscale;
+    float xaxis[] = {-1.0f, 0.0f, 0.0f};
+    axis_to_quat(xaxis, PI/2.0f, curquat);
+    // trackball(curquat, 0.0f, 0.0f, 0.0f, -1.0f);
+}
+
 void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
 {
     // opengl3.2 with glm
@@ -221,16 +224,26 @@ void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
     // cerr << "projecting ray" << endl;
     // cerr << "sx = " << sx << " sy = " << sy << endl;
     // cerr << "screen params: h = " << height << " w = " << width << " startx = " << startx << " starty = " << starty << endl;
+
     // unproject screen point to derive world coordinates
     realy = height + 2.0f * starty - sy; realx = sx;
     win = glm::vec3((float) realx, (float) realy, 0.5f); // 0.5f
     viewport = glm::vec4(startx, starty, width, height);
 
-    wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
-    pnt = vpPoint(wrld.x, wrld.y, wrld.z);
-    start = cop;
-    // cerr << "cop = " << cop.x << ", " << cop.y << ", " << cop.z << endl;
-    dirn.diff(cop, pnt); dirn.normalize();
+     wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
+     pnt = vpPoint(wrld.x, wrld.y, wrld.z);
+     if(viewtype == ViewState::PERSPECTIVE)
+     {
+         start = cop;
+         dirn.diff(cop, pnt);
+     }
+     else // ORTHOGONAL view
+     {
+         start = pnt;
+         dirn = getDir();
+     }
+     dirn.normalize();
+
 /*
     // pre opengl3.2
 
@@ -375,6 +388,45 @@ void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
 */
 }
 
+
+
+void View::saveCameraMatrices(const std::string & basename, float offX, float offZ)
+{
+    std::string fname;
+
+    fname = basename+"-view.txt";
+    int focal = 50.0; // PCM: invalid!!! fix these - is this 50. Near=50....?
+    float FOV = 18.0; // PCM: invalid!!! fix these (setup suggests 18 degrees, 2*arctan(8/50), but that doesn't look right)
+    // PCM: invaid!!! fix these - how does zoom come in? one of x/z may need to be flipped and inverted
+    vpPoint Eye = vpPoint(cop.x + offX, cop.y, cop.z + offZ),
+            At = vpPoint(currfocus.x + offX, currfocus.y, currfocus.z + offZ),
+            Up = vpPoint(0.0, 1.0, 0.0);
+
+    std::ofstream ofs(fname);
+    if (!ofs)
+        std::cerr << "saveViewMatrices() - can't open file: " << fname << std::endl;
+    else
+    {
+        ofs << "\"Cameras\": [\n";
+        ofs << "    {\n";
+        ofs << "          \"Name\":\"" << basename <<"\",\n";
+        ofs << "          \"Focal\":" << focal << ",\n";
+        ofs << "          \"FOV\":" << FOV << ",\n";
+        ofs << "          \"Instances\":[\n";
+        ofs << "               {\n";
+        ofs << "                    \"Eye\": [" << Eye.x << "," << Eye.y <<"," << Eye.z <<"],\n";
+        ofs << "                    \"At\": [" << At.x << "," << At.y <<"," << At.z << "],\n";
+        ofs << "                    \"Up\": [" << Up.x << "," << Up.y << "," << Up.z << "]\n";
+        ofs << "               }\n";
+        ofs << "            ]\n";
+        ofs << "    }\n";
+        ofs << "]\n";
+
+        ofs.close();
+    }
+}
+
+
 glm::mat4x4 View::getMatrix()
 {
     glm::mat4x4 projMx, viewMx;
@@ -395,7 +447,6 @@ glm::mat4x4 View::getProjMtx()
 
     if(viewtype == ViewState::PERSPECTIVE)
     {
-
         minx = -8.0f / aspect;
         maxx = 8.0f / aspect;
         projMx = glm::frustum(minx, maxx, -8.0f, 8.0f, 50.0f, 100000.0f);
@@ -427,6 +478,7 @@ glm::mat4x4 View::getViewMtx()
         // zoom
         viewMx = glm::mat4x4(1.0f);
         trs = glm::vec3(0.0f, 0.0f, -1.0f * zoomdist);
+        // cerr << "********************** zoomdist = " << zoomdist << endl;
         viewMx = glm::translate(viewMx, trs);
 
         // quaternion to mult matrix from arcball
@@ -577,6 +629,32 @@ bool View::save(const char * filename)
     }
     else
         return false;
+}
+
+
+void View::exportCameraJSON(const string url, const string filename)
+{
+
+  QDir().mkpath(QString::fromStdString(url) + "/");
+
+  ofstream jsonFile;
+  jsonFile.open(url + "/" + filename + ".json");
+
+  //print parameters 
+  jsonFile << "{\n";
+  jsonFile << "\t\"Cameras\":\n";
+  jsonFile << "\t[{\n";
+  jsonFile << "\t\t\"Name\":  \"camera\",\n";
+  jsonFile << "\t\t\"FOV\" : "<<  18<<", \n";
+  jsonFile << "\t\t\"Focal\": " << 50 << ", \n";
+  jsonFile << "\t\t\"Instances\": \n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Eye\": ["<< cop.x << "," << cop.y << "," << cop.z << "],\n";
+  jsonFile << "\t\t\t\"At\" : [" << currfocus.x << ", " << currfocus.y << ", " << currfocus.z << "],\n";
+  jsonFile << "\t\t\t\"Up\" : [" << dir.i << ", " << dir.j+0.0001 << ", " << dir.k << "]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t}]\n";
+  jsonFile << "}\n";
 }
 
 bool View::load(const char * filename)
@@ -936,25 +1014,25 @@ normalize_quat(float q[4])
 void
 build_rotmatrix(float m[4][4], float q[4])
 {
-    m[0][0] = 1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2]);
-    m[0][1] = 2.0 * (q[0] * q[1] - q[2] * q[3]);
-    m[0][2] = 2.0 * (q[2] * q[0] + q[1] * q[3]);
-    m[0][3] = 0.0;
+    m[0][0] = 1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]);
+    m[0][1] = 2.0f * (q[0] * q[1] - q[2] * q[3]);
+    m[0][2] = 2.0f * (q[2] * q[0] + q[1] * q[3]);
+    m[0][3] = 0.0f;
 
-    m[1][0] = 2.0 * (q[0] * q[1] + q[2] * q[3]);
-    m[1][1]= 1.0 - 2.0 * (q[2] * q[2] + q[0] * q[0]);
-    m[1][2] = 2.0 * (q[1] * q[2] - q[0] * q[3]);
-    m[1][3] = 0.0;
+    m[1][0] = 2.0f * (q[0] * q[1] + q[2] * q[3]);
+    m[1][1]= 1.0f - 2.0f * (q[2] * q[2] + q[0] * q[0]);
+    m[1][2] = 2.0f * (q[1] * q[2] - q[0] * q[3]);
+    m[1][3] = 0.0f;
 
-    m[2][0] = 2.0 * (q[2] * q[0] - q[1] * q[3]);
-    m[2][1] = 2.0 * (q[1] * q[2] + q[0] * q[3]);
-    m[2][2] = 1.0 - 2.0 * (q[1] * q[1] + q[0] * q[0]);
-    m[2][3] = 0.0;
+    m[2][0] = 2.0f * (q[2] * q[0] - q[1] * q[3]);
+    m[2][1] = 2.0f * (q[1] * q[2] + q[0] * q[3]);
+    m[2][2] = 1.0f - 2.0f * (q[1] * q[1] + q[0] * q[0]);
+    m[2][3] = 0.0f;
 
-    m[3][0] = 0.0;
-    m[3][1] = 0.0;
-    m[3][2] = 0.0;
-    m[3][3] = 1.0;
+    m[3][0] = 0.0f;
+    m[3][1] = 0.0f;
+    m[3][2] = 0.0f;
+    m[3][3] = 1.0f;
 }
 
 // ---------------------------------------------

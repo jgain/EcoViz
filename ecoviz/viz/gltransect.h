@@ -64,7 +64,8 @@
 #define GLTRANSECT_H
 
 #include "glheaders.h" // Must be included before QT opengl headers
-#include <QGLWidget>
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions>
 #include <QLabel>
 #include <QTimer>
 #include <QMouseEvent>
@@ -82,17 +83,19 @@
 
 class Window;
 
-class GLTransect : public QGLWidget
+class GLTransect : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 
 public:
 
-    GLTransect(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent = 0);
+    GLTransect(const QSurfaceFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent = 0);
     ~GLTransect();
 
     QSize minimumSizeHint() const;
     QSize sizeHint() const;
+
+    void setParent(Window * wp){ winparent = wp; }
 
     /// getters for currently active view, terrain, typemaps, renderer, ecosystem
     PMrender::TRenderer * getRenderer();
@@ -107,6 +110,9 @@ public:
      * @param s Scene to display
      */
     void setScene(Scene * s);
+
+    /// set active status of transect (i.e. should this view be painted)
+    void setActive(bool v) { active = v; }
 
     /// getter for various viewing controls
     Scene * getScene(){ return scene; }
@@ -149,6 +155,9 @@ public:
     /// Toggle visibility of an individual species on or off
     void toggleSpecies(int p, bool vis);
 
+    /// switch scene - should only be called when a new sub-terrainis extracted
+    void switchTransectScene(Scene *newScene, Transect *newTransect);
+
 signals:
     void signalRepaintAllGL();
 
@@ -166,7 +175,8 @@ protected:
 
 private:
 
-    QGLFormat glformat; //< format for OpenGL
+    QSurfaceFormat glformat; //< format for OpenGL
+    Window * winparent;
     Scene * scene;      //< wrapper for terrain, various maps, and ecosystem
     View * view;        //< viewpoint controls
     std::string datadir;
@@ -181,11 +191,15 @@ private:
     bool timeron;
     bool active; //< scene only rendered if this is true
     bool rebindplants; //< flag to indicate that plants have changed and need to be rebound
+    bool forceRebindPlants; //< flag to override lack of 'focus' (which never seems to be used?)
     std::vector<bool> plantvis;
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true
     float scf;
     Transect * trx; //< transect control parameters
+
+    // PCM 2023 - can be used to test geometry against transect
+    std::vector<Plane> transectPlanes;
 
     QPoint lastPos;
     QColor qtWhite;

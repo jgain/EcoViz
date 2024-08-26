@@ -194,6 +194,11 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 	}
 	fdata.version = lstr;
 
+    // ecosystem location
+    std::getline(ifs, lstr);
+    std::stringstream locss(lstr);
+    locss >> fdata.locx >> fdata.locy;
+    // std::cout << "LOC = (" << fdata.locx << ", " << fdata.locy << ")" << std::endl;
 	std::getline(ifs, lstr);
     fdata.timestep = std::stoi(lstr);
 
@@ -307,6 +312,190 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 
 	return fdata;
 }
+
+struct cohortA {
+ int treeid;
+ char code[4]; // 4 byte ASCII tree code
+ int x;
+ int y;
+ float height;
+ float radius;
+ float dbh;
+ int dummy;
+};
+
+struct cohortB {
+    int xs;
+    int ys;
+    char code[4];
+    float dbh;
+    float height;
+    float nplants;
+};
+
+data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::string filename, std::string minversion, const std::map<std::string, int> &species_lookup, bool timestep_only)
+{
+    using namespace data_importer::ilanddata;
+
+    std::map<int, bool> species_avail;
+    std::map<int, bool> species_avail_cohorts;
+
+    std::ifstream ifs(filename, std::ios::binary);
+
+    if (!ifs.is_open())
+        throw std::invalid_argument("Could not open binary file at " + filename);
+
+    filedata fdata;
+
+    std::string lstr;
+
+    // TODO: make sure this string's format is correct for the fileversion function call below
+    int slen;
+
+    ifs.read(reinterpret_cast<char*>(&slen), sizeof(int));
+    char *buf = new char [slen+1];
+    ifs.read(buf, slen);
+    buf[slen] = 0;
+    lstr = buf;
+    delete [] buf;
+
+    if (!fileversion_gteq(lstr, minversion))
+    {
+        throw std::invalid_argument("File version " + lstr + " is not up to date with minimum version " + minversion + ". Aborting import.");
+    }
+    fdata.version = lstr;
+
+    // ecosystem location
+    ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
+    ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
+
+    ifs.read(reinterpret_cast<char*>(&fdata.timestep), sizeof(int));
+
+    if(timestep_only)
+    {
+        return fdata;
+    }
+
+    int ntrees_expected;
+    ifs.read(reinterpret_cast<char*>(&ntrees_expected), sizeof(int));
+
+    // can use this integer to check that the file and import are consistent by comparing to tree vector size
+
+    std::cout << "Reading " << ntrees_expected << " trees..." << std::endl;
+    std::string species_id;
+
+    std::vector<cohortA> Adata;
+    Adata.resize(ntrees_expected);
+
+    ifs.read(reinterpret_cast<char*>(Adata.data()), sizeof(cohortA)*ntrees_expected);
+
+    for (int i = 0; i < ntrees_expected; i++)
+    {
+        basic_tree tree;
+
+        // TODO: leaving out ID for now, must include it later
+
+        std::string species_id; // alpha-numeric species key
+        species_id += Adata[i].code[0];
+        species_id += Adata[i].code[1];
+        species_id += Adata[i].code[2];
+        species_id += Adata[i].code[3];
+        tree.species = species_lookup.at(species_id);
+
+        tree.x = Adata[i].x;
+        tree.y = Adata[i].y;
+        tree.height = Adata[i].height;
+        tree.radius = Adata[i].radius;
+        tree.dbh = Adata[i].dbh;
+        // seems like an unused zero at the end of each line? ignoring it for now
+
+        fdata.trees.push_back(tree);
+
+        species_avail[tree.species] = true;
+    }
+
+    Adata.clear();
+
+    std::vector<cohortB> dataB;
+    int ncohorts_expected;
+
+    ifs.read(reinterpret_cast<char*>(&ncohorts_expected), sizeof(int));
+
+    dataB.resize(ncohorts_expected);
+
+    std::cout << "Reading " << ncohorts_expected << " cohorts..." << std::endl;
+
+    float minx = std::numeric_limits<float>::max() , miny = std::numeric_limits<float>::max();
+    float maxx = -std::numeric_limits<float>::max() , maxy = -std::numeric_limits<float>::max();
+    float dx = -1.0f, dy = -1.0f;
+
+    ifs.read(reinterpret_cast<char*>(dataB.data()), sizeof(cohortB)*ncohorts_expected);
+
+    for (int i = 0; i < ncohorts_expected; i++)
+    {
+        std::string species_id; // alpha-numeric species key
+        species_id += dataB[i].code[0];
+        species_id += dataB[i].code[1];
+        species_id += dataB[i].code[2];
+        species_id += dataB[i].code[3];
+
+        fdata.cohorts.emplace_back(dataB[i].xs, dataB[i].ys, species_lookup.at(species_id), dataB[i].dbh, dataB[i].height, dataB[i].nplants);
+
+        auto &crt = fdata.cohorts.back();
+        if (crt.xs < minx)
+        {
+            minx = crt.xs;
+        }
+        if (crt.ys < miny)
+        {
+            miny = crt.ys;
+        }
+        if (crt.xe > maxx)
+        {
+            maxx = crt.xe;
+        }
+        if (crt.ye > maxy)
+        {
+            maxy = crt.ye;
+        }
+        float xdiff = crt.xe - crt.xs;
+        float ydiff = crt.ye - crt.ys;
+        if (dy < 0.0f && dx < 0.0f)
+        {
+            dy = ydiff;
+            dx = xdiff;
+        }
+        else
+        {
+            if (fabs(dy - ydiff) > 1e-5f || fabs(dx - xdiff) > 1e-5f)
+            {
+                throw std::invalid_argument("Input cohorts have inconsistent sizes in file " + filename);
+            }
+        }
+
+        species_avail_cohorts[crt.specidx] = true;
+    }
+
+    fdata.minx = minx;
+    fdata.miny = miny;
+    fdata.maxx = maxx;
+    fdata.maxy = maxy;
+    fdata.dx = dx;
+    fdata.dy = dy;
+
+    auto minmaxh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.height<b.height;});
+    auto minmaxdbh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.dbh<b.dbh;});
+    std::cout << "Range height: " << minmaxh.first->height << " - " << minmaxh.second->height << ", Range DBH: " << minmaxdbh.first->dbh << " - " << minmaxdbh.second->dbh << std::endl;
+
+    std::cout << "Maximum species index for larger trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail.begin(), species_avail.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
+    std::cout << "Maximum species index for cohort trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail_cohorts.begin(), species_avail_cohorts.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
+    std::cout << "Number of larger tree species found in timestep " << fdata.timestep << ": " << species_avail.size() << std::endl;
+    std::cout << "Number of cohort tree species found in timestep " << fdata.timestep << ": " << species_avail_cohorts.size() << std::endl;
+    std::cout << "Done. Returning file data for timestep " << fdata.timestep << std::endl;
+
+    return fdata;
+}
+
 
 void data_importer::ilanddata::trim_filedata_spatial(data_importer::ilanddata::filedata &data, int width, int height)
 {

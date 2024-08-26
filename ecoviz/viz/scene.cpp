@@ -33,6 +33,7 @@
 #include "data_importer/map_procs.h"
 #include <QMessageBox>
 #include <QElapsedTimer>
+#include <qdir.h>
 
 class ElapsedTimer
 {
@@ -59,9 +60,9 @@ bool Transect::inBounds(vpPoint pnt, Terrain * ter)
     ter->getTerrainDim(maxx, maxy);
 
     b[0].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // left edge
-    b[1].formPlane(vpPoint(maxx, 0.0f, 0.0f), Vector(-1.0f, 0.0f, 0.0f)); // right edge
+    b[1].formPlane(vpPoint(maxy, 0.0f, 0.0f), Vector(-1.0f, 0.0f, 0.0f)); // right edge
     b[2].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(0.0f, 0.0f, 1.0f)); // front edge
-    b[3].formPlane(vpPoint(0.0f, 0.0f, maxy), Vector(0.0f, 0.0f, -1.0f)); // back edge
+    b[3].formPlane(vpPoint(0.0f, 0.0f, maxx), Vector(0.0f, 0.0f, -1.0f)); // back edge
 
     for(int i = 0; i < 4; i++)
         if(!b[i].side(pnt)) // must be on the correct side of all the bounding planes
@@ -78,6 +79,8 @@ bool Transect::findBoundPoints(vpPoint src, Vector dirn, vpPoint * bnd, Terrain 
     // determine bounding plane intersects
     float maxx, maxy;
     ter->getTerrainDim(maxy, maxx);
+
+    cerr << "maxx = " << maxx << " and maxy = " << maxy << endl;
 
     b[0].formPlane(vpPoint(0.0f, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // left edge
     b[1].formPlane(vpPoint(maxx, 0.0f, 0.0f), Vector(1.0f, 0.0f, 0.0f)); // right edge
@@ -149,16 +152,43 @@ void Transect::paintThickness(Terrain * ter)
 
     // test if grid points on vizmap lie between offset planes
     ter->getGridDim(dx, dy);
-    for(int x = 0; x < dx; x++)
-        for(int y = 0; y < dy; y++)
+    for(int y = 0; y < dy; y++)
+        for(int x = 0; x < dx; x++)
         {
             // position on terrain corresponding to grid point, projected onto the base plane
-            vizpnt = ter->toWorld(x, y, 0.0f); // JG - orientation flip
+            vizpnt = ter->toWorld(y, x, 0.0f); // JG/PCM - orientation flip
             if(!offset[0].side(vizpnt) && !offset[1].side(vizpnt)) // between planes so draw in red
-                mapviz->set(y, x, 1.0f);
+                mapviz->set(x, y, 1.0f); // PCM:  more flipping (ensure map  indices are valid, adjusted other values too)
             else
-                mapviz->set(y, x, 0.0f);
+                mapviz->set(x, y, 0.0f);
         }
+}
+
+std::pair<Plane, Plane>  Transect::getTransectPlanes(vpPoint &basePlaneOrigin)
+{
+    Plane offset[2];
+    Vector offvec;
+    vpPoint offpnt, vizpnt;
+
+    // establish offset planes to bound the transect thickness
+    // cerr << "normal = " << normal.i << ", " << normal.j << ", " << normal.k << endl;
+    offvec = normal;
+    offvec.mult(thickness / 2.0f);
+    offvec.pntplusvec(center, &offpnt);
+
+    basePlaneOrigin = offpnt;
+
+    // cerr << "offpnt = " << offpnt.x << ", " << offpnt.y << ", " << offpnt.z << endl;
+    // cerr << "center = " << center.x << ", " << center.y << ", " << center.z << endl;
+    offset[0].formPlane(offpnt, normal);
+    offvec.mult(-1.0f);
+    offvec.pntplusvec(center, &offpnt);
+    offvec.normalize();
+    offset[1].formPlane(offpnt, offvec);
+
+
+
+    return std::make_pair(offset[0], offset[1]);
 }
 
 /**
@@ -314,7 +344,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
     ElapsedTimer tmr("extractDBHSums");
     int vmax = 0;
     int nspecies = s->getBiome()->numPFTypes();
-    float hectares = s->getTerrain()->getTerrainHectArea();
+    float hectares = s->getMasterTerrain()->getTerrainHectArea();
     setNumSeries(nspecies);
 
     for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
@@ -325,7 +355,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
         tmr.elapsed("sampler");
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         tmr.elapsed("build list");
@@ -353,7 +383,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
     ElapsedTimer tmr("extractbasal area");
     float vmax = 0.0f;
     int nspecies = s->getBiome()->numPFTypes();
-    float hectares = s->getTerrain()->getTerrainHectArea();
+    float hectares = s->getMasterTerrain()->getTerrainHectArea();
 
     setNumSeries(nspecies);
 
@@ -363,9 +393,10 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
+        cerr << "num trees = " << (int) trees.size() << " t = " << t << endl;
         auto basal_areas = std::vector<float>(nspecies);
         for(const auto &tree: trees)  // count species
             basal_areas[tree.species] += (PI * tree.dbh*tree.dbh/ 4. / 10000.); // dbh is in cm, need to convert to m.
@@ -380,6 +411,17 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
             vmax = basaltot;
     }
 
+    // print out graph data for debugging
+    cerr << "BASAL AREA GRAPH DATA" << endl;
+    for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
+    {
+        cerr << "T " << t << " ";
+        for (int spc=0; spc<nspecies; ++spc)
+        {
+            cerr <<  graphdata[spc][t] << " ";
+        }
+        cerr << endl;
+    }
     setVertScale(vmax);
 }
 
@@ -397,7 +439,7 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         for(int spc = 0; spc < nspecies; spc++) // iterate over species
@@ -416,17 +458,161 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
     setVertScale(vmax);
 }
 
+////  mapScene - light weight class for overview map
+
+std::string mapScene::get_dirprefix()
+{
+    while (datadir.back() == '/')
+        datadir.pop_back();
+
+    int slash_idx = datadir.find_last_of("/");
+    std::string setname = datadir.substr(slash_idx + 1);
+    std::string dirprefix = datadir + "/" + setname;
+    return dirprefix;
+}
+
+bool mapScene::subwindowValid(Region subwindow)
+{
+    int gridx, gridy;
+    fullResTerrain->getGridDim(gridx, gridy);
+
+    if (subwindow.x0 < 0 || subwindow.x0 > gridx-1)
+        return false;
+    if (subwindow.x1 < 0 || subwindow.x1 > gridx-1)
+        return false;
+    if (subwindow.y0 < 0 || subwindow.y0 > gridy-1)
+        return false;
+    if (subwindow.y1 < 0 || subwindow.y1 > gridy-1)
+        return false;
+
+    return true;
+}
+
+// extract the sub-region specified by region and update internal data structures
+// return the new extracted terrain for later processing.
+std::unique_ptr<Terrain> mapScene::extractTerrainSubwindow(Region region)
+{
+    if (!subwindowValid(region))
+    {
+        std::ostringstream oss;
+        oss << "run-time error: extractTerrainSubwindow: region invalid: ++++ [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+               region.x1 << "," << region.y1 << "]";
+
+        throw std::runtime_error(oss.str());
+    }
+    else
+    {
+        std::cout << " Subregion extracted -  [x0,y0,x1,y1] = [" << region.x0 << "," << region.y0 << "," <<
+               region.x1 << "," << region.y1 << "]";
+    }
+
+    return fullResTerrain->buildSubTerrain(region.x0, region.y0, region.x1, region.y1);
+}
+
+// factor: default reduction factor to extract sub-region for main terrain (10 = 1/10th)
+// return value = a unique_ptr to extracted Terrain  that must be managed by the caller
+std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
+{
+
+    //std::string terfile = datadir+"/dem.elv";
+    std::string binfile = datadir+"/" + basename + ".elvb";
+    std::string txtfile = datadir+"/" + basename + ".elv";
+    std::string terfile;
+
+    bool binaryElvFile = false;
+
+    if (std::ifstream(binfile).is_open())
+    {
+        binaryElvFile = true;
+        terfile = binfile;
+    }
+    else
+        terfile = txtfile;
+
+    float terx, tery;
+    int gridx, gridy;
+    vpPoint mid;
+
+    // load terrain
+    if (binaryElvFile)
+        fullResTerrain->loadElvBinary(terfile);
+    else
+        fullResTerrain->loadElv(terfile);
+
+    fullResTerrain->calcMeanHeight();
+
+    std::cout << "\n ****** Hi-res Terrain loaded...\n";
+    std::cout << " ****** Mean height: " << fullResTerrain->getHeightMean() << "\n";
+    fullResTerrain->getTerrainDim(terx, tery);
+    std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+    fullResTerrain->getGridDim(gridx, gridy);
+    std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+    fullResTerrain->getMidPoint(mid);
+    std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
+    // define default region to be small aspect ratio preserving subregion of full terrain input
+    float centrex = (gridx-1)/2.0f, centrey = (gridy-1)/2.0f;
+    float widthx = (gridx-1)/float(factor), widthy = (gridy-1)/float(factor);
+    Region defRegion;
+    defRegion.x0 = int( centrex - (0.5*widthx) );
+    defRegion.y0 = int( centrey - (0.5*widthy) );
+    defRegion.x1 = int( centrex + (0.5*widthx) );
+    defRegion.y1 = int( centrey + (0.5*widthy) );
+
+    // PCM: test - full coverage of input terrain
+    //defRegion.x0 = 0;
+    //defRegion.y0 = 0;
+    //defRegion.x1 = gridx-1;
+    //defRegion.y1 = gridy-1;
+
+    // create downsampled overview
+    if (binaryElvFile)
+        lowResTerrain->loadElvBinary(terfile, downFactor);
+    else
+        lowResTerrain->loadElv(terfile, downFactor);
+    lowResTerrain->calcMeanHeight();
+
+    selectedRegion = defRegion;
+
+    std::cout << "\n ****** Lo-res Terrain loaded...\n";
+    std::cout << " ****** Mean height: " << lowResTerrain->getHeightMean() << "\n";
+    lowResTerrain->getTerrainDim(terx, tery);
+    std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
+    lowResTerrain->getGridDim(gridx, gridy);
+    std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
+    lowResTerrain->getMidPoint(mid);
+    std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
+
+    // create texture/map overlay
+
+    /*
+    // match dimensions for empty overlay
+    int dx, dy;
+    getTerrain()->getGridDim(dx, dy);
+    getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
+    getTypeMap(TypeMapType::TRANSECT)->fill(1);
+    getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
+    getTypeMap(TypeMapType::EMPTY)->clear();
+    */
+
+    // default region extract
+
+    return extractTerrainSubwindow(defRegion);
+}
+
 //// Scene
 
-Scene::Scene(string ddir)
+Scene::Scene(string ddir, string base) : terrain( new Terrain())
 {
-    terrain = new Terrain();
+    //terrain = new Terrain();
     terrain->initGrid(1024, 1024, 10000.0f, 10000.0f);
     eco = new EcoSystem();
     biome = new Biome();
     tline = new Timeline();
 
     datadir = ddir;
+    basename = base;
     int dx, dy;
     terrain->getGridDim(dx, dy);
 
@@ -436,22 +622,14 @@ Scene::Scene(string ddir)
     terrain->getGridDim(dx, dy);
     maps[2]->setRegion(Region(0, 0, dy-1, dx-1));		// this is for the 'TypeMapType::CATEGORY' typemap? Any reason why this one is special?
 
-    nfield = new NoiseField(terrain, 5, 0);
-
-    for(int m = 0; m < 12; m++)
-    {
-        moisture.push_back(new basic_types::MapFloat());
-        sunlight.push_back(new basic_types::MapFloat());
-        temperature.push_back(0.0f);
-    }
-    slope = new basic_types::MapFloat();
-    chm = new basic_types::MapFloat();
-    cdm = new basic_types::MapFloat();
+    nfield = new NoiseField(dx,dy,5, 0);
+    dmaps = new DataMaps();
+    masterTerrain = nullptr;
 }
 
 Scene::~Scene()
 {
-    delete terrain;
+    //delete terrain;
 
     // cycle through all typemaps, and if exists, delete and assign nullptr to indicate empty
     for (int t = 0; t < int(TypeMapType::TMTEND); t++)
@@ -467,14 +645,7 @@ Scene::~Scene()
     delete biome;
     delete tline;
     delete nfield;
-    for(int m = 0; m < 12; m++)
-    {
-        delete sunlight[static_cast<int>(m)];
-        delete moisture[static_cast<int>(m)];
-    }
-    temperature.clear();
-    delete chm;
-    delete cdm;
+    delete dmaps;
 }
 
 std::string Scene::get_dirprefix()
@@ -560,50 +731,10 @@ bool Scene::writeMonthlyMap(std::string filename, std::vector<basic_types::MapFl
 
 }
 
-bool Scene::readSun(std::string filename)
-{
-    return readMonthlyMap(filename, sunlight);
-}
-
-bool Scene::writeSun(std::string filename)
-{
-    return writeMonthlyMap(filename, sunlight);
-}
-
-bool Scene::readMoisture(std::string filename)
-{
-    return readMonthlyMap(filename, moisture);
-}
-
-bool Scene::writeMoisture(std::string filename)
-{
-    return writeMonthlyMap(filename, moisture);
-}
-
-void Scene::calcSlope()
-{
-    int dx, dy;
-    Vector up, n;
-
-    // slope is dot product of terrain normal and up vector
-    up = Vector(0.0f, 1.0f, 0.0f);
-    terrain->getGridDim(dx, dy);
-    slope->setDim(dx, dy);
-    slope->fill(0.0f);
-    for(int x = 0; x < dx; x++)
-        for(int y = 0; y < dy; y++)
-        {
-            terrain->getNormal(x, y, n);
-            float rad = acos(up.dot(n));
-            float deg = RAD2DEG * rad;
-            slope->set(y, x, deg);
-        }
-}
-
 void Scene::reset_sampler(int maxpercell)
 {
     float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
+    getMasterTerrain()->getTerrainDim(rw, rh);
     int gw, gh;
     cohortmaps->get_grid_dims(gw, gh);
     float tw, th;
@@ -632,38 +763,66 @@ void Scene::loadScene(int timestep_start, int timestep_end)
 
 void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_end)
 {
+    std::vector<std::string> timestep_files;
     bool checkfiles = true;
 
     using namespace data_importer;
 
-    std::vector<std::string> timestep_files;
-    std::string terfile = datadir+"/dem.elv";
+    //std::string terfile = datadir+"/dem.elv";
 
     for (int ts = timestep_start; ts <= timestep_end; ts++)
     {
-        timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
+        //timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
+        string binfile = datadir + "/" + basename + std::to_string(ts) + ".pdbb";
+        string txtfile = datadir + "/" + basename + std::to_string(ts) + ".pdb";
+        string filename;
+        if (ifstream(binfile).is_open()) //prefer binary version
+            filename = binfile;
+        else
+            filename = txtfile;
+
+        timestep_files.push_back(filename); // datadir + "/" + basename + std::to_string(ts) + ".pdbb");
     }
 
-    // load terrain
-    getTerrain()->loadElv(terfile);
-    getTerrain()->calcMeanHeight();
+    // load terrain (already calld loadElv and calcMeanHeight)
+
+    //terrain = std::move(newTerr);
+
+    //getTerrain()->loadElv(terfile);
+    //getTerrain()->calcMeanHeight();
 
     // match dimensions for empty overlay
+
+    // continue setup for sub-terrain newTerr
+    /*
     int dx, dy;
     getTerrain()->getGridDim(dx, dy);
     getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
     getTypeMap(TypeMapType::TRANSECT)->fill(1);
     getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
     getTypeMap(TypeMapType::EMPTY)->clear();
+    */
 
-    float rw, rh;
-    getTerrain()->getTerrainDim(rw, rh);
+    // NB: must maintain original terrain dims/size when imposing a sub-region terrain
+    // ****entire**** region plan/eco data read in - later we select out the relevant parts for
+    // rendering
+    Region srcRegion;
+    float sx,ex, sy, ey, parentXdim, parentYdim;
+    terrain->getSourceRegion(srcRegion,
+                             sx, sy, ex, ey,
+                             parentXdim, parentYdim);
+
+    assert(parentXdim > 0.0);
+    assert(parentYdim > 0.0);
+
+    // getTerrain()->getTerrainDim(rw, rh);
 
     if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
     {
         // loading plant distribution
         getEcoSys()->setBiome(getBiome());
     }
+
     auto species_lookup = getBiome()->getSpeciesIndexLookupMap();
 
     // check that pdb files exist
@@ -683,14 +842,12 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     {
         // import cohorts
         try {
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, rw, rh, "1.0", species_lookup));
+        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "3.0", species_lookup));
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }
         before_mod_map = cohortmaps->get_map(0);
         //cohortmaps->do_adjustments(2);
-
-        cerr << "after pdb load" << endl;
 
         if (cohortmaps->get_nmaps() > 0)
         {
@@ -706,10 +863,23 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         cerr << "TimeLine" << endl;
         cerr << "start = " << tline->getTimeStart() << " end = " << tline->getTimeEnd() << " delta = " << tline->getTimeStep() << " current = " << tline->getNow() << endl;
     }
-
-
 }
 
+void Scene::loadDataMaps(int timesteps)
+{
+    std::string idxfile, datafile;
+
+    // std::cout << "Datadir before fixing: " << datadir << std::endl;
+    while (datadir.back() == '/')
+        datadir.pop_back();
+    idxfile = datadir + "/" + basename + "_idx.asc";
+    datafile = datadir + "/" + basename + "_map.csv";
+
+    dmaps->loadDataMaps(idxfile, datafile, timesteps);
+}
+
+// PCM - this won't export properly with overview window since that loads entire ecosystem, and can't deal with sub-regions
+// TBD
 void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect) {
     set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
 
@@ -770,12 +940,12 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
                         xmlFile << "\t<shape type=\"instance\">\n";
                         xmlFile << "\t\t<ref id=\"" << vectMitsubaModel[indexNearestHeightMax].id << "\"/>\n";
                         xmlFile << "\t\t<transform name=\"toWorld\">\n";
-                        // Scale
-                        xmlFile << "\t\t\t<scale value=\"" << plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight << "\"/>\n";
                         // Rotation
                         xmlFile << "\t\t\t<rotate y=\"1\" angle=\"" << rotate << "\"/>\n";
                         // Translation
                         xmlFile << "\t\t\t<translate x=\"" << plant.pos.x << "\" y=\"" << plant.pos.y << "\" z=\"" << plant.pos.z << "\"/>\n";
+                        // Scale
+                        xmlFile << "\t\t\t<scale value=\"" << plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight << "\"/>\n";
                         xmlFile << "\t\t</transform>\n";
                         xmlFile << "\t</shape>\n\n";
                     }
@@ -799,4 +969,338 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
         }
         messageBox.warning(0, "Plant code not found", warningMessage);
     }
+}
+
+
+/*
+ * Export the scene to JSON format
+ * @param speciesMap: Map containing the species metadata
+ * @param jsonFile: The JSON file to write to
+ * @param scene: The scene to export
+ * @param transect: The transect to export
+ */
+void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, string urlInstances, string nameInstances, Scene* scene, Transect* transect) 
+{
+
+  QDir().mkpath(QString::fromStdString(urlInstances + nameInstances) + "/");
+
+  ofstream jsonFile;
+  jsonFile.open(urlInstances + nameInstances +".json");
+
+  set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
+
+  map<string, ofstream> streams;
+
+
+  Region parentRegion;
+  float parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy;
+
+  bool parentRegionAvailable = scene->getTerrain()->getSourceRegion(parentRegion, parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy);
+
+  PlantGrid* pg = this->getEcoSys()->getPlants();
+  for (int x = 0; x < pg->gx; x++)
+  {
+    for (int y = 0; y < pg->gy; y++)
+    {
+			auto ppopulation = pg->getPopulation(x, y); // Get the population of the current cell
+      for (int s = 0; s < (int)ppopulation->pop.size(); s++)
+      {
+        for (int p = 0; p < (int)ppopulation->pop[s].size(); p++)
+        {
+					Plant plant = ppopulation->pop[s][p]; // Get the current plant
+
+					if (parentRegionAvailable)
+					{
+						if (plant.pos.x < parentY0 || plant.pos.x > parentY1 || plant.pos.z < parentX0 || plant.pos.z > parentX1)
+						{
+							continue;
+						}
+					}
+
+          string code = this->biome->getSpeciesMetaData()[s].scientific_name;
+
+          map<string, vector<MitsubaModel>>::iterator it;
+					if ((it = speciesMap.find(code)) != speciesMap.end()) // If the plant code is found in the profile
+          {
+            int indexNearestHeightMax = 0;
+            vector<MitsubaModel>& vectMitsubaModel = it->second;
+
+            for (int i = 0; i < vectMitsubaModel.size(); i++)
+            {
+              if (vectMitsubaModel[i].maxHeight <= plant.height )
+              {
+                indexNearestHeightMax = i;
+              }
+            }
+
+            int xHash = plant.pos.x * 100;
+            int zHash = plant.pos.z * 100;
+            int rotate = hashTable[(int)(hashTable[(int)((xHash) & 0xfffL)] ^ ((zHash) & 0xfffL))] % 360;
+            double scale = plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight;
+
+            // Current Instance
+            string key = vectMitsubaModel[indexNearestHeightMax].id;
+            if (streams.find(key) != streams.end())
+						{
+              streams[key] << ",\n";
+						}
+            else
+            {
+              // Create Stream
+              streams.emplace(key, ofstream());
+
+              // Init stream
+              streams[key].open(urlInstances + "/" + nameInstances + "/" + nameInstances + "_" + key + ".json");
+              streams[key] << "{\n";
+              streams[key] << "\t\"ObjectsInstances\": [\n";
+              streams[key] << "\t{\n";
+              streams[key] << "\t\t\"Ref\": \"" << key << "\",\n";
+              streams[key] << "\t\t\"Instances\": [\n";
+            }
+
+            ofstream& stream = streams[key];
+
+            stream << "\t\t\t{";
+            stream << "\"Rotate\": [ 0, " << std::to_string(rotate/10.) << ", 0 ],";// Rotation Y
+            stream << "\"Translate\": [ " << std::to_string(plant.pos.x - parentY0) << ", " << std::to_string(plant.pos.y) << ", " << std::to_string(plant.pos.z - parentX0) << " ],";// Translation
+            stream << "\"Scale\": [ "<< std::to_string(scale) <<", "<< std::to_string(scale) <<", "+ std::to_string(scale) <<" ]";// Scale
+            stream << "}";
+
+          }
+          else if (plantCodeNotFound.find(code) == plantCodeNotFound.end())
+          {
+            // Plant code was not found in the profile
+            plantCodeNotFound.insert(code);
+          }
+        }
+      }
+    }
+  }
+  
+  if (!streams.empty())
+	{
+    jsonFile << "{\n";
+    jsonFile << "\t\"Import\": [\n";
+	}
+
+  bool first = true;
+  for (auto const &ent : streams)
+  {
+
+    if(!first)
+			jsonFile << ",\n";
+    jsonFile << "\t\t\"./"<<nameInstances<<"/"<< nameInstances <<"_" << ent.first << ".json\"";
+
+    ofstream& stream = streams[ent.first];
+    stream << "\n\t\t]\n";
+    stream << "\t}]\n";
+    stream << "}\n";
+    stream.close();
+    first = false;
+  }
+
+  if (!streams.empty())
+  {
+    jsonFile << "\n\t]\n";
+    jsonFile << "}\n";
+  }
+
+
+  if (!plantCodeNotFound.empty())
+  {
+    QMessageBox messageBox;
+    QString warningMessage = "The following plant codes were not found and have been skipped :";
+    for (string code : plantCodeNotFound)
+    {
+      warningMessage += QString("\n - ") + code.data();
+    }
+    messageBox.warning(0, "Plant code not found", warningMessage);
+  }
+}
+
+
+/*
+ * Export the terrain
+ * @param jsonFile: The JSON file to write to
+ * @param transect: The transect to export
+*/
+void Scene::exportSceneJSON(const string jsonDirPath, const string cameraName, const string lightsName,
+  const string terrainName, const string instancesName, const string sceneName, const int resX, 
+  const int resY, const int quality, const int threads)
+{
+
+	ofstream jsonFile;
+  jsonFile.open(jsonDirPath + "/"+ sceneName +".json");
+
+	// Write JSON
+  jsonFile << "{\n";
+
+  jsonFile << "\t\"Import\":\n";
+  jsonFile << "\t[\n";
+  jsonFile << "\t\t\"ModelSpecies/Species.json\",\n";
+  jsonFile << "\t\t\"Cameras/" << cameraName <<".json\",\n";
+  jsonFile << "\t\t\"EnvMaps/" << lightsName << ".json\",\n";
+  jsonFile << "\t\t\"Terrain/" << terrainName << ".json\",\n";
+  jsonFile << "\t\t\"Instances/" << instancesName << ".json\"\n";
+  jsonFile << "\t],\n";
+  jsonFile << "\t\"Scene\":\n"; 
+  jsonFile << "\t{\n";
+  jsonFile << "\t\t\"Name\": \""<< sceneName <<"\",\n";
+  jsonFile << "\t\t\"Resolution\": [" << resX << ","<<resY << "],\n";
+  jsonFile << "\t\t\"Quality\": " << quality << ",\n";
+  jsonFile << "\t\t\"M3Backend\": \"scalar_rgb\",\n";
+  jsonFile << "\t\t\"Threads\": " << threads << ",\n";
+  jsonFile << "\t\t\"Frames\": [0, 0],\n";
+  jsonFile << "\t\t\"OutputDir\": \".\"\n";
+  jsonFile << "\t}\n";
+
+  jsonFile << "}\n";
+
+	jsonFile.close();
+
+}
+
+/*
+ * Export the terrain 
+ * @param jsonFile: The JSON file to write to
+ * @param transect: The transect to export 
+*/
+void Scene::exportTerrainJSON(const string terrainURL, const string terrainName, Transect* transect)
+{
+
+  QDir().mkdir(QString::fromStdString(terrainURL) + "/OBJ");
+  QDir().mkdir(QString::fromStdString(terrainURL) + "/Masks");
+
+  // Export OBJ
+  Terrain* terrain = getTerrain();
+  terrain->saveOBJ(terrainURL + "OBJ/" + terrainName + ".obj");
+  terrain->saveOBJ_Border(terrainURL + "OBJ/" + terrainName+"_Border.obj");
+
+  // Create terrain texture
+  // - Save Masks according to a specific slope
+  exportTextureSlope(terrainURL + "Masks/"+ terrainName + "maskSlopeBedrock.png", 50.,55.);
+  exportTextureSlope(terrainURL + "Masks/" + terrainName + "maskSlopeGround.png", 60., 78.);
+
+  // Export JSON
+  ofstream jsonFile;
+  jsonFile.open(terrainURL + "/" + terrainName + ".json");
+
+  jsonFile << "{\n";
+
+  // Terrain Object
+  jsonFile << "\t\"Objects\":\n";
+  jsonFile << "\t[{\n";
+  jsonFile << "\t\t\"Name\": \"terrain\",\n";
+  jsonFile << "\t\t\"Definition\" : \n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Name\": \"Terrain\",\n";
+  jsonFile << "\t\t\t\"File\" : \"OBJ/"<< terrainName <<".obj\",\n";
+  jsonFile << "\t\t\t\"Material\" : {\n";
+  jsonFile << "\t\t\t\t\"Type\":   \"Blended\",\n";
+  jsonFile << "\t\t\t\t\"Layers\" : [\n";
+  jsonFile << "\t\t\t\t\t{\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/Grass_BaseColor.png\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/coast_sand_rocks_02_nor_gl_2k.exr\",\n";
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 100.0\n"; //,\n";
+  //jsonFile << "\t\t\t\t\t\t\"OpacityMap\" : \"Terrain/Textures/Grass_Opacity.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Terrain/Textures/Grass_Normal.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMap\" : \"Terrain/Textures/Grass_Height.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMapIntensity\" : 1.0\n";
+  jsonFile << "\t\t\t\t\t},\n";
+  jsonFile << "\t\t\t\t\t{\n";
+  jsonFile << "\t\t\t\t\t\t\"AlphaMap\" : \"Masks/" + terrainName + "maskSlopeGround.png\",\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/Grass_Dry_BaseColor.jpg\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/aerial_rocks_04_nor_gl_2k.exr\",\n";
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 100.0\n";
+  jsonFile << "\t\t\t\t\t},\n";
+  jsonFile << "\t\t\t\t\t{\n";
+  jsonFile << "\t\t\t\t\t\t\"AlphaMap\" : \"Masks/" + terrainName + "maskSlopeBedrock.png\",\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/T_rock02_DS.tga\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/T_rock01_N.tga\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMap\" : \"Terrain/Textures/Bedrock_Stone_B.png\",\n";
+  //jsonFile << "\t\t\t\t\t\t\"BumpMapIntensity\" : 1.0,\n";
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 30.0\n";
+  jsonFile << "\t\t\t\t\t}\n";
+  jsonFile << "\t\t\t\t]\n";
+  jsonFile << "\t\t\t},\n";
+  jsonFile << "\t\t\t\"Instances\": \n";
+  jsonFile << "\t\t\t[{\n";
+  jsonFile << "\t\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t\t}]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t},\n";
+
+  jsonFile << "\t{\n";
+  jsonFile << "\t\t\"Name\": \"terrainBorder\",\n";
+  jsonFile << "\t\t\"Definition\" : \n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Name\": \"Terrain\",\n";
+  jsonFile << "\t\t\t\"File\" : \"OBJ/"<< terrainName <<"_Border.obj\",\n";
+  jsonFile << "\t\t\t\"Material\" : {\n";
+  jsonFile << "\t\t\t\t\"Type\":   \"DiffuseColor\",\n";
+  jsonFile << "\t\t\t\t\"Color\" : [0.8, 0.8, 0.8]\n";
+  jsonFile << "\t\t\t},\n";
+  jsonFile << "\t\t\t\"Instances\": \n";
+  jsonFile << "\t\t\t[{\n";
+  jsonFile << "\t\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t\t}]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t}],\n";
+
+
+  // Onjects Instances
+  jsonFile << "\t\"ObjectsInstances\": \n";
+  jsonFile << "\t[{\n";
+  jsonFile << "\t\t\"Ref\": \"terrain\", \n";
+  jsonFile << "\t\t\"Instances\" :\n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t},\n";
+  jsonFile << "\t{\n";
+  jsonFile << "\t\t\"Ref\": \"terrainBorder\", \n";
+  jsonFile << "\t\t\"Instances\" :\n";
+  jsonFile << "\t\t[{\n";
+  jsonFile << "\t\t\t\"Rotate\": [0, 0, 0] ,\n";
+  jsonFile << "\t\t\t\"Scale\" : [1, 1, 1] ,\n";
+  jsonFile << "\t\t\t\"Translate\" : [0, 0, 0]\n";
+  jsonFile << "\t\t}]\n";
+  jsonFile << "\t}]\n";
+
+  // End JSON
+  jsonFile << "}\n";
+}
+
+
+void Scene::exportTextureSlope(string URL, float slopeMin, float slopeMax)
+{
+  // - Extract terrain slope map
+  int x, y;
+  terrain->getGridDim(x, y);
+  basic_types::MapFloat* slopeMap = new basic_types::MapFloat();
+  slopeMap->setDim(x, y);
+  slopeMap->fill(0.0f);
+
+  terrain->calcSlopeMap(slopeMap);
+
+  QImage slopeImage(x, y, QImage::Format_RGB32);
+  for (int i = 0; i < x; i++)
+  {
+    for (int j = 0; j < y; j++)
+    {
+      float slope = slopeMap->get(i, j);
+      // clamp slope to 0-90
+      slope = std::max(slopeMin, slope);
+      slope = std::min(slopeMax, slope);
+      slopeImage.setPixel(i, (y-1)-j, qRgb(255 - 255 * (slope- slopeMin) / (slopeMax-slopeMin), 255 - 255 * (slope - slopeMin) / (slopeMax - slopeMin), 255 - 255 * (slope - slopeMin) / (slopeMax - slopeMin)));
+    }
+  }
+
+  slopeImage.save(QString(URL.data()) );
 }

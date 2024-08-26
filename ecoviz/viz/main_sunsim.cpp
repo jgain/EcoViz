@@ -63,7 +63,7 @@
 
 #include "glheaders.h"
 #include <QApplication>
-#include <QGLFormat>
+#include <QSurfaceFormat>
 #include <QCoreApplication>
 #include <QDesktopWidget>
 #include <string>

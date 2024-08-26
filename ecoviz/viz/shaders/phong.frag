@@ -1,7 +1,7 @@
-#version 150
+#version 410
 
-uniform vec4 specularCol;
 uniform float shiny;
+uniform vec4 specularCol;
 uniform vec4 matSpec;
 
 uniform int drawWalls;
@@ -47,5 +47,4 @@ void main(void)
         //pow(NdotHV,gl_FrontMaterial.shininess);
         color += matSpec * specularCol * pow(NdotHV, shiny);
         }
-
 }

@@ -1,4 +1,4 @@
-#version 150
+#version 410
 
 //layout(location = 0, index = 0)
 out vec4 fragColor;

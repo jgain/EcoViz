@@ -27,9 +27,11 @@
 #define _eco_h
 
 #define LOWRES
+//#define HIGHRES
 
 #include "pft.h"
 #include "dice_roller.h"
+#include "cohortmaps.h"
 #include "common/basic_types.h"
 #include "unordered_map"
 #include "boost/functional/hash.hpp"
@@ -42,8 +44,8 @@ struct Plant
 {
     vpPoint pos;    //< position on terrain in world units
     float height;   //< plant height in metres
-    float canopy;   //< canopy radius in metres
-    glm::vec4 col;  //< colour variation randomly assigned to plant
+    float canopy;   //< canopy radius (width?) in metres
+    float col;      //< colour variation randomly assigned to plant - scalar applied in shader to plant colour
 };
 
 struct SubSpecies
@@ -61,7 +63,7 @@ class NoiseField
 {
 private:
     long seed;      //< random number initialization to ensure a Noisefield can be reproduced
-    Terrain * terrain;  //< underlying terrain
+    // *** decouple ** Terrain * terrain;  //< underlying terrain
     int dimx, dimy; //< dimsions of the noisefield (a multiplicative factor of the terrain)
     basic_types::MapFloat * nmap;  //< field of noise values
     DiceRoller * dice; //< random number generator
@@ -70,11 +72,12 @@ public:
 
     /**
      * @brief NoiseField initializer
-     * @param ter   underlying terrain
+     * @param gridX   underlying grid X size
+     * @param gridY   underlying grid Y size
      * @param dstep number of sub-cells per terrain cell (basically a multiplication factor)
      * @param sval  seed value
      */
-    NoiseField(Terrain * ter, int dstep, long sval);
+    NoiseField(int gridX, int gridY, int dstep, long sval);
 
     ~NoiseField(){ delete dice; }
 
@@ -82,7 +85,8 @@ public:
     void init();
 
     /// recover a random value in [0, 1] at a point on the terrain
-    float getNoise(vpPoint p);
+    /// rangeX/Y allow any p in the valid range - else p can map outrside [0,1]
+    float getNoise(vpPoint p, float rangeX, float rangeY);
 };
 
 class PlantGrid
@@ -253,7 +257,7 @@ private:
     inline int flatten(int dx, int dy){ return dx * gy + dy; }
 
     /// reset grid to empty state
-    void initGrid();
+    void initGrid(bool assignGeom = true);
 
     /**
       * Create geometry for PFT with sphere top
@@ -319,6 +323,29 @@ public:
 
     ShapeGrid(int dx, int dy, Biome * shpbiome){ gx = dx; gy = dy; biome = shpbiome; initGrid(); }
 
+    // copy assignment ... assumes that geometry for source shapegrid is present (hacky I know)
+    ShapeGrid& operator=(const ShapeGrid& old)
+    {
+        if (this != &old)
+        {
+            biome = old.biome; gx = old.gx; gy = old.gy;
+
+            delGrid();
+            initGrid(false); // init empty grid only  - geom created ONCE - then copied below
+
+            std::cerr << "ShapeGrid - copy: rows " << shapes.size() << "; Col = " << shapes[0].size() << std::endl;
+
+            // copy grid geom data...
+            for(std::size_t i = 0; i < shapes.size(); i++)
+                for(std::size_t j = 0; j < shapes[i].size(); j++)
+                    shapes[i][j] = old.shapes[i][j];
+
+        }
+
+        return *this;
+    }
+
+
     ~ShapeGrid(){ delGrid(); }
 
     /// completely delete grid
@@ -347,7 +374,7 @@ public:
      * @param region        A bound on the region to be updated
      */
     void bindPlants(View * view, Terrain * ter, std::vector<bool> * plantvis, PlantGrid * esys, Region region);
-    void bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<bool> * plantvis);
+    void bindPlantsSimplified(Terrain * ter, PlantGrid *esys, std::vector<bool> * plantvis, std::vector<Plane> cullPlanes = {});
 
     /**
      * @brief drawPlants    Bundle rendering parameters for instancing lists
@@ -382,6 +409,8 @@ class EcoSystem
 private:
 
     ShapeGrid eshapes;                //< graphical representation of ecosystem
+    ShapeGrid transectShapes;         //< copy of graphical data for transect view (only subset will be bound, depending
+                                      // on culling planes)
     std::vector<PlantGrid> niches;    //< individual ecosystems for each niche
                                       //< the purpose of niches is to allow a coarse form of selection and rendering
                                       //< by default only the first niche is used
@@ -412,7 +441,7 @@ public:
     /// getNiche: return a pointer to a particular ecosystem niche (n)
     PlantGrid * getNiche(int n){ return &niches[n]; }
 
-    void setBiome(Biome * ecobiome){ biome = ecobiome; clear(); eshapes.attachBiome(ecobiome); }
+    void setBiome(Biome * ecobiome){ biome = ecobiome; clear(); eshapes.attachBiome(ecobiome); transectShapes = eshapes; }
 
     /**
        * Write plant positions to a PDB format text file
@@ -447,9 +476,9 @@ public:
      * @param drawParams    parameters for drawing plant species, appended to the current drawing parameters
      * @param bind          whether or not the plants need to be recreated after a change
      */
-    void bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool bind=false);
-    void placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree);
-    void placeManyPlants(Terrain *ter, NoiseField * nfield, const std::vector<basic_tree> &trees);
+    void bindPlantsSimplified(Terrain * ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool bind=false, std::vector<Plane> cullPlanes = {});
+    void placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const basic_tree &tree);
+    void placeManyPlants(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const std::vector<basic_tree> &trees);
 };
 
 #endif

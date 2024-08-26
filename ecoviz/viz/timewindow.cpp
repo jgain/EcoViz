@@ -9,10 +9,12 @@
 
 #include "glwidget.h"
 #include "scene.h"
+#include "window.h"
 
-TimeWindow::TimeWindow(QWidget *parent, int step_start, int step_end, int width, int height)
+TimeWindow::TimeWindow(QWidget *parent, Window * wp, int step_start, int step_end, int width, int height)
     : QWidget(parent, Qt::Window)
 {
+    setParent(wp);
     this->resize(width, height);
 
     // media controls
@@ -176,19 +178,21 @@ void TimeWindow::setScene(Scene * s)
     scene->getTimeline()->getTimeBounds(tstart, tend);
     setSliderBounds(tstart, tend);
 
-    if(scene->getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
+    //PCM: no idea what this does? Seems to be a map tied to resolution of the terrain? May cause issues.
+  /*  if(scene->getTypeMap(TypeMapType::COHORT)->getNumSamples() == -1)
     {
         cerr << "type map error" << endl;
         QMessageBox(QMessageBox::Warning, "Typemap Error", "Type map for cohorts does not have a valid colour table").exec();
     }
-    else if (scene->cohortmaps->get_nmaps() > 0)
+    else*/
+    if (scene->cohortmaps->get_nmaps() > 0)
     {
         int gw, gh;
         float rw, rh;
-        scene->getTerrain()->getGridDim(gw, gh);
-        scene->getTerrain()->getTerrainDim(rw, rh);
-
-        auto amap = scene->cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
+        //PCM: changed to get params of master/high res terrain from which this is extracted
+        scene->getMasterTerrain()->getGridDim(gw, gh);
+        scene->getMasterTerrain()->getTerrainDim(rw, rh);
+        // auto amap = scene->cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
         updateScene(scene->getTimeline()->getNow());
     }
     else
@@ -226,19 +230,21 @@ void TimeWindow::updateSingleScene(int t)
 
      for(auto &tree: mature)
      {
-         if(scene->getTerrain()->inGridBounds(tree.y, tree.x))
+         // PCM: changed to use Master terrain - we will place all then cull away (to avoid issues with Timeline)
+         // PCM: why are x/y swapped?
+         if(scene->getMasterTerrain()->inGridBounds(tree.y, tree.x))
              trees.push_back(tree);
          else
              cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
      }
 
-
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
-     scene->getEcoSys()->placeManyPlants(scene->getTerrain(), scene->getNoiseField(), trees);
+     scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), scene->cohortmaps, trees);
      signalRebindPlants();
+     winparent->rendercount++;
      signalRepaintAllGL();
-     update();
+     // update(); // JG should not be needed because of RepaintAllGL immediately above
      // auto et_render = std::chrono::steady_clock::now().time_since_epoch();
 
      // std::cout << "Timestep changed to " << tstep << std::endl;
@@ -252,4 +258,5 @@ void TimeWindow::updateSingleScene(int t)
      // std::cout << "Overall time: " << overalltime << std::endl;
      // std::cout << "Sample time: " << sampletime << std::endl;
      // std::cout << "Render time: " << rendertime << std::endl;
+
  }
