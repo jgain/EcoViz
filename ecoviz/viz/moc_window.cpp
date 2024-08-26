@@ -198,6 +198,8 @@ constexpr auto qt_meta_stringdata_CLASSWindowENDCLASS = QtMocHelpers::stringData
     "rightDataMapChoice",
     "leftRampChoice",
     "rightRampChoice",
+    "leftGraphChoice",
+    "rightGraphChoice",
     "uncheckDataMapPanel",
     "syncDataMapPanel",
     "lockViewsFromLeft",
@@ -226,7 +228,7 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSWindowENDCLASS[] = {
       12,       // revision
        0,       // classname
        0,    0, // classinfo
-      32,   14, // methods
+      34,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -234,38 +236,40 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSWindowENDCLASS[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    0,  206,    2, 0x0a,    1 /* Public */,
-       3,    1,  207,    2, 0x0a,    2 /* Public */,
-       5,    1,  210,    2, 0x0a,    4 /* Public */,
-       7,    0,  213,    2, 0x0a,    6 /* Public */,
-       8,    0,  214,    2, 0x0a,    7 /* Public */,
-       9,    0,  215,    2, 0x0a,    8 /* Public */,
-      10,    1,  216,    2, 0x0a,    9 /* Public */,
-      12,    1,  219,    2, 0x0a,   11 /* Public */,
-      13,    0,  222,    2, 0x0a,   13 /* Public */,
-      14,    0,  223,    2, 0x0a,   14 /* Public */,
-      15,    0,  224,    2, 0x0a,   15 /* Public */,
-      16,    1,  225,    2, 0x0a,   16 /* Public */,
-      18,    1,  228,    2, 0x0a,   18 /* Public */,
-      20,    1,  231,    2, 0x0a,   20 /* Public */,
-      21,    0,  234,    2, 0x0a,   22 /* Public */,
-      22,    0,  235,    2, 0x0a,   23 /* Public */,
-      23,    0,  236,    2, 0x0a,   24 /* Public */,
-      24,    1,  237,    2, 0x0a,   25 /* Public */,
-      26,    1,  240,    2, 0x0a,   27 /* Public */,
-      27,    1,  243,    2, 0x0a,   29 /* Public */,
-      28,    1,  246,    2, 0x0a,   31 /* Public */,
-      29,    0,  249,    2, 0x0a,   33 /* Public */,
-      30,    0,  250,    2, 0x0a,   34 /* Public */,
-      31,    0,  251,    2, 0x0a,   35 /* Public */,
-      32,    0,  252,    2, 0x0a,   36 /* Public */,
-      33,    0,  253,    2, 0x0a,   37 /* Public */,
-      34,    0,  254,    2, 0x0a,   38 /* Public */,
-      35,    0,  255,    2, 0x0a,   39 /* Public */,
-      36,    0,  256,    2, 0x0a,   40 /* Public */,
-      37,    0,  257,    2, 0x0a,   41 /* Public */,
-      38,    0,  258,    2, 0x0a,   42 /* Public */,
-      39,    5,  259,    2, 0x0a,   43 /* Public */,
+       1,    0,  218,    2, 0x0a,    1 /* Public */,
+       3,    1,  219,    2, 0x0a,    2 /* Public */,
+       5,    1,  222,    2, 0x0a,    4 /* Public */,
+       7,    0,  225,    2, 0x0a,    6 /* Public */,
+       8,    0,  226,    2, 0x0a,    7 /* Public */,
+       9,    0,  227,    2, 0x0a,    8 /* Public */,
+      10,    1,  228,    2, 0x0a,    9 /* Public */,
+      12,    1,  231,    2, 0x0a,   11 /* Public */,
+      13,    0,  234,    2, 0x0a,   13 /* Public */,
+      14,    0,  235,    2, 0x0a,   14 /* Public */,
+      15,    0,  236,    2, 0x0a,   15 /* Public */,
+      16,    1,  237,    2, 0x0a,   16 /* Public */,
+      18,    1,  240,    2, 0x0a,   18 /* Public */,
+      20,    1,  243,    2, 0x0a,   20 /* Public */,
+      21,    0,  246,    2, 0x0a,   22 /* Public */,
+      22,    0,  247,    2, 0x0a,   23 /* Public */,
+      23,    0,  248,    2, 0x0a,   24 /* Public */,
+      24,    1,  249,    2, 0x0a,   25 /* Public */,
+      26,    1,  252,    2, 0x0a,   27 /* Public */,
+      27,    1,  255,    2, 0x0a,   29 /* Public */,
+      28,    1,  258,    2, 0x0a,   31 /* Public */,
+      29,    1,  261,    2, 0x0a,   33 /* Public */,
+      30,    1,  264,    2, 0x0a,   35 /* Public */,
+      31,    0,  267,    2, 0x0a,   37 /* Public */,
+      32,    0,  268,    2, 0x0a,   38 /* Public */,
+      33,    0,  269,    2, 0x0a,   39 /* Public */,
+      34,    0,  270,    2, 0x0a,   40 /* Public */,
+      35,    0,  271,    2, 0x0a,   41 /* Public */,
+      36,    0,  272,    2, 0x0a,   42 /* Public */,
+      37,    0,  273,    2, 0x0a,   43 /* Public */,
+      38,    0,  274,    2, 0x0a,   44 /* Public */,
+      39,    0,  275,    2, 0x0a,   45 /* Public */,
+      40,    0,  276,    2, 0x0a,   46 /* Public */,
+      41,    5,  277,    2, 0x0a,   47 /* Public */,
 
  // slots: parameters
     QMetaType::Void,
@@ -289,6 +293,8 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSWindowENDCLASS[] = {
     QMetaType::Void, QMetaType::Int,   25,
     QMetaType::Void, QMetaType::Int,   25,
     QMetaType::Void, QMetaType::Int,   25,
+    QMetaType::Void, QMetaType::Int,   25,
+    QMetaType::Void, QMetaType::Int,   25,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -299,7 +305,7 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSWindowENDCLASS[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,   40,   41,   42,   43,   44,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,   42,   43,   44,   45,   46,
 
        0        // eod
 };
@@ -366,6 +372,12 @@ Q_CONSTINIT const QMetaObject Window::staticMetaObject = { {
         // method 'rightRampChoice'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
         QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        // method 'leftGraphChoice'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        // method 'rightGraphChoice'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
         // method 'uncheckDataMapPanel'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
         // method 'syncDataMapPanel'
@@ -424,17 +436,19 @@ void Window::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         case 18: _t->rightDataMapChoice((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
         case 19: _t->leftRampChoice((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
         case 20: _t->rightRampChoice((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
-        case 21: _t->uncheckDataMapPanel(); break;
-        case 22: _t->syncDataMapPanel(); break;
-        case 23: _t->lockViewsFromLeft(); break;
-        case 24: _t->lockViewsFromRight(); break;
-        case 25: _t->lockTransectFromLeft(); break;
-        case 26: _t->lockTransectFromRight(); break;
-        case 27: _t->lockTimelineFromLeft(); break;
-        case 28: _t->lockTimelineFromRight(); break;
-        case 29: _t->showTransectViews(); break;
-        case 30: _t->clearTransects(); break;
-        case 31: _t->extractNewSubTerrain((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[4])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[5]))); break;
+        case 21: _t->leftGraphChoice((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 22: _t->rightGraphChoice((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 23: _t->uncheckDataMapPanel(); break;
+        case 24: _t->syncDataMapPanel(); break;
+        case 25: _t->lockViewsFromLeft(); break;
+        case 26: _t->lockViewsFromRight(); break;
+        case 27: _t->lockTransectFromLeft(); break;
+        case 28: _t->lockTransectFromRight(); break;
+        case 29: _t->lockTimelineFromLeft(); break;
+        case 30: _t->lockTimelineFromRight(); break;
+        case 31: _t->showTransectViews(); break;
+        case 32: _t->clearTransects(); break;
+        case 33: _t->extractNewSubTerrain((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[4])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[5]))); break;
         default: ;
         }
     }
@@ -459,13 +473,13 @@ int Window::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 32)
+        if (_id < 34)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 32;
+        _id -= 34;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 32)
+        if (_id < 34)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 32;
+        _id -= 34;
     }
     return _id;
 }

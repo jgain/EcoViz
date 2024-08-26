@@ -43,6 +43,7 @@ constexpr auto qt_meta_stringdata_CLASSGLWidgetENDCLASS = QtMocHelpers::stringDa
     "firstPoint",
     "signalRebindTransectPlants",
     "signalExtractNewSubTerrain",
+    "signalExtractOtherSubTerrain",
     "signalSyncDataMap",
     "animUpdate",
     "rotateUpdate",
@@ -59,31 +60,33 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSGLWidgetENDCLASS[] = {
       12,       // revision
        0,       // classname
        0,    0, // classinfo
-       9,   14, // methods
+      10,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-       6,       // signalCount
+       7,       // signalCount
 
  // signals: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    0,   68,    2, 0x06,    1 /* Public */,
-       3,    0,   69,    2, 0x06,    2 /* Public */,
-       4,    1,   70,    2, 0x06,    3 /* Public */,
-       6,    0,   73,    2, 0x06,    5 /* Public */,
-       7,    5,   74,    2, 0x06,    6 /* Public */,
-       8,    0,   85,    2, 0x06,   12 /* Public */,
+       1,    0,   74,    2, 0x06,    1 /* Public */,
+       3,    0,   75,    2, 0x06,    2 /* Public */,
+       4,    1,   76,    2, 0x06,    3 /* Public */,
+       6,    0,   79,    2, 0x06,    5 /* Public */,
+       7,    5,   80,    2, 0x06,    6 /* Public */,
+       8,    5,   91,    2, 0x06,   12 /* Public */,
+       9,    0,  102,    2, 0x06,   18 /* Public */,
 
  // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       9,    0,   86,    2, 0x0a,   13 /* Public */,
-      10,    0,   87,    2, 0x0a,   14 /* Public */,
-      11,    0,   88,    2, 0x0a,   15 /* Public */,
+      10,    0,  103,    2, 0x0a,   19 /* Public */,
+      11,    0,  104,    2, 0x0a,   20 /* Public */,
+      12,    0,  105,    2, 0x0a,   21 /* Public */,
 
  // signals: parameters
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void, QMetaType::Bool,    5,
     QMetaType::Void,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,    2,    2,    2,    2,    2,
     QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,    2,    2,    2,    2,    2,
     QMetaType::Void,
 
@@ -120,6 +123,13 @@ Q_CONSTINIT const QMetaObject GLWidget::staticMetaObject = { {
         QtPrivate::TypeAndForceComplete<int, std::false_type>,
         QtPrivate::TypeAndForceComplete<int, std::false_type>,
         QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        // method 'signalExtractOtherSubTerrain'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
         // method 'signalSyncDataMap'
         QtPrivate::TypeAndForceComplete<void, std::false_type>,
         // method 'animUpdate'
@@ -143,10 +153,11 @@ void GLWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
         case 2: _t->signalSyncPlace((*reinterpret_cast< std::add_pointer_t<bool>>(_a[1]))); break;
         case 3: _t->signalRebindTransectPlants(); break;
         case 4: _t->signalExtractNewSubTerrain((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[4])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[5]))); break;
-        case 5: _t->signalSyncDataMap(); break;
-        case 6: _t->animUpdate(); break;
-        case 7: _t->rotateUpdate(); break;
-        case 8: _t->rebindPlants(); break;
+        case 5: _t->signalExtractOtherSubTerrain((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[4])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[5]))); break;
+        case 6: _t->signalSyncDataMap(); break;
+        case 7: _t->animUpdate(); break;
+        case 8: _t->rotateUpdate(); break;
+        case 9: _t->rebindPlants(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -187,9 +198,16 @@ void GLWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
             }
         }
         {
+            using _t = void (GLWidget::*)(int , int , int , int , int );
+            if (_t _q_method = &GLWidget::signalExtractOtherSubTerrain; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 5;
+                return;
+            }
+        }
+        {
             using _t = void (GLWidget::*)();
             if (_t _q_method = &GLWidget::signalSyncDataMap; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
-                *result = 5;
+                *result = 6;
                 return;
             }
         }
@@ -217,13 +235,13 @@ int GLWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 9)
+        if (_id < 10)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 9;
+        _id -= 10;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 9)
+        if (_id < 10)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 9;
+        _id -= 10;
     }
     return _id;
 }
@@ -261,8 +279,15 @@ void GLWidget::signalExtractNewSubTerrain(int _t1, int _t2, int _t3, int _t4, in
 }
 
 // SIGNAL 5
+void GLWidget::signalExtractOtherSubTerrain(int _t1, int _t2, int _t3, int _t4, int _t5)
+{
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t3))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t4))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t5))) };
+    QMetaObject::activate(this, &staticMetaObject, 5, _a);
+}
+
+// SIGNAL 6
 void GLWidget::signalSyncDataMap()
 {
-    QMetaObject::activate(this, &staticMetaObject, 5, nullptr);
+    QMetaObject::activate(this, &staticMetaObject, 6, nullptr);
 }
 QT_WARNING_POP
