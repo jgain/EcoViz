@@ -67,7 +67,7 @@ Follow these steps to set up Ecoviz on Ubuntu:
    - Set up the project properties:
      1. Right-click on the Ecoviz project in the Solution Explorer and select **Properties**.
      2. Go to **Configuration Properties > Debugging**.
-     3. Set **Command Arguments** to `..\..\data\test`.
+     3. Set **Command Arguments** to `..\..\data\test2`.
      4. Set **Working Directory** to `$(ProjectDir)\out` for both **Debug** and **Release** configurations.
 
 3. **Run the `copydll.bat` Script**:
