@@ -1953,7 +1953,7 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
                     continue;
                 }
 
-                if (line.empty() || line.find_first_not_of(" ") == string::npos)
+                if (line.empty() || line.find_first_not_of("; ") == string::npos)
                 {
                     continue;
                 }
@@ -1977,8 +1977,10 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
 
                 maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
                 char* end = nullptr;
-                maxHeight = strtod(maxHeightStr.c_str(), &end);
-                if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
+                //maxHeight = strtod(maxHeightStr.c_str(), &end);
+                maxHeight = atof(maxHeightStr.c_str());
+                //if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
+                if (maxHeight == 0.0)
                 {
                     maxHeight = -1.0;
                     cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" << endl;
@@ -1999,8 +2001,10 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
 
                 actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
                 end = nullptr;
-                actualHeight = strtod(actualHeightStr.c_str(), &end);
-                if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
+                actualHeight = atof(actualHeightStr.c_str());
+                //actualHeight = strtod(actualHeightStr.c_str(), &end);
+                //if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
+                if (actualHeight == 0.0)
                 {
                     actualHeight = -1.0;
                     cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" << endl;

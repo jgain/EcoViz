@@ -247,6 +247,7 @@ void TimeWindow::updateSingleScene(int t)
          cerr << out_of_bounds << " mature trees out of bound!" << endl <<
              "in bounds rectangle: x min: " << in_x_min << ", x max: " << in_x_max << ", y min: " << in_y_min << ", y max: " << in_y_max;
 
+
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
      scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), scene->cohortmaps, trees);
