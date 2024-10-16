@@ -958,6 +958,8 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
     float draw_radius, draw_box1, draw_box2;
 
     data_importer::treeshape draw_shape;
+    const char* oldNumLoc = setlocale(LC_NUMERIC, 0);
+    setlocale(LC_NUMERIC, "C");
 
     for (int i = 0; i < argc; i++)
     {
@@ -992,31 +994,31 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
         }
         else if (colstr == "base_col_red")
         {
-            draw_color[0] = std::stof(valstr);
+            draw_color[0] = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "base_col_green")
         {
-            draw_color[1] = std::stof(valstr);
+            draw_color[1] = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "base_col_blue")
         {
-            draw_color[2] = std::stof(valstr);
+            draw_color[2] = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_height")
         {
-            draw_height = std::stof(valstr);
+            draw_height = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_radius")
         {
-            draw_radius = std::stof(valstr);
+            draw_radius = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_box1")
         {
-            draw_box1 = std::stof(valstr);
+            draw_box1 = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_box2")
         {
-            draw_box2 = std::stof(valstr);
+            draw_box2 = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_shape")
         {
@@ -1060,6 +1062,8 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
     sp.shapetype = draw_shape;
 
     auto result = common->all_species.insert({sp.idx, sp});
+    // restore old locale category
+    setlocale(LC_NUMERIC, oldNumLoc);
     return 0;
 }
 

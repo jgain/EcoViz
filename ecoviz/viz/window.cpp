@@ -1027,9 +1027,9 @@ void Window::run_viewer()
         // load in remaing eco-system data - NOTE:
         // the original source region extent is stored in scene[i] - this is later queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
-        scenes[i]->loadScene(1, 5); // years
+        scenes[i]->loadScene(1, 4); // years
         cerr << "loading Data Maps" << endl;
-        scenes[i]->loadDataMaps(5);
+        scenes[i]->loadDataMaps(4);
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
