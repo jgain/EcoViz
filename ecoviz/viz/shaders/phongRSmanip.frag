@@ -1,4 +1,4 @@
-#version 330
+#version 410
 
 #extension GL_ARB_explicit_attrib_location: enable
 
@@ -6,7 +6,6 @@ uniform vec4 specularCol;
 uniform float shiny;
 uniform vec4 matSpec;
 
-uniform int drawWalls;
 uniform sampler2D decalTexture;
 uniform int useTexturing;
 
@@ -30,8 +29,7 @@ void main(void)
 
     vec3 n, halfV,viewV,ldir;
     float NdotL,NdotHV;
-    color = ambient; //global ambient
-    //float att;
+    vec3 c = ambient.rgb;
 
     n = normalize(normal);
 
@@ -41,25 +39,21 @@ void main(void)
 
     if (NdotL > 0.0) {
 
-        //att = 1.0 / (gl_LightSource[0].constantAttenuation +
-        //    gl_LightSource[0].linearAttenuation * dist +
-        //    gl_LightSource[0].quadraticAttenuation * dist * dist);
-        //color += att * (diffuse * NdotL + ambient);
-        color += diffuse * NdotL; // + ambient;
+        c += diffuse.rgb * NdotL; // + ambient;
 
         halfV = normalize(halfVector);
         NdotHV = max(dot(n,halfV),0.0);
-        color += matSpec * specularCol * pow(NdotHV, shiny);
+        c += matSpec.rgb * specularCol.rgb * pow(NdotHV, shiny);
 
      }
      // decal texturing:
      if (useTexturing == 1)
      {
         vec4 texel = texture(decalTexture, texCoord);
-        // color = vec4(texCoord.x, texCoord.y, 0.0, 1.0);
-        // color = vec4(texel.r, texel.g, texel.b, color.a); // GL_REPLACE
-        color = vec4(mix(color.rgb, texel.rgb, texel.a), color.a); // GL_DECAL
+
+        c = mix(c.rgb, texel.rgb, texel.a); // GL_DECAL
      }
 
+     color = vec4(c, 1.0); 
      // color.a = manipAlpha; // override this for all produced fragments
 }

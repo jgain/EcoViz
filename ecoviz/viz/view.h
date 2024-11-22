@@ -126,15 +126,21 @@ public:
         updateDir();
     }
 
+    /// save out view matrix, as text files
+    /// the filename basename will be used to produce:
+    /// basename-view.txt
+    /// format reqired for external software
+    /// offsetX/Z  is the camera x-z offset (in terrain ground plane)
+    /// to accommodate for sub-regions. This will allow *global* camera to be extracted
+
+    void saveCameraMatrices(const std::string & basename, float  offsetX, float offsetZ);
+
+
     /// Return the center of projection of the view, recalculated as necessary
     inline vpPoint getCOP(){ return cop; }
 
     /// Change the viewpoint to directly above the terrain
-    inline void topdown()
-    {
-        zoomdist = 4.0f * viewscale;
-        trackball(curquat, 0.0f, 0.0f, 0.0f, -1.0f);
-    }
+    void topdown();
 
     /// Change the viewpoint zoomed in and low on the terrain
     inline void closeview()
@@ -179,11 +185,14 @@ public:
     /// Start spinning the viewpoint
     void startSpin();
 
+    inline float getHalfHorizontalFOV(){ return atan(8.0f/50.0f); }
+
     /// Set the terrain scaling factor
     inline void setViewScale(float extent)
     {
-        zoomdist = zoomdist / viewscale * extent; // adjust zoomdist
+        // zoomdist = zoomdist / viewscale * extent; // adjust zoomdist
         viewscale = extent;
+        zoomdist = viewscale / 2.0f / tan(getHalfHorizontalFOV());
     }
 
     /// set the extent of the orthogonal view using the terrain dimensions (tx, ty) in metres
@@ -204,6 +213,7 @@ public:
 
     /// set the form of viewing
     inline void setViewType(ViewState vs){ viewtype = vs; }
+    inline ViewState getViewType(){ return viewtype; }
 
     /// get and set viewing mode
     inline void setViewMode(ViewMode vm)
@@ -354,5 +364,7 @@ public:
     /// print view stats to cerr
     void print();
     void flatview(float rad);
+
+    void exportCameraJSON(const string url, const string filename);
 };
 # endif // _INC_VIEW

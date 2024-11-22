@@ -1,0 +1,15 @@
+
+Q: the same data seems to be replicated for each 3D render view - all trees (so 4x the underlying data?)
+
+Q: scaling bug with trees on terrain (Additional scale factor in x/y?)
+
+Q: basal  area info not displaying  - is this loaded, computed?
+
+Q: antialiasing not working - for FBO need special mode, but even in transect view. investigate
+
+Q: recursive paint calls when locking transect view (sometimes) - some paint calls are nested? should not call paint directly, but signal?
+
+Q: low res window for transect? Needs anti-aliasing
+
+Q: normal map not working when lock transect called - even when restored, radiance scaling is then off in main wndow
+

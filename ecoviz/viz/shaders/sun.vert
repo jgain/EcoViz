@@ -1,4 +1,4 @@
-#version 150
+#version 410
 #extension GL_ARB_explicit_attrib_location: enable
 
 // vertex shader: for sunlight, simple indexed colour per triangle, passed through directly

@@ -1,0 +1,37 @@
+{
+  "Import": [
+    "AbiesAlba/AbiesAlba_1_5m.json",
+    "AbiesAlba/AbiesAlba_6m.json",
+    "AbiesAlba/AbiesAlba_25m.json",
+    "AbiesAlba/AbiesAlba_50m.json",
+    "AcerPseudoplatanus/AcerPseudoplatanus_1_8m.json",
+    "AcerPseudoplatanus/AcerPseudoplatanus_7_5m.json",
+    "AcerPseudoplatanus/AcerPseudoplatanus_30m.json",
+    "BetulaPendula/BetulaPendula_1_5m.json",
+    "BetulaPendula/BetulaPendula_6m.json",
+    "BetulaPendula/BetulaPendula_25m.json",
+    "FagusSylvatica/FagusSylvatica_2_5m.json",
+    "FagusSylvatica/FagusSylvatica_10m.json",
+    "FagusSylvatica/FagusSylvatica_40m.json",
+    "LarixDecidua/LarixDecidua_2_5m.json",
+    "LarixDecidua/LarixDecidua_10m.json",
+    "LarixDecidua/LarixDecidua_40m.json",
+    "PiceaAbies/PiceaAbies_0_8m.json",
+    "PiceaAbies/PiceaAbies_3_1m.json",
+    "PiceaAbies/PiceaAbies_12_5m.json",
+    "PiceaAbies/PiceaAbies_50m.json",
+    "PinusCembra/PinusCembra_1_3m.json",
+    "PinusCembra/PinusCembra_5m.json",
+    "PinusCembra/PinusCembra_20m.json",
+    "PinusMugo/PinusMugo_3m.json",
+    "PinusSylvestris/PinusSylvestris_2_1m.json",
+    "PinusSylvestris/PinusSylvestris_8_6m.json",
+    "QuercusPetrae/QuercusPetrae_1_6m.json",
+    "QuercusPetrae/QuercusPetrae_7_3m.json",
+    "QuercusPetrae/QuercusPetrae_30m.json",
+    "SorbusAucuparia/SorbusAucuparia_1m.json",
+    "SorbusAucuparia/SorbusAucuparia_3_7m.json",
+    "SorbusAucuparia/SorbusAucuparia_15m.json"
+  ]
+}
+

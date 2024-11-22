@@ -88,12 +88,23 @@ public:
         mapviz->fill(0.0f);
     }
 
-    inline void reset()
+    // if non null ter provided, retarget this terrain
+    inline void reset(Terrain *ter = nullptr)
     {
         redraw = false;
         valid = false;
-        mapviz->fill(0.0f);
         thickness = 20.0f;
+
+        if (ter == nullptr)
+        {
+            mapviz->fill(0.0f);
+        }
+        else // reset to new terrain dimensions
+        {
+            delete mapviz;
+            mapviz = new basic_types::MapFloat();
+            init(ter);
+        }
     }
 
     // getters and setters
@@ -163,6 +174,11 @@ public:
      * @param ter   underlying terrain
      */
     void zoom(float zdel, Terrain * ter);
+
+    // PCM 2023 ****
+    // return the planes bounding the transect;
+    // planeBaseOrigin = centre of 1st plane (for use with view transformation)
+    std::pair<Plane, Plane> getTransectPlanes(vpPoint &planeBaseOrigin);
 };
 
 struct TransectCreation
@@ -309,21 +325,81 @@ public:
     void extractNormalizedBasalArea(Scene * s);
 };
 
+// lightweight scene class for overview map
+class mapScene
+{
+private:
+    std::unique_ptr<Terrain> fullResTerrain;   // input terrain -  full resolution
+    std::unique_ptr<Terrain> lowResTerrain;    // low resolution terrain for overview rendering
+    std::unique_ptr<TypeMap> overlay;          // single overlay supported (blended over terrain)
+    std::string datadir;                       // directory containing all the scene data
+    std::string basename;                      // the dem name (without extension)
+    std::string overlayName;                   // name of overlap image
+    Region selectedRegion;                     // current selected sub-region  - relative to hi-res input
+                                               //(needed for overview render)
+
+    // downsampling/rescaling
+    int downFactor;
+
+    // ensure scene directory is valid
+    std::string get_dirprefix();
+
+public:
+
+    mapScene(const std::string & ddir, const std::string overlayNm, const std::string & base) :
+        fullResTerrain(new Terrain), lowResTerrain(new Terrain),
+        overlay(new TypeMap)
+    {
+        overlayName = overlayNm;
+        datadir = ddir;
+        basename = base;
+        downFactor = 4;
+
+        selectedRegion = Region();
+
+        // dummy init to avoid issues with early paintGL() which expects valid terrain
+        lowResTerrain->initGrid(10, 10, 100.0f, 100.0f);
+    }
+    ~mapScene() {}
+
+
+    // getters
+
+    std::unique_ptr<Terrain> & getHighResTerrain(void)  { return fullResTerrain; }
+    std::unique_ptr<Terrain> & getLowResTerrain(void) { return lowResTerrain; }
+    std::unique_ptr<TypeMap> & getOverlayMap(void) { return overlay; }
+    void setSelectedRegion(Region reg) { selectedRegion = reg; } // NOTE: after this, sub-terr must be extracted again
+    Region getSelectedRegion(void) const { return selectedRegion; }
+    Region getEntireRegion() { return fullResTerrain->getEntireRegion(); }
+    std::string getBaseName(void) const { return basename; }
+    bool subwindowValid(Region subwindow);
+
+    void setDownsampleFactor(int factor) { downFactor = factor; }
+
+    // extract the sub-region specified by region and update internal data structures
+    // return the new extracted terrain for later processing.
+    std::unique_ptr<Terrain> extractTerrainSubwindow(Region region);
+
+
+    // factor: default reduction factor to extract sub-region for main terrain (10 = 1/10th)
+    // return value = a unique_ptr to extracted Terrain  that must be managed by the caller
+    std::unique_ptr<Terrain> loadOverViewData(int factor = 10);
+
+};
+
 class Scene
 {
 private:
-    Terrain * terrain;                          //< underlying terrain
+    std::unique_ptr<Terrain> terrain;           //< underlying terrain
+    Terrain *masterTerrain;                     //< a pointer to the large input terrain this one is extracted from
     TypeMap * maps[(int) TypeMapType::TMTEND];  //< underlying type map data
-    basic_types::MapFloat * slope, * chm, * cdm;             //< condition maps
-    std::vector<basic_types::MapFloat *> sunlight;           //< local per cell illumination for each month
-    std::vector<basic_types::MapFloat *> moisture;           //< local per cell moisture for each month
-    std::vector<float> temperature;             //< average monthly temperature
     string datadir;                             //< directory containing all the scene data
+    string basename;                            //< base name for DEM and sequence of PDBs
     Timeline * tline;                           //< timeline
     NoiseField * nfield;                        //< random noise map
+    DataMaps * dmaps;                           //< data maps for extracting textures
 
     ValueGridMap<std::vector<data_importer::ilanddata::cohort> > before_mod_map;
-
 
     EcoSystem * eco;
     Biome * biome;
@@ -336,22 +412,37 @@ public:
     std::unique_ptr<CohortMaps> cohortmaps;     //< agreggate ecosystem data
     std::unique_ptr<cohortsampler> sampler;     //< to derive individual trees from cohort maps
 
-    Scene(string ddir);
+    Scene(string ddir, string base);
 
     ~Scene();
 
     /// getters for currently active view, terrain, typemaps, renderer, ecosystem
-    Terrain * getTerrain(){ return terrain; }
+    Terrain *  getTerrain(){ return terrain.get(); }
+    Terrain *  getMasterTerrain() { return masterTerrain; }
     TypeMap * getTypeMap(TypeMapType purpose){ return maps[static_cast<int>(purpose)]; }
     EcoSystem * getEcoSys(){ return eco; }
-    basic_types::MapFloat * getSunlight(int month){ return sunlight[month]; }
-    basic_types::MapFloat * getSlope(){ return slope; }
-    basic_types::MapFloat * getMoisture(int month){ return moisture[month]; }
-    basic_types::MapFloat * getCanopyHeightModel(){ return chm; }
-    basic_types::MapFloat * getCanopyDensityModel(){ return cdm; }
     Biome * getBiome(){ return biome; }
     Timeline * getTimeline(){ return tline; }
     NoiseField * getNoiseField(){ return nfield; }
+    DataMaps * getDataMaps(){ return dmaps; }
+
+    // set new Terrain core data; assumes newTerr has internal state set up
+    void setNewTerrainData(std::unique_ptr<Terrain> newTerr, Terrain *master)
+    {
+        terrain = std::move(newTerr);
+
+        terrain->calcMeanHeight();
+
+        // match dimensions for empty overlay
+        int dx, dy;
+        terrain->getGridDim(dx, dy);
+        getTypeMap(TypeMapType::TRANSECT)->matchDim(dy, dx);
+        getTypeMap(TypeMapType::TRANSECT)->fill(1);
+        getTypeMap(TypeMapType::EMPTY)->matchDim(dy, dx);
+        getTypeMap(TypeMapType::EMPTY)->clear();
+
+        masterTerrain = master;
+    }
 
     /**
      * @brief calcSlope    Calculate per cell ground slope
@@ -393,6 +484,13 @@ public:
     void loadScene(int timestep_start, int timestep_end);
     void loadScene(std::string dirprefix, int timestep_start, int timestep_end);
 
+    /**
+     * @brief loadDataMaps Load all data maps for texturing from file
+     * @param totRegion Region covered by the full terrain
+     * @param total number of simulation timesteps
+     */
+    void loadDataMaps(int timesteps);
+
      /**
       * Export the scene (for Mitsuba) to the XML specified
       * @param speciesMap      Correspondence map between the plant type and a vector binding a height to a mitsuba id
@@ -400,6 +498,44 @@ public:
       * @param transect        Transect control in case the export concerns only the transect view, nullptr instead
       */
      void exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect = nullptr);
+
+     /**
+      * Export the scene (for Mitsuba) to the JSON specified
+      * @param speciesMap      Correspondence map between the plant type and a vector binding a height to a mitsuba id
+      * @param xmlFile         XML file in which the scene will be exported
+      * @param transect        Transect control in case the export concerns only the transect view, nullptr instead
+      */
+     void exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, const string urlInstances, const string nameInstances, Scene* scene, Transect* transect = nullptr);
+
+     /**
+			* @brief expoert the scene parameters to the JSON specified
+      * @param jsonFile 
+      * @param cameraName 
+      * @param lightsName 
+      * @param terrainName 
+      * @param instancesName 
+      * @param sceneName 
+      * @param resX 
+      * @param resY 
+      * @param quality 
+      * @param threads 
+      */
+     void exportSceneJSON(const string jsonDirPath, const string cameraName, const string lightsName, const string terrainName, const string instancesName, const string sceneName, const int resX, const int resY, const int quality, const int threads);
+
+     /**
+      * Export the terrain (for Mitsuba) to the JSON specified and OBJ File
+      * @param xmlFile         XML file in which the scene will be exported
+      * @param transect        Transect control in case the export concerns only the transect view, nullptr instead
+      */
+     void exportTerrainJSON(const string terrainURL, const string terrainName, Transect* transect = nullptr);
+
+     /**
+			* @brief compute the slope of the terrain and export it to a texture
+      * @param URL 
+      * @param slopeMin 
+      * @param slopeMax 
+      */
+     void exportTextureSlope(const string URL, float slopeMin, float slopeMax);
 };
 
 #endif // SCENE_H

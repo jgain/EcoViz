@@ -9,6 +9,7 @@ if (BUILD_GUI)
     set(GUI_SOURCES
        glwidget.cpp glwidget.h
        gltransect.cpp gltransect.h
+       gloverview.cpp gloverview.h
        timer.cpp timer.h
        pft.cpp pft.h
        eco.cpp eco.h
@@ -34,24 +35,23 @@ if (BUILD_GUI)
        export_dialog.cpp export_dialog.h
 )
 
-   #set(CMAKE_BUILD_TYPE Debug)
-   #set(CMAKE_BUILD_TYPE Release)
-   #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/build-ecoviz-Qt_5_10_0_GCC_64bit-Debug)
-   #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/build-ecoviz-Qt_5_10_0_GCC_64bit-Default)
     add_library(vgui ${GUI_SOURCES})
     target_include_directories(vgui PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(vgui common
-        ${GLEW_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5OpenGL_LIBRARIES} ${Qt5Charts_LIBRARIES}
+        ${GLEW_LIBRARIES} ${Qt6Widgets_LIBRARIES} ${Qt6OpenGL_LIBRARIES} ${Qt6Charts_LIBRARIES}
         ${OPENGL_LIBRARIES} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt6Widgets_EXECUTABLE_COMPILE_FLAGS}")
     add_executable(ecoviz main.cpp)
     target_include_directories(ecoviz PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(ecoviz vgui sqlite3)
     add_executable(analyse_cohortmap analyse_cohortmap_main.cpp)
     target_include_directories(analyse_cohortmap PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
+    #target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
     target_link_libraries(analyse_cohortmap vgui sqlite3)
-# stdc++fs)
+  
+    
+# stdc++fs) - causes issue with Clang compilation, looks to be unnecessary for gcc
     ADD_DEFINITIONS(-DSONOMA_DB_FILEPATH="${PROJECT_SOURCE_DIR}/../european.db")
 
 endif()

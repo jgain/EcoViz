@@ -64,6 +64,7 @@
 
 #include "glwidget.h"
 #include "gltransect.h"
+#include "gloverview.h"
 #include "chartwindow.h"
 #include "mitsuba_model.h"
 #include <QWidget>
@@ -82,20 +83,54 @@ enum LockState
     LOCKEDFROMRIGHT     //< right panel dictates behaviour of left panel
 };
 
+// only needed so that onClose can be overriden
+class PlantPanel: public QWidget
+{
+    Q_OBJECT
+
+private:
+    Window * wparent;
+
+public:
+    PlantPanel(Window * parent) { wparent = parent; }
+    virtual ~PlantPanel() {}
+
+protected:
+    void closeEvent(QCloseEvent* event);
+};
+
+class DataMapPanel: public QWidget
+{
+    Q_OBJECT
+
+private:
+    Window * wparent;
+
+public:
+    DataMapPanel(Window * parent) { wparent = parent; }
+    virtual ~DataMapPanel() {}
+
+protected:
+    void closeEvent(QCloseEvent* event);
+};
+
 class Window : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    Window(std::string datadir);
+    Window(std::string datadir, std::string lbasename, std::string rbasename);
 
     ~Window();
+
+    // static std::atomic<uint32_t> rendercount; // count of the number of simultaneuos render calls
+    atomic_int rendercount;
 
     QSize sizeHint() const;
 
     /// Adjust rendering parameters, grid and contours, to accommodate current scale
     void scaleRenderParams(float scale);
-
+    void loadSceneData(void); // load data from disk for each scene
     void run_viewer();
 
 public slots:
@@ -106,9 +141,11 @@ public slots:
     // menu items
     void showRenderOptions();
     void showPlantOptions();
+    void showDataMapOptions();
     void showContours(int show);
     void showGridLines(int show);
     void exportMitsuba();
+    void exportMitsubaJSON();
 
     // render panel
     void lineEditChange();
@@ -119,6 +156,17 @@ public slots:
     void plantChange(int show);
     void allPlantsOn();
     void allPlantsOff();
+    void uncheckPlantPanel();
+
+    // data map panel
+    void leftDataMapChoice(int id);
+    void rightDataMapChoice(int id);
+    void leftRampChoice(int id);
+    void rightRampChoice(int id);
+    void leftGraphChoice(int id);
+    void rightGraphChoice(int id);
+    void uncheckDataMapPanel(); // on close change view menu item to unchecked state
+    void syncDataMapPanel(); // if a perspective view goes into transect view update datamap params
 
     // locking
     void lockViewsFromLeft();
@@ -131,45 +179,73 @@ public slots:
     void showTransectViews();
     void clearTransects();
 
+    // PCM: extract new terrain based on current selection
+    void extractNewSubTerrain(int sceneIdx, int x0, int y0, int x1, int y1);
+
+    //void positionVizOverMap(int id);
+
+    //void overviewShow();
+    //void updateOverviews(); // hide or display overview maps based on active and visible status
+
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
-    void optionsChanged();
+    //void closeEvent(QCloseEvent* event);
+    //void resizeEvent(QResizeEvent* event);
+    //void moveEvent(QMoveEvent* event);
+    void optionsChanged(); 
+    //bool eventFilter(QObject *obj, QEvent *event);
 
 private:
     std::vector<Scene *> scenes;                ///< scenes for each half
+    std::vector<mapScene *> mapScenes;          ///< map scenes for each half
     std::vector<Transect *> transectControls;   ///< Transect controls for each viewing pair
     std::vector<GLWidget *> perspectiveViews;   ///< OpenGL perspective rendering views
     std::vector<GLTransect *> transectViews;    ///< OpenGL transect views
+    //std::vector<GLOverview *> overviewMaps;     ///< OpenGL over maps (left and right)
     std::vector<TimeWindow *> timelineViews;    ///< widget for timeline control
     std::vector<ChartWindow *> chartViews;      ///< widget for displaying graphs
     std::vector<std::vector< TimelineGraph *> > graphModels;   ///< Underlying graph data associated with scene, multiple graphs per scene
     QWidget * vizPanel;                         ///< Central panel with visualization subwidgets
     QWidget * renderPanel;                      ///< Side panel to adjust various rendering style parameters
-    QWidget * plantPanel;                       ///< Side panel to adjust various plant visualization parameters
+    PlantPanel * plantPanel;                    ///< Side panel to adjust various plant visualization parameters
+    QWidget * dataMapPanel;                     ///< Side panel to adjust various texture visualization parameters
     QGridLayout * vizLayout;
+
+
+    // data map parameters
+    int dmapIdx[2];
+    int rampIdx[2];
+    int grphIdx[2];
+
+    // data map widgets
+    QButtonGroup * qbmgL, * qbmgR;
+
+    // graph button group
+    QButtonGroup * bggL, * bggR;
 
     // rendering parameters
     float gridSepX, numGridX, gridSepZ, numGridZ, gridWidth, gridIntensity; ///< grid params
     float contourSep, numContours, contourWidth, contourIntensity; ///< contour params
     float radianceTransition, radianceEnhance; ///< radiance scaling params
 
-    // map parameters
-    int sunMonth, wetMonth, tempMonth;
-
     // render panel widgets
     QLineEdit * gridSepXEdit, * gridSepZEdit, * gridWidthEdit, * gridIntensityEdit, * contourSepEdit, * contourWidthEdit, * contourIntensityEdit, * radianceEnhanceEdit;
     QComboBox * cameraDropDown;
 
+
     // plant viz panel widgets
+    /*
     QLineEdit * sunMapEdit, * wetMapEdit;
-    QRadioButton * sunMapRadio, * wetMapRadio, * chmMapRadio, * noMapRadio;
+    QRadioButton * sunMapRadio, * wetMapRadio, * chmMapRadio, * noMapRadio;*/
     QLineEdit * smoothEdit;
 
     // menu widgets and actions
     QMenu *viewMenu;
     QAction *showRenderAct;
     QAction *showPlantAct;
+    QAction *showDataMapAct;
     QAction *exportMitsubaAct;
     QAction *fromLeftTransectAct, *fromRightTransectAct;
     QAction *clearTransectsAct;
@@ -182,10 +258,20 @@ private:
     LockState viewLock, transectLock, timelineLock;
     QPushButton * lockT1, * lockT2, * lockV1, * lockV2, * lockG1, * lockG2;
     QGroupBox *lockTGroup;
-     QIcon * lockleftIcon, * unlockleftIcon, * lockrightIcon, * unlockrightIcon;
+    QIcon * lockleftIcon, * unlockleftIcon, * lockrightIcon, * unlockrightIcon;
 
     // Map containing the different export profiles (Mitsuba)
     map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;
+
+    // PCM --- name of image overlay for overview maps (left and right)
+    std::string mapOverlayFile[2];
+    int mapDownSampleFactor; // default = 4;
+    bool active; // whether or not the overviewmaps have been activated
+    bool visible; // whether or not the overviewmaps are hidden
+    QTimer overviewTimer;
+
+    /// Convert from internal ramp index to typemap representation
+    TypeMapType convertRampIdx(int side);
 
     /**
      * @brief setupRenderPanel  Initialize GUI layout of side render panel for controlling various rendering parameters
@@ -198,9 +284,25 @@ private:
     void setupPlantPanel();
 
     /**
+     * @brief setupDataMapPanel  Initialize GUI layout of side data map viz panel for controlling texture map display parameters
+     */
+    void setupDataMapPanel();
+
+    /**
      * @brief setupVizPanel  Initialize GUI layout of central visualization
      */
     void setupVizPanel();
+
+    /* fine-grained setup for viz panel */
+
+    void setupVizTransect(QSurfaceFormat glFormat, int id);
+    void setupVizPerspective(QSurfaceFormat glFormat, int id);
+    void setupVizChartViews(QSurfaceFormat glFormat, int id);
+    void setupVizTimeline(QSurfaceFormat glFormat, int id);
+    //void setupVizOverMap(QSurfaceFormat glFormat, int id);
+    //void destroyVizOvermap(int idx);  // destroy overview map so it can br rebuilt
+    void destroyVizTransect(int idx); // unmap widgets and call delete on to free up resources
+    void destroyVizPerspective(int idx);
 
     /**
      * @brief setupGraphModels  set up the data structures for dynamic graphs
@@ -216,6 +318,9 @@ private:
     // init menu
     void createActions();
     void createMenus();
+
+    // test is transects are lockable
+    bool canLockTransects(void) const;
 
     /**
       * @brief unlockTimelines Unlink timelines so that graphs and play controls are no longer synchronized

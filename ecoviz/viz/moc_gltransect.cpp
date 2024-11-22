@@ -1,52 +1,54 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'gltransect.h'
 **
-** Created by: The Qt Meta Object Compiler version 67 (Qt 5.13.2)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.7.2)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include <memory>
 #include "gltransect.h"
-#include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
+
+#include <QtCore/qtmochelpers.h>
+
+#include <memory>
+
+
+#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'gltransect.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 67
-#error "This file was generated using the moc from 5.13.2. It"
+#elif Q_MOC_OUTPUT_REVISION != 68
+#error "This file was generated using the moc from 6.7.2. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
 
-QT_BEGIN_MOC_NAMESPACE
+#ifndef Q_CONSTINIT
+#define Q_CONSTINIT
+#endif
+
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
-struct qt_meta_stringdata_GLTransect_t {
-    QByteArrayData data[4];
-    char stringdata0[44];
-};
-#define QT_MOC_LITERAL(idx, ofs, len) \
-    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
-    qptrdiff(offsetof(qt_meta_stringdata_GLTransect_t, stringdata0) + ofs \
-        - idx * sizeof(QByteArrayData)) \
-    )
-static const qt_meta_stringdata_GLTransect_t qt_meta_stringdata_GLTransect = {
-    {
-QT_MOC_LITERAL(0, 0, 10), // "GLTransect"
-QT_MOC_LITERAL(1, 11, 18), // "signalRepaintAllGL"
-QT_MOC_LITERAL(2, 30, 0), // ""
-QT_MOC_LITERAL(3, 31, 12) // "rebindPlants"
+QT_WARNING_DISABLE_GCC("-Wuseless-cast")
+namespace {
 
-    },
-    "GLTransect\0signalRepaintAllGL\0\0"
+#ifdef QT_MOC_HAS_STRINGDATA
+struct qt_meta_stringdata_CLASSGLTransectENDCLASS_t {};
+constexpr auto qt_meta_stringdata_CLASSGLTransectENDCLASS = QtMocHelpers::stringData(
+    "GLTransect",
+    "signalRepaintAllGL",
+    "",
     "rebindPlants"
-};
-#undef QT_MOC_LITERAL
+);
+#else  // !QT_MOC_HAS_STRINGDATA
+#error "qtmochelpers.h not found or too old."
+#endif // !QT_MOC_HAS_STRINGDATA
+} // unnamed namespace
 
-static const uint qt_meta_data_GLTransect[] = {
+Q_CONSTINIT static const uint qt_meta_data_CLASSGLTransectENDCLASS[] = {
 
  // content:
-       8,       // revision
+      12,       // revision
        0,       // classname
        0,    0, // classinfo
        2,   14, // methods
@@ -56,11 +58,11 @@ static const uint qt_meta_data_GLTransect[] = {
        0,       // flags
        1,       // signalCount
 
- // signals: name, argc, parameters, tag, flags
-       1,    0,   24,    2, 0x06 /* Public */,
+ // signals: name, argc, parameters, tag, flags, initial metatype offsets
+       1,    0,   26,    2, 0x06,    1 /* Public */,
 
- // slots: name, argc, parameters, tag, flags
-       3,    0,   25,    2, 0x0a /* Public */,
+ // slots: name, argc, parameters, tag, flags, initial metatype offsets
+       3,    0,   27,    2, 0x0a,    2 /* Public */,
 
  // signals: parameters
     QMetaType::Void,
@@ -71,11 +73,28 @@ static const uint qt_meta_data_GLTransect[] = {
        0        // eod
 };
 
+Q_CONSTINIT const QMetaObject GLTransect::staticMetaObject = { {
+    QMetaObject::SuperData::link<QOpenGLWidget::staticMetaObject>(),
+    qt_meta_stringdata_CLASSGLTransectENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSGLTransectENDCLASS,
+    qt_static_metacall,
+    nullptr,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSGLTransectENDCLASS_t,
+        // Q_OBJECT / Q_GADGET
+        QtPrivate::TypeAndForceComplete<GLTransect, std::true_type>,
+        // method 'signalRepaintAllGL'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'rebindPlants'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>
+    >,
+    nullptr
+} };
+
 void GLTransect::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
         auto *_t = static_cast<GLTransect *>(_o);
-        Q_UNUSED(_t)
+        (void)_t;
         switch (_id) {
         case 0: _t->signalRepaintAllGL(); break;
         case 1: _t->rebindPlants(); break;
@@ -85,24 +104,14 @@ void GLTransect::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         int *result = reinterpret_cast<int *>(_a[0]);
         {
             using _t = void (GLTransect::*)();
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&GLTransect::signalRepaintAllGL)) {
+            if (_t _q_method = &GLTransect::signalRepaintAllGL; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 0;
                 return;
             }
         }
     }
-    Q_UNUSED(_a);
+    (void)_a;
 }
-
-QT_INIT_METAOBJECT const QMetaObject GLTransect::staticMetaObject = { {
-    &QGLWidget::staticMetaObject,
-    qt_meta_stringdata_GLTransect.data,
-    qt_meta_data_GLTransect,
-    qt_static_metacall,
-    nullptr,
-    nullptr
-} };
-
 
 const QMetaObject *GLTransect::metaObject() const
 {
@@ -112,14 +121,16 @@ const QMetaObject *GLTransect::metaObject() const
 void *GLTransect::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_GLTransect.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSGLTransectENDCLASS.stringdata0))
         return static_cast<void*>(this);
-    return QGLWidget::qt_metacast(_clname);
+    if (!strcmp(_clname, "QOpenGLFunctions"))
+        return static_cast< QOpenGLFunctions*>(this);
+    return QOpenGLWidget::qt_metacast(_clname);
 }
 
 int GLTransect::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
-    _id = QGLWidget::qt_metacall(_c, _id, _a);
+    _id = QOpenGLWidget::qt_metacall(_c, _id, _a);
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
@@ -128,7 +139,7 @@ int GLTransect::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         _id -= 2;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 2)
-            *reinterpret_cast<int*>(_a[0]) = -1;
+            *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 2;
     }
     return _id;
@@ -140,4 +151,3 @@ void GLTransect::signalRepaintAllGL()
     QMetaObject::activate(this, &staticMetaObject, 0, nullptr);
 }
 QT_WARNING_POP
-QT_END_MOC_NAMESPACE

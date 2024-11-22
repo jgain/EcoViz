@@ -69,7 +69,6 @@
 #include <sstream>
 #include <string>
 #include <QGridLayout>
-#include <QGLFramebufferObject>
 #include <QImage>
 #include <QCoreApplication>
 #include <QMessageBox>
@@ -82,6 +81,7 @@
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include "cohortmaps.h"
+#include "window.h"
 
 using namespace std;
 
@@ -92,22 +92,29 @@ using namespace std;
 static int curr_cohortmap = 0;
 static int curr_tstep = 1;
 
-GLTransect::GLTransect(const QGLFormat& format, Scene * scn, Transect * trans, QWidget *parent)
-    : QGLWidget(format, parent)
+GLTransect::GLTransect(const QSurfaceFormat& format, Window * wp, Scene * scn, Transect * trans, QWidget *parent)
+    : QOpenGLWidget(parent)
 {
     qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     glformat = format;
+    // setFormat(glformat);
+
+    view = nullptr;
+
+    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+
+    setParent(wp);
 
     trx = trans;
     setScene(scn);
-
-    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
     viewlock = false;
     decalsbound = false;
     focuschange = false;
     timeron = false;
-    active = true;
+    active = false;
     rebindplants = true;
+    forceRebindPlants = true;
+
     scf = 10000.0f;
 
     setMouseTracking(true);
@@ -115,6 +122,21 @@ GLTransect::GLTransect(const QGLFormat& format, Scene * scn, Transect * trans, Q
 
     resize(sizeHint());
     setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
+}
+
+void GLTransect::switchTransectScene(Scene *newScene, Transect *newTransect)
+{
+    trx = newTransect;
+    viewlock = false;
+    decalsbound = false;
+    timeron = false;
+    rebindplants = true;
+    scf = 10000.0f;
+
+    setScene(newScene);
+
+    focuschange = true;
+    forceRebindPlants = true;
 }
 
 GLTransect::~GLTransect()
@@ -140,10 +162,21 @@ PMrender::TRenderer * GLTransect::getRenderer()
 void GLTransect::updateTransectView()
 {
     float tx, ty;
+    vpPoint basePlaneOrigin;
+
+    // extract planes for world space culling and retrieve origin on one of the planes
+    // (which will map to the near plane for camera)
+
+    std::pair<Plane, Plane> planes  = trx->getTransectPlanes(basePlaneOrigin);
+    transectPlanes.clear();
+    transectPlanes.push_back(planes.first);
+    transectPlanes.push_back(planes.second);
+
     view->setOrthoViewExtent(trx->getExtent());
     view->setOrthoViewDepth(trx->getThickness());
     // scene->getTerrain()->setMidFocus();
-    view->setForcedFocus(trx->getCenter());
+    // view->setForcedFocus(trx->getCenter());
+    view->setForcedFocus(basePlaneOrigin);
     // view->setForcedFocus(scene->getTerrain()->getFocus());
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
 
@@ -158,6 +191,8 @@ void GLTransect::updateTransectView()
     // cerr << "extent = " << trx->getExtent() << endl;
     // cerr << "thickness = " << trx->getThickness() << endl;
     // cerr << "zoomdist = " << view->getZoom() << endl;
+
+
 }
 
 void GLTransect::setScene(Scene * s)
@@ -192,12 +227,15 @@ void GLTransect::setScene(Scene * s)
     rebindplants = true;
 
     updateTransectView();
+
+    // PCM: should these be here? this is called from constructor.
+    winparent->rendercount++;
     signalRepaintAllGL();
 }
 
 void GLTransect::unlockView(Transect * imposedTrx)
 {
-    View * preview = view;
+    View * preview = view; // PCM: likely a leak of Viewe object at some point
     view = new View();
     (* view) = (* preview);
 
@@ -229,17 +267,21 @@ void GLTransect::loadDecals()
     painter.drawImage( 0, 0, decalImg);
     painter.end();
 
-    t = QGLWidget::convertToGLFormat( fixedImage );
+    // t = QOpenGLWidget::convertToGLFormat( fixedImage );
+    // JG - QT6
 
-    renderer->bindDecals(t.width(), t.height(), t.bits());
+    renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
     decalsbound = true;
 }
 
 void GLTransect::initializeGL()
 {
+    initializeOpenGLFunctions();
+
     // get context opengl-version
+    qDebug() << "\nGLTransect initialize....\n";
     qDebug() << "Widget OpenGl: " << format().majorVersion() << "." << format().minorVersion();
-    qDebug() << "Context valid: " << context()->isValid();
+    qDebug() << "Context valid: " << context()->isValid() << "; Address: " << context();
     qDebug() << "Really used OpenGl: " << context()->format().majorVersion() << "." <<
               context()->format().minorVersion();
     qDebug() << "OpenGl information: VENDOR:       " << (const char*)glGetString(GL_VENDOR);
@@ -247,11 +289,11 @@ void GLTransect::initializeGL()
     qDebug() << "                    VERSION:      " << (const char*)glGetString(GL_VERSION);
     qDebug() << "                    GLSL VERSION: " << (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    QGLFormat glFormat = QGLWidget::format();
-    if ( !glFormat.sampleBuffers() )
-        qWarning() << "Could not enable sample buffers";
+    QSurfaceFormat glFormat = QOpenGLWidget::format();
+    // if ( !glFormat.sampleBuffers() )
+    //     qWarning() << "Could not enable sample buffers";
 
-    qglClearColor(qtWhite.light());
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     int mu;
     glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &mu);
@@ -262,7 +304,11 @@ void GLTransect::initializeGL()
     // To use basic shading: PMrender::TRenderer::BASIC
     // To use radianvce scaling: PMrender::TRenderer::RADIANCE_SCALING
 
-    PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::BASIC;
+    //PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::BASIC;
+
+    // PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::FLAT_TRANSECT; // flat shading transect
+
+PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SCALING_TRANSECT;
 
     // set terrain shading model
     renderer->setTerrShadeModel(sMod);
@@ -271,7 +317,8 @@ void GLTransect::initializeGL()
     Vector dl = Vector(0.6f, 1.0f, 0.6f);
     dl.normalize();
 
-    GLfloat pointLight[3] = { 0.5, 5.0, 7.0}; // side panel + BASIC lighting
+  //  GLfloat pointLight[3] = {0.5, 5.0, 7.0}; // side panel + BASIC lighting
+     GLfloat pointLight[3] = {1000.0, 2000.0, 1000.0}; // side panel + BASIC lighting
     GLfloat dirLight0[3] = { dl.i, dl.j, dl.k}; // for radiance lighting
     GLfloat dirLight1[3] = { -dl.i, dl.j, -dl.k}; // for radiance lighting
 
@@ -294,7 +341,7 @@ void GLTransect::initializeGL()
     renderer->useConstraintTypeTexture(false);
 
     // use manipulator textures (decal'd)
-    renderer->textureManipulators(true);
+    renderer->textureManipulators(false);
 
     // *** PM Render code - end ***
 
@@ -314,8 +361,9 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     Shape shape;
     glm::mat4 tfm, idt;
     glm::vec3 trs, rot;
-    std::vector<glm::mat4> sinst;
-    std::vector<glm::vec4> cinst;
+    std::vector<glm::vec3> translInstance;
+    std::vector<glm::vec2> scaleInstance;
+    std::vector<float> cinst;
 
     // create shape
     shape.clear();
@@ -334,7 +382,7 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
     float arad = mrad / 2.5f;
 
     shape.genCappedCylinder(scale*arad, 1.5f*scale*arad, scale*(mheight-mrad), 40, 10, tfm, false);
-    if(shape.bindInstances(&sinst, &cinst)) // passing in an empty instance will lead to one being created at the origin
+    if(shape.bindInstances(&translInstance, &scaleInstance, &cinst)) // passing in an empty instance will lead to one being created at the origin
     {
         sdd = shape.getDrawParameters();
         sdd.current = false;
@@ -345,8 +393,8 @@ void GLTransect::paintCyl(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> &
 void GLTransect::paintGL()
 {
     vpPoint mo;
-    glm::mat4 tfm, idt;
-    glm::vec3 trs, rot;
+    //glm::mat4 tfm, idt;
+    //glm::vec3 trs, rot;
     std::vector<ShapeDrawData> drawParams; // to be passed to terrain renderer
     Shape shape, planeshape;  // geometry for focus indicator
     std::vector<glm::mat4> sinst;
@@ -373,16 +421,21 @@ void GLTransect::paintGL()
 
             // prepare plants for rendering
 
-        if(focuschange)
+        if(focuschange || forceRebindPlants)
         {
-            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants);
+            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants, transectPlanes);
+            scene->getTerrain()->setBufferToDirty();
             rebindplants = false;
+            forceRebindPlants = false;
         }
+        else
+            scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, false, transectPlanes);
 
         // pass in draw params for objects
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
+        //scene->getTerrain()->setBufferToDirty();
         scene->getTerrain()->updateBuffers(renderer);
 
         renderer->draw(view);
@@ -423,9 +476,15 @@ void GLTransect::setCanopyVis(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     if(viewlock)
+    {
+        winparent->rendercount++;
         signalRepaintAllGL();
+    }
     else
+    {
+        winparent->rendercount++;
         update();
+    }
 }
 
 void GLTransect::setUndergrowthVis(bool vis)
@@ -435,9 +494,15 @@ void GLTransect::setUndergrowthVis(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     if(viewlock)
+    {
+        winparent->rendercount++;
         signalRepaintAllGL();
+    }
     else
+    {
+        winparent->rendercount++;
         update();
+    }
 }
 
 void GLTransect::setAllSpecies(bool vis)
@@ -447,9 +512,15 @@ void GLTransect::setAllSpecies(bool vis)
     scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
     rebindplants = true;
     if(viewlock)
+    {
+        winparent->rendercount++;
         signalRepaintAllGL();
+    }
     else
+    {
+        winparent->rendercount++;
         update();
+    }
 }
 
 void GLTransect::setSinglePlantVis(int p)
@@ -462,9 +533,15 @@ void GLTransect::setSinglePlantVis(int p)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         if(viewlock)
+        {
+            winparent->rendercount++;
             signalRepaintAllGL();
+        }
         else
+        {
+            winparent->rendercount++;
             update();
+        }
     }
     else
     {
@@ -480,9 +557,15 @@ void GLTransect::toggleSpecies(int p, bool vis)
         scene->getEcoSys()->pickAllPlants(scene->getTerrain(), canopyvis, undervis);
         rebindplants = true;
         if(viewlock)
+        {
+            winparent->rendercount++;
             signalRepaintAllGL();
+        }
         else
+        {
+            winparent->rendercount++;
             update();
+        }
     }
     else
     {
@@ -498,11 +581,6 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
     int x = event->x(); int y = event->y();
     float W = static_cast<float>(width()); float H = static_cast<float>(height());
 
-    if(viewlock)
-        signalRepaintAllGL();
-    else
-        update();
-
     // control view orientation with right mouse button or ctrl/alt modifier key and left mouse
     if(event->modifiers() == Qt::MetaModifier || event->modifiers() == Qt::AltModifier || event->buttons() == Qt::RightButton)
     {
@@ -516,7 +594,20 @@ void GLTransect::mousePressEvent(QMouseEvent *event)
         view->startArcRotate(nx, ny);*/
     }
 
+    if(viewlock)
+    {
+        winparent->rendercount++;
+        signalRepaintAllGL();
+    }
+    else
+    {
+        winparent->rendercount++;
+        update();
+    }
+
+
     lastPos = event->pos();
+
 }
 
 void GLTransect::mouseMoveEvent(QMouseEvent *event)
@@ -560,6 +651,7 @@ void GLTransect::mouseMoveEvent(QMouseEvent *event)
         trx->setInnerStart(inner[0], scene->getTerrain()); trx->setInnerEnd(inner[1], scene->getTerrain());
 
         updateTransectView();
+        winparent->rendercount++;
         signalRepaintAllGL();
         lastPos = event->pos();
     }
@@ -591,10 +683,12 @@ void GLTransect::wheelEvent(QWheelEvent * wheel)
     // also adjust inner bounds relative to center
     trx->zoom(del, scene->getTerrain());
     updateTransectView();
+    winparent->rendercount++;
     signalRepaintAllGL();
 }
 
 void GLTransect::rebindPlants()
 {
     rebindplants = true;
+    forceRebindPlants = true;
 }

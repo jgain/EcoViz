@@ -12,7 +12,7 @@
 
 #include "scene.h"
 
-QT_CHARTS_USE_NAMESPACE
+class Window;
 
 class ChartWindow : public QWidget
 {
@@ -20,6 +20,7 @@ class ChartWindow : public QWidget
 
 private:
     Scene * scene;              //< attached underlying scene
+    Window * winparent;
     std::vector<TimelineGraph*> all_graphs; // collection of graphs
     TimelineGraph * graphdata;  //< current graph model corresponding to this graph view
     QChart * chart;             //< graphical chart from qt
@@ -41,6 +42,8 @@ public:
 
     ChartWindow(QWidget *parent, int width, int height);
 
+    void setParent(Window * wp){ winparent = wp; }
+
     void init();
 
     void paintEvent(QPaintEvent * ev);
@@ -48,6 +51,8 @@ public:
     void setScene(Scene * s){ scene = s; }
     void setData(TimelineGraph * gdata);
     void setGraphs(std::vector<TimelineGraph*> all_gr) { all_graphs = all_gr; }
+    int getNumGraphs(){ return (int) all_graphs.size(); }
+    string getGraphName(int idx){ return all_graphs[idx]->getTitle(); }
 };
 
 #endif // TIMEWINDOW_H

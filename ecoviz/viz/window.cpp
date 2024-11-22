@@ -65,12 +65,30 @@
 
 #include <cmath>
 #include <string>
-#include<QtCharts/QChartView>
-
-QT_CHARTS_USE_NAMESPACE
+#include <QtCharts/QChartView>
+#include <QButtonGroup>
 
 using namespace std;
 
+////
+// PlantPanel
+///
+
+void PlantPanel::closeEvent(QCloseEvent* event)
+{
+    wparent->uncheckPlantPanel();
+    event->accept();
+}
+
+////
+// DataMapPanel
+///
+
+void DataMapPanel::closeEvent(QCloseEvent* event)
+{
+    wparent->uncheckDataMapPanel();
+    event->accept();
+}
 
 ////
 // Window
@@ -100,11 +118,6 @@ void Window::setupRenderPanel()
     // radiance scaling parameters
     radianceTransition = 0.2f;
     radianceEnhance = 3.0f;
-
-    // map parameters
-    sunMonth = 1;
-    wetMonth = 1;
-    tempMonth = 1;
 
     // render panel
     renderPanel = new QWidget;
@@ -266,7 +279,7 @@ void Window::setupRenderPanel()
     connect(wetMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(chmMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));*/
-    connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
+    // connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
 
     renderPanel->setLayout(renderLayout);
 }
@@ -281,7 +294,7 @@ void Window::setupPlantPanel()
           delete widget;
     } */
     // plant panel
-    plantPanel = new QWidget;
+    plantPanel = new PlantPanel(this);
     QVBoxLayout *plantLayout = new QVBoxLayout;
 
     // global plant parameters
@@ -359,90 +372,410 @@ void Window::setupPlantPanel()
 
     speciesGroup->setLayout(speciesLayout);
     plantPanel->setLayout(plantLayout);
+}
 
-/*    checkS0 = new QCheckBox(tr("Species 0"));
-    checkS0->setChecked(true);
-    checkS1 = new QCheckBox(tr("Species 1"));
-    checkS1->setChecked(true);
-    checkS2 = new QCheckBox(tr("Species 2"));
-    checkS2->setChecked(true);
-    checkS3 = new QCheckBox(tr("Species 3"));
-    checkS3->setChecked(true);
-    checkS4 = new QCheckBox(tr("Species 4"));
-    checkS4->setChecked(true);
-    checkS5 = new QCheckBox(tr("Species 5"));
-    checkS5->setChecked(true);
-    checkS6 = new QCheckBox(tr("Species 6"));
-    checkS6->setChecked(true);
-    checkS7 = new QCheckBox(tr("Species 7"));
-    checkS7->setChecked(true);
-    checkS8 = new QCheckBox(tr("Species 8"));
-    checkS8->setChecked(true);
-    checkS9 = new QCheckBox(tr("Species 9"));
-    checkS9->setChecked(true);
-    checkS10 = new QCheckBox(tr("Species 10"));
-    checkS10->setChecked(true);
-    checkS11 = new QCheckBox(tr("Species 11"));
-    checkS11->setChecked(true);
-    checkS12 = new QCheckBox(tr("Species 12"));
-    checkS12->setChecked(true);
-    checkS13 = new QCheckBox(tr("Species 13"));
-    checkS13->setChecked(true);
-    checkS14 = new QCheckBox(tr("Species 14"));
-    checkS14->setChecked(true);
-    checkS15 = new QCheckBox(tr("Species 15"));
-    checkS15->setChecked(true);
-    QPushButton * plantsOn = new QPushButton(tr("All Visible"));
-    QPushButton * plantsOff = new QPushButton(tr("None Visible"));;
+void Window::setupDataMapPanel()
+{
+    dataMapPanel = new DataMapPanel(this);
+    QHBoxLayout *dataMapLayout = new QHBoxLayout;
 
-    speciesLayout->addWidget(checkS0, 0, 0);
-    speciesLayout->addWidget(checkS1, 1, 0);
-    speciesLayout->addWidget(checkS2, 2, 0);
-    speciesLayout->addWidget(checkS3, 3, 0);
-    speciesLayout->addWidget(checkS4, 4, 0);
-    speciesLayout->addWidget(checkS5, 5, 0);
-    speciesLayout->addWidget(checkS6, 6, 0);
-    speciesLayout->addWidget(checkS7, 7, 0);
-    speciesLayout->addWidget(checkS8, 8, 0);
-    speciesLayout->addWidget(checkS9, 9, 0);
-    speciesLayout->addWidget(checkS10, 10, 0);
-    speciesLayout->addWidget(checkS11, 11, 0);
-    speciesLayout->addWidget(checkS12, 12, 0);
-    speciesLayout->addWidget(checkS13, 13, 0);
-    speciesLayout->addWidget(checkS14, 14, 0);
-    speciesLayout->addWidget(checkS15, 15, 0);
-    speciesLayout->addWidget(plantsOn, 16, 0);
-    speciesLayout->addWidget(plantsOff, 17, 0);
-    speciesGroup->setLayout(speciesLayout);
+    // Matrices of radio buttons
+    QGroupBox *matrixMapLeftGroup = new QGroupBox(tr("Left Panel"));
+    QGridLayout *matrixMapLeftLayout = new QGridLayout;
+    QGroupBox *matrixMapRightGroup = new QGroupBox(tr("Right Panel"));
+    QGridLayout *matrixMapRightLayout = new QGridLayout;
 
-    plantLayout->addWidget(globalGroup);
-    plantLayout->addWidget(speciesGroup);
+    if (scenes.size() > 0)
+    {
+        int rows = scenes[0]->getDataMaps()->getNumMaps();
+        int cols = numRamps;
 
-    // signal to slot connections
-    connect(plantsOn, SIGNAL(clicked()), this, SLOT(allPlantsOn()));
-    connect(plantsOff, SIGNAL(clicked()), this, SLOT(allPlantsOff()));
-    // connect(checkCanopy, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    // connect(checkUndergrowth, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS0, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS1, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS2, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS3, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS4, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS5, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS6, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS7, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS8, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS9, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS10, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS11, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS12, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS13, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS14, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(checkS15, SIGNAL(stateChanged(int)), this, SLOT(plantChange(int)));
-    connect(smoothEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange())); */
+        // L and R postfix denotes left and right panels
+        qbmgL = new QButtonGroup(); // exclusive radio button group for map choice
+        QButtonGroup *qbrgL = new QButtonGroup(); // exclusive radio button group for ramp choice
+        qbmgR = new QButtonGroup();
+        QButtonGroup *qbrgR = new QButtonGroup();
 
+
+        // headers
+        QString hdr1 = QString::fromStdString(string("Data Type:"));
+        QLabel *hdl1L = new QLabel(hdr1);
+        matrixMapLeftLayout->addWidget(hdl1L,0,0);
+        QLabel *hdl1R = new QLabel(hdr1);
+        matrixMapRightLayout->addWidget(hdl1R,0,0);
+
+        QString hdr2 = QString::fromStdString(string("Colours:"));
+        QLabel *hdl2L = new QLabel(hdr2);
+        matrixMapLeftLayout->addWidget(hdl2L,0,2);
+        QLabel *hdl2R = new QLabel(hdr2);
+        matrixMapRightLayout->addWidget(hdl2R,0,2);
+
+        for(int r = 0; r <= rows; r++)
+        {
+            // radio button for map selection
+            QRadioButton * qrmbL = new QRadioButton();
+            QRadioButton * qrmbR = new QRadioButton();
+            matrixMapLeftLayout->addWidget(qrmbL,r+1,0);
+            matrixMapRightLayout->addWidget(qrmbR,r+1,0);
+            if(r == 0)
+            {
+                qrmbL->setChecked(true);
+                qrmbR->setChecked(true);
+            }
+            qbmgL->addButton(qrmbL, r);
+            qbmgR->addButton(qrmbR, r);
+
+            // data map name
+            QString dmname;
+            if(r == 0)
+                dmname = QString::fromStdString(string("None"));
+            else
+                dmname = QString::fromStdString((* scenes[0]->getDataMaps()->getNames())[r-1]);
+
+            QLabel *dmnlL = new QLabel(dmname);
+            QLabel *dmnlR = new QLabel(dmname);
+
+            matrixMapLeftLayout->addWidget(dmnlL,r+1,1); // name
+            matrixMapRightLayout->addWidget(dmnlR,r+1,1);
+
+            if(r < numRamps)
+            {
+                 // radio button for ramp selection
+                QRadioButton * qrrbL = new QRadioButton();
+                QRadioButton * qrrbR = new QRadioButton();
+                if(r == 0)
+                {
+                    qrrbL->setChecked(true);
+                    qrrbR->setChecked(true);
+                }
+                qbrgL->addButton(qrrbL, r);
+                qbrgR->addButton(qrrbR, r);
+                matrixMapLeftLayout->addWidget(qrrbL,r+1,2);
+                matrixMapRightLayout->addWidget(qrrbR,r+1,2);
+
+                // ramp name label
+                QString rname = QString::fromStdString(ramp_names[r]);
+                QLabel *rnlL = new QLabel(rname);
+                QLabel *rnlR = new QLabel(rname);
+                matrixMapLeftLayout->addWidget(rnlL,r+1,3);
+                matrixMapRightLayout->addWidget(rnlR,r+1,3);
+            }
+        }
+
+        // headers
+        QString hdr3 = QString::fromStdString(string("Graph:"));
+        QLabel *hdl3L = new QLabel(hdr3);
+        matrixMapLeftLayout->addWidget(hdl3L,rows+2,0);
+        QLabel *hdl3R = new QLabel(hdr3);
+        matrixMapRightLayout->addWidget(hdl3R,rows+2,0);
+
+        // left panel graphs
+        int grows = chartViews[0]->getNumGraphs();
+        bggL = new QButtonGroup();
+        // get access to graphs
+        for(int r = 0; r < grows; r++)
+        {
+            // radio button for map selection
+            QRadioButton * qrmbL = new QRadioButton();
+            matrixMapLeftLayout->addWidget(qrmbL,rows+r+3,0);
+            if(r == 0)
+                qrmbL->setChecked(true);
+            bggL->addButton(qrmbL, r);
+
+            // graph names
+            QString gname = QString::fromStdString(chartViews[0]->getGraphName(r));
+            QLabel *dmnlL = new QLabel(gname);
+            matrixMapLeftLayout->addWidget(dmnlL,rows+r+3,1);
+        }
+
+        // right panel graphs
+        grows = chartViews[1]->getNumGraphs();
+        bggR = new QButtonGroup();
+        // get access to graphs
+        for(int r = 0; r < grows; r++)
+        {
+            // radio button for map selection
+            QRadioButton * qrmbR = new QRadioButton();
+            matrixMapRightLayout->addWidget(qrmbR,rows+r+3,0);
+            if(r == 0)
+                qrmbR->setChecked(true);
+            bggR->addButton(qrmbR, r);
+
+            // graph names
+            QString gname = QString::fromStdString(chartViews[0]->getGraphName(r));
+            QLabel *dmnlR = new QLabel(gname);
+            matrixMapRightLayout->addWidget(dmnlR,rows+r+3,1);
+        }
+
+        connect(qbmgL, SIGNAL(idClicked(int)), this, SLOT(leftDataMapChoice(int)));
+        connect(qbmgR, SIGNAL(idClicked(int)), this, SLOT(rightDataMapChoice(int)));
+        connect(qbrgL, SIGNAL(idClicked(int)), this, SLOT(leftRampChoice(int)));
+        connect(qbrgR, SIGNAL(idClicked(int)), this, SLOT(rightRampChoice(int)));
+        connect(bggL, SIGNAL(idClicked(int)), this, SLOT(leftGraphChoice(int)));
+        connect(bggR, SIGNAL(idClicked(int)), this, SLOT(rightGraphChoice(int)));
+    }
+
+    dataMapLayout->addWidget(matrixMapLeftGroup);
+    dataMapLayout->addWidget(matrixMapRightGroup);
+    matrixMapLeftGroup->setLayout(matrixMapLeftLayout);
+    matrixMapRightGroup->setLayout(matrixMapRightLayout);
+    dataMapPanel->setLayout(dataMapLayout);
+}
+
+void Window::setupVizTransect(QSurfaceFormat glFormat, int i)
+{
+    // transect views
+
+    assert(i>=0 && i < 2);
+
+    if (transectViews.size() == 0)
+    {
+        transectViews.resize(2);
+        transectViews[0] = nullptr;
+        transectViews[1] = nullptr;
+    }
+    else if (transectViews[i] != nullptr)
+    {
+        std::cerr << "Window::setupVizTransect - trying to add new transect where one exists already, must be removed first: index = " << i << std::endl;
+        return;
+    }
+
+    GLTransect * tview = new GLTransect(glFormat, this, scenes[i], transectControls[i]);
+    tview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+
+        // signal to slot connections
+    connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    transectViews[i] = tview;
+
+    vizLayout->addWidget(tview, 0, i*2);
 
 }
+
+void Window::destroyVizTransect(int i)
+{
+    assert(i >=0 && i < 2);
+
+    if (transectViews.size() != 2 || transectControls.size() != 2)
+    {
+        std::cerr << "Window::destroyVizTransects - missing data, arrays need to have 2 elements\n";
+        return;
+    }
+
+    if (transectViews[i] == nullptr)
+    {
+        std::cerr << "Window::destroyVizTransects - transectViews is null at index: " << i << std::endl;
+        return;
+    }
+
+    if (transectControls[i] == nullptr)
+    {
+        std::cerr << "Window::destroyVizTransects -transectControls is null at index: " << i << std::endl;
+        return;
+    }
+
+//    vizLayout->setRowStretch(0, 0);
+//    for(int i = 0; i < 2; i++)
+ //   {
+  //
+   //     vizLayout->removeWidget(transectViews[i]);
+   // }
+
+    unlockTransects();
+
+    //vizLayout->removeWidget(lockTGroup);
+    //QApplication::processEvents( QEventLoop::ExcludeUserInputEvents );
+    transectViews[i]->setVisible(false);
+    transectViews[i]->setActive(false);
+    transectViews[i]->hide();
+    vizLayout->removeWidget(transectViews[i]);
+    delete transectViews[i];
+    transectViews[i] = nullptr;
+
+    delete transectControls[i];
+    transectControls[i] = nullptr;
+
+    //transectsValid = false;
+}
+
+
+void Window::setupVizPerspective(QSurfaceFormat glFormat, int i)
+{
+    // main perspective views
+
+    assert(i >=0 && i < 2);
+
+    if (perspectiveViews.size() == 0)
+    {
+        perspectiveViews.resize(2);
+        perspectiveViews[0] = nullptr;
+        perspectiveViews[1] = nullptr;
+    }
+    else if (perspectiveViews[i] != nullptr)
+    {
+        std::cerr << "Window::setupVizPerspective - trying to add new view where one exists already, must be removed first: index = " << i << std::endl;
+        return;
+    }
+
+    GLWidget * pview = new GLWidget(glFormat, this, scenes[i],
+                                    transectControls[i],
+                                    (i == 0 ? string("left"): string("right")),
+                                    mapScenes[i]);
+
+    numGridX = 1.0f / gridSepX;
+    numGridZ = 1.0f / gridSepZ;
+
+    pview->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
+    pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
+    pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
+
+
+    // signal to slot connections
+
+    connect(pview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
+    connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
+    connect(pview, SIGNAL(signalRebindTransectPlants()), transectViews[i], SLOT(rebindPlants()));
+    connect(pview, SIGNAL(signalExtractNewSubTerrain(int, int,int,int,int)), this,
+            SLOT(extractNewSubTerrain(int,int,int,int,int)) );
+    connect(pview, SIGNAL(signalExtractOtherSubTerrain(int, int,int,int,int)), this,
+            SLOT(extractNewSubTerrain(int,int,int,int,int)) );
+    connect(pview, SIGNAL(signalSyncDataMap()), this, SLOT(syncDataMapPanel()));
+    //connect(pview, SIGNAL(signalUpdateOverviews()), this, SLOT(updateOverviews()));
+
+    perspectiveViews[i] = pview;
+    //perspectiveViews.push_back(pview);
+    vizLayout->addWidget(pview, 1, i*2);
+
+}
+
+void Window::destroyVizPerspective(int i)
+{
+    assert(i >=0 && i < 2);
+
+    if (perspectiveViews[i] == nullptr)
+    {
+        std::cerr << "Window::destroyVizPerspective - invalid index, view is null: " << i << std::endl;
+        return;
+    }
+
+    perspectiveViews[i]->makeCurrent(); // PCM - requried to esnure the previous context is not current
+
+    perspectiveViews[i]->hide();
+    vizLayout->removeWidget(perspectiveViews[i]);
+    delete perspectiveViews[i];
+    perspectiveViews[i] = nullptr;
+}
+
+/*
+void Window::destroyVizOvermap(int i)
+{
+    assert(i >=0 && i < 2);
+
+    if (overviewMaps[i] == nullptr)
+    {
+        std::cerr << "Window::destroyVizOvermap - invalid index, view is null: " << i << std::endl;
+        return;
+    }
+
+    overviewMaps[i]->hide();
+    delete overviewMaps[i];
+    overviewMaps[i] = nullptr;
+}
+
+*/
+
+void Window::setupVizChartViews(QSurfaceFormat glFormat, int i)
+{
+    // chart views
+
+    ChartWindow * cview = new ChartWindow(this, 800, 200);
+    cview->setParent(this);
+    //TimelineGraph * gmodel = new TimelineGraph();
+
+    // signal to slot connections
+    // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    std::vector< TimelineGraph* > tgs;
+    chartViews.push_back(cview);
+
+    graphModels.push_back( tgs );
+    vizLayout->addWidget(cview, 3, i*2);
+
+}
+
+void Window::setupVizTimeline(QSurfaceFormat glFormat, int i)
+{
+    // timeline views
+
+    TimeWindow * tview = new TimeWindow(this, this, 1, 2, 800, 50);
+
+    // signal to slot connections
+    connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    connect(tview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
+    connect(tview, SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
+    connect(tview, SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
+    connect(tview, SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
+
+    timelineViews.push_back(tview);
+    vizLayout->addWidget(tview, 2, i*2);
+}
+
+/*
+void Window::setupVizOverMap(QSurfaceFormat glFormat, int i)
+{
+    if (overviewMaps.size() == 0)
+    {
+        overviewMaps.resize(2);
+        overviewMaps[0] = nullptr;
+        overviewMaps[1] = nullptr;
+    }
+    else if (overviewMaps[i] != nullptr)
+    {
+        std::cerr << "Window::setupVizOverMap - trying to add new view where one exists already, must be removed first: index = " << i << std::endl;
+        return;
+    }
+
+    // PCM: overview maps L/R
+
+    GLOverview *oview = new GLOverview(glFormat, this, mapScenes[i], i);
+
+    // set params
+
+    // signal to slot connections
+    connect(oview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+    connect(oview, SIGNAL(signalExtractNewSubTerrain(int, int,int,int,int)), this,
+            SLOT(extractNewSubTerrain(int,int,int,int,int)) );
+    //connect(oview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
+    //connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
+
+    overviewMaps[i] = oview;
+    // vizLayout->addWidget(oview, 4, i*2);
+}
+*/
+
+/*
+void Window::positionVizOverMap(int i)
+{
+    if(perspectiveViews.size() == 2 && overviewMaps.size() == 2)
+        if(perspectiveViews[i] != nullptr && overviewMaps[i] != nullptr)
+        {
+            overviewMaps[i]->setParent(0);
+            overviewMaps[i]->show();
+            overviewMaps[i]->setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+            overviewMaps[i]->setWindowState( (overviewMaps[i]->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+            overviewMaps[i]->raise(); overviewMaps[i]->activateWindow();
+
+            QRect perspectiveRect = perspectiveViews[i]->geometry();
+            QPoint cornerPos = this->mapToGlobal(perspectiveRect.topRight());
+            QRect overviewRect = overviewMaps[i]->geometry();
+
+            // cerr << "cornerpos " << i << " = " << cornerPos.x() << ", " << cornerPos.y() << endl;
+            cornerPos.setX(cornerPos.x() - overviewRect.width()+1);
+            overviewMaps[i]->move(cornerPos);
+            overviewMaps[i]->resize(overviewMaps[i]->sizeHint());
+            // cerr << "cornerpos " << i << " = " << cornerPos.x() << ", " << cornerPos.y() << endl;
+        }
+}
+*/
 
 void Window::setupVizPanel()
 {
@@ -452,88 +785,39 @@ void Window::setupVizPanel()
     // vizLayout->setMargin(1);
     vizLayout->setContentsMargins(3, 3, 3, 3);
 
-    // OpenGL widget
-    // Specify an OpenGL 3.2 format.
-    QGLFormat glFormat;
-    glFormat.setVersion( 4, 1 );
-    glFormat.setProfile( QGLFormat::CoreProfile );
-    glFormat.setSampleBuffers( false );
+
+    QSurfaceFormat glFormat;
+    glFormat.setProfile( QSurfaceFormat::CoreProfile );
+    glFormat.setDepthBufferSize(24);
+    // QSurfaceFormat::setDefaultFormat(format);
+    glFormat.setVersion(4,1);
+
+
+    // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
 
     // vizLayout->setRowStretch(0, 6);
     vizLayout->setRowStretch(0, 0);
     vizLayout->setRowStretch(1, 24);
     vizLayout->setRowStretch(2, 1);
     vizLayout->setRowStretch(3, 8);
+    // PCM: add overview map
+    // vizLayout->setRowStretch(4,6);
+
     vizLayout->setColumnStretch(0, 600);
     vizLayout->setColumnStretch(1, 50);
     vizLayout->setColumnStretch(2, 600);
 
-    // transect views
-    for(int i = 0; i < 2; i++)
-    {
-        GLTransect * tview = new GLTransect(glFormat, scenes[i], transectControls[i]);
-        tview->getRenderer()->setRadianceScalingParams(radianceEnhance);
-
-        // signal to slot connections
-        connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        transectViews.push_back(tview);
-
-        // vizLayout->addWidget(tview, 0, i*2);
-    }
-
-    // for(int i = 0; i < 2; i++)
-    //    vizLayout->addWidget(transectViews[i], 0, i);
-
-    // main perspective views
-    for(int i = 0; i < 2; i++)
-    {
-        GLWidget * pview = new GLWidget(glFormat, scenes[i], transectControls[i]);
-
-        numGridX = 1.0f / gridSepX;
-        numGridZ = 1.0f / gridSepZ;
-        pview->getRenderer()->setGridParams(numGridX, numGridZ, gridWidth, gridIntensity);
-        pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
-        pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
-
-        // signal to slot connections
-        connect(pview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        connect(pview, SIGNAL(signalShowTransectView()), this, SLOT(showTransectViews()));
-        connect(pview, SIGNAL(signalSyncPlace(bool)), this, SLOT(transectSyncPlace(bool)));
-
-        perspectiveViews.push_back(pview);
-        vizLayout->addWidget(pview, 1, i*2);
-    }
-
-    // chart views
-    for(int i = 0; i < 2; i++)
-    {
-        ChartWindow * cview = new ChartWindow(this, 800, 200);
-        //TimelineGraph * gmodel = new TimelineGraph();
-
-        // signal to slot connections
-        // connect(cview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        std::vector< TimelineGraph* > tgs;
-        chartViews.push_back(cview);
-
-        graphModels.push_back( tgs );
-        vizLayout->addWidget(cview, 3, i*2);
-    }
-
-    // timeline views
-    for(int i = 0; i < 2; i++)
-    {
-        TimeWindow * tview = new TimeWindow(this, 1, 2, 800, 50);
-
-        // signal to slot connections
-        connect(tview, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-        connect(tview, SIGNAL(signalRebindPlants()), perspectiveViews[i], SLOT(rebindPlants()));
-        connect(tview, SIGNAL(signalRebindPlants()), transectViews[i], SLOT(rebindPlants()));
-        connect(tview, SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
-        connect(tview, SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
-
-        timelineViews.push_back(tview);
-        vizLayout->addWidget(tview, 2, i*2);
-    }
+    // setup widgets for panel
+    setupVizTransect(glFormat, 0);
+    setupVizTransect(glFormat, 1);
+    setupVizPerspective(glFormat, 0);
+    setupVizPerspective(glFormat, 1);
+    setupVizChartViews(glFormat, 0);
+    setupVizChartViews(glFormat, 1);
+    setupVizTimeline(glFormat, 0);
+    setupVizTimeline(glFormat, 1);
+    //setupVizOverMap(glFormat, 0);
+    //setupVizOverMap(glFormat, 1);
 
     // lock buttons
     QVBoxLayout *lockTLayout = new QVBoxLayout;
@@ -608,7 +892,6 @@ void Window::setupVizPanel()
     transectLock = LockState::UNLOCKED;
     timelineLock = LockState::UNLOCKED;
 
-
     /*
     vizPanel->setStyleSheet(QString::fromUtf8("ChartWindow\n"
     "{\n"
@@ -631,12 +914,36 @@ void Window::setupGraphModels(int scene_index)
     }
 }
 
-Window::Window(string datadir)
+// PCM: add in constructor names for map overlay  - TBD
+Window::Window(string datadir, string lprefix, string rprefix)
 {
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout();
 
+
+    QSurfaceFormat fmt;
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setVersion(4,1);
+    fmt.setDepthBufferSize(24);
+    // fmt.setOptions(QSurfaceFormat::DeprecatedFunctions);
+    QSurfaceFormat::setDefaultFormat(fmt);
+
+    // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
+    //glFormat.setSampleBuffers( true );
+    //glFormat.setSamples(4);
+
     transectsValid = false;
+    active = false;
+    visible = true;
+
+    dmapIdx[0] = dmapIdx[1] = 0;
+    rampIdx[0] = rampIdx[1] = 0;
+    grphIdx[0] = grphIdx[1] = 0;
+
+   // overviewTimer.setSingleShot(true);
+   // connect( &overviewTimer, SIGNAL(timeout()), SLOT(overviewShow()) );
+
+    rendercount = 0;
     mainLayout->setSpacing(1);
     // mainLayout->setMargin(1);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -651,11 +958,15 @@ Window::Window(string datadir)
     plantPanel = nullptr;
     setupPlantPanel();
 
+    // mapDownSampleFactor = 4;
+
     // load scenes
     for(int i = 0; i < 2; i++)
     {
-        Scene * s = new Scene(datadir);
+        Scene * s = new Scene(datadir, (i == 0 ? lprefix : rprefix) );
         scenes.push_back(s);
+        mapScene * ms = new mapScene(datadir, mapOverlayFile[i], (i ==0 ? lprefix : rprefix) );
+        mapScenes.push_back(ms);
     }
 
     for(int i = 0; i < 2; i++)
@@ -664,15 +975,19 @@ Window::Window(string datadir)
         transectControls.push_back(t);
     }
     setupVizPanel();
+    dataMapPanel = nullptr;
+    setupDataMapPanel();
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(plantPanel, 0, 1, Qt::AlignTop);
-    mainLayout->addWidget(vizPanel, 0, 2);
+    mainLayout->addWidget(dataMapPanel, 0, 2, Qt::AlignTop);
+    mainLayout->addWidget(vizPanel, 0, 3);
 
     createActions();
     createMenus();
 
-    readMitsubaExportProfiles("../../data/mitsubaExportProfiles");
+    readMitsubaExportProfiles("../../data/Mitsuba/ModelSpecies");
+    this->installEventFilter(this);
 
     mainWidget->setLayout(mainLayout);
     setWindowTitle(tr("EcoViz"));
@@ -681,22 +996,44 @@ Window::Window(string datadir)
 
     renderPanel->hide();
     plantPanel->hide();
+    dataMapPanel->hide();
 }
 
 Window::~Window()
 {
     // delete transect controllers
     for(auto &it: transectControls)
-        delete(it);
+        if (it != nullptr) delete it;
+
 }
+
 
 void Window::run_viewer()
 {
+    int extractWindowDSample = 6;
+
     for(int i = 0; i < 2; i++)
     {
+        // PCM: added overview map
+        // load large scale terrain, downsample for oevrview map, and extract  default sub-region for
+        // main render window.
+        std::unique_ptr<Terrain> subTerr = mapScenes[i]->loadOverViewData(extractWindowDSample);
+        // (1) set extracted sub-region as the region for this window
+        // (2) pass in a pointer to highres (master) terrain
+        scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
+        vpPoint midPoint;
+        scenes[i]->getTerrain()->getMidPoint(midPoint);
+        scenes[i]->getTerrain()->setFocus(midPoint);
+        // load in remaing eco-system data - NOTE:
+        // the original source region extent is stored in scene[i] - this is later queried to
+        // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
         scenes[i]->loadScene(1, 5); // years
+        cerr << "loading Data Maps" << endl;
+        scenes[i]->loadDataMaps(5);
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
+        //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
+        perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
         setupGraphModels(i);
@@ -707,7 +1044,8 @@ void Window::run_viewer()
     }
 
     setupPlantPanel();
-
+    setupDataMapPanel();
+    rendercount++;
     repaintAllGL();
 }
 
@@ -742,7 +1080,7 @@ void Window::keyPressEvent(QKeyEvent *e)
 void Window::mouseMoveEvent(QMouseEvent *event)
 {
     QWidget *child=childAt(event->pos());
-    QGLWidget *glwidget = qobject_cast<QGLWidget *>(child);
+    QOpenGLWidget *glwidget = qobject_cast<QOpenGLWidget *>(child);
     if(glwidget) {
         QMouseEvent *glevent=new QMouseEvent(event->type(),glwidget->mapFromGlobal(event->globalPos()),event->button(),event->buttons(),event->modifiers());
         QCoreApplication::postEvent(glwidget,glevent);
@@ -751,6 +1089,19 @@ void Window::mouseMoveEvent(QMouseEvent *event)
 
 void Window::repaintAllGL()
 {
+    // position overmaps on first active render
+    /*
+    cerr << perspectiveViews[0]->getPainted() << " " << perspectiveViews[1]->getPainted() << " " << overviewMaps[0]->getActive() << " " << overviewMaps[1]->getActive() << endl;
+    if(!active)
+    {
+        if(perspectiveViews[0]->getPainted() && perspectiveViews[1]->getPainted() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
+        {
+            active = true;
+        }
+    }*/
+    // updateOverviews();
+
+    rendercount = 0;
     for(auto pview: perspectiveViews)
         pview->repaint();
     for(auto tview: transectViews)
@@ -759,7 +1110,116 @@ void Window::repaintAllGL()
         mview->repaint();
     for(auto cview: chartViews)
         cview->repaint();
+    // PCM: probbaly not needed mostly...
+    //for (auto mapviews: overviewMaps)
+    //    if (mapviews != nullptr) mapviews->repaint();
 }
+
+
+// ISSUES: 1) this may not remove/add transect buttons correctly
+//         2) this does not touch the chart/timeline (these were built with  original sub-terrain and stats are for that -
+//            note that the Timeline should br OK since it uses full terrain data, but chart is based on original terrain)
+
+void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
+{
+    active = false;
+
+    // clear transects and widgets
+    for(int j = 0; j < 2; j++)
+    {
+        if(i == 2 || i == j) // one (i == 0 or i == 1) or both (i == 3) perspective views
+        {
+            destroyVizTransect(j);
+
+            // destroy perspective views and  associated widgets
+            View *oldView = new View(*perspectiveViews[j]->getView());
+            bool oldLock = perspectiveViews[j]->getViewLockState();
+
+            destroyVizPerspective(j);
+
+            QSurfaceFormat glFormat;
+            glFormat.setProfile( QSurfaceFormat::CoreProfile );
+            glFormat.setDepthBufferSize(24);
+            glFormat.setVersion(4,1);
+            // glFormat.setOptions(QSurfaceFormat::DeprecatedFunctions);
+
+            /*
+            glFormat.setVersion( 4, 1 );
+            // fmt.setSamples(16);
+            // fmt.setDepthBufferSize(24);
+            glFormat.setProfile( QSurfaceFormat::CoreProfile );*/
+
+            // get current region (which should have changed from before)
+            Region newReg = Region(x0,y0,x1,y1);
+
+            mapScenes[j]->setSelectedRegion(newReg);
+            // (0) add check to see if this Region has changed (else wasteful) TBD ...PCM
+            std::unique_ptr<Terrain> subTerr = mapScenes[j]->extractTerrainSubwindow(newReg);
+
+            // (1) set extracted sub-region as the region for this window
+            // (2) pass in a pointer to highres (master) terrain
+            scenes[j]->setNewTerrainData(std::move(subTerr), mapScenes[j]->getHighResTerrain().get());
+            vpPoint midPoint;
+            scenes[j]->getTerrain()->getMidPoint(midPoint);
+            scenes[j]->getTerrain()->setFocus(midPoint);
+            // cerr << "MIDPOINT = " << midPoint.x << ", " << midPoint.y << ", " << midPoint.z << endl;
+
+            // rebuild transect control structure
+            assert(transectControls.size() == 2);
+            assert(transectControls[j] == nullptr);
+            Transect * t = new Transect(scenes[j]->getTerrain());
+            transectControls[j] = t;
+
+            // rebuild transect widget
+            setupVizTransect(glFormat, j);
+            transectViews[j]->setVisible(false);
+            transectControls[j]->init(scenes[j]->getTerrain());
+
+            // rebuild perspective widget
+            setupVizPerspective(glFormat, j);
+            perspectiveViews[j]->setScene(scenes[j]);
+            perspectiveViews[j]->getOverviewWindow()->setSelectionRegion(mapScenes[j]->getSelectedRegion());
+            // required to preserve View Mx, will cause issues if left/reight perspective views are 'locked'
+            // NOTE: the glWidget never frees 'view' and thus leaks memory. But changing this would require a
+            // lot more code (should store View not View * and make copies - it's a lightweight object, but embedded
+            // in many places, so lot of rewriting.
+            perspectiveViews[j]->lockView(oldView);
+            perspectiveViews[j]->getView()->setForcedFocus(midPoint); // otherwise focus change is not copied from terrain
+
+            // (3) for new terrain (aftr initial terrain) we need to ensure thats buffer size changes are accounted for.
+            scenes[j]->getTerrain()->setBufferToDirty();
+            mapScenes[j]->getLowResTerrain()->setBufferToDirty();
+
+            perspectiveViews[j]->rebindPlants();
+
+            // restablish broken connection from timeline widget signals
+            //connect(timelineViews[i], SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
+            //connect(timelineViews[i], SIGNAL(signalRebindPlants()), chartViews[i], SLOT(updateTimeBar()));
+            //connect(timelineViews[i], SIGNAL(signalSync(int)), this, SLOT(timelineSync(int)));
+            connect(timelineViews[j], SIGNAL(signalRebindPlants()), perspectiveViews[j], SLOT(rebindPlants()));
+            connect(timelineViews[j], SIGNAL(signalRebindPlants()), transectViews[j], SLOT(rebindPlants()));
+
+            //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
+            //overviewMaps[i]->updateViewParams();
+            //overviewMaps[i]->forceUpdate();
+
+            rendercount++;
+            perspectiveViews[j]->setDataMap(dmapIdx[j], convertRampIdx(i), false); // note that update is deferred until texture has been initialized
+            perspectiveViews[j]->setViewLockState(oldLock);
+        }
+        // PCM: + signal to clear transect!!!
+
+    }
+
+    // if the views are locked then resync
+    if(viewLock == LockState::LOCKEDFROMLEFT)
+        perspectiveViews[1]->lockView(perspectiveViews[0]->getView());
+    if(viewLock == LockState::LOCKEDFROMRIGHT)
+        perspectiveViews[0]->lockView(perspectiveViews[1]->getView());
+
+    repaintAllGL();
+}
+
 
 void Window::showRenderOptions()
 {
@@ -771,8 +1231,14 @@ void Window::showPlantOptions()
     plantPanel->setVisible(showPlantAct->isChecked());
 }
 
+void Window::showDataMapOptions()
+{
+    dataMapPanel->setVisible(showDataMapAct->isChecked());
+}
+
 void Window::unlockViews()
 {
+    cerr << "((((((( UNLOCK VIEWS ))))))))" << endl;
     if((int) perspectiveViews.size() == 2)
     {
         perspectiveViews[0]->unlockView();
@@ -800,13 +1266,16 @@ void Window::lockViewsFromLeft()
         {
             if(viewLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
                 unlockViews();
-            perspectiveViews[1]->lockView(perspectiveViews[0]->getView());
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
+            perspectiveViews[1]->lockMap(perspectiveViews[0]->getMapRegion());
+            perspectiveViews[1]->lockView(perspectiveViews[0]->getView()); // Do not re-order this and previous line
             viewLock = LockState::LOCKEDFROMLEFT;
             lockV1->setIcon((* lockleftIcon));
+
         }
 
+        rendercount++;
         repaintAllGL();
     }
     else
@@ -828,19 +1297,35 @@ void Window::lockViewsFromRight()
         {
             if(viewLock == LockState::LOCKEDFROMLEFT) // need to unlock first
                 unlockViews();
-            perspectiveViews[0]->lockView(perspectiveViews[1]->getView());
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
+            perspectiveViews[0]->lockMap(perspectiveViews[1]->getMapRegion());
+            perspectiveViews[0]->lockView(perspectiveViews[1]->getView()); // Do not re-order this and previous line
             viewLock = LockState::LOCKEDFROMRIGHT;
             lockV2->setIcon((* lockrightIcon));
+
         }
 
+        rendercount++;
         repaintAllGL();
     }
     else
     {
         cerr << "Error Window::lockViewFromRight: single panel so unlocking is not possible" << endl;
     }
+}
+
+// for transect locking, the same DEM must be used in both left/right views and the selection boxes must be identical
+bool Window::canLockTransects(void) const
+{
+    bool canLock = true;
+    Region left = mapScenes[0]->getSelectedRegion();
+    Region right = mapScenes[1]->getSelectedRegion();
+    if (left.x0 != right.x0 || left.x1 != right.x1 || left.y0 != right.y0 || left.y1 != right.y1)
+        return false;
+    if (mapScenes[0]->getBaseName() != mapScenes[1]->getBaseName())
+        return false;
+    return canLock;
 }
 
 void Window::unlockTransects()
@@ -871,6 +1356,13 @@ void Window::unlockTransects()
 void Window::lockTransectFromLeft()
 {
     cerr << "LockTransectFromLeft" << endl;
+
+    if (canLockTransects() == false)
+    {
+        cerr << "can't lock transects - the selection boxes and or DEMs differ\n";
+        return;
+    }
+
     if((int) transectViews.size() == 2)
     {
         if(transectLock == LockState::LOCKEDFROMLEFT)
@@ -893,6 +1385,7 @@ void Window::lockTransectFromLeft()
             showTransectViews();
         }
 
+        rendercount++;
         repaintAllGL();
     }
     else
@@ -904,6 +1397,13 @@ void Window::lockTransectFromLeft()
 void Window::lockTransectFromRight()
 {
     cerr << "LockTransectFromRight" << endl;
+
+    if (canLockTransects() == false)
+    {
+        cerr << "can't lock transects - the selection boxes and or DEMs differ\n";
+        return;
+    }
+
     if((int) transectViews.size() == 2)
     {
         if(transectLock == LockState::LOCKEDFROMRIGHT)
@@ -927,6 +1427,7 @@ void Window::lockTransectFromRight()
             showTransectViews();
         }
 
+        rendercount++;
         repaintAllGL();
     }
     else
@@ -981,6 +1482,7 @@ void Window::lockTimelineFromLeft()
             timelineViews[1]->synchronize(timelineViews[0]->get_sliderval());
         }
 
+        rendercount++;
         repaintAllGL();
     }
     else
@@ -1009,6 +1511,7 @@ void Window::lockTimelineFromRight()
             timelineViews[0]->synchronize(timelineViews[1]->get_sliderval());
         }
 
+        rendercount++;
         repaintAllGL();
     }
     else
@@ -1032,11 +1535,18 @@ void Window::showContours(int show)
 {
     for(auto pview: perspectiveViews)
         pview->getRenderer()->drawContours(show == Qt::Checked);
+    rendercount++;
     repaintAllGL();
 }
 
 void Window::showTransectViews()
 {
+    if (transectControls.size() == 0 || transectViews.size() == 0)
+    {
+        std::cerr << "\nWindow::showTransectViews - no transect data defined?";
+        return;
+    }
+
     bool transectNowValid = transectControls[0]->getValidFlag() || transectControls[1]->getValidFlag();
     if(transectNowValid && !transectsValid)
     {
@@ -1049,15 +1559,20 @@ void Window::showTransectViews()
     for(int i = 0; i < 2; i++)
     {
         transectViews[i]->setVisible(transectControls[i]->getValidFlag());
+        transectViews[i]->setActive(transectControls[i]->getValidFlag());
     }
+    rendercount++;
     repaintAllGL();
-    //    if(transectControls[i]->getValidFlag())
-    //        transectViews[i]->setVisible(true);
-
 }
 
 void Window::clearTransects()
 {
+    if (transectControls.size() == 0 || transectViews.size() == 0)
+    {
+        std::cerr << "\nWWindow::clearTransects - no transect data defined?";
+        return;
+    }
+
     // change transects back to initial state
     for(int i = 0; i < 2; i++)
     {
@@ -1069,6 +1584,7 @@ void Window::clearTransects()
     for(int i = 0; i < 2; i++)
     {
         transectViews[i]->setVisible(false);
+        transectViews[i]->setActive(false);
         vizLayout->removeWidget(transectViews[i]);
     }
     vizLayout->removeWidget(lockTGroup);
@@ -1081,6 +1597,7 @@ void Window::showGridLines(int show)
 {
     for(auto pview: perspectiveViews)
         pview->getRenderer()->drawGridlines(show == Qt::Checked);
+    rendercount++;
     repaintAllGL();
 }
 
@@ -1095,7 +1612,11 @@ void Window::allPlantsOff()
 {
     for(auto pview: perspectiveViews)
         pview->setAllSpecies(false);
+}
 
+void Window::uncheckPlantPanel()
+{
+    showPlantAct->setChecked(false);
 }
 
 void Window::plantChange(int show)
@@ -1117,6 +1638,85 @@ void Window::plantChange(int show)
         cerr << "Click plant on/off: toggle " << sdata[snum.toInt()].scientific_name << "to " << vis;
     }
 
+}
+
+TypeMapType Window::convertRampIdx(int side)
+{
+    if(dmapIdx[side] == 0)
+    {
+        return TypeMapType::TRANSECT;
+    }
+    else
+    {
+        switch(rampIdx[side])
+        {
+        case 0: return TypeMapType::GREYRAMP;
+            break;
+        case 1: return TypeMapType::HEATRAMP;
+            break;
+        case 2: return TypeMapType::BLUERAMP;
+            break;
+        default: return TypeMapType::GREYRAMP;
+            break;
+        }
+    }
+}
+
+void Window::leftDataMapChoice(int id)
+{
+    cerr << "leftDataMapChoice" << endl;
+    dmapIdx[0] = id;
+    perspectiveViews[0]->setDataMap(dmapIdx[0], convertRampIdx(0), true);
+}
+
+void Window::rightDataMapChoice(int id)
+{
+     dmapIdx[1] = id;
+     perspectiveViews[1]->setDataMap(dmapIdx[1], convertRampIdx(1), true);
+}
+
+void Window::leftGraphChoice(int id)
+{
+    grphIdx[0] = id;
+    chartViews[0]->chartSelected(id);
+}
+
+void Window::rightGraphChoice(int id)
+{
+     grphIdx[1] = id;
+     chartViews[1]->chartSelected(id);
+}
+
+void Window::leftRampChoice(int id)
+{
+     rampIdx[0] = id;
+     perspectiveViews[0]->setDataMap(dmapIdx[0], convertRampIdx(0), true);
+}
+
+void Window::rightRampChoice(int id)
+{
+     rampIdx[1] = id;
+     perspectiveViews[1]->setDataMap(dmapIdx[1], convertRampIdx(1), true);
+}
+
+void Window::uncheckDataMapPanel()
+{
+    showDataMapAct->setChecked(false);
+}
+
+void Window::syncDataMapPanel()
+{
+    // check state in perspective views and update accordingly
+    for(int i = 0; i < 2; i++)
+        if(perspectiveViews[i]->getOverlay() == TypeMapType::EMPTY || perspectiveViews[i]->getOverlay() == TypeMapType::TRANSECT)
+        {
+            dmapIdx[i] = 0;
+            // update check mark
+            if(i == 0)
+                qbmgL->button(0)->setChecked(true);
+            else
+                qbmgR->button(0)->setChecked(true);
+        }
 }
 
 void Window::lineEditChange()
@@ -1196,36 +1796,6 @@ void Window::lineEditChange()
             radianceEnhance = val;
         }
     }
-    if(sender() == sunMapEdit)
-    {
-        ival = sunMapEdit->text().toInt(&ok);
-        if(ok)
-        {
-            sunMonth = ival;
-            if(sunMonth < 1)
-                sunMonth = 1;
-            if(sunMonth > 12)
-                sunMonth = 12;
-        }
-        if(sunMapRadio->isChecked())
-            for(auto pview: perspectiveViews)
-                pview->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
-    }
-    if(sender() == wetMapEdit)
-    {
-        ival = wetMapEdit->text().toInt(&ok);
-        if(ok)
-        {
-            wetMonth = ival;
-            if(wetMonth < 1)
-                wetMonth = 1;
-            if(wetMonth > 12)
-                wetMonth = 12;
-        }
-        if(wetMapRadio->isChecked())
-            for(auto pview: perspectiveViews)
-                pview->setMap(TypeMapType::WATER, wetMonth-1);
-    }
     if(sender() == smoothEdit)
     {
         ival = smoothEdit->text().toInt(&ok);
@@ -1242,6 +1812,7 @@ void Window::lineEditChange()
         pview->getRenderer()->setContourParams(numContours, contourWidth, contourIntensity);
         pview->getRenderer()->setRadianceScalingParams(radianceEnhance);
     }
+    rendercount++;
     repaintAllGL();
 }
 
@@ -1249,6 +1820,7 @@ void Window::mapChange(bool on)
 {
     for(auto pview: perspectiveViews)
     {
+        /*
         if(sunMapRadio->isChecked() && on)
             pview->setMap(TypeMapType::SUNLIGHT, sunMonth-1);
         if(wetMapRadio->isChecked() && on)
@@ -1257,6 +1829,7 @@ void Window::mapChange(bool on)
             pview->setOverlay(TypeMapType::CHM);
         if(noMapRadio->isChecked() && on)
             pview->setOverlay(TypeMapType::EMPTY);
+        */
     }
 }
 
@@ -1285,6 +1858,12 @@ void Window::createActions()
     showPlantAct->setStatusTip(tr("Hide/Show Plant Options"));
     connect(showPlantAct, SIGNAL(triggered()), this, SLOT(showPlantOptions()));
 
+    showDataMapAct = new QAction(tr("Show DataMap Options"), this);
+    showDataMapAct->setCheckable(true);
+    showDataMapAct->setChecked(false);
+    showDataMapAct->setStatusTip(tr("Hide/Show Data Map Options"));
+    connect(showDataMapAct, SIGNAL(triggered()), this, SLOT(showDataMapOptions()));
+
     clearTransectsAct = new QAction(tr("Clear Transects"), this);
     clearTransectsAct->setCheckable(false);
     clearTransectsAct->setStatusTip(tr("Remove Transects"));
@@ -1292,7 +1871,7 @@ void Window::createActions()
 
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
-    connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsuba()));
+    connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsubaJSON()));
 }
 
 void Window::createMenus()
@@ -1300,6 +1879,7 @@ void Window::createMenus()
     viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(showRenderAct);
     viewMenu->addAction(showPlantAct);
+    viewMenu->addAction(showDataMapAct);
     viewMenu->addAction(clearTransectsAct);
 
     // Export Mitsuba
@@ -1451,8 +2031,111 @@ void Window::readMitsubaExportProfiles(string profilesDirPath)
     }
 }
 
+/*
+void Window::closeEvent(QCloseEvent* event)
+{
+    for(auto &it: overviewMaps) // floating so need to be closed separately
+        it->close();
+    event->accept();
+}
+
+
+void Window::updateOverviews()
+{
+    bool firstactivation = false;
+
+    if(perspectiveViews[0]->getPainted() && perspectiveViews[1]->getPainted() && overviewMaps[0]->getActive() && overviewMaps[1]->getActive())
+    {
+         firstactivation = !active; // will need to call paint on first activation
+         active = true;
+    }
+
+    // cerr << perspectiveViews[0]->getPainted() << " " << perspectiveViews[1]->getPainted() << " " << overviewMaps[0]->getActive() << " " << overviewMaps[1]->getActive() << " " << visible << endl;
+    if(active && visible) // show overviews
+    {
+        for(int i = 0; i < 2; i++)
+            positionVizOverMap(i);
+    }
+    else // hide overview
+    {
+        for(auto &it: overviewMaps)
+            if (it != nullptr) it->hide();
+    }
+    if(firstactivation)
+        repaintAllGL();
+}
+
+void Window::overviewShow()
+{
+    visible = true;
+    updateOverviews();
+}
+*/
+
+/*
+void Window::resizeEvent(QResizeEvent* event)
+{
+    if(active)
+    {
+        visible = false;
+        for(auto &pview: perspectiveViews)
+            pview->setUpdatesEnabled(false);
+        overviewTimer.start(300);
+        updateOverviews();
+    }
+    event->accept();
+}
+
+
+void Window::moveEvent(QMoveEvent* event)
+{
+    if(active)
+    {
+        visible = false;
+        for(auto &pview: perspectiveViews)
+            pview->setUpdatesEnabled(false);
+        overviewTimer.start(300);
+        updateOverviews();
+    }
+    event->accept();
+}
+*/
+
+/*
+bool Window::eventFilter(QObject *obj, QEvent *event)
+{
+    QEvent::Type event_type = event->type();
+
+    if(event_type == QEvent::NonClientAreaMouseButtonPress)
+    {
+        QMouseEvent* pMouseEvent = dynamic_cast<QMouseEvent*>(event);
+        if (pMouseEvent->button() == Qt::MouseButton::LeftButton)
+        {
+            visible = false;
+            for(auto &pview: perspectiveViews)
+                pview->setUpdatesEnabled(false);
+            updateOverviews();
+        }
+    }
+    else if(event_type == QEvent::NonClientAreaMouseButtonRelease) // || event_type == QEvent::MouseButtonRelease)
+    {
+        QMouseEvent* pMouseEvent = dynamic_cast<QMouseEvent*>(event);
+        if (pMouseEvent->button() == Qt::MouseButton::LeftButton)
+        {
+            visible = true;
+            for(auto &pview: perspectiveViews)
+                pview->setUpdatesEnabled(true);
+            updateOverviews();
+        }
+    }
+    return QObject::eventFilter(obj, event);
+}
+*/
+
 void Window::exportMitsuba()
 {
+	std::cout << "Obsolete function exportMitsuba() called" << std::endl;
+  /*
     QStringList allProfiles;
 
     map<string, map<string, vector<MitsubaModel>>>::iterator it;
@@ -1469,7 +2152,7 @@ void Window::exportMitsuba()
     }
 
     bool ok = false;
-    ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, &ok);
+    ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, ok);
 
     if (ok)
     {
@@ -1496,5 +2179,93 @@ void Window::exportMitsuba()
 
         sceneXml.close();
         cout << "Export finished !" << endl;
-    }
+    }*/
+}
+
+
+void Window::exportMitsubaJSON()
+{
+  QStringList allProfiles;
+
+  map<string, map<string, vector<MitsubaModel>>>::iterator it;
+  for (it = this->profileToSpeciesMap.begin(); it != this->profileToSpeciesMap.end(); it++)
+  {
+    allProfiles.append(it->first.data());
+  }
+
+  if (allProfiles.isEmpty())
+  {
+    QMessageBox messageBox;
+    messageBox.warning(this, "No profile found", "No export profile was found.\nPlease check that you have created at least one profile in the folder \"data/mitsubaExportProfiles\"");
+    return;
+  }
+
+  bool ok = false;
+  ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, ok);
+
+  if (ok)
+  {
+    cout << "Export started !" << endl;
+
+		string jsonDirPath = exportSettings.path;
+
+    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Terrain");
+    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Instances");
+
+		map<string, vector<MitsubaModel>> speciesMap = this->profileToSpeciesMap.find(exportSettings.profile)->second;
+
+
+    if (exportSettings.sceneLeft)
+		{
+			const int left = 0;
+
+			// Data
+			Scene* sceneLeft = this->scenes[left];
+      Transect* transectLeft = this->transectControls[left];
+
+			// Export Cameras JSON
+			cout << "- Export camera left" << endl;
+			this->perspectiveViews[left]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameLeft + "_cameraLeft");
+          
+			// Export Terrain JSON
+			cout << "- Export terrain left" << endl;
+			sceneLeft->exportTerrainJSON( jsonDirPath + "/Terrain/", exportSettings.filenameLeft + "_terrainLeft");
+
+			// Export Instances
+			cout << "- Export vegetation instances" << endl;
+			sceneLeft->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameLeft + "_instancesLeft", sceneLeft, transectLeft);
+
+      // Export Scene JSON 
+			cout << "- Export scene left" << endl;
+			sceneLeft->exportSceneJSON(jsonDirPath, exportSettings.filenameLeft + "_cameraLeft", "Lights", exportSettings.filenameLeft + "_terrainLeft", exportSettings.filenameLeft + "_instancesLeft",
+        exportSettings.filenameLeft, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
+		}
+
+		if (exportSettings.sceneRight)
+		{
+      const int right = 1;
+      // Data
+			Scene* sceneRight = this->scenes[right];
+			Transect* transectRight = this->transectControls[right];
+
+      // Export Cameras JSON
+			cout << "- Export camera right" << endl;
+			this->perspectiveViews[right]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameRight + "_cameraRight");
+
+			// Export Terrain JSON
+			cout << "- Export terrain right" << endl;
+			sceneRight->exportTerrainJSON(jsonDirPath + "/Terrain/", exportSettings.filenameRight + "_terrainRight");
+
+      // Export Instances
+      cout << "- Export vegetation instances" << endl;
+      sceneRight->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameRight+"_instancesRight", sceneRight, transectRight);
+
+			// Export Scene JSON
+			cout << "- Export scene right" << endl;
+			sceneRight->exportSceneJSON(jsonDirPath, exportSettings.filenameRight + "_cameraRight", "Lights", exportSettings.filenameRight + "_terrainRight", exportSettings.filenameRight + "_instancesRight",
+				exportSettings.filenameRight, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
+
+		}
+    cout << "Export finished !" << endl;
+  }
 }

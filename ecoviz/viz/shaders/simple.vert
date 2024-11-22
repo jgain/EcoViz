@@ -1,4 +1,4 @@
-#version 150
+#version 410
 #extension GL_ARB_explicit_attrib_location: enable
 
 layout (location=0) in vec4 vertex;

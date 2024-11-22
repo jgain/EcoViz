@@ -1,54 +1,56 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'progressbar_window.h'
 **
-** Created by: The Qt Meta Object Compiler version 67 (Qt 5.13.2)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.7.2)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include <memory>
 #include "progressbar_window.h"
-#include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
+
+#include <QtCore/qtmochelpers.h>
+
+#include <memory>
+
+
+#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'progressbar_window.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 67
-#error "This file was generated using the moc from 5.13.2. It"
+#elif Q_MOC_OUTPUT_REVISION != 68
+#error "This file was generated using the moc from 6.7.2. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
 
-QT_BEGIN_MOC_NAMESPACE
+#ifndef Q_CONSTINIT
+#define Q_CONSTINIT
+#endif
+
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
-struct qt_meta_stringdata_progressbar_window_t {
-    QByteArrayData data[6];
-    char stringdata0[75];
-};
-#define QT_MOC_LITERAL(idx, ofs, len) \
-    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
-    qptrdiff(offsetof(qt_meta_stringdata_progressbar_window_t, stringdata0) + ofs \
-        - idx * sizeof(QByteArrayData)) \
-    )
-static const qt_meta_stringdata_progressbar_window_t qt_meta_stringdata_progressbar_window = {
-    {
-QT_MOC_LITERAL(0, 0, 18), // "progressbar_window"
-QT_MOC_LITERAL(1, 19, 19), // "update_label_signal"
-QT_MOC_LITERAL(2, 39, 0), // ""
-QT_MOC_LITERAL(3, 40, 17), // "update_bar_signal"
-QT_MOC_LITERAL(4, 58, 10), // "update_bar"
-QT_MOC_LITERAL(5, 69, 5) // "value"
+QT_WARNING_DISABLE_GCC("-Wuseless-cast")
+namespace {
 
-    },
-    "progressbar_window\0update_label_signal\0"
-    "\0update_bar_signal\0update_bar\0value"
-};
-#undef QT_MOC_LITERAL
+#ifdef QT_MOC_HAS_STRINGDATA
+struct qt_meta_stringdata_CLASSprogressbar_windowENDCLASS_t {};
+constexpr auto qt_meta_stringdata_CLASSprogressbar_windowENDCLASS = QtMocHelpers::stringData(
+    "progressbar_window",
+    "update_label_signal",
+    "",
+    "update_bar_signal",
+    "update_bar",
+    "value"
+);
+#else  // !QT_MOC_HAS_STRINGDATA
+#error "qtmochelpers.h not found or too old."
+#endif // !QT_MOC_HAS_STRINGDATA
+} // unnamed namespace
 
-static const uint qt_meta_data_progressbar_window[] = {
+Q_CONSTINIT static const uint qt_meta_data_CLASSprogressbar_windowENDCLASS[] = {
 
  // content:
-       8,       // revision
+      12,       // revision
        0,       // classname
        0,    0, // classinfo
        3,   14, // methods
@@ -58,12 +60,12 @@ static const uint qt_meta_data_progressbar_window[] = {
        0,       // flags
        2,       // signalCount
 
- // signals: name, argc, parameters, tag, flags
-       1,    1,   29,    2, 0x06 /* Public */,
-       3,    1,   32,    2, 0x06 /* Public */,
+ // signals: name, argc, parameters, tag, flags, initial metatype offsets
+       1,    1,   32,    2, 0x06,    1 /* Public */,
+       3,    1,   35,    2, 0x06,    3 /* Public */,
 
- // slots: name, argc, parameters, tag, flags
-       4,    1,   35,    2, 0x0a /* Public */,
+ // slots: name, argc, parameters, tag, flags, initial metatype offsets
+       4,    1,   38,    2, 0x0a,    5 /* Public */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::QString,    2,
@@ -75,45 +77,57 @@ static const uint qt_meta_data_progressbar_window[] = {
        0        // eod
 };
 
+Q_CONSTINIT const QMetaObject progressbar_window::staticMetaObject = { {
+    QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
+    qt_meta_stringdata_CLASSprogressbar_windowENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSprogressbar_windowENDCLASS,
+    qt_static_metacall,
+    nullptr,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSprogressbar_windowENDCLASS_t,
+        // Q_OBJECT / Q_GADGET
+        QtPrivate::TypeAndForceComplete<progressbar_window, std::true_type>,
+        // method 'update_label_signal'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<QString, std::false_type>,
+        // method 'update_bar_signal'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>,
+        // method 'update_bar'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        QtPrivate::TypeAndForceComplete<int, std::false_type>
+    >,
+    nullptr
+} };
+
 void progressbar_window::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
         auto *_t = static_cast<progressbar_window *>(_o);
-        Q_UNUSED(_t)
+        (void)_t;
         switch (_id) {
-        case 0: _t->update_label_signal((*reinterpret_cast< QString(*)>(_a[1]))); break;
-        case 1: _t->update_bar_signal((*reinterpret_cast< int(*)>(_a[1]))); break;
-        case 2: _t->update_bar((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 0: _t->update_label_signal((*reinterpret_cast< std::add_pointer_t<QString>>(_a[1]))); break;
+        case 1: _t->update_bar_signal((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 2: _t->update_bar((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
         int *result = reinterpret_cast<int *>(_a[0]);
         {
             using _t = void (progressbar_window::*)(QString );
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&progressbar_window::update_label_signal)) {
+            if (_t _q_method = &progressbar_window::update_label_signal; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 0;
                 return;
             }
         }
         {
             using _t = void (progressbar_window::*)(int );
-            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&progressbar_window::update_bar_signal)) {
+            if (_t _q_method = &progressbar_window::update_bar_signal; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
                 *result = 1;
                 return;
             }
         }
     }
 }
-
-QT_INIT_METAOBJECT const QMetaObject progressbar_window::staticMetaObject = { {
-    &QWidget::staticMetaObject,
-    qt_meta_stringdata_progressbar_window.data,
-    qt_meta_data_progressbar_window,
-    qt_static_metacall,
-    nullptr,
-    nullptr
-} };
-
 
 const QMetaObject *progressbar_window::metaObject() const
 {
@@ -123,7 +137,7 @@ const QMetaObject *progressbar_window::metaObject() const
 void *progressbar_window::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_progressbar_window.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSprogressbar_windowENDCLASS.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -139,7 +153,7 @@ int progressbar_window::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         _id -= 3;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 3)
-            *reinterpret_cast<int*>(_a[0]) = -1;
+            *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 3;
     }
     return _id;
@@ -159,4 +173,3 @@ void progressbar_window::update_bar_signal(int _t1)
     QMetaObject::activate(this, &staticMetaObject, 1, _a);
 }
 QT_WARNING_POP
-QT_END_MOC_NAMESPACE

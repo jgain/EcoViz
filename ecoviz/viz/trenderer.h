@@ -30,7 +30,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "glheaders.h"
 
 #define GLM_FORCE_RADIANS
 
@@ -38,24 +37,34 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "shaderProgram.h"
-#include <QGLWidget>
+#include <QOpenGLWidget>
+//#include <QOpenGLFunctions>
+#include <QOpenGLExtraFunctions>
 #include "shape.h"
 #include "typemap.h"
 
 namespace PMrender {
 
-class TRenderer
+class TRenderer: protected QOpenGLExtraFunctions
 {
  public:
     // select which render methos to use for terrain
-    enum terrainShadingModel {BASIC, RADIANCE_SCALING, SUN};
+    enum terrainShadingModel
+    {
+        BASIC,
+        RADIANCE_SCALING,
+        SUN,
+        FLAT_TRANSECT,
+        RADIANCE_SCALING_TRANSECT,
+        RADIANCE_SCALING_OVERVIEW
+    };
     // select type map info to update - PAINT upfdated paint type map,
     // CONSTRAINT updates the overlay data (additional constraints etc)
     enum typeMapInfo {PAINT, CONSTRAINT};
 
  private:
 
-    QGLWidget *canvas;
+    QOpenGLWidget *canvas;
 
     std::string shaderDir; // location of all shaders
 
@@ -115,6 +124,7 @@ class TRenderer
     GLenum rsDestTexUnit;
     GLenum constraintTexUnit; // used for terrain freezing and other overlay data
     GLenum manipTranspTexUnit; // used for transparency affect on manipulators
+    GLenum depthTexUnit;      // used to read back depth value for manipulator FBO
 
     GLuint depthTexture; // radiance scaling: FBO depth texture
     GLuint normTexture; // radiance scaling: FBO normal texture
@@ -199,7 +209,7 @@ class TRenderer
     void destroyInstanceData(void);
 public:
 
-    TRenderer(QGLWidget *drawTo = NULL, const std::string &dir="."); // the QGLwidget is created by the GUI manager
+    TRenderer(QOpenGLWidget *drawTo = NULL, const std::string &dir="."); // the QGLwidget is created by the GUI manager
     ~TRenderer();
 
     // load in new terrain data; this will come from a grid structure. paintMap is the associated
@@ -231,7 +241,7 @@ public:
 
     // update radiance scaling FBO textures/attachments if viewport has changed size
     // vwd and vht are current viewport width and height, resp.
-    void updateRadianceScalingBuffers(int vwd, int vht);
+    void updateRadianceScalingBuffers(int vwd, int vht, bool force = false);
 
     // assumes modelling matrix is Identity for terrain
     void setCamera(glm::mat4x4& mx)
@@ -437,6 +447,11 @@ public:
     // will usually be created only once and dirty regions in tmap then be sub'd into the internal texture
     // for performamce reasons.
     void updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo = typeMapInfo::PAINT, bool force = false);
+
+    // when using multiple  renderer instances with one OpenGL context, the height texture is not changed
+    // after creation (unless its dimenson changes). This methods forces the tex uni to be rebound to the
+    // instance texture (which will be unique per object).
+    void forceHeightMapRebind(void);
 };
 
 }

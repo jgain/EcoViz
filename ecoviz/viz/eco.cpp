@@ -45,14 +45,14 @@ private:
 
 /// NoiseField
 
-NoiseField::NoiseField(Terrain * ter, int dstep, long sval)
+NoiseField::NoiseField(int gridX, int gridY, int dstep, long sval)
 {
-    int tx, ty;
+    //int tx, ty;
 
-    terrain = ter;
-    terrain->getGridDim(tx, ty);
-    dimx = tx * dstep;
-    dimy = tx * dstep;
+    // terrain = ter;
+    //terrain->getGridDim(tx, ty);
+    dimx = gridX * dstep;
+    dimy = gridY * dstep;
     nmap = new basic_types::MapFloat();
     nmap->setDim(dimx, dimy);
     nmap->fill(0.0f);
@@ -70,16 +70,21 @@ void NoiseField::init()
         }
 }
 
-float NoiseField::getNoise(vpPoint p)
+float NoiseField::getNoise(vpPoint p, float tx, float ty)
 {
-    float tx, ty, convx, convy;
+    float convx, convy;
     int x, y;
-
-    terrain->getTerrainDim(tx, ty);
+    // NOTE: this assumes p is in [0,tx] x [0,ty]
+    // terrain pointer removed since it is hard to manage with sub-region terrains
+    //terrain->getTerrainDim(tx, ty);
     convx = (float) (dimx-1) / tx;
     convy = (float) (dimy-1) / ty;
     x = (int) (p.x * convx);
     y = (int) (p.z * convy);
+
+   //assert((x >=0) && (x < dimx));
+   //assert((y >=0) && (y < dimy));
+
     return nmap->get(x, y);
 }
 
@@ -522,7 +527,7 @@ void ShapeGrid::delGrid()
     shapes.clear();
 }
 
-void ShapeGrid::initGrid()
+void ShapeGrid::initGrid(bool buildGeom)
 {
     int i, j, s;
 
@@ -538,7 +543,7 @@ void ShapeGrid::initGrid()
             }
             shapes.push_back(shapevec);
         }
-    genPlants();
+    if (buildGeom) genPlants();
 }
 
 void ShapeGrid:: genPlants()
@@ -581,7 +586,7 @@ void ShapeGrid:: genPlants()
 }
 
 
-void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<bool> * plantvis)
+void ShapeGrid::bindPlantsSimplified(Terrain * ter,  PlantGrid *esys, std::vector<bool> * plantvis, std::vector<Plane> cullPlanes)
 {
     int x, y, s, p, sx, sy, ex, ey, f;
     PlantPopulation * plnts;
@@ -591,36 +596,84 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
     ter->getGridDim(gwidth, gheight);
     Region wholeRegion = Region(0, 0, gwidth - 1, gheight - 1);
     esys->getRegionIndices(ter, wholeRegion, sx, sy, ex, ey);
+    Region parentRegion;
+    float parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy;
 
-    std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
-    std::vector<std::vector<glm::vec4> > colvars; // colour variation to be applied to each instance
+    bool parentRegionAvailable = ter->getSourceRegion(parentRegion, parentX0, parentY0,
+                                                      parentX1, parentY1, parentDimx, parentDimy);
+    // std::cout << " +++++ Parent origin = " << (parentRegionAvailable ? "[DEFINED]" : "[NULL]")
+    //          << " = (" << parentX0 << "," << parentY0 << ")\n";
 
+    // std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
+    std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)
+    std::vector<std::vector<glm::vec2> > xformsScale; // transformation to be applied to each instance - scale (base, height)
+    std::vector<std::vector<float> > colvars; // colour variation to be applied to each instance (scale value multiplied in shader)
+
+    vpPoint loc;
+    float rad;
     for(x = sx; x <= ex; x++)
         for(y = sy; y <= ey; y++)
         {
             plnts = esys->getPopulation(x, y);
 
-
             for(s = 0; s < (int) plnts->pop.size(); s++) // iterate over plant types
             {
-                std::vector<glm::mat4> xform; // transformation to be applied to each instance
-                std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
+                //std::vector<glm::mat4> xform; // transformation to be applied to each instance
+                std::vector<glm::vec3> xformTrans;
+                std::vector<glm::vec2> xformScale;
+
+                std::vector<float> colvar; // colour variation to be applied to each instance
 
                 //if((int) plnts->pop[s].size() > 0)
                 //    cerr << "Species " << s << " Present" << endl;
                 if((* plantvis)[s])
                     {
-
                     //glm::vec4 species_base_color = biome->getSpeciesColourV4(s);
 
                     for(p = 0; p < (int) plnts->pop[s].size(); p++) // iterate over plant specimens
                     {
-                        if(plnts->pop[s][p].height > 0.01f) // only display reasonably sized plants
+                        rad = plnts->pop[s][p].canopy/2.0; // radius = 0.5 canopy_width
+                        loc = plnts->pop[s][p].pos;
+
+                        bool regionExclude = false;
+                        if (parentRegionAvailable)
+                        {
+                            loc.x -= parentY0; // PCM: this x/y flip is very confusing...
+                            loc.z -= parentX0;
+
+                            if ( (loc.x-rad) < 0.0 || (loc.z-rad) < 0.0 ||
+                                (loc.x+rad) > (parentY1-parentY0) || (loc.z+rad) > (parentX1 - parentX0))
+                                regionExclude = true;
+                        }
+
+                         // ***** PCM 2023 - cull plant cylinder against planes if cullPlanes available
+                        bool cull = false;
+                        if (cullPlanes.size() > 0 && !regionExclude)
+                        {
+                            //rad = plnts->pop[s][p].canopy/2.0; // radius = 0.5 canopy_width
+                            //loc = plnts->pop[s][p].pos;
+                            for (std::size_t planes = 0; planes < cullPlanes.size(); ++planes)
+                            {
+                                // if candidate cyl is beyond plane or overlaps with plane, fails test (small tolerance)
+                                if (cullPlanes[planes].side(loc) == true || cullPlanes[planes].dist(loc) < rad + 0.01)
+                                {
+                                    cull = true;
+                                    break;
+                                }
+                            }
+
+                        }
+
+                        // *****************************************
+
+                        // only display reasonably sized plants
+                        if(plnts->pop[s][p].height > 0.01f && !regionExclude &&
+                               (cullPlanes.size() == 0 || (cullPlanes.size() > 0 && cull == false) ) )
                         {
                             // setup transformation for individual plant, including scaling and translation
-                            glm::mat4 idt, tfm;
-                            glm::vec3 trs, sc, rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
-                            vpPoint loc = plnts->pop[s][p].pos;
+                            //glm::mat4 idt, tfm;
+                            //glm::vec3 trs, sc; // rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
+                            // loc = plnts->pop[s][p].pos;
                             // GLfloat rotate_rad;
 
                             /*
@@ -633,13 +686,17 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
                                 rotate_rad = rand_unif(generator_under) * glm::pi<GLfloat>() * 2.0f;
                             }*/
 
+                            /*
                             idt = glm::mat4(1.0f);
                             trs = glm::vec3(loc.x, loc.y, loc.z);
                             tfm = glm::translate(idt, trs);
                             sc = glm::vec3(plnts->pop[s][p].canopy, plnts->pop[s][p].height, plnts->pop[s][p].canopy);		// XXX: use this for actual tree models
                             tfm = glm::scale(tfm, sc);
+                            */
                             // tfm = glm::rotate(tfm, rotate_rad, rotate_axis);
-                            xform.push_back(tfm);
+                            xformTrans.push_back(glm::vec3(loc.x, loc.y, loc.z));
+                            xformScale.push_back(glm::vec2(plnts->pop[s][p].canopy, plnts->pop[s][p].height));
+                            //xform.push_back(tfm);
 
                             colvar.push_back(plnts->pop[s][p].col); // colour variation
                             bndplants++;
@@ -652,26 +709,38 @@ void ShapeGrid::bindPlantsSimplified(Terrain *ter, PlantGrid *esys, std::vector<
 
                 }
 
-                if (xforms.size() < s + 1)
+                if (xformsScale.size() < s + 1)
                 {
-                    xforms.resize(s  + 1);
+                    xformsScale.resize(s  + 1);
+                }
+                if (xformsTrans.size() < s + 1)
+                {
+                    xformsTrans.resize(s  + 1);
                 }
                 if (colvars.size() < s + 1)
                 {
                     colvars.resize(s + 1);
                 }
-                xforms[s].insert(xforms[s].end(), xform.begin(), xform.end());
+                xformsTrans[s].insert(xformsTrans[s].end(), xformTrans.begin(), xformTrans.end());
+                xformsScale[s].insert(xformsScale[s].end(), xformScale.begin(), xformScale.end());
+
                 colvars[s].insert(colvars[s].end(), colvar.begin(), colvar.end());
+
                 f = flatten(x, y);
                 shapes[f][s].removeAllInstances();
             }
         }
 
-    for (int i = 0; i < xforms.size(); i++)
+    assert(xformsTrans.size() == xformsScale.size());
+
+    for (std::size_t i = 0; i < xformsTrans.size(); i++)
     {
         shapes[0][i].removeAllInstances();
-        shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
+        shapes[0][i].bindInstances(&xformsTrans[i], &xformsScale[i], &colvars[i]);
+        //shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
     }
+    // DEBUG:
+    // std::cerr << "bindPlantsSimplified - bound: " << bndplants << "; culled: " << culledplants << std::endl;
 }
 
 void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plantvis, PlantGrid * esys, Region region)
@@ -685,8 +754,11 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
     Region wholeRegion = Region(0, 0, gwidth - 1, gheight - 1);
     esys->getRegionIndices(ter, wholeRegion, sx, sy, ex, ey);
 
-    std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
-    std::vector<std::vector<glm::vec4> > colvars; // colour variation to be applied to each instance
+    //std::vector<std::vector<glm::mat4> > xforms; // transformation to be applied to each instance
+    std::vector<std::vector<glm::vec3> > xformsTrans; // transformation to be applied to each instance - tranalte (x,y,z)
+    std::vector<std::vector<glm::vec2> > xformsScale; // transformation to be applied to each instance - scale (base, height)
+
+    std::vector<std::vector<float> > colvars; // colour variation to be applied to each instance (in shader - scalar needed)
 
     for(x = sx; x <= ex; x++)
         for(y = sy; y <= ey; y++)
@@ -695,8 +767,10 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
 
             for(s = 0; s < (int) plnts->pop.size(); s+=3) // iterate over plant types
             {
-                std::vector<glm::mat4> xform; // transformation to be applied to each instance
-                std::vector<glm::vec4> colvar; // colour variation to be applied to each instance
+                //std::vector<glm::mat4> xform; // transformation to be applied to each instance
+                std::vector<glm::vec3> xformTrans;
+                std::vector<glm::vec2> xformScale;
+                std::vector<float> colvar; // colour variation to be applied to each instance
 
                 for(int a = 0; a < 3; a++)
                 {
@@ -705,8 +779,8 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
                         if(plnts->pop[s+a][p].height > 0.01f) // only display reasonably sized plants
                         {
                             // setup transformation for individual plant, including scaling and translation
-                            glm::mat4 idt, tfm;
-                            glm::vec3 trs, sc, rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
+                            //glm::mat4 idt, tfm;
+                            //glm::vec3 trs, sc; // rotate_axis = glm::vec3(0.0f, 1.0f, 0.0f);
                             vpPoint loc = plnts->pop[s+a][p].pos;
                             // GLfloat rotate_rad;
 
@@ -720,12 +794,17 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
                                 rotate_rad = rand_unif(generator_under) * glm::pi<GLfloat>() * 2.0f;
                             }*/
 
+                            /*
                             idt = glm::mat4(1.0f);
                             trs = glm::vec3(loc.x, loc.y, loc.z);
                             tfm = glm::translate(idt, trs);
                             sc = glm::vec3(plnts->pop[s+a][p].height, plnts->pop[s+a][p].height, plnts->pop[s+a][p].height);		// XXX: use this for actual tree models
                             tfm = glm::scale(tfm, sc);
-                            xform.push_back(tfm);
+                            */
+                            xformTrans.push_back(glm::vec3(loc.x, loc.y, loc.z));
+                            xformScale.push_back(glm::vec2(plnts->pop[s+a][p].height, plnts->pop[s+a][p].height) );
+
+                            // xform.push_back(tfm);
 
                             colvar.push_back(plnts->pop[s+a][p].col); // colour variation
                             bndplants++;
@@ -737,27 +816,35 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
                     }
 
                 }
-                if (xforms.size() < s / 3 + 1)
+                if (xformsScale.size() < s / 3 + 1)
                 {
-                    xforms.resize(s / 3 + 1);
+                    xformsScale.resize(s / 3 + 1);
+                }
+                if (xformsTrans.size() < s / 3 + 1)
+                {
+                    xformsTrans.resize(s / 3 + 1);
                 }
                 if (colvars.size() < s / 3 + 1)
                 {
                     colvars.resize(s / 3 + 1);
                 }
-                xforms[s / 3].insert(xforms[s / 3].end(), xform.begin(), xform.end());
+                xformsTrans[s / 3].insert(xformsTrans[s / 3].end(), xformTrans.begin(), xformTrans.end());
+                xformsScale[s / 3].insert(xformsScale[s / 3].end(), xformScale.begin(), xformScale.end());
                 colvars[s / 3].insert(colvars[s / 3].end(), colvar.begin(), colvar.end());
+
                 f = flatten(x, y);
                 shapes[f][s / 3].removeAllInstances();
             }
         }
 
+    assert(xformsTrans.size() == xformsScale.size());
 
-    for (int i = 0; i < xforms.size(); i++)
+    for (std::size_t i = 0; i < xformsTrans.size(); i++)
     {
         cerr << i << endl;
         shapes[0][i].removeAllInstances();
-        shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
+        //shapes[0][i].bindInstances(&xforms[i], &colvars[i]);
+        shapes[0][i].bindInstances(&xformsTrans[i], &xformsScale[i], &colvars[i]);
     }
     cerr << "num bound plants = " << bndplants << endl;
     cerr << "num culled plants = " << culledplants << endl;
@@ -765,7 +852,7 @@ void ShapeGrid::bindPlants(View * view, Terrain * ter, std::vector<bool> * plant
 
 void ShapeGrid::drawPlants(std::vector<ShapeDrawData> &drawParams)
 {
-    int x, y, s, f;
+    int s; // x, y, f;
     ShapeDrawData sdd;
 
     for(s = 0; s < (int) shapes[0].size(); s++) // iterate over plant types
@@ -795,6 +882,8 @@ EcoSystem::~EcoSystem()
 {
     esys.delGrid();
     eshapes.delGrid();
+    transectShapes.delGrid();
+
     for(int i = 0; i < (int) niches.size(); i++)
     {
         niches[i].delGrid();
@@ -806,6 +895,10 @@ void EcoSystem::init()
 {
     esys = PlantGrid(pgdim, pgdim);
     eshapes = ShapeGrid(pgdim, pgdim, biome);
+
+    // add in copy for transect plants...geometry generated by ShapeGrid constructor call above *once*
+    transectShapes = eshapes;
+
     // cmap = ConditionsMap();
 
     for(int i = 0; i < maxNiches; i++)
@@ -852,33 +945,65 @@ void EcoSystem::pickAllPlants(Terrain * ter, bool canopyOn, bool underStoreyOn)
     // dirtyPlants = true;
 }
 
-void EcoSystem::bindPlantsSimplified(Terrain *ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool rebind)
+void EcoSystem::bindPlantsSimplified(Terrain * ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis,
+                                    bool rebind, std::vector<Plane> cullPlanes)
 {
+    bool applyToTransect = false; // is this bind call for main window or transect window?
+
+    // we assume if cullPlanes are defined, its for the transect window (this hold currently)
+
+    applyToTransect = (cullPlanes.size() > 0 ? true : false);
+
     if(rebind) {
         // plant positions have been updated since the last bindPlants
-        eshapes.bindPlantsSimplified(ter, &esys, plantvis);
+        if (applyToTransect == false)
+            eshapes.bindPlantsSimplified(ter, &esys, plantvis, cullPlanes);
+        else
+            transectShapes.bindPlantsSimplified(ter, &esys, plantvis, cullPlanes);
     }
 
-    eshapes.drawPlants(drawParams);
+    if (applyToTransect == false)
+        eshapes.drawPlants(drawParams);
+    else
+        transectShapes.drawPlants(drawParams);
 }
 
-void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &tree)
+void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const basic_tree &tree)
 {
     float tx, ty;
     int gx, gy;
-    // cerr << "x = " << tree.x << " y = " << tree.y << endl;
+
+    //  cerr << "x = " << tree.x << " y = " << tree.y << endl;
+
     ter->getTerrainDim(tx, ty);
     ter->getGridDim(gx, gy);
-    float h = ter->getHeightFromReal(tx - tree.y, tree.x);
-    vpPoint pos(tree.x, h, tx - tree.y);
+
+    // Apply offset of ecosystem relative to terrain
+    float offx, offy;
+    long terlocx, terlocy, ecolocx, ecolocy;
+
+    ter->getTerrainLoc(terlocx, terlocy);
+    cohortmaps->getCohortLoc(ecolocx, ecolocy);
+
+    // cerr << "terloc = " << terlocx << ", " << terlocy << endl;
+    // cerr << "ecoloc = " << ecolocx << ", " << ecolocy << endl;
+    // cerr << "xoffset = " << (ecolocx - terlocx) << ", yoffset = " << (ecolocy - terlocy) << endl;
+
+    // calculate offset of ecosystem corner from terrain corner in global reference
+    offx = (float) (ecolocx-terlocx);
+    offy = (float) (ecolocy-terlocy) * -1.0f;
+    float h = ter->getHeightFromReal(tx - tree.y+offy, tree.x+offx);
+    vpPoint pos(tree.x+offx, h, tx - tree.y+offy);
     // cerr << "h = " << h << endl;
 
     int spc = tree.species;
 
     // introduce small random variation in colour
-    float rndoff = nfield->getNoise(pos)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
-    glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
-
+    // PCM: I swapped x/y for call to getNoise: I am not sure what correct order is, but this avoid out-of-range error in coordinate lookup (and
+    // we really just want a random numbetr).
+    float rndoff = nfield->getNoise(vpPoint(tx-tree.y+offy,h,tree.x+offx), tx, ty)*0.3f; // (float)(rand() % 100) / 100.0f * 0.3f;
+    // glm::vec4 coldata = glm::vec4(-0.15f+rndoff, -0.15f+rndoff, -0.15f+rndoff, 1.0f); // randomly vary lightness of plant
+    // PCM: now done in shader!
     /*
     if (canopy && (fmod(pos.x / 0.9144f, 0.5f) < 1e-4 || fmod(pos.z / 0.9144f, 0.5f) < 1e-4))
     {
@@ -890,15 +1015,16 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, const basic_tree &
     }
     */
 
-    Plant plnt = {pos, tree.height, tree.radius, coldata};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
+    //Plant plnt = {pos, tree.height, tree.radius, coldata};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
+    Plant plnt = {pos, tree.height, tree.radius, rndoff};
     esys.placePlant(ter, spc, plnt);
 }
 
-void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, const std::vector<basic_tree> &trees)
+void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const std::vector<basic_tree> &trees)
 {
-    for (int i = 0; i < trees.size(); i++)
+    for (int i = 0; i < int(trees.size()); i++)
     {
         // std::cerr << i << std::endl;
-        placePlant(ter, nfield, trees[i]);
+        placePlant(ter, nfield, cohortmaps, trees[i]);
     }
 }

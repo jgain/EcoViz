@@ -25,7 +25,7 @@
 
 //#version 120
 //#extension GL_ARB_draw_buffers : enable
-#version 150
+#version 410
 #extension GL_ARB_explicit_attrib_location: enable
 
 uniform int drawWalls;
@@ -137,4 +137,12 @@ void main(void) {
        col = mix(col, outBoundsCol, outBoundsBlend);
 
    col = clamp(col, 0.0, 1.0);
+
+   // NOTE: this is for exposed back-face processing for cutaways
+   // specifically, after RS pass 1, manipulators are drawn - the colour alpha channel
+   // can be used for processing there, effectively serving as a mask/stencil. Only a=0.0 fragments
+   // are back-facing and can be managed accordingly
+   
+   if (gl_FrontFacing == false)
+     col = vec4(col.rgb, 0.0);
 }

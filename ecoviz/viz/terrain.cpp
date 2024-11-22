@@ -23,12 +23,6 @@
 // author: James Gain
 // date: 17 December 2012
 
-#ifdef _WIN32
-#include <glew.h>
-#else
-#include <GL/glew.h>
-#endif
-
 #include "terrain.h"
 #include <sstream>
 #include <streambuf>
@@ -193,6 +187,51 @@ void Terrain::delGrid()
     accelValid = false;
 }
 
+// PCM ----
+// NOTE: source region is *grid relative* - all other data is preserved, scale etc.
+// assume end points are included.
+
+ std::unique_ptr<Terrain> Terrain::buildSubTerrain(int x0, int y0, int x1, int y1)
+ {
+    int dx = x1-x0+1;
+    int dy = y1-y0+1;
+    float val;
+
+    assert(dx > 0);
+    assert(dy > 0);
+
+    std::unique_ptr<Terrain> newTerrain(new Terrain(Region(x0,y0,x1,y1)) );
+
+    newTerrain->init(dx, dy, (float) (dx-1) * step, (float) (dy-1) * step);
+    newTerrain->step = step;
+    newTerrain->scfac = scfac;
+    newTerrain->scaleOn = scaleOn;
+    int parentXdim, parentYdim;
+    getGridDim(parentXdim, parentYdim);
+    newTerrain->parentGridx = parentXdim;
+    newTerrain->parentGridy = parentYdim;
+    newTerrain->locx = locx; newTerrain->locy = locy;
+    // other state that may have changed since init()?
+
+    // copy data
+    for (int x = 0; x < dx; x++)
+    {
+        for (int y = 0; y < dy; y++)
+        {
+            val  = grid->get(x0+x,y0+y);
+
+            newTerrain->grid->set(x,y, val);
+            newTerrain->drawgrid->set(y,x, val);
+        }
+    }
+
+    newTerrain->calcMeanHeight();
+
+    return newTerrain;
+ }
+
+
+
 void Terrain::setMidFocus()
 {
     int dx, dy;
@@ -214,10 +253,11 @@ void Terrain::getMidPoint(vpPoint & mid)
     getGridDim(dx, dy);
     getTerrainDim(sx, sy);
     if(dx > 0 && dy > 0)
-        mid = vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f);
+        // mid = vpPoint(sx/2.0f, grid->get(dy/2-1,dx/2-1), sy/2.0f);
+        //mid = vpPoint(sy/2.0f, grid->get(dy/2-1,dx/2-1), sx/2.0f);
+        mid = vpPoint(sy/2.0f, grid->get(dx/2-1,dy/2-1), sx/2.0f); // PCM: not sure *why* - seems to be flipped grid?
     else
         mid = vpPoint(0.0f, 0.0f, 0.0f);
-
 }
 
 void Terrain::getGridDim(int & dx, int & dy) const
@@ -235,6 +275,11 @@ void Terrain::getGridDim(uint & dx, uint & dy)
 void Terrain::getTerrainDim(float &tx, float &ty) const
 {
     tx = dimx; ty = dimy;
+}
+
+void Terrain::getTerrainLoc(long &lx, long &ly)
+{
+    lx = locx; ly = locy;
 }
 
 void Terrain::setTerrainDim(float tx, float ty)
@@ -341,24 +386,13 @@ float Terrain::getCellExtent()
     return dimx / (float) grid->width();
 }
 
-void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
+void Terrain::updateBuffers(PMrender::TRenderer * renderer)
 {
     const int width = grid->width();
     const int height = grid->height();
     float scx, scy;
 
     getTerrainDim(scx, scy);
-
-    glewExperimental = GL_TRUE;
-    if(!glewSetupDone)
-      {
-         GLenum err = glewInit();
-         if (GLEW_OK != err)
-         {
-            std::cerr<< "GLEW: initialization failed\n\n";
-         }
-         glewSetupDone = true;
-      }
 
     if (bufferState == BufferState::REALLOCATE || bufferState == BufferState::DIRTY )
     {
@@ -374,7 +408,7 @@ void Terrain::updateBuffers(PMrender::TRenderer * renderer) const
     bufferState = BufferState::CLEAN;
 }
 
-void Terrain::draw(View * view, PMrender::TRenderer *renderer) const
+void Terrain::draw(View * view, PMrender::TRenderer *renderer)
 {
     updateBuffers(renderer);
 
@@ -469,11 +503,29 @@ bool Terrain::pick(int sx, int sy, View * view, vpPoint & p)
 {
     vpPoint start;
     Vector dirn;
+    bool hit;
+    float maxx, maxy;
 
     // find ray params from viewpoint through screen <sx, sy>
     view->projectingRay(sx, sy, start, dirn);
+    if(view->getViewType() == ViewState::PERSPECTIVE)
+    {
+        hit = rayIntersect(start, dirn, p);
+    }
+    else
+    {
+        // test terrain bounds
+        getTerrainDim(maxy, maxx);
+        p = start; start.y = 0.0f;
+        hit = (p.x > 0.0f && p.x < maxx && p.z > 0.0f && p.z < maxy);
+        if(!hit)
+        {
+            p.x = min(p.x, maxx); p.x = max(0.0f, p.x);
+            p.z = min(p.z, maxy); p.z = max(0.0f, p.z);
+        }
+    }
 
-    return rayIntersect(start, dirn, p);
+    return hit;
 }
 
 bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
@@ -485,8 +537,8 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
     toGrid(pnt, x, y, h); // locate point on base domain
 
     // test whether point is in bounds
-    ux = (float) (dx-1) - pluszero;
-    uy = (float) (dy-1) - pluszero;
+    ux = (float) (dy-1) - pluszero;
+    uy = (float) (dx-1) - pluszero;
 
     if(x < pluszero || y < pluszero || x > ux || y > uy)
         return false;
@@ -510,9 +562,148 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
     return true;
 }
 
+void Terrain::loadElv(const std::string &filename, int dFactor)
+{
+    //float lat;
+    int dx, dy;
+
+
+    float val;
+    ifstream infile;
+
+
+
+    infile.open((char *) filename.c_str(), ios_base::in);
+    if(infile.is_open())
+    {
+        std::size_t count =0;
+        infile >> dx >> dy;
+        infile >> step;
+        infile >> locx >> locy;
+
+        assert(dx > dFactor);
+        assert(dy > dFactor);
+
+        int newdx = int(dx/dFactor) + ( dx % dFactor > 0 ? 1: 0),
+            newdy = int(dy/dFactor) + ( dy % dFactor > 0 ? 1: 0);
+
+        // infile >> lat;
+
+        delGrid();
+
+        // retain original domain size, just sample coarsely
+        init(newdx, newdy, (float) (dx) * step, (float) (dy) * step);
+        // latitude = lat;
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
+        {
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
+            {
+                infile >> val;
+                // only take every dFactor'th sample, starting at 0
+                if (x % dFactor == 0 && y % dFactor == 0)
+                {
+                    count++;
+                    grid->set(x/dFactor, y/dFactor, val); //  * 0.3048f); // convert from feet to metres
+                    drawgrid->set(y/dFactor, x/dFactor, val); // * 0.3048f);
+                }
+            }
+        }
+
+        assert(count == newdx*newdy);
+
+        // reflect new sampling for this image - coarsened
+        step = step*dFactor;
+
+        setMidFocus();
+        infile.close();
+    }
+    else
+    {
+        cerr << "Error Terrain::loadElv (with downsample): unable to open file " << filename << endl;
+    }
+}
+
+void Terrain::loadElvBinary(const std::string &filename, int dFactor)
+{
+    //float lat;
+    int dx, dy;
+
+    float val;
+    ifstream infile;
+
+    infile.open((char *) filename.c_str(), ios::binary);
+
+    if(infile.is_open())
+    {
+        std::size_t count =0;
+        infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&step), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locx), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locy), sizeof(float));
+
+        assert(dx > dFactor);
+        assert(dy > dFactor);
+
+        int newdx = int(dx/dFactor) + ( dx % dFactor > 0 ? 1: 0),
+            newdy = int(dy/dFactor) + ( dy % dFactor > 0 ? 1: 0);
+
+        // infile >> lat;
+
+        delGrid();
+
+        // retain original domain size, just sample coarsely
+        init(newdx, newdy, (float) (dx) * step, (float) (dy) * step);
+        // latitude = lat;
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+
+        std::vector<float> heights;
+        heights.resize(dx*dy);
+
+        infile.read(reinterpret_cast<char*>(heights.data()), dx*dy*sizeof(float));
+        infile.close();
+
+        long ct = 0;
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
+        {
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
+            {
+                //infile >> val;
+                val = heights[ct++];
+                // only take every dFactor'th sample, starting at 0
+                if (x % dFactor == 0 && y % dFactor == 0)
+                {
+                    count++;
+                    grid->set(x/dFactor, y/dFactor, val); //  * 0.3048f); // convert from feet to metres
+                    drawgrid->set(y/dFactor, x/dFactor, val); // * 0.3048f);
+                }
+            }
+        }
+
+        assert(count == newdx*newdy);
+
+        // reflect new sampling for this image - coarsened
+        step = step*dFactor;
+
+        setMidFocus();
+        infile.close();
+    }
+    else
+    {
+        cerr << "Error Terrain::loadElv (with downsample): unable to open file " << filename << endl;
+    }
+}
+
 void Terrain::loadElv(const std::string &filename)
 {
-    float lat;
+    //float lat;
     int dx, dy;
 
     float val;
@@ -523,11 +714,13 @@ void Terrain::loadElv(const std::string &filename)
     {
         infile >> dx >> dy;
         infile >> step;
+        infile >> locx >> locy;
 
         // infile >> lat;
 
         delGrid();
-        init(dx, dy, (float) dx * step, (float) dy * step);
+
+        init(dx, dy, (float) (dx) * step, (float) (dy) * step);
         // latitude = lat;
         // original code: outer loop over x, inner loop over y
         // raster format (ESRI) is oriented differently
@@ -544,6 +737,60 @@ void Terrain::loadElv(const std::string &filename)
         }
         setMidFocus();
         infile.close();
+    }
+    else
+    {
+        cerr << "Error Terrain::loadElv:unable to open file " << filename << endl;
+    }
+}
+
+void Terrain::loadElvBinary(const std::string &filename)
+{
+    //float lat;
+    int dx, dy;
+
+    float val;
+    ifstream infile;
+
+    infile.open((char *) filename.c_str(), ios::binary);
+    if(infile.is_open())
+    {
+        infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
+        infile.read(reinterpret_cast<char*>(&step), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locx), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locy), sizeof(float));
+
+
+        // infile >> lat;
+
+        delGrid();
+
+        init(dx, dy, (float) (dx) * step, (float) (dy) * step);
+        // latitude = lat;
+        // original code: outer loop over x, inner loop over y
+        // raster format (ESRI) is oriented differently
+
+        std::vector<float> heights;
+        heights.resize(dx*dy);
+
+        infile.read(reinterpret_cast<char*>(heights.data()), dx*dy*sizeof(float));
+        infile.close();
+
+        long ct = 0;
+        for (int x = 0; x < dx; x++)
+        // for (int y = 0; y < dy; y++)
+        {
+            for (int y = 0; y < dy; y++)
+            // for (int x = 0; x < dx; x++)
+            {
+                val = heights[ct++];
+                grid->set(x, y, val); //  * 0.3048f); // convert from feet to metres
+                drawgrid->set(y, x, val); // * 0.3048f);
+            }
+        }
+        setMidFocus();
+
     }
     else
     {
@@ -578,6 +825,222 @@ void Terrain::saveElv(const std::string &filename)
     }
 }
 
+
+void Terrain::calcSlopeMap(basic_types::MapFloat* slopeMap)
+{
+  int dx, dy;
+  float slope;
+  Vector norm;
+
+  getGridDim(dx, dy);
+
+  for (int x = 0; x < dx; x++)
+  {
+    for (int y = 0; y < dy; y++)
+    {
+      getNormal(x, y, norm);
+      slope = 90.0f - acosf(norm.j) * 180.0f / M_PI;
+
+      slopeMap->set(x, y, slope);
+    }
+  }
+}
+
+// Compute ambiant occlusion map
+void Terrain::calcAO(basic_types::MapFloat* slopeMap)
+{
+	int dx, dy;
+	float ao;
+	Vector norm;
+
+	getGridDim(dx, dy);
+
+	for (int x = 0; x < dx; x++)
+	{
+		for (int y = 0; y < dy; y++)
+		{
+      // Compute ambiant occlusion with raycasting in a demi sphere
+      // 1. Get the normal at the point
+      
+      
+      // 2. Cast rays in a hemisphere above the point
+
+      // 3. Compute the number of rays that hit the terrain
+      
+      // 4. Compute the ratio of rays that hit the terrain
+      // 5. Set the value in the map
+
+		}
+	}
+}
+
+
+void Terrain::saveOBJ(const std::string& filename)
+{
+  int gx, gy;
+
+  ofstream outfile;
+  outfile.open((char*)filename.c_str(), ios_base::out);
+  if (outfile.is_open())
+  {
+    getGridDim(gx, gy);
+    //outfile << gx << " " << gy << " " << step << " " << latitude << endl;
+
+    // Vertexes
+    for (int x = 0; x < gx; x++)
+    {
+      for (int y = 0; y < gy; y++)
+      {
+        outfile << "v " << y * step  << " " << grid->get(x, y) << " " << x * step << "\n";
+      }
+    }
+    // Normals
+    for (int x = 0; x < gx; x++)
+    {
+      for (int y = 0; y < gy; y++)
+      {
+        Vector norm;
+        getNormal(x, y, norm);
+
+				outfile << "vn " << norm.k << " " << norm.j << " " << norm.i << "\n"; // JGBUG - may be wrong direction ??
+      }
+    }
+    // UV
+    for (int x = 0; x < gx; x++)
+    {
+      for (int y = 0; y < gy; y++)
+      {
+        outfile << "vt " << float(x)/float(gx)  << " " << float(y) / float(gy) << "\n";
+      }
+    }
+    // Faces
+    for (int x = 0; x < gx - 1; x++)
+		{
+			for (int y = 0; y < gy - 1; y++)
+			{
+        int ij = x * gy + y;
+        int ij1 = x * gy + y + 1;
+        int i1j = (x + 1) * gy + y;
+        int i1j1 = (x + 1) * gy + y + 1;
+
+        outfile << "f " << ij + 1 << "/" << ij + 1 << "/" << ij + 1 << " ";
+        outfile << ij1 + 1 << "/" << ij1 + 1 << "/" << ij1 + 1 << " ";
+        outfile << i1j1 + 1 << "/" << i1j1 + 1 << "/" << i1j1 + 1 << "\n";
+
+        outfile << "f " << ij + 1 << "/" << ij + 1 << "/" << ij + 1 << " ";
+        outfile << i1j1 + 1 << "/" << i1j1 + 1 << "/" << i1j1 + 1 << " ";
+        outfile << i1j + 1 << "/" << i1j + 1 << "/" << i1j + 1 << "\n";
+
+			}
+		}
+    outfile << endl;
+    outfile.close();
+  }
+  else
+  {
+    cerr << "Error Terrain::loadOBJ:unable to open file " << filename << endl;
+  }
+}
+
+
+void Terrain::saveOBJ_Border(const std::string& filename)
+{
+  int gx, gy;
+
+  ofstream outfile;
+  outfile.open((char*)filename.c_str(), ios_base::out);
+  if (outfile.is_open())
+  {
+    getGridDim(gx, gy);
+
+
+    // test all values for lowest terrain height:
+    float terrainBase = 1000000.0f; // +infinity
+    for (int x = 0; x < gx; x=x+2)
+      for (int y = 0; y < gy; y=y+2)
+        terrainBase = min(terrainBase, grid->get(x, y));
+
+		terrainBase -= 50.0f; // add a little margin
+
+
+    // Vertexes
+    for (int x = 0; x < gx; x++) // First X line
+    {
+      outfile << "v " << 0 << " " << terrainBase << " " << x * step << "\n";
+      outfile << "v " << 0 << " " << grid->get(x, 0) << " " << x * step << "\n";
+    }
+
+    for (int x = 0; x < gx; x++) // First X line
+    {
+      outfile << "v " << (gy-1) * step << " " << terrainBase << " " << x * step << "\n";
+      outfile << "v " << (gy-1) * step << " " << grid->get(x, gy-1) << " " << x * step << "\n";
+    }
+
+    for (int y = 0; y < gy; y++)
+    {
+      outfile << "v " << y * step << " " << terrainBase << " " << 0 << "\n";
+      outfile << "v " << y * step << " " << grid->get(0, y) << " " << 0 << "\n";
+    }
+
+		for (int y = 0; y < gy; y++)
+		{
+			outfile << "v " << y * step << " " << terrainBase << " " << (gx - 1) * step << "\n";
+			outfile << "v " << y * step << " " << grid->get((gx - 1), y) << " " << (gx - 1) * step << "\n";
+		}
+
+    // Normals
+
+    outfile << "vn " << -1 << " " << 0 << " " << 0 << "\n";
+		outfile << "vn " << 1 << " " << 0 << " " << 0 << "\n";
+		outfile << "vn " << 0 << " " << 0 << " " << -1 << "\n";
+		outfile << "vn " << 0 << " " << 0 << " " << 1 << "\n";
+    outfile << "vn " << 0 << " " << -1 << " " << 0 << "\n";
+
+
+    // Faces
+		for (int x = 0; x < gx - 1; x++)
+		{
+			outfile << "f " << 2 * x + 1 << "//" << 1 << " ";
+			outfile << 2 * x + 2 << "//" << 1 << " ";
+			outfile << 2 * x + 4 << "//" << 1 << " ";
+			outfile << 2 * x + 3 << "//" << 1 << "\n";
+
+			outfile << "f " << 2 * x + 1 + gx*2 << "//" << 2 << " ";
+			outfile << 2 * x + 2 + gx*2 << "//" << 2 << " ";
+			outfile << 2 * x + 4 + gx*2 << "//" << 2 << " ";
+			outfile << 2 * x + 3 + gx*2 << "//" << 2 << "\n";
+		}
+
+		for (int y = 0; y < gy - 1; y++)
+		{
+			outfile << "f " << 4 * gx + 2 * y + 1 << "//" << 3 << " ";
+			outfile << 4 * gx + 2 * y + 2 << "//" << 3 << " ";
+			outfile << 4 * gx + 2 * y + 4 << "//" << 3 << " ";
+			outfile << 4 * gx + 2 * y + 3 << "//" << 3 << "\n";
+
+			outfile << "f " << 4 * gx  + 2 * y + 1 + 2*gy << "//" << 4 << " ";
+			outfile << 4 * gx + 2 * y + 2 + 2*gy << "//" << 4 << " ";
+			outfile << 4 * gx + 2 * y + 4 + 2*gy << "//" << 4 << " ";
+			outfile << 4 * gx + 2 * y + 3 + 2*gy << "//" << 4 << "\n";
+		}
+
+    //bottom
+		outfile << "f " << 1 << "//" << 5 << " ";
+		outfile << gx*2 - 1 << "//" << 5 << " ";
+		outfile << gx*4 - 1 << "//" << 5 << " ";
+		outfile << gx * 2 + 1 << "//" << 5 << "\n";
+
+
+    outfile << endl;
+    outfile.close();
+  }
+  else
+  {
+    cerr << "Error Terrain::loadOBJ:unable to open file " << filename << endl;
+  }
+}
+
+
 void Terrain::calcMeanHeight()
 {
     int i, j, cnt = 0;
@@ -586,7 +1049,7 @@ void Terrain::calcMeanHeight()
     for(j = 0; j < grid->height(); j++)
         for(i = 0; i < grid->width(); i++)
         {
-            hghtmean += grid->get(j,i);
+            hghtmean += grid->get(i,j);
             cnt++;
         }
     hghtmean /= (float) cnt;
@@ -603,7 +1066,7 @@ void Terrain::getHeightBounds(float &minh, float &maxh)
     for(j = 0; j < grid->height(); j++)
         for(i = 0; i < grid->width(); i++)
         {
-            hght = grid->get(j,i);
+            hght = grid->get(i,j);
             if(hght < minh)
                 minh = hght;
             if(hght > maxh)

@@ -22,15 +22,17 @@
 #ifndef GLHEADERS_H_
 #define GLHEADERS_H_
 
+
+#include <QOpenGLExtraFunctions>
+#include <QOpenGLWidget>
+
 #if defined(_WIN32)
-#include <glew.h>
+ 
 #elif defined(__APPLE__)
-#include <GL/glew.h>
 #include <OpenGL/gl3.h>
 #include <OpenGL/glu.h>
 #else
 #define GL3_PROTOTYPES
-#include <GL/glew.h>
 #include <GL/gl3.h>
 #include <GL/glu.h>
 #endif

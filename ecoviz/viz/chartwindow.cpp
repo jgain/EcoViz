@@ -1,6 +1,7 @@
 #include "chartwindow.h"
 #include "glwidget.h"
 #include "scene.h"
+#include "window.h"
 
 #include<QtCharts/QLineSeries>
 #include<QtCharts/QAreaSeries>
@@ -11,8 +12,6 @@
 #include <QGroupBox>
 #include<QStyleOption>
 #include<QComboBox>
-
-QT_CHARTS_USE_NAMESPACE
 
 ChartWindow::ChartWindow(QWidget *parent, int width, int height)
     : QWidget(parent, Qt::Window)
@@ -40,6 +39,7 @@ ChartWindow::ChartWindow(QWidget *parent, int width, int height)
     vbox->setSpacing(0);
 
 
+    /*
     QHBoxLayout *optlayout = new QHBoxLayout;
 
     QComboBox *vistype = new QComboBox;
@@ -57,8 +57,8 @@ ChartWindow::ChartWindow(QWidget *parent, int width, int height)
     optlayout->addWidget(vistype);
     optlayout->addWidget(chart_help_label);
 
+    vbox->addLayout(optlayout);*/
 
-    vbox->addLayout(optlayout);
     vbox->addLayout(hbox, 1);
 
     setLayout(vbox);
@@ -73,11 +73,11 @@ void ChartWindow::updateTimeBar()
 void ChartWindow::chartSelected(int index)
 {
     if (index<0) {
-        chart_help_label->setText("");
+        // chart_help_label->setText("");
         return;
     }
 
-    chart_help_label->setText(chart_desc[index]);
+    // chart_help_label->setText(chart_desc[index]);
 
     // switch graph
     // chartViews[i]->setData(graphModels[i].front()); // set to first visualization
@@ -88,7 +88,7 @@ void ChartWindow::chartSelected(int index)
 void ChartWindow::paintEvent(QPaintEvent * ev)
 {
     QStyleOption opt;
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }

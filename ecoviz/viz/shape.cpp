@@ -24,11 +24,6 @@
 // date: 5 November 2013
 //       21 January 2013 - curve constraints
 
-#ifdef _WIN32
-#include <glew.h>
-#else
-#include <GL/glew.h>
-#endif
 #include "shape.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -1021,15 +1016,17 @@ void Shape::genPlane(const vpPoint &orient, const vpPoint &center, float thickne
     b[2] = vpPoint(tr.x, 1.0f, tr.z);
     b[3] = vpPoint(br.x, 1.0f, br.z);
 
+    /*
     std::cout << b[0] << std::endl;
     std::cout << b[1] << std::endl;
     std::cout << b[2] << std::endl;
     std::cout << b[3] << std::endl;
-
+*/
     int base = int(verts.size()) / 8;
 
     // base vertices
-    v = Vector(0.0f, 0.0f, -1.0f);
+    v = Vector(0.0f, 1.0f, 0.0f);
+    //v = Vector(0.0f, 0.0f, -1.0f);
     for(int i = 0; i < 4; i++)
     {
         p = trm * glm::vec4(b[i].x, b[i].y, b[i].z, 1.0f);
@@ -1037,6 +1034,8 @@ void Shape::genPlane(const vpPoint &orient, const vpPoint &center, float thickne
         verts.push_back(p.x); verts.push_back(p.y); verts.push_back(p.z);
         verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
         verts.push_back(n.x); verts.push_back(n.y); verts.push_back(n.z); // normal
+        // std::cout << "(p.x, p.y, p.z) = " << p.x << "," << p.y << "," << p.z << ")\n";
+        // std::cout << "(n.x, n.y, n.z) = " << n.x << "," << n.y << "," << n.z << ")\n";
     }
     // counterclockwise winding
     indices.push_back(base+1); indices.push_back(base+0); indices.push_back(base+2);
@@ -1064,54 +1063,128 @@ ShapeDrawData Shape::getDrawParameters()
     return sdd;
 }
 
-bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4> * icols)
+
+bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec2> * iScale, std::vector<float> * icols)
 {
-    if((int) indices.size() > 0 && ((int) iforms->size() == (int) icols->size()))
+
+    size_t bytesBound = 0;
+
+    QOpenGLExtraFunctions *ef = QOpenGLContext::currentContext()->extraFunctions();
+
+    if((int) indices.size() > 0 && ((int) iTransl->size() == (int) icols->size()))
     {
         if (vboConstraint != 0)
         {
-            glDeleteVertexArrays(1, &vaoConstraint);
-            glDeleteBuffers(1, &vboConstraint);
-            glDeleteBuffers(1, &iboConstraint);
-            glDeleteBuffers(1, &iBuffer);
-            glDeleteBuffers(1, &cBuffer);
+
+            ef->glDeleteVertexArrays(1, &vaoConstraint);
+            ef->glDeleteBuffers(1, &vboConstraint);
+            ef->glDeleteBuffers(1, &iboConstraint);
+            //glDeleteBuffers(1, &iBuffer);
+            ef->glDeleteBuffers(1, &iTranslBuffer);
+            ef->glDeleteBuffers(1, &iScaleBuffer);
+            ef->glDeleteBuffers(1, &cBuffer);
             vaoConstraint = 0;
             vboConstraint = 0;
             iboConstraint = 0;
-            iBuffer = 0;
+            //iBuffer = 0;
+            iTranslBuffer = 0;
+            iScaleBuffer = 0;
             cBuffer = 0;
         }
 
         // vao
-        glGenVertexArrays(1, &vaoConstraint);
-        glBindVertexArray(vaoConstraint);
+        ef->glGenVertexArrays(1, &vaoConstraint);
+        ef->glBindVertexArray(vaoConstraint);
 
         // vbo
         // set up vertex buffer and copy in data
-        glGenBuffers(1, &vboConstraint);
-        glBindBuffer(GL_ARRAY_BUFFER, vboConstraint);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*(int) verts.size(), (GLfloat *) &verts[0], GL_STATIC_DRAW);
+        ef->glGenBuffers(1, &vboConstraint);
+        ef->glBindBuffer(GL_ARRAY_BUFFER, vboConstraint);
+        ef->glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*(int) verts.size(), (GLfloat *) &verts[0], GL_STATIC_DRAW);
+
+        bytesBound += sizeof(GLfloat)*(int) verts.size();
 
         // ibo
-        glGenBuffers(1, &iboConstraint);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboConstraint);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*(int) indices.size(), (GLuint *) &indices[0], GL_STATIC_DRAW);
+        ef->glGenBuffers(1, &iboConstraint);
+        ef->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboConstraint);
+        ef->glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*(int) indices.size(), (GLuint *) &indices[0], GL_STATIC_DRAW);
+
+        bytesBound += sizeof(GLuint) * (int)indices.size();
 
         // enable position attribute
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(0));
+        ef->glEnableVertexAttribArray(0);
+        ef->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(0));
 
         // enable texture coord attribute
         const int sz = 3*sizeof(GLfloat);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(sz) );
+        ef->glEnableVertexAttribArray(1);
+        ef->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(sz) );
 
         // enable normals
         const int nz = 5*sizeof(GLfloat);
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(nz) );
+        ef->glEnableVertexAttribArray(2);
+        ef->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(nz) );
+
+        // genrate buffer for translation and scaling (2 scales only)
+
+        ef->glGenBuffers(1, &iTranslBuffer);
+        ef->glBindBuffer(GL_ARRAY_BUFFER, iTranslBuffer);
+        if((int) iTransl->size() > 0) // load instance data
+        {
+            numInstances = (int) iTransl->size();
+            ef->glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * numInstances, (GLfloat *) & (* iTransl)[0], GL_DYNAMIC_DRAW);
+
+            bytesBound  += sizeof(glm::vec3) * numInstances;
+        }
+        else // create a single instance
+        {
+            numInstances = 1;
+            //std::vector<glm::mat4> tmpform;
+            //glm::mat4 idt = glm::mat4(1.0f);
+            //tmpform.push_back(idt);
+            glm::vec3 tmpform = {0.0, 0.0, 0.0};
+
+            ef->glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * numInstances, (GLfloat *) &tmpform[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(glm::vec3) * numInstances;
+        }
+
+        ef->glGenBuffers(1, &iScaleBuffer);
+        ef->glBindBuffer(GL_ARRAY_BUFFER, iScaleBuffer);
+        if((int) iScale->size() > 0) // load instance data
+        {
+            numInstances = (int) iScale->size();
+            ef->glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * numInstances, (GLfloat *) & (* iScale)[0], GL_DYNAMIC_DRAW);
+
+            bytesBound  += sizeof(glm::vec2) * numInstances;
+        }
+        else // create a single instance
+        {
+            numInstances = 1;
+            //std::vector<glm::mat4> tmpform;
+            //glm::mat4 idt = glm::mat4(1.0f);
+            //tmpform.push_back(idt);
+            glm::vec2 tmpform = {1.0, 1.0};
+
+            ef->glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * numInstances, (GLfloat *) &tmpform[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(glm::vec2) * numInstances;
+        }
+
+        // set up vert atributes and instancing step
+        ef->glBindBuffer(GL_ARRAY_BUFFER, iTranslBuffer);
+        ef->glEnableVertexAttribArray(3);
+        ef->glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)(0) );
+        ef->glVertexAttribDivisor(3, 1);
+
+        ef->glBindBuffer(GL_ARRAY_BUFFER, iScaleBuffer);
+        ef->glEnableVertexAttribArray(4);
+        ef->glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)(0));
+        ef->glVertexAttribDivisor(4, 1);
+
 
         // we need a full mat4 because the plant dimensions (non-uniform scale) as well as position are being instanced
+        /*
         glGenBuffers(1, &iBuffer); // create a vertex buffer object for plant transform instancing
         glBindBuffer(GL_ARRAY_BUFFER, iBuffer);
         if((int) iforms->size() > 0) // load instance data
@@ -1135,31 +1208,36 @@ bool Shape::bindInstances(std::vector<glm::mat4> * iforms, std::vector<glm::vec4
                                   (const GLvoid*)(sizeof(GLfloat) * i * 4));
             glVertexAttribDivisor(3 + i, 1);
         }
+        */
 
-        glGenBuffers(1, &cBuffer); // create a vertex buffer object for plant colour instancing
-        glBindBuffer(GL_ARRAY_BUFFER, cBuffer);
+        ef->glGenBuffers(1, &cBuffer); // create a vertex buffer object for plant colour instancing
+        ef->glBindBuffer(GL_ARRAY_BUFFER, cBuffer);
         // colour buffer to allow subtle variations in plant colour
         if((int) icols->size() > 0)
         {
             numInstances = (int) icols->size();
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * numInstances, (GLfloat *) & (* icols)[0], GL_DYNAMIC_DRAW);
+            ef->glBufferData(GL_ARRAY_BUFFER, sizeof(float) * numInstances, (GLfloat *) & (* icols)[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(float) * numInstances;
         }
         else // a single colour instance, with no change to the underlying colour
         {
             numInstances = 1;
-            std::vector<glm::vec4> tmpcol;
-            glm::vec4 idt = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            tmpcol.push_back(idt);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * numInstances, (GLfloat *) &tmpcol[0], GL_DYNAMIC_DRAW);
+            std::vector<float> tmpcol;
+            //glm::vec4 idt = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            tmpcol.push_back(float(0.0));
+            ef->glBufferData(GL_ARRAY_BUFFER, sizeof(float) * numInstances, (GLfloat *) &tmpcol[0], GL_DYNAMIC_DRAW);
+
+            bytesBound += sizeof(float) * numInstances;
         }
 
-        glBindBuffer(GL_ARRAY_BUFFER, cBuffer);
-        glEnableVertexAttribArray(7);
-        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0); // stride may need adjusting here
+        ef->glBindBuffer(GL_ARRAY_BUFFER, cBuffer);
+        ef->glEnableVertexAttribArray(5);
+        ef->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0); // stride may need adjusting here
         // glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (const GLvoid*)0);
-        glVertexAttribDivisor(7, 1);
+        ef->glVertexAttribDivisor(5, 1);
 
-        glBindVertexArray(0);
+        ef->glBindVertexArray(0);
 
         return true;
     }

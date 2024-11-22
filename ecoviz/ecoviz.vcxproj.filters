@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Source Files\Generated files">
+      <UniqueIdentifier>{88c4e204-9157-4411-abc3-3bbe543e202f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common\initialize.cpp">
@@ -63,12 +66,6 @@
     <ClCompile Include="viz\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="viz\moc_glwidget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="viz\moc_window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="viz\pft.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -114,21 +111,6 @@
     <ClCompile Include="viz\window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="viz\moc_gltransect.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="viz\moc_progressbar_window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="viz\moc_scrollwindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="viz\moc_timewindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="viz\moc_chartwindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\data_importer\data_importer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -138,8 +120,29 @@
     <ClCompile Include="viz\export_dialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="viz\moc_chartwindow.cpp">
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
     <ClCompile Include="viz\moc_export_dialog.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_gltransect.cpp">
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_glwidget.cpp">
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_progressbar_window.cpp">
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_scrollwindow.cpp">
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_timewindow.cpp">
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_window.cpp">
+      <Filter>Source Files\Generated files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
