@@ -47,7 +47,7 @@ if (BUILD_GUI)
     target_link_libraries(ecoviz vgui sqlite3)
     add_executable(analyse_cohortmap analyse_cohortmap_main.cpp)
     target_include_directories(analyse_cohortmap PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
-    #target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
+    # target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
     target_link_libraries(analyse_cohortmap vgui sqlite3)
   
     
