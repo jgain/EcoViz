@@ -790,6 +790,37 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
     */
 
+    if(event->key() == Qt::Key_N) // 'N' to save overview map selection
+    {
+         Region savereg = mapView->getSelectionRegion();
+         View saveview = (* view);
+         viewScene viewscene(savereg, saveview);
+         viewscene.save("viewscene.txt");
+
+         cerr << "Overview region saved" << endl;
+         cerr << " Subregion stored -  [x0,y0,x1,y1] = [" << savereg.x0 << "," << savereg.y0 << "," <<
+                savereg.x1 << "," << savereg.y1 << "]" << endl;
+    }
+
+    if(event->key() == Qt::Key_M) // 'M' to restore overview map selection
+    {
+        /*
+        mapView->setSelectionRegion(savereg);
+        cerr << "Overview region restored" << endl;
+        cerr << " Subregion restored -  [x0,y0,x1,y1] = [" << savereg.x0 << "," << savereg.y0 << "," <<
+               savereg.x1 << "," << savereg.y1 << "]" << endl;
+        int i;
+        // now apply change
+        Region currRegion = mapView->getSelectionRegion();
+        if(viewlock)
+            i = 2; // signal change to both perspective views
+        else
+            i = (wname=="left" ? 0: 1);
+        cerr << "REGION = " << currRegion.x0 << ", " << currRegion.y0 << " - " << currRegion.x1 << ", " << currRegion.y1 << endl;
+        cerr << "SIGNAL = " << i << endl;
+        signalExtractNewSubTerrain(i, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
+        */
+    }
     /*
     if(event->key() == Qt::Key_N) // 'N' to toggle display of canopy trees on or off
     {
@@ -876,6 +907,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
    */
 
+    /*
     if(event->key() == Qt::Key_M) // 'M' save camera matrices (view, projection, and product)
     {
         Region src;
@@ -889,6 +921,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         view->saveCameraMatrices(wname, sx, sy);
         std::cerr << "\nCamera matrix saved for " << wname << "\n";
     }
+    */
 
     if(event->key() == Qt::Key_W || event->key() == Qt::Key_Up) // 'W' fly forward
     {

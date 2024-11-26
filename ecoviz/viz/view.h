@@ -135,9 +135,13 @@ public:
 
     void saveCameraMatrices(const std::string & basename, float  offsetX, float offsetZ);
 
+    /// save and load functionality. Note that save and load rely on already open files, correctly positioned
+    void save(ofstream & outfile);
+    void load(ifstream & infile);
 
     /// Return the center of projection of the view, recalculated as necessary
     inline vpPoint getCOP(){ return cop; }
+    inline vpPoint getLight(){ return light; }
 
     /// Change the viewpoint to directly above the terrain
     void topdown();
@@ -353,6 +357,7 @@ public:
     /// Rotate the view around the focal point over a number of frames. Returns true if spin is active
     bool spin();
     
+    /*
     /// Save the current view to the file named @a filename
     ///              return true if operation is successful, otherwise false
     bool save(const char * filename);
@@ -360,6 +365,7 @@ public:
     /// Load the current view from the file named @a filename
     ///              return true if operation is successful, otherwise false
     bool load(const char * filename);
+    */
 
     /// print view stats to cerr
     void print();

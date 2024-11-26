@@ -114,6 +114,21 @@ protected:
     void closeEvent(QCloseEvent* event);
 };
 
+class ViewPanel: public QWidget
+{
+    Q_OBJECT
+
+private:
+    Window * wparent;
+
+public:
+    ViewPanel(Window * parent) { wparent = parent; }
+    virtual ~ViewPanel() {}
+
+protected:
+    void closeEvent(QCloseEvent* event);
+};
+
 class Window : public QMainWindow
 {
     Q_OBJECT
@@ -142,6 +157,7 @@ public slots:
     void showRenderOptions();
     void showPlantOptions();
     void showDataMapOptions();
+    void showViewOptions();
     void showContours(int show);
     void showGridLines(int show);
     void exportMitsuba();
@@ -168,6 +184,9 @@ public slots:
     void uncheckDataMapPanel(); // on close change view menu item to unchecked state
     void syncDataMapPanel(); // if a perspective view goes into transect view update datamap params
 
+    // view panel
+     void uncheckViewPanel(); // on close change view menu item to unchecked state
+
     // locking
     void lockViewsFromLeft();
     void lockViewsFromRight();
@@ -178,6 +197,10 @@ public slots:
 
     void showTransectViews();
     void clearTransects();
+
+    // save and load the viewing state
+    void saveSceneView(int i);
+    void loadSceneView(int i);
 
     // PCM: extract new terrain based on current selection
     void extractNewSubTerrain(int sceneIdx, int x0, int y0, int x1, int y1);
@@ -211,7 +234,9 @@ private:
     QWidget * renderPanel;                      ///< Side panel to adjust various rendering style parameters
     PlantPanel * plantPanel;                    ///< Side panel to adjust various plant visualization parameters
     QWidget * dataMapPanel;                     ///< Side panel to adjust various texture visualization parameters
+    QWidget * viewPanel;                        ///< Side panel for loading and saving viewing parameters
     QGridLayout * vizLayout;
+    std::string coredir[2];                     ///< Directories with scene data
 
 
     // data map parameters
@@ -242,10 +267,13 @@ private:
     QLineEdit * smoothEdit;
 
     // menu widgets and actions
+    QMenu *fileMenu;
     QMenu *viewMenu;
+
     QAction *showRenderAct;
     QAction *showPlantAct;
     QAction *showDataMapAct;
+    QAction *showViewAct;
     QAction *exportMitsubaAct;
     QAction *fromLeftTransectAct, *fromRightTransectAct;
     QAction *clearTransectsAct;
@@ -287,6 +315,11 @@ private:
      * @brief setupDataMapPanel  Initialize GUI layout of side data map viz panel for controlling texture map display parameters
      */
     void setupDataMapPanel();
+
+    /**
+     * @brief setupViewPanel  Initialize GUI layout of view panel for controlling viewing parameters
+     */
+    void setupViewPanel();
 
     /**
      * @brief setupVizPanel  Initialize GUI layout of central visualization

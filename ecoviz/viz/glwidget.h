@@ -152,6 +152,7 @@ public:
     /// getter for scene attached to glwidget
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
+    void setView(View vw){ (* view) = vw; }
     bool getActive(){ return active; }
     bool getPainted(){ return painted; }
     bool getTextureActive(){ return decalsbound; }

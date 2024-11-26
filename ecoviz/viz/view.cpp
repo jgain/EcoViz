@@ -388,8 +388,6 @@ void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
 */
 }
 
-
-
 void View::saveCameraMatrices(const std::string & basename, float offX, float offZ)
 {
     std::string fname;
@@ -425,7 +423,6 @@ void View::saveCameraMatrices(const std::string & basename, float offX, float of
         ofs.close();
     }
 }
-
 
 glm::mat4x4 View::getMatrix()
 {
@@ -614,21 +611,24 @@ void View::flatview(float rad)
     updateDir();
 }
 
-bool View::save(const char * filename)
+void View::save(ofstream & outfile)
 {
-    ofstream outfile;
-
-    outfile.open(filename, ios_base::out);
+    // save zoomdist and curquat, sufficient to restore viewpoint under most circumstances
     if(outfile.is_open())
     {
-        outfile << cop.x << " " << cop.y << " " << cop.z << endl;
-        outfile << light.x << " " << light.y << " " << light.z << endl;
-        outfile.close();
-        // don't need to save direction and up, since these can be derived
-        return true;
+        outfile << zoomdist << endl;
+        outfile << curquat[0] << " " << curquat[1] << " " << curquat[2] << " " << curquat[3] << endl;
+        outfile << currfocus.x << " " << currfocus.y << " " << currfocus.z << endl;
     }
-    else
-        return false;
+}
+
+void View::load(ifstream & infile)
+{
+    if(infile.is_open())
+    {
+        infile >> zoomdist >> curquat[0] >> curquat[1] >> curquat[2] >> curquat[3];
+        infile >> currfocus.x >> currfocus.y >> currfocus.z;
+    }
 }
 
 
@@ -655,25 +655,6 @@ void View::exportCameraJSON(const string url, const string filename)
   jsonFile << "\t\t}]\n";
   jsonFile << "\t}]\n";
   jsonFile << "}\n";
-}
-
-bool View::load(const char * filename)
-{
-    ifstream infile;
-
-    infile.open(filename, ios_base::in);
-    if(infile.is_open() && !infile.eof())
-    {
-        infile >> cop.x; infile >> cop.y; infile >> cop.z;
-        infile >> light.x; infile >> light.y; infile >> light.z;
-        infile.close();
-        return true;
-    }
-    else
-    {
-        infile.close();
-        return false;
-    }
 }
 
 void View::print()

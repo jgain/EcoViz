@@ -458,6 +458,41 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
     setVertScale(vmax);
 }
 
+//// sceneView - for controlling loading and saving of view state
+
+void viewScene::save(std::string filename)
+{
+    ofstream outfile;
+
+    outfile.open((char *) filename.c_str(), ios_base::out);
+    if(outfile.is_open())
+    {
+        outfile << region.x0 << " " << region.x1 << " " << region.y0 << " " << region.y1 << endl;
+        view.save(outfile);
+        outfile.close();
+    }
+    else
+    {
+        cerr << "Error viewScene::save: unable to write to file "  << filename << endl;
+    }
+}
+
+void viewScene::load(std::string filename)
+{
+    ifstream infile;
+    infile.open((char *) filename.c_str(), ios_base::in);
+    if(infile.is_open())
+    {
+        infile >> region.x0 >> region.x1 >> region.y0 >> region.y1;
+        view.load(infile);
+        infile.close();
+    }
+    else
+    {
+        cerr << "Error viewScene::load: unable to open file " << filename << endl;
+    }
+}
+
 ////  mapScene - light weight class for overview map
 
 std::string mapScene::get_dirprefix()
