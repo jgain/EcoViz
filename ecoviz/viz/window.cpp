@@ -890,13 +890,13 @@ void Window::setupVizPanel()
     lockG1->setFixedSize(50, 50);
     lockG2->setFixedSize(50, 50);*/
 
-    QPixmap lockleftmap("../../common/Icons/locklefticon32.png");
+    QPixmap lockleftmap(":/resources/icons/locklefticon32.png");
     lockleftIcon = new QIcon(lockleftmap);
-    QPixmap lockrightmap("../../common/Icons/lockrighticon32.png");
+    QPixmap lockrightmap(":/resrouces/icons/lockrighticon32.png");
     lockrightIcon = new QIcon(lockrightmap);
-    QPixmap unlockleftmap("../../common/Icons/unlocklefticon32.png");
+    QPixmap unlockleftmap(":/resources/icons/unlocklefticon32.png");
     unlockleftIcon = new QIcon(unlockleftmap);
-    QPixmap unlockrightmap("../../common/Icons/unlockrighticon32.png");
+    QPixmap unlockrightmap(":/resources/icons/unlockrighticon32.png");
     unlockrightIcon = new QIcon(unlockrightmap);
 
     lockV1->setIcon((* unlockleftIcon));
@@ -1041,7 +1041,7 @@ Window::Window(string datadir, string lprefix, string rprefix)
     createActions();
     createMenus();
 
-    readMitsubaExportProfiles("../../data/Mitsuba/ModelSpecies");
+    readMitsubaExportProfiles("../../resources/mitsuba/ModelSpecies");
     this->installEventFilter(this);
 
     mainWidget->setLayout(mainLayout);

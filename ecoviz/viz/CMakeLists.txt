@@ -43,6 +43,48 @@ if (BUILD_GUI)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt6Widgets_EXECUTABLE_COMPILE_FLAGS}")
     add_executable(ecoviz main.cpp)
+
+    qt_add_resources(ecoviz "resources"
+       PREFIX "/"
+       FILES
+          ../../resources/icons/advanceicon32.png
+          ../../resources/icons/backicon32.png
+          ../../resources/icons/locklefticon32.png
+          ../../resources/icons/lockrighticon32.png
+          ../../resources/icons/pauseicon32.png
+          ../../resources/icons/playicon32.png
+          ../../resources/icons/unlocklefticon32.png
+          ../../resources/icons/unlockrighticon32.png
+          ../../resources/colourmaps/linear_grey_10-95_c0_n256.csv
+          ../../resources/colourmaps/linear_kryw_5-100_c67_n256.csv
+          ../../resources/colourmaps/linear_blue_95-50_c20_n256.csv
+          ../../resources/databases/european.db
+	  ../../resources/shaders/basic.frag
+          ../../resources/shaders/basic.vert
+          ../../resources/shaders/genNormal.frag
+          ../../resources/shaders/genNormal.vert
+          ../../resources/shaders/phong.frag
+          ../../resources/shaders/phong.vert
+          ../../resources/shaders/rad_scaling_pass1.frag
+          ../../resources/shaders/rad_scaling_pass1.vert
+          ../../resources/shaders/rad_scaling_pass2.frag
+          ../../resources/shaders/rad_scaling_pass2.vert
+          ../../resources/shaders/rad_scaling_pass2b.frag
+          ../../resources/shaders/rad_scaling_pass2b.vert
+          ../../resources/shaders/phongRS.frag
+          ../../resources/shaders/phongRS.vert
+          ../../resources/shaders/phongRSmanip.frag
+          ../../resources/shaders/phongRSmanip.vert
+          ../../resources/shaders/sun.frag
+          ../../resources/shaders/sun.vert
+          ../../resources/shaders/canopy.frag
+          ../../resources/shaders/canopy.vert
+          ../../resources/shaders/flatTerr.frag
+          ../../resources/shaders/flatTerr.vert
+          ../../resources/shaders/phong-instanced.frag
+          ../../resources/shaders/phong-instanced.vert
+    )
+
     target_include_directories(ecoviz PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(ecoviz vgui sqlite3)
     add_executable(analyse_cohortmap analyse_cohortmap_main.cpp)
@@ -50,8 +92,7 @@ if (BUILD_GUI)
     # target_link_libraries(analyse_cohortmap vgui sqlite3 stdc++fs)
     target_link_libraries(analyse_cohortmap vgui sqlite3)
   
-    
 # stdc++fs) - causes issue with Clang compilation, looks to be unnecessary for gcc
-    ADD_DEFINITIONS(-DSONOMA_DB_FILEPATH="${PROJECT_SOURCE_DIR}/../european.db")
+#    ADD_DEFINITIONS(-DSONOMA_DB_FILEPATH="${PROJECT_SOURCE_DIR}/../resources/databases/ european.db")
 
 endif()

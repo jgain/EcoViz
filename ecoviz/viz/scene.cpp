@@ -852,7 +852,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
 
     // getTerrain()->getTerrainDim(rw, rh);
 
-    if (getBiome()->read_dataimporter(SONOMA_DB_FILEPATH))
+    if (getBiome()->read_dataimporter(":/resources/databases/european.db"))
     {
         // loading plant distribution
         getEcoSys()->setBiome(getBiome());

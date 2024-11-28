@@ -111,7 +111,7 @@ GLOverview::GLOverview(const QSurfaceFormat& format, Window * wp, mapScene * scn
     active = true;
     pickOnTerrain = false;
 
-    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
    
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);

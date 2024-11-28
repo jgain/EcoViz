@@ -10,26 +10,26 @@ set(COMMON_SOURCES
 
 if (BUILD_SOURCE2CPP)
     set(KERNELS
-        ../viz/shaders/basic.vert
-        ../viz/shaders/basic.frag
-        ../viz/shaders/genNormal.vert
-        ../viz/shaders/genNormal.frag
-        ../viz/shaders/simple.vert
-        ../viz/shaders/simple.frag
-        ../viz/shaders/phong.vert
-        ../viz/shaders/phong.frag
-        ../viz/shaders/phongRS.vert
-        ../viz/shaders/phongRS.frag
-        ../viz/shaders/phongRSmanip.vert
-        ../viz/shaders/phongRSmanip.frag
-        ../viz/shaders/rad_scaling_pass1.vert
-        ../viz/shaders/rad_scaling_pass1.frag
-        ../viz/shaders/rad_scaling_pass2.vert
-        ../viz/shaders/rad_scaling_pass2.frag
-        ../viz/shaders/sun.vert
-        ../viz/shaders/sun.frag
-        ../viz/shaders/canopy.vert
-        ../viz/shaders/canopy.frag)
+        ../../resources/shaders/basic.vert
+        ../../resources/shaders/basic.frag
+        ../../resources/shaders/genNormal.vert
+        ../../resources/shaders/genNormal.frag
+        ../../resources/shaders/simple.vert
+        ../../resources/shaders/simple.frag
+        ../../resources/shaders/phong.vert
+        ../../resources/shaders/phong.frag
+        ../../resources/shaders/phongRS.vert
+        ../../resources/shaders/phongRS.frag
+        ../../resources/shaders/phongRSmanip.vert
+        ../../resources/shaders/phongRSmanip.frag
+        ../../resources/shaders/rad_scaling_pass1.vert
+        ../../resources/shaders/rad_scaling_pass1.frag
+        ../../resources/shaders/rad_scaling_pass2.vert
+        ../../resources/shaders/rad_scaling_pass2.frag
+        ../../resources/shaders/sun.vert
+        ../../resources/shaders/sun.frag
+        ../../resources/shaders/canopy.vert
+        ../../resources/shaders/canopy.frag)
     add_custom_command(
         OUTPUT source2cpp.cpp
         COMMAND ${PYTHON_EXECUTABLE} source2cpp.py ${KERNELS} ${CMAKE_CURRENT_BINARY_DIR}/source2cpp.cpp

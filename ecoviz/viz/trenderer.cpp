@@ -24,6 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <QDir>
 
 namespace PMrender {
 
@@ -1326,7 +1327,15 @@ void TRenderer::initShaders(void)
             std::string fragS = shaderDir + "/" + std::get<0>(sh);
             std::string vertS = shaderDir + "/" + std::get<1>(sh);
 
-            s->setShaderSources( fragS.c_str(), vertS.c_str() );
+            // temp copy of resource
+            std::string ffilename = fragS.substr(fragS.find_last_of("/")+1); // extract file name from path
+            std::string vfilename = vertS.substr(vertS.find_last_of("/")+1) ;
+            QString fpath = QDir::temp().absoluteFilePath(ffilename.c_str());
+            QString vpath = QDir::temp().absoluteFilePath(vfilename.c_str());
+            QFile::copy(QString(fragS.c_str()), fpath);
+            QFile::copy(QString(vertS.c_str()), vpath);
+
+            s->setShaderSources( (char *) fpath.toStdString().c_str(), (char *) vpath.toStdString().c_str());
             shaders[std::get<2>(sh)] = s;
         }
 

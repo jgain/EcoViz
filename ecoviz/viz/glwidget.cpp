@@ -117,10 +117,9 @@ GLWidget::GLWidget(const QSurfaceFormat& format, Window * wp, Scene * scn, Trans
     mapView = new overviewWindow(mScene);
 
     setScene(scn);
-    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
     viewlock = false;
-    decalsbound = false;
     focuschange = false;
     focusviz = false;
     timeron = false;
@@ -279,30 +278,7 @@ void GLWidget::lockMap(Region reg)
     signalExtractNewSubTerrain( (wname=="left" ? 0: 1), currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
 }
 
-void GLWidget::loadDecals()
-{
-    QImage decalImg, t;
 
-    // load image
-    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../../common/Icons/manipDecals.png"))
-        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../../common/Icons/manipDecals.png" << " not found" << endl;
-
-    // Qt prep image for OpenGL
-    QImage fixedImage(decalImg.width(), decalImg.height(), QImage::Format_ARGB32);
-    QPainter painter(&fixedImage);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
-    painter.fillRect(fixedImage.rect(), Qt::transparent);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.drawImage( 0, 0, decalImg);
-    painter.end();
-    // t = QGLWidget::convertToGLFormat( fixedImage );
-
-    // renderer->bindDecals(t.width(), t.height(), t.bits());
-    // JG - this is likely broken, but we don't use decals at the moment.
-    renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
-    decalsbound = true;
-    cerr << "decals bound" << endl;
-}
 
 void GLWidget::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose, float range)
 {
@@ -429,7 +405,6 @@ void GLWidget::initializeGL()
     glEnable(GL_DEPTH_CLAMP);
     glEnable(GL_TEXTURE_2D);
 
-    loadDecals();
     paintGL();
 }
 
@@ -1082,8 +1057,6 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         view->apply();
         if(scene->getTerrain()->pick(sx, sy, view, pnt))
         {
-            if(!decalsbound)
-                loadDecals();
             vpPoint pickpnt = pnt;
             view->setAnimFocus(pickpnt);
             scene->getTerrain()->setFocus(pickpnt);
@@ -1361,7 +1334,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     perscale = 0.3f;
     terrainReady = false;
 
-    mrenderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+    mrenderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
 
     initializeMapRenderer();

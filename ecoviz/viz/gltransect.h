@@ -128,9 +128,6 @@ public:
     /// toggle lock flag
     void setViewLockState(bool state){ viewlock = state; }
 
-    /// Prepare decal texture
-    void loadDecals();
-
     /// Respond to key press events
     void keyPressEvent(QKeyEvent *event);
 
@@ -183,7 +180,6 @@ private:
 
     // render variables
     PMrender::TRenderer * renderer;
-    bool decalsbound;
 
     // gui variables
     bool viewlock;

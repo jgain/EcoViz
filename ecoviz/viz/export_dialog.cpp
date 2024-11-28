@@ -126,7 +126,7 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
 		// - Mitsuba output path
 		lineEditMitsubaOutputPath = new QLineEdit(this);
 		layoutMitsuba->addRow("Ouput path", lineEditMitsubaOutputPath);
-		lineEditMitsubaOutputPath->setText("../../data/Mitsuba/");
+        lineEditMitsubaOutputPath->setText("../../resources/mitsuba/"); // JG PATH FIX REQUIRED
    
 		// - Mitsuba resolution width
 		spinBoxMitsubaResolutionW = new QSpinBox(this);
