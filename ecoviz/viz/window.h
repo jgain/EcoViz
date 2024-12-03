@@ -145,7 +145,6 @@ public:
 
     /// Adjust rendering parameters, grid and contours, to accommodate current scale
     void scaleRenderParams(float scale);
-    void loadSceneData(void); // load data from disk for each scene
     void run_viewer();
 
 public slots:
@@ -237,6 +236,8 @@ private:
     QWidget * viewPanel;                        ///< Side panel for loading and saving viewing parameters
     QGridLayout * vizLayout;
     std::string coredir[2];                     ///< Directories with scene data
+    std::string prefix[2];                      ///< Filename filters
+    std::string basedir;
 
 
     // data map parameters
@@ -369,6 +370,12 @@ private:
      * @brief unlockTransects Unlink transacts so that they are no longer synchronized
      */
     void unlockTransects();
+
+    /**
+     * @brief acqureTimeline Search the base directory for pdb files and extract the timestamps from their names
+     * @param timestepIDs   ordered list of timestamps
+     */
+    void acquireTimeline(std::vector<int> & timestepIDs, std::string prefix);
 
     /**
      * @brief readMitsubaExportProfiles Read the CSV files in the specified folder to fill profiles map

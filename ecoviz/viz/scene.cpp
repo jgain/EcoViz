@@ -781,7 +781,7 @@ void Scene::reset_sampler(int maxpercell)
     //sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, 60, 3));
 }
 
-void Scene::loadScene(int timestep_start, int timestep_end)
+void Scene::loadScene(std::vector<int> timestepIDs)
 {
     // std::cout << "Datadir before fixing: " << datadir << std::endl;
     while (datadir.back() == '/')
@@ -789,14 +789,14 @@ void Scene::loadScene(int timestep_start, int timestep_end)
 
     // std::cout << "Datadir after fixing: " << datadir << std::endl;
 
-    int slash_idx = datadir.find_last_of("/");
+    int slash_idx = datadir.find_last_of(".");
     std::string setname = datadir.substr(slash_idx + 1);
     std::string dirprefix = get_dirprefix();
 
-    loadScene(dirprefix, timestep_start, timestep_end);
+    loadScene(dirprefix, timestepIDs);
 }
 
-void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_end)
+void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs)
 {
     std::vector<std::string> timestep_files;
     bool checkfiles = true;
@@ -804,8 +804,7 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
     using namespace data_importer;
 
     //std::string terfile = datadir+"/dem.elv";
-
-    for (int ts = timestep_start; ts <= timestep_end; ts++)
+    for(auto &ts: timestepIDs)
     {
         //timestep_files.push_back(datadir + "/ecoviz_" + std::to_string(ts) + ".pdb");
         string binfile = datadir + "/" + basename + std::to_string(ts) + ".pdbb";
@@ -893,8 +892,8 @@ void Scene::loadScene(std::string dirprefix, int timestep_start, int timestep_en
         }
 
         // set timeline
-        tline->setTimeBounds(timestep_start, timestep_end);
-        tline->setNow(timestep_start);
+        tline->setTimeBounds(1, (int) timestepIDs.size());
+        tline->setNow(1);
         cerr << "TimeLine" << endl;
         cerr << "start = " << tline->getTimeStart() << " end = " << tline->getTimeEnd() << " delta = " << tline->getTimeStep() << " current = " << tline->getNow() << endl;
     }

@@ -24,6 +24,7 @@ private:
     std::vector<TimelineGraph*> all_graphs; // collection of graphs
     TimelineGraph * graphdata;  //< current graph model corresponding to this graph view
     QChart * chart;             //< graphical chart from qt
+    std::vector<int> xlabels;   //< labelling for timeline
     QStringList chart_desc;
     QLabel *chart_help_label;
 signals:
@@ -49,6 +50,7 @@ public:
     void paintEvent(QPaintEvent * ev);
 
     void setScene(Scene * s){ scene = s; }
+    void setXLabels(std::vector<int> xaxislabels){ xlabels = xaxislabels; }
     void setData(TimelineGraph * gdata);
     void setGraphs(std::vector<TimelineGraph*> all_gr) { all_graphs = all_gr; }
     int getNumGraphs(){ return (int) all_graphs.size(); }
