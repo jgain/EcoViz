@@ -397,7 +397,7 @@ void GLTransect::paintGL()
         if(focuschange || forceRebindPlants)
         {
             scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants, transectPlanes);
-            scene->getTerrain()->setBufferToDirty();
+            //scene->getTerrain()->setBufferToDirty();
             rebindplants = false;
             forceRebindPlants = false;
         }

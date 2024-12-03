@@ -448,10 +448,12 @@ public:
     // for performamce reasons.
     void updateTypeMapTexture(TypeMap* tmap, typeMapInfo tinfo = typeMapInfo::PAINT, bool force = false);
 
-    // when using multiple  renderer instances with one OpenGL context, the height texture is not changed
-    // after creation (unless its dimenson changes). This methods forces the tex uni to be rebound to the
-    // instance texture (which will be unique per object).
-    void forceHeightMapRebind(void);
+    // when using multiple  renderer instances with one OpenGL context, each rendered allocatestextures and stores
+    // their IDs a instance vars. This means when the context is accessed via a different renderer object, we need to ensure
+    // we rebind the correct textures prior to drawing. This methods forces all the relevant (existing) textures needed for
+    // rendering to be rebound to the correct  tex unit so that the shaders get the correct textures (which will be unique per
+    // object) as input.
+    void forceTextureRebind(void);
 };
 
 }

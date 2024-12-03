@@ -629,14 +629,14 @@ void GLWidget::paintGL()
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
-        //renderer->forceHeightMapRebind();
-        scene->getTerrain()->setBufferToDirty();
+        renderer->forceTextureRebind();
+        //scene->getTerrain()->setBufferToDirty();
 
         if (drawParams.size() > 0) // DEBUG: PCM
         {
             scene->getTerrain()->updateBuffers(renderer);
             // bind textures
-            renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
+            //renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
         }
 
         if(focuschange)
@@ -646,7 +646,7 @@ void GLWidget::paintGL()
         renderer->draw(view);
 
         // ** overview map draw : draw on resrtricted viewport:
-//QThread::msleep(500);
+
         int wd, ht;
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
@@ -1657,8 +1657,8 @@ void overviewWindow::draw(void)
 
         // draw terrain
 
-        //mrenderer->forceHeightMapRebind(); // because we have two renderers looking at this openGl context
-        scene->getLowResTerrain()->setBufferToDirty();
+        mrenderer->forceTextureRebind(); // because we have two renderers looking at this openGl context
+        //scene->getLowResTerrain()->setBufferToDirty();
         // draw terrain  with selection plane
         if (drawParams.size() > 0) // DEBUG: PCM
             scene->getLowResTerrain()->updateBuffers(mrenderer);

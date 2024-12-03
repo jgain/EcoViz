@@ -2003,17 +2003,32 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
     ef->glBindVertexArray(0); CE();
 }
 
-void TRenderer::forceHeightMapRebind(void)
+void TRenderer::forceTextureRebind(void)
 {
     if (heightmapTexture != 0)
     {
          QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-         std::cerr << "forceHeightMapRebind -  Heightmap rebound\n";
+         //std::cerr << "forceHeightMapRebind -  Heightmap rebound\n";
+
          f->glActiveTexture(htmapTexUnit); CE();
          f->glBindTexture(GL_TEXTURE_2D, heightmapTexture); CE();
+         f->glActiveTexture(normalMapTexUnit); // normal map is bound to this TIU
+         f->glBindTexture(GL_TEXTURE_2D, normalTexture); CE();
+         f->glActiveTexture(rsDestTexUnit); CE();
+         f->glBindTexture(GL_TEXTURE_2D, destTexture); CE();
+         f->glActiveTexture(rsGradTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, gradTexture); CE();
+         f->glActiveTexture(rsNormTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, normTexture); CE();
+         f->glActiveTexture(rsColTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, colTexture); CE();
+         f->glActiveTexture(depthTexUnit); // ***** MAY BE AN ISSEU *****
+         f->glBindTexture(GL_TEXTURE_2D, manipDepthTexture); CE();
+         f->glActiveTexture(manipTranspTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, manipTranspTexture); CE();
     }
-    else
-        std::cerr << "forceHeightMapRebind - Error! Heightmap texture undefined!\n";
+    //else
+    //    std::cerr << "forceTextureRebind - Error! Heightmap texture undefined!\n";
 }
 
 
