@@ -977,6 +977,8 @@ Window::Window(string datadir, string lprefix, string rprefix)
     fmt.setDepthBufferSize(24);
     // fmt.setOptions(QSurfaceFormat::DeprecatedFunctions);
     QSurfaceFormat::setDefaultFormat(fmt);
+    basedir = datadir;
+    prefix[0] = lprefix; prefix[1] = rprefix;
 
     // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
     //glFormat.setSampleBuffers( true );
@@ -1063,6 +1065,31 @@ Window::~Window()
 
 }
 
+void Window::acquireTimeline(std::vector<int> & timestepIDs, std::string prefix)
+{
+    QDir directory(basedir.c_str());
+
+    // search for files in base directory that obey the prefix and extract the ID
+    QStringList files = directory.entryList(QStringList() << "*.pdb" << "*.PDB" << "*.pdbb" << "*.PDBB",
+                                            QDir::Files | QDir::NoDot | QDir::NoDotDot);
+    for(int i = 0; i < (int) files.size(); i++)
+    {
+        std::string filtername = files[i].toStdString();
+        if(filtername.find(prefix) == 0)  // does file match prefix
+        {
+            // extract integer ID
+            int endpos = filtername.find_first_of(".");
+            int startpos = prefix.length();
+            std::string id = filtername.substr(startpos, endpos-startpos);
+            if(std::all_of(id.begin(), id.end(), ::isdigit))
+                timestepIDs.push_back(std::stoi(id));
+            else
+                cerr << "Error Window::acquireTimeline : malformed input file " << filtername << endl;
+        }
+    }
+    std::sort(timestepIDs.begin(), timestepIDs.end(), std::less<int>()); // sort in ascending order
+    timestepIDs.erase( unique( timestepIDs.begin(), timestepIDs.end() ), timestepIDs.end() );// remove duplicates
+}
 
 void Window::run_viewer()
 {
@@ -1083,9 +1110,14 @@ void Window::run_viewer()
         // load in remaing eco-system data - NOTE:
         // the original source region extent is stored in scene[i] - this is later queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
-        scenes[i]->loadScene(1, 5); // years
+
+        std::vector<int> timelineIDs;
+        acquireTimeline(timelineIDs, prefix[i]);
+        scenes[i]->loadScene(timelineIDs);
         cerr << "loading Data Maps" << endl;
-        scenes[i]->loadDataMaps(5);
+        scenes[i]->loadDataMaps((int) timelineIDs.size());
+
+
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
@@ -1095,6 +1127,7 @@ void Window::run_viewer()
         setupGraphModels(i);
         chartViews[i]->setScene(scenes[i]);
         chartViews[i]->setGraphs(graphModels[i]);
+        chartViews[i]->setXLabels(timelineIDs);
         chartViews[i]->setData(graphModels[i].front()); // set to first visualization
         transectControls[i]->init(scenes[i]->getTerrain());
     }

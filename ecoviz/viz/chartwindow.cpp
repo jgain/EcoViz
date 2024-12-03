@@ -7,6 +7,7 @@
 #include<QtCharts/QAreaSeries>
 #include<QtCharts/QChartView>
 #include<QtCharts/QValueAxis>
+#include<QtCharts/QCategoryAxis>
 #include<QHBoxLayout>
 #include<QGraphicsLayout>
 #include <QGroupBox>
@@ -187,10 +188,15 @@ void ChartWindow::setData(TimelineGraph * gdata)
 
     chart->createDefaultAxes();
 
-    QValueAxis *axisX = new QValueAxis;
-    axisX->setRange(gdata->getTimeLine()->getTimeStart(), gdata->getTimeLine()->getTimeEnd());
-    axisX->setTickCount(5);
-    axisX->setLabelFormat("%d");
+    QCategoryAxis *axisX = new QCategoryAxis;
+    axisX->setMin((float) gdata->getTimeLine()->getTimeStart());
+    axisX->setMax((float) gdata->getTimeLine()->getTimeEnd());
+    axisX->setStartValue((float) gdata->getTimeLine()->getTimeStart());
+    axisX->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
+    for(int i = 0; i < (int) xlabels.size(); i++)
+    {
+          axisX->append(std::to_string(xlabels[i]).c_str(), i+1);
+    }
     chart->setAxisX(axisX, bar);
 
     QValueAxis *axisY = new QValueAxis;
