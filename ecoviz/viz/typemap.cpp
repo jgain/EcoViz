@@ -35,6 +35,7 @@
 
 #include <QFileInfo>
 #include <QLabel>
+#include <QDir>
 
 /*
 Perceptually uniform colourmaps from:
@@ -456,7 +457,13 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
 
     // input is a csv file, with 256 RGB entries, one on each line
     // note that this is not robust to format errors in the input file
-    infile.open((char *) colmapfile.c_str(), ios_base::in);
+
+    // hack to create local copy from Qt resource
+    std::string filename = colmapfile.substr(colmapfile.find_last_of("/")+1) ; // extract file name from path
+    QString path = QDir::temp().absoluteFilePath(filename.c_str());
+    QFile::copy(QString(colmapfile.c_str()), path);
+
+    infile.open((char *) path.toStdString().c_str(), ios_base::in);
 
     if(infile.is_open())
     {
@@ -773,13 +780,13 @@ void TypeMap::setPurpose(TypeMapType purpose)
             initTransectColTable();
             break;
         case TypeMapType::GREYRAMP:
-            initPerceptualColTable("../../common/colourmaps/linear_grey_10-95_c0_n256.csv", 10);
+            initPerceptualColTable(":/resources/colourmaps/linear_grey_10-95_c0_n256.csv", 10);
             break;
         case TypeMapType::HEATRAMP:
-            initPerceptualColTable("../../common/colourmaps/linear_kryw_5-100_c67_n256.csv", 10);
+            initPerceptualColTable(":/resources/colourmaps/linear_kryw_5-100_c67_n256.csv", 10);
             break;
         case TypeMapType::BLUERAMP:
-            initPerceptualColTable("../../common/colourmaps/linear_blue_95-50_c20_n256.csv", 10);
+            initPerceptualColTable(":/resources/colourmaps/linear_blue_95-50_c20_n256.csv", 10);
             break;
         default:
             break;

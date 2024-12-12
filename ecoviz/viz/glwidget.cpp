@@ -117,10 +117,9 @@ GLWidget::GLWidget(const QSurfaceFormat& format, Window * wp, Scene * scn, Trans
     mapView = new overviewWindow(mScene);
 
     setScene(scn);
-    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
     viewlock = false;
-    decalsbound = false;
     focuschange = false;
     focusviz = false;
     timeron = false;
@@ -279,30 +278,7 @@ void GLWidget::lockMap(Region reg)
     signalExtractNewSubTerrain( (wname=="left" ? 0: 1), currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
 }
 
-void GLWidget::loadDecals()
-{
-    QImage decalImg, t;
 
-    // load image
-    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../../common/Icons/manipDecals.png"))
-        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../../common/Icons/manipDecals.png" << " not found" << endl;
-
-    // Qt prep image for OpenGL
-    QImage fixedImage(decalImg.width(), decalImg.height(), QImage::Format_ARGB32);
-    QPainter painter(&fixedImage);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
-    painter.fillRect(fixedImage.rect(), Qt::transparent);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.drawImage( 0, 0, decalImg);
-    painter.end();
-    // t = QGLWidget::convertToGLFormat( fixedImage );
-
-    // renderer->bindDecals(t.width(), t.height(), t.bits());
-    // JG - this is likely broken, but we don't use decals at the moment.
-    renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
-    decalsbound = true;
-    cerr << "decals bound" << endl;
-}
 
 void GLWidget::loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose, float range)
 {
@@ -429,7 +405,6 @@ void GLWidget::initializeGL()
     glEnable(GL_DEPTH_CLAMP);
     glEnable(GL_TEXTURE_2D);
 
-    loadDecals();
     paintGL();
 }
 
@@ -654,14 +629,14 @@ void GLWidget::paintGL()
         renderer->setConstraintDrawParams(drawParams);
 
         // draw terrain and plants
-        //renderer->forceHeightMapRebind();
-        scene->getTerrain()->setBufferToDirty();
+        renderer->forceTextureRebind();
+        //scene->getTerrain()->setBufferToDirty();
 
         if (drawParams.size() > 0) // DEBUG: PCM
         {
             scene->getTerrain()->updateBuffers(renderer);
             // bind textures
-            renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
+            //renderer->updateTypeMapTexture(scene->getTypeMap(overlay), PMrender::TRenderer::typeMapInfo::PAINT, true);
         }
 
         if(focuschange)
@@ -671,7 +646,7 @@ void GLWidget::paintGL()
         renderer->draw(view);
 
         // ** overview map draw : draw on resrtricted viewport:
-//QThread::msleep(500);
+
         int wd, ht;
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
@@ -790,6 +765,37 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
     */
 
+    if(event->key() == Qt::Key_N) // 'N' to save overview map selection
+    {
+         Region savereg = mapView->getSelectionRegion();
+         View saveview = (* view);
+         viewScene viewscene(savereg, saveview);
+         viewscene.save("viewscene.txt");
+
+         cerr << "Overview region saved" << endl;
+         cerr << " Subregion stored -  [x0,y0,x1,y1] = [" << savereg.x0 << "," << savereg.y0 << "," <<
+                savereg.x1 << "," << savereg.y1 << "]" << endl;
+    }
+
+    if(event->key() == Qt::Key_M) // 'M' to restore overview map selection
+    {
+        /*
+        mapView->setSelectionRegion(savereg);
+        cerr << "Overview region restored" << endl;
+        cerr << " Subregion restored -  [x0,y0,x1,y1] = [" << savereg.x0 << "," << savereg.y0 << "," <<
+               savereg.x1 << "," << savereg.y1 << "]" << endl;
+        int i;
+        // now apply change
+        Region currRegion = mapView->getSelectionRegion();
+        if(viewlock)
+            i = 2; // signal change to both perspective views
+        else
+            i = (wname=="left" ? 0: 1);
+        cerr << "REGION = " << currRegion.x0 << ", " << currRegion.y0 << " - " << currRegion.x1 << ", " << currRegion.y1 << endl;
+        cerr << "SIGNAL = " << i << endl;
+        signalExtractNewSubTerrain(i, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
+        */
+    }
     /*
     if(event->key() == Qt::Key_N) // 'N' to toggle display of canopy trees on or off
     {
@@ -876,6 +882,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
    */
 
+    /*
     if(event->key() == Qt::Key_M) // 'M' save camera matrices (view, projection, and product)
     {
         Region src;
@@ -889,6 +896,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         view->saveCameraMatrices(wname, sx, sy);
         std::cerr << "\nCamera matrix saved for " << wname << "\n";
     }
+    */
 
     if(event->key() == Qt::Key_W || event->key() == Qt::Key_Up) // 'W' fly forward
     {
@@ -1049,8 +1057,6 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         view->apply();
         if(scene->getTerrain()->pick(sx, sy, view, pnt))
         {
-            if(!decalsbound)
-                loadDecals();
             vpPoint pickpnt = pnt;
             view->setAnimFocus(pickpnt);
             scene->getTerrain()->setFocus(pickpnt);
@@ -1328,7 +1334,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     perscale = 0.3f;
     terrainReady = false;
 
-    mrenderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+    mrenderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
 
     initializeMapRenderer();
@@ -1651,8 +1657,8 @@ void overviewWindow::draw(void)
 
         // draw terrain
 
-        //mrenderer->forceHeightMapRebind(); // because we have two renderers looking at this openGl context
-        scene->getLowResTerrain()->setBufferToDirty();
+        mrenderer->forceTextureRebind(); // because we have two renderers looking at this openGl context
+        //scene->getLowResTerrain()->setBufferToDirty();
         // draw terrain  with selection plane
         if (drawParams.size() > 0) // DEBUG: PCM
             scene->getLowResTerrain()->updateBuffers(mrenderer);

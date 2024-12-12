@@ -1,0 +1,41 @@
+plant code;max plant height (meters);mitsuba instance id;actual model height (meters)
+
+Norway Spruce;2.0;00_oxalis_oregano;3.0
+Norway Spruce;5.0;01_Artemesia_californica;5.0
+Norway Spruce;10.0;02_Adenostoma_fasciculatum;9.0
+Norway Spruce;20.0;03_Polystichum_munitum;22.0
+
+Silver Fir;2.0;02_Adenostoma_fasciculatum;2.0
+Silver Fir;6.0;03_Polystichum_munitum;6.5
+Silver Fir;10.0;04_Arctostaphylos_manzanita;10.0
+Silver Fir;22.0;05_Heteromeles_arbutifolia;21.5
+
+European Beech;3.0;04_Arctostaphylos_manzanita;3.0
+European Beech;7.0;05_Heteromeles_arbutifolia;7.0
+European Beech;15.5;06_Toxicodendron_diversilobum;15.0
+European Beech;20.0;07_Notholithocarpus_densiflorus;20.0
+
+Stone Pine;3.5;06_Toxicodendron_diversilobum;3.0
+Stone Pine;5.0;07_Notholithocarpus_densiflorus;7.0
+Stone Pine;12.0;08_Quercus_agrifolia;12.0
+Stone Pine;18.0;09_Quercus_garryana;19.0
+
+Sycamore;4.0;08_Quercus_agrifolia;5.0
+Sycamore;9.5;09_Quercus_garryana;9.0
+Sycamore;14.0;10_Quercus_kelloggii;14.0
+Sycamore;23.0;11_Umbellularia_californica;23.0
+
+Small-leaved Linden;5.0;10_Quercus_kelloggii;4.5
+Small-leaved Linden;8.0;11_Umbellularia_californica;8.0
+Small-leaved Linden;15;12_Arbutus_menziesii;15.0
+Small-leaved Linden;21.5;13_Pinus_sabiniana;21.0
+
+Scots Pine;4.0;12_Arbutus_menziesii;4.0
+Scots Pine;11.0;13_Pinus_sabiniana;10.0
+Scots Pine;16.0;14_Pseudotsuga_menziesii;15.0
+Scots Pine;22.0;15_Sequoia_sempervirens;22.0
+
+Mountain Pine;5.0;14_Pseudotsuga_menziesii;5.0
+Mountain Pine;10.0;15_Sequoia_sempervirens;12.0
+Mountain Pine;15.0;00_oxalis_oregano;14.0
+Mountain Pine;20.0;01_Artemesia_californica;20.0

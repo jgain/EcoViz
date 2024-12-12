@@ -1,22 +1,14 @@
 #include "data_importer/data_importer.h"
 
-#if defined(__APPLE__)
-#include <experimental/filesystem>
-#else
 #include <filesystem>
-#endif
-
 #include "cohortmaps.h"
 
 using namespace data_importer::ilanddata;
 
 int main(int argc, char * argv [])
 {
-#if defined(__APPLE__)
-    std::experimental::filesystem::directory_iterator diriter("/home/konrad/vizproj/cohorts/datadir");
-#else
+
     std::filesystem::directory_iterator diriter("/home/konrad/vizproj/cohorts/datadir");
-#endif
 
     std::vector<std::string> filenames;
 

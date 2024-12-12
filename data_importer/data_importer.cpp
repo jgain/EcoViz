@@ -35,6 +35,11 @@
 #include <string>
 #include <cassert>
 #include <sqlite3.h>
+
+#include <QFileInfo>
+#include <QLabel>
+#include <QDir>
+
 const std::array<std::string, 12> months_arr = {"January",
                                         "February",
                                         "March",
@@ -1097,7 +1102,15 @@ data_importer::common_data::common_data(std::string db_filename)
     sqlite3 *db;
     int errcode;
     std::cout << "Opening database file at " << db_filename << std::endl;
-    errcode = sqlite3_open(db_filename.c_str(), &db);
+    
+    
+    // hack to create local copy from Qt resource in the temporary directory
+     // has issues if the file already exists
+     std::string filename = db_filename.substr(db_filename.find_last_of("/")+1) ; // extract file name from path
+     QString path = QDir::temp().absoluteFilePath(filename.c_str());
+     QFile::copy(QString(db_filename.c_str()), path);
+    
+    errcode = sqlite3_open((char *) path.toStdString().c_str(), &db);
     if (errcode)
     {
         std::string errstr = std::string("Cannot open database file at ") + db_filename;

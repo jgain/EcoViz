@@ -101,14 +101,13 @@ GLTransect::GLTransect(const QSurfaceFormat& format, Window * wp, Scene * scn, T
 
     view = nullptr;
 
-    renderer = new PMrender::TRenderer(nullptr, "../viz/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
     setParent(wp);
 
     trx = trans;
     setScene(scn);
     viewlock = false;
-    decalsbound = false;
     focuschange = false;
     timeron = false;
     active = false;
@@ -128,7 +127,6 @@ void GLTransect::switchTransectScene(Scene *newScene, Transect *newTransect)
 {
     trx = newTransect;
     viewlock = false;
-    decalsbound = false;
     timeron = false;
     rebindplants = true;
     scf = 10000.0f;
@@ -250,30 +248,6 @@ void GLTransect::lockView(View * imposedView, Transect * imposedTrx)
     updateTransectView();
 }
 
-void GLTransect::loadDecals()
-{
-    QImage decalImg, t;
-
-    // load image
-    if(!decalImg.load(QCoreApplication::applicationDirPath() + "/../../../common/Icons/manipDecals.png"))
-        cerr << QCoreApplication::applicationDirPath().toUtf8().constData() << "/../../../common/Icons/manipDecals.png" << " not found" << endl;
-
-    // Qt prep image for OpenGL
-    QImage fixedImage(decalImg.width(), decalImg.height(), QImage::Format_ARGB32);
-    QPainter painter(&fixedImage);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
-    painter.fillRect(fixedImage.rect(), Qt::transparent);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.drawImage( 0, 0, decalImg);
-    painter.end();
-
-    // t = QOpenGLWidget::convertToGLFormat( fixedImage );
-    // JG - QT6
-
-    renderer->bindDecals(fixedImage.width(), fixedImage.height(), fixedImage.bits());
-    decalsbound = true;
-}
-
 void GLTransect::initializeGL()
 {
     initializeOpenGLFunctions();
@@ -350,7 +324,6 @@ PMrender::TRenderer::terrainShadingModel sMod = PMrender::TRenderer::RADIANCE_SC
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_TEXTURE_2D);
 
-    loadDecals();
     paintGL();
 }
 
@@ -424,7 +397,7 @@ void GLTransect::paintGL()
         if(focuschange || forceRebindPlants)
         {
             scene->getEcoSys()->bindPlantsSimplified(scene->getTerrain(), drawParams, &plantvis, rebindplants, transectPlanes);
-            scene->getTerrain()->setBufferToDirty();
+            //scene->getTerrain()->setBufferToDirty();
             rebindplants = false;
             forceRebindPlants = false;
         }

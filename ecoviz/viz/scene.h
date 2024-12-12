@@ -325,6 +325,30 @@ public:
     void extractNormalizedBasalArea(Scene * s);
 };
 
+// for externally managing the saving and restoring sub-regions and camera views
+class viewScene
+{
+public:
+
+    Region region;  // active region of the global terrain
+    View view;      // rendering viewpoint
+
+    viewScene(){}
+    viewScene(Region reg, View vw){ region = reg; view = vw; }
+
+    // getters and setters
+    void setRegion(Region reg){ region = reg; }
+    void setView(View vw){ view = vw; }
+    Region getRegion(){ return region; }
+    View getView(){ return view; }
+
+    // save region and view to file
+    void save(std::string filename);
+
+    // load region and view from file
+    void load(std::string filename);
+};
+
 // lightweight scene class for overview map
 class mapScene
 {
@@ -478,11 +502,10 @@ public:
     /**
      * @brief loadScene     Load scene attributes located in the specified directory (or default initialization if no directory provided)
      * @param dirprefix     combined directory path and file name prefix containing the scene
-     * @param timestep_start
-     * @param timestep_end
+     * @param timestepIDs   list of simulation timestamps in ascending order
      */
-    void loadScene(int timestep_start, int timestep_end);
-    void loadScene(std::string dirprefix, int timestep_start, int timestep_end);
+    void loadScene(std::string dirprefix, std::vector<int> timestepIDs);
+    void loadScene(std::vector<int> timestepIDs);
 
     /**
      * @brief loadDataMaps Load all data maps for texturing from file

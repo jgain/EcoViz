@@ -67,6 +67,7 @@
 #include <string>
 #include <QtCharts/QChartView>
 #include <QButtonGroup>
+#include <QAction>
 
 using namespace std;
 
@@ -87,6 +88,16 @@ void PlantPanel::closeEvent(QCloseEvent* event)
 void DataMapPanel::closeEvent(QCloseEvent* event)
 {
     wparent->uncheckDataMapPanel();
+    event->accept();
+}
+
+////
+// ViewPanel
+///
+
+void ViewPanel::closeEvent(QCloseEvent* event)
+{
+    wparent->uncheckViewPanel();
     event->accept();
 }
 
@@ -522,6 +533,45 @@ void Window::setupDataMapPanel()
     dataMapPanel->setLayout(dataMapLayout);
 }
 
+void Window::setupViewPanel()
+{
+    viewPanel = new ViewPanel(this);
+    QHBoxLayout *viewLayout = new QHBoxLayout;
+
+    // Matrices of radio buttons
+    QGroupBox *matrixViewLeftGroup = new QGroupBox(tr("Left Panel"));
+    QGridLayout *matrixViewLeftLayout = new QGridLayout;
+    QGroupBox *matrixViewRightGroup = new QGroupBox(tr("Right Panel"));
+    QGridLayout *matrixViewRightLayout = new QGridLayout;
+
+    if (scenes.size() > 0)
+    {
+        int rows = 12;
+        int cols = 1;
+
+        QPushButton * leftSave = new QPushButton(tr("Save View"));
+        QPushButton * rightSave = new QPushButton(tr("Save View"));
+        connect(leftSave,  &QPushButton::clicked, [=] { saveSceneView(0); });
+        connect(rightSave,   &QPushButton::clicked, [=] { saveSceneView(1); });
+
+        QPushButton * leftLoad = new QPushButton(tr("Load View"));
+        QPushButton * rightLoad = new QPushButton(tr("Load View"));
+        connect(leftLoad, &QPushButton::clicked, [=] { loadSceneView(0); });
+        connect(rightLoad, &QPushButton::clicked, [=] { loadSceneView(1); });
+
+        matrixViewLeftLayout->addWidget(leftSave);
+        matrixViewLeftLayout->addWidget(leftLoad);
+        matrixViewRightLayout->addWidget(rightSave);
+        matrixViewRightLayout->addWidget(rightLoad);
+    }
+
+    viewLayout->addWidget(matrixViewLeftGroup);
+    viewLayout->addWidget(matrixViewRightGroup);
+    matrixViewLeftGroup->setLayout(matrixViewLeftLayout);
+    matrixViewRightGroup->setLayout(matrixViewRightLayout);
+    viewPanel->setLayout(viewLayout);
+}
+
 void Window::setupVizTransect(QSurfaceFormat glFormat, int i)
 {
     // transect views
@@ -840,13 +890,13 @@ void Window::setupVizPanel()
     lockG1->setFixedSize(50, 50);
     lockG2->setFixedSize(50, 50);*/
 
-    QPixmap lockleftmap("../../common/Icons/locklefticon32.png");
+    QPixmap lockleftmap(":/resources/icons/locklefticon32.png");
     lockleftIcon = new QIcon(lockleftmap);
-    QPixmap lockrightmap("../../common/Icons/lockrighticon32.png");
+    QPixmap lockrightmap(":/resrouces/icons/lockrighticon32.png");
     lockrightIcon = new QIcon(lockrightmap);
-    QPixmap unlockleftmap("../../common/Icons/unlocklefticon32.png");
+    QPixmap unlockleftmap(":/resources/icons/unlocklefticon32.png");
     unlockleftIcon = new QIcon(unlockleftmap);
-    QPixmap unlockrightmap("../../common/Icons/unlockrighticon32.png");
+    QPixmap unlockrightmap(":/resources/icons/unlockrighticon32.png");
     unlockrightIcon = new QIcon(unlockrightmap);
 
     lockV1->setIcon((* unlockleftIcon));
@@ -927,6 +977,8 @@ Window::Window(string datadir, string lprefix, string rprefix)
     fmt.setDepthBufferSize(24);
     // fmt.setOptions(QSurfaceFormat::DeprecatedFunctions);
     QSurfaceFormat::setDefaultFormat(fmt);
+    basedir = datadir;
+    prefix[0] = lprefix; prefix[1] = rprefix;
 
     // NOTE: to enable MSAA rendering into FBO requires some more work, fix then enable - else white screen.
     //glFormat.setSampleBuffers( true );
@@ -952,7 +1004,9 @@ Window::Window(string datadir, string lprefix, string rprefix)
 
     mainLayout->setColumnStretch(0, 0);
     mainLayout->setColumnStretch(1, 0);
-    mainLayout->setColumnStretch(2, 1);
+    mainLayout->setColumnStretch(2, 0);
+    mainLayout->setColumnStretch(3, 0);
+    mainLayout->setColumnStretch(4, 1);
 
     setupRenderPanel();
     plantPanel = nullptr;
@@ -967,6 +1021,7 @@ Window::Window(string datadir, string lprefix, string rprefix)
         scenes.push_back(s);
         mapScene * ms = new mapScene(datadir, mapOverlayFile[i], (i ==0 ? lprefix : rprefix) );
         mapScenes.push_back(ms);
+        coredir[i] = datadir;
     }
 
     for(int i = 0; i < 2; i++)
@@ -977,16 +1032,18 @@ Window::Window(string datadir, string lprefix, string rprefix)
     setupVizPanel();
     dataMapPanel = nullptr;
     setupDataMapPanel();
+    setupViewPanel();
 
     mainLayout->addWidget(renderPanel, 0, 0, Qt::AlignTop);
     mainLayout->addWidget(plantPanel, 0, 1, Qt::AlignTop);
     mainLayout->addWidget(dataMapPanel, 0, 2, Qt::AlignTop);
-    mainLayout->addWidget(vizPanel, 0, 3);
+    mainLayout->addWidget(viewPanel, 0, 3, Qt::AlignTop);
+    mainLayout->addWidget(vizPanel, 0, 4);
 
     createActions();
     createMenus();
 
-    readMitsubaExportProfiles("../../data/Mitsuba/ModelSpecies");
+    readMitsubaExportProfiles("../../resources/mitsuba/ModelSpecies");
     this->installEventFilter(this);
 
     mainWidget->setLayout(mainLayout);
@@ -997,6 +1054,7 @@ Window::Window(string datadir, string lprefix, string rprefix)
     renderPanel->hide();
     plantPanel->hide();
     dataMapPanel->hide();
+    viewPanel->hide();
 }
 
 Window::~Window()
@@ -1007,6 +1065,31 @@ Window::~Window()
 
 }
 
+void Window::acquireTimeline(std::vector<int> & timestepIDs, std::string prefix)
+{
+    QDir directory(basedir.c_str());
+
+    // search for files in base directory that obey the prefix and extract the ID
+    QStringList files = directory.entryList(QStringList() << "*.pdb" << "*.PDB" << "*.pdbb" << "*.PDBB",
+                                            QDir::Files | QDir::NoDot | QDir::NoDotDot);
+    for(int i = 0; i < (int) files.size(); i++)
+    {
+        std::string filtername = files[i].toStdString();
+        if(filtername.find(prefix) == 0)  // does file match prefix
+        {
+            // extract integer ID
+            int endpos = filtername.find_first_of(".");
+            int startpos = prefix.length();
+            std::string id = filtername.substr(startpos, endpos-startpos);
+            if(std::all_of(id.begin(), id.end(), ::isdigit))
+                timestepIDs.push_back(std::stoi(id));
+            else
+                cerr << "Error Window::acquireTimeline : malformed input file " << filtername << endl;
+        }
+    }
+    std::sort(timestepIDs.begin(), timestepIDs.end(), std::less<int>()); // sort in ascending order
+    timestepIDs.erase( unique( timestepIDs.begin(), timestepIDs.end() ), timestepIDs.end() );// remove duplicates
+}
 
 void Window::run_viewer()
 {
@@ -1027,9 +1110,13 @@ void Window::run_viewer()
         // load in remaing eco-system data - NOTE:
         // the original source region extent is stored in scene[i] - this is later queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
-        scenes[i]->loadScene(1, 4); // years
+
+        std::vector<int> timelineIDs;
+        acquireTimeline(timelineIDs, prefix[i]);
+        scenes[i]->loadScene(timelineIDs);
         cerr << "loading Data Maps" << endl;
-        scenes[i]->loadDataMaps(4);
+        scenes[i]->loadDataMaps((int) timelineIDs.size());
+
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
@@ -1039,12 +1126,14 @@ void Window::run_viewer()
         setupGraphModels(i);
         chartViews[i]->setScene(scenes[i]);
         chartViews[i]->setGraphs(graphModels[i]);
+        chartViews[i]->setXLabels(timelineIDs);
         chartViews[i]->setData(graphModels[i].front()); // set to first visualization
         transectControls[i]->init(scenes[i]->getTerrain());
     }
 
     setupPlantPanel();
     setupDataMapPanel();
+    setupViewPanel();
     rendercount++;
     repaintAllGL();
 }
@@ -1113,6 +1202,37 @@ void Window::repaintAllGL()
     // PCM: probbaly not needed mostly...
     //for (auto mapviews: overviewMaps)
     //    if (mapviews != nullptr) mapviews->repaint();
+}
+
+void Window::saveSceneView(int i)
+{
+    viewScene scnview(perspectiveViews[i]->getMapRegion(), (* perspectiveViews[i]->getView()));
+
+    // get data directory
+    QString qFileName = QFileDialog::getSaveFileName(this, tr("Save View"), coredir[i].c_str(), tr("View Files (*.vew)"));
+    // add file name to list
+    // remember to auto-populate views
+    scnview.save(qFileName.toStdString());
+    cerr << endl << "SCENE VIEW SAVED " << i << endl;
+}
+
+void Window::loadSceneView(int i)
+{
+    Region region;
+    View view;
+    viewScene scnview;
+
+    // get data directory
+
+    QString qFileName = QFileDialog::getOpenFileName(this, tr("Open View"), coredir[i].c_str(), tr("View Files (*.vew)"));
+    scnview.load(qFileName.toStdString());
+    cerr << endl << "SCENE VIEW LOADED " << i << endl;
+
+    region = scnview.getRegion();
+    view = scnview.getView();
+    extractNewSubTerrain(i, region.x0, region.y0, region.x1, region.y1);
+    perspectiveViews[i]->setView(view);
+    repaintAllGL();
 }
 
 
@@ -1234,6 +1354,11 @@ void Window::showPlantOptions()
 void Window::showDataMapOptions()
 {
     dataMapPanel->setVisible(showDataMapAct->isChecked());
+}
+
+void Window::showViewOptions()
+{
+    viewPanel->setVisible(showViewAct->isChecked());
 }
 
 void Window::unlockViews()
@@ -1719,6 +1844,11 @@ void Window::syncDataMapPanel()
         }
 }
 
+void Window::uncheckViewPanel()
+{
+    showViewAct->setChecked(false);
+}
+
 void Window::lineEditChange()
 {
     bool ok;
@@ -1869,6 +1999,12 @@ void Window::createActions()
     clearTransectsAct->setStatusTip(tr("Remove Transects"));
     connect(clearTransectsAct, SIGNAL(triggered()), this, SLOT(clearTransects()));
 
+    showViewAct = new QAction(tr("Show View Controls"), this);
+    showViewAct->setCheckable(true);
+    showViewAct->setChecked(false);
+    showViewAct->setStatusTip(tr("Hide/Show View Controls"));
+    connect(showViewAct, SIGNAL(triggered()), this, SLOT(showViewOptions()));
+
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
     connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsubaJSON()));
@@ -1876,14 +2012,16 @@ void Window::createActions()
 
 void Window::createMenus()
 {
+    // Export Mitsuba
+    fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addAction(exportMitsubaAct);
+
     viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(showRenderAct);
     viewMenu->addAction(showPlantAct);
     viewMenu->addAction(showDataMapAct);
+    viewMenu->addAction(showViewAct);
     viewMenu->addAction(clearTransectsAct);
-
-    // Export Mitsuba
-    viewMenu->addAction(exportMitsubaAct);
 }
 
 class AdjustmentRunnable : public QRunnable

@@ -152,9 +152,9 @@ public:
     /// getter for scene attached to glwidget
     Scene * getScene(){ return scene; }
     View * getView(){ return view; }
+    void setView(View vw){ (* view) = vw; }
     bool getActive(){ return active; }
     bool getPainted(){ return painted; }
-    bool getTextureActive(){ return decalsbound; }
     Region getMapRegion();
 
     /// get internal state object that manages map window
@@ -196,9 +196,6 @@ public:
     /// PCM: force new transect data on existing and reset - needs to free existing texture; only
     /// used when a sub-terrain has been extracted since this invalidates existing information
     //  void forceTransect(Transect *newTrans);
-
-    /// Prepare decal texture
-    void loadDecals();
 
     /// Load from file to appropriate TypeMap depending on purpose
     void loadTypeMap(basic_types::MapFloat * map, TypeMapType purpose, float range = 1.0f);
@@ -310,7 +307,6 @@ private:
 
     // render variables
     PMrender::TRenderer * renderer;
-    bool decalsbound;
     GLuint decalTexture;
 
     // gui variables

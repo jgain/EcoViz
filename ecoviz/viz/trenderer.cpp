@@ -24,6 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <QDir>
 
 namespace PMrender {
 
@@ -1326,7 +1327,15 @@ void TRenderer::initShaders(void)
             std::string fragS = shaderDir + "/" + std::get<0>(sh);
             std::string vertS = shaderDir + "/" + std::get<1>(sh);
 
-            s->setShaderSources( fragS.c_str(), vertS.c_str() );
+            // temp copy of resource
+            std::string ffilename = fragS.substr(fragS.find_last_of("/")+1); // extract file name from path
+            std::string vfilename = vertS.substr(vertS.find_last_of("/")+1) ;
+            QString fpath = QDir::temp().absoluteFilePath(ffilename.c_str());
+            QString vpath = QDir::temp().absoluteFilePath(vfilename.c_str());
+            QFile::copy(QString(fragS.c_str()), fpath);
+            QFile::copy(QString(vertS.c_str()), vpath);
+
+            s->setShaderSources( (char *) fpath.toStdString().c_str(), (char *) vpath.toStdString().c_str());
             shaders[std::get<2>(sh)] = s;
         }
 
@@ -1994,17 +2003,32 @@ void TRenderer::drawManipulators(GLuint programID, bool drawToFB)
     ef->glBindVertexArray(0); CE();
 }
 
-void TRenderer::forceHeightMapRebind(void)
+void TRenderer::forceTextureRebind(void)
 {
     if (heightmapTexture != 0)
     {
          QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-         std::cerr << "forceHeightMapRebind -  Heightmap rebound\n";
+         //std::cerr << "forceHeightMapRebind -  Heightmap rebound\n";
+
          f->glActiveTexture(htmapTexUnit); CE();
          f->glBindTexture(GL_TEXTURE_2D, heightmapTexture); CE();
+         f->glActiveTexture(normalMapTexUnit); // normal map is bound to this TIU
+         f->glBindTexture(GL_TEXTURE_2D, normalTexture); CE();
+         f->glActiveTexture(rsDestTexUnit); CE();
+         f->glBindTexture(GL_TEXTURE_2D, destTexture); CE();
+         f->glActiveTexture(rsGradTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, gradTexture); CE();
+         f->glActiveTexture(rsNormTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, normTexture); CE();
+         f->glActiveTexture(rsColTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, colTexture); CE();
+         f->glActiveTexture(depthTexUnit); // ***** MAY BE AN ISSEU *****
+         f->glBindTexture(GL_TEXTURE_2D, manipDepthTexture); CE();
+         f->glActiveTexture(manipTranspTexUnit);
+         f->glBindTexture(GL_TEXTURE_2D, manipTranspTexture); CE();
     }
-    else
-        std::cerr << "forceHeightMapRebind - Error! Heightmap texture undefined!\n";
+    //else
+    //    std::cerr << "forceTextureRebind - Error! Heightmap texture undefined!\n";
 }
 
 
