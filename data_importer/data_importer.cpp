@@ -251,6 +251,16 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
     float maxx = -std::numeric_limits<float>::max() , maxy = -std::numeric_limits<float>::max();
     float dx = -1.0f, dy = -1.0f;
 
+    if (ncohorts_expected == 0) {
+        dx = 2.f; dy = 2.f;
+        auto treex = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.x<b.x;});
+        auto treey = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.y<b.y;});
+        minx = treex.first == fdata.trees.end() ? 0 : treex.first->x;
+        maxx = treex.second == fdata.trees.end() ? 0 : treex.second->x;
+        miny = treey.first == fdata.trees.end() ? 0 : treey.first->y;
+        maxy = treey.second == fdata.trees.end() ? 0 : treey.second->y;
+    }
+
 	for (int i = 0; i < ncohorts_expected; i++)
 	{
 		std::getline(ifs, lstr);
@@ -305,9 +315,12 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
     fdata.dx = dx;
     fdata.dy = dy;
 
-    auto minmaxh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.height<b.height;});
-    auto minmaxdbh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.dbh<b.dbh;});
-    std::cout << "Range height: " << minmaxh.first->height << " - " << minmaxh.second->height << ", Range DBH: " << minmaxdbh.first->dbh << " - " << minmaxdbh.second->dbh << std::endl;
+    if (fdata.trees.size() > 0) {
+        auto minmaxh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.height<b.height;});
+        auto minmaxdbh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.dbh<b.dbh;});
+
+        std::cout << "Range height: " << minmaxh.first->height << " - " << minmaxh.second->height << ", Range DBH: " << minmaxdbh.first->dbh << " - " << minmaxdbh.second->dbh << std::endl;
+    }
 
     std::cout << "Maximum species index for larger trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail.begin(), species_avail.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
     std::cout << "Maximum species index for cohort trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail_cohorts.begin(), species_avail_cohorts.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
@@ -1138,6 +1151,9 @@ data_importer::common_data::common_data(std::string db_filename)
     sql_err_handler(db, errcode, errmsg);
 
     sqlite3_close(db);
+
+    QFile::remove(path); // delete the temporary file again
+
 }
 
 

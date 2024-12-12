@@ -880,15 +880,17 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs)
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }
-        before_mod_map = cohortmaps->get_map(0);
-        //cohortmaps->do_adjustments(2);
+        if (cohortmaps) {
+            before_mod_map = cohortmaps->get_map(0);
+            //cohortmaps->do_adjustments(2);
 
-        if (cohortmaps->get_nmaps() > 0)
-        {
-            reset_sampler(cohortmaps->get_maxpercell());
+            if (cohortmaps->get_nmaps() > 0)
+            {
+                reset_sampler(cohortmaps->get_maxpercell());
 
-            //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
-            //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
+                //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
+                //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
+            }
         }
 
         // set timeline
