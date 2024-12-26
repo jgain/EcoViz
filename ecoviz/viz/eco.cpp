@@ -968,7 +968,7 @@ void EcoSystem::bindPlantsSimplified(Terrain * ter, std::vector<ShapeDrawData> &
         transectShapes.drawPlants(drawParams);
 }
 
-void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const basic_tree &tree)
+void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<CohortMaps> cohortmaps, const basic_tree &tree)
 {
     float tx, ty;
     int gx, gy;
@@ -1020,7 +1020,7 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<Co
     esys.placePlant(ter, spc, plnt);
 }
 
-void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const std::vector<basic_tree> &trees)
+void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, std::shared_ptr<CohortMaps> cohortmaps, const std::vector<basic_tree> &trees)
 {
     for (int i = 0; i < int(trees.size()); i++)
     {

@@ -353,6 +353,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
         std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         tmr.elapsed("sampler");
+   std::cerr << "\n Ntrees = " << trees.size() << "; Nmature = " << mature.size() << "\n";
         for(auto &tree: mature)
         {
             if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
@@ -781,7 +782,7 @@ void Scene::reset_sampler(int maxpercell)
     //sampler = std::unique_ptr<cohortsampler>(new cohortsampler(tw, th, rw - 1.0f, rh - 1.0f, 1.0f, 1.0f, 60, 3));
 }
 
-void Scene::loadScene(std::vector<int> timestepIDs)
+void Scene::loadScene(std::vector<int> timestepIDs, bool shareCohorts, std::shared_ptr<CohortMaps> cohorts)
 {
     // std::cout << "Datadir before fixing: " << datadir << std::endl;
     while (datadir.back() == '/')
@@ -793,10 +794,10 @@ void Scene::loadScene(std::vector<int> timestepIDs)
     std::string setname = datadir.substr(slash_idx + 1);
     std::string dirprefix = get_dirprefix();
 
-    loadScene(dirprefix, timestepIDs);
+    loadScene(dirprefix, timestepIDs, shareCohorts, cohorts);
 }
 
-void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs)
+void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool shareCohorts, std::shared_ptr<CohortMaps> cohorts)
 {
     std::vector<std::string> timestep_files;
     bool checkfiles = true;
@@ -876,7 +877,10 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs)
     {
         // import cohorts
         try {
-        cohortmaps = std::unique_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "3.0", species_lookup));
+            if (shareCohorts == false || (shareCohorts == true && !cohorts) )
+                cohortmaps = std::shared_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "3.0", species_lookup));
+            else
+                cohortmaps = cohorts;
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }

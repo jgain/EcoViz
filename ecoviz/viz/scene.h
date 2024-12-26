@@ -433,7 +433,7 @@ private:
 
 public:
 
-    std::unique_ptr<CohortMaps> cohortmaps;     //< agreggate ecosystem data
+    std::shared_ptr<CohortMaps> cohortmaps;     //< agreggate ecosystem data
     std::unique_ptr<cohortsampler> sampler;     //< to derive individual trees from cohort maps
 
     Scene(string ddir, string base);
@@ -449,6 +449,7 @@ public:
     Timeline * getTimeline(){ return tline; }
     NoiseField * getNoiseField(){ return nfield; }
     DataMaps * getDataMaps(){ return dmaps; }
+    std::shared_ptr<CohortMaps> getCohortMaps()  { return cohortmaps; }
 
     // set new Terrain core data; assumes newTerr has internal state set up
     void setNewTerrainData(std::unique_ptr<Terrain> newTerr, Terrain *master)
@@ -503,9 +504,11 @@ public:
      * @brief loadScene     Load scene attributes located in the specified directory (or default initialization if no directory provided)
      * @param dirprefix     combined directory path and file name prefix containing the scene
      * @param timestepIDs   list of simulation timestamps in ascending order
+     * @param shareCohorts  if this is true, then cohorts are shared
+     * @param cohorts       the cohrt shared_ptr to be used if sharing is selected
      */
-    void loadScene(std::string dirprefix, std::vector<int> timestepIDs);
-    void loadScene(std::vector<int> timestepIDs);
+    void loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool shareCohorts, std::shared_ptr<CohortMaps> cohorts);
+    void loadScene(std::vector<int> timestepIDs, bool shareCohorts, std::shared_ptr<CohortMaps> cohorts);
 
     /**
      * @brief loadDataMaps Load all data maps for texturing from file

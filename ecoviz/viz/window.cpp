@@ -1113,7 +1113,9 @@ void Window::run_viewer()
 
         std::vector<int> timelineIDs;
         acquireTimeline(timelineIDs, prefix[i]);
-        scenes[i]->loadScene(timelineIDs);
+        scenes[i]->loadScene(timelineIDs,
+                             (prefix[0]==prefix[1]), // if these match, assume we have IDENTICAL left/right cohort data!
+                             (i==0?std::shared_ptr<CohortMaps>() : scenes[0]->getCohortMaps())); // if L/R cohorts are same, only allocate 1st call
         cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
 

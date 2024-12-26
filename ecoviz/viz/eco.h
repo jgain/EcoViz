@@ -477,8 +477,8 @@ public:
      * @param bind          whether or not the plants need to be recreated after a change
      */
     void bindPlantsSimplified(Terrain * ter, std::vector<ShapeDrawData> &drawParams, std::vector<bool> * plantvis, bool bind=false, std::vector<Plane> cullPlanes = {});
-    void placePlant(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const basic_tree &tree);
-    void placeManyPlants(Terrain *ter, NoiseField * nfield, std::unique_ptr<CohortMaps> &cohortmaps, const std::vector<basic_tree> &trees);
+    void placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<CohortMaps> cohortmaps, const basic_tree &tree);
+    void placeManyPlants(Terrain *ter, NoiseField * nfield, std::shared_ptr<CohortMaps> cohortmaps, const std::vector<basic_tree> &trees);
 };
 
 #endif
