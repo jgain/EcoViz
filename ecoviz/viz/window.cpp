@@ -1019,7 +1019,13 @@ Window::Window(string datadir, string lprefix, string rprefix)
     {
         Scene * s = new Scene(datadir, (i == 0 ? lprefix : rprefix) );
         scenes.push_back(s);
-        mapScene * ms = new mapScene(datadir, mapOverlayFile[i], (i ==0 ? lprefix : rprefix) );
+        mapScene * ms;
+        // NB: we assume that L/R scene data is the same if the *base names* (prefixes) are the same!
+        // always load left view fully if 1st allocation OR the windows load *different* scene data
+        if (i == 0 || lprefix != rprefix)
+            ms = new mapScene(datadir, mapOverlayFile[i], (i ==0 ? lprefix : rprefix) );
+        else
+            ms = new mapScene(*mapScenes[0]);
         mapScenes.push_back(ms);
         coredir[i] = datadir;
     }
@@ -1100,9 +1106,13 @@ void Window::run_viewer()
         // PCM: added overview map
         // load large scale terrain, downsample for oevrview map, and extract  default sub-region for
         // main render window.
-        std::unique_ptr<Terrain> subTerr = mapScenes[i]->loadOverViewData(extractWindowDSample);
+std::cerr << " -- load overview (w. dsample)\n";
+        // if left scene data is same as right scene data, we share - so load happens for left view only
+        std::unique_ptr<Terrain> subTerr =
+                mapScenes[i]->loadOverViewData(extractWindowDSample, ( (prefix[0]==prefix[1]) && i == 1) );
         // (1) set extracted sub-region as the region for this window
         // (2) pass in a pointer to highres (master) terrain
+std::cerr << " -- set up terrain copy.\n";
         scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
         vpPoint midPoint;
         scenes[i]->getTerrain()->getMidPoint(midPoint);
@@ -1110,12 +1120,14 @@ void Window::run_viewer()
         // load in remaing eco-system data - NOTE:
         // the original source region extent is stored in scene[i] - this is later queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
-
+std::cerr << " -- acquire timeline.\n";
         std::vector<int> timelineIDs;
         acquireTimeline(timelineIDs, prefix[i]);
+ std::cerr << " -- Load scene start: \n";
         scenes[i]->loadScene(timelineIDs,
                              (prefix[0]==prefix[1]), // if these match, assume we have IDENTICAL left/right cohort data!
                              (i==0?std::shared_ptr<CohortMaps>() : scenes[0]->getCohortMaps())); // if L/R cohorts are same, only allocate 1st call
+std::cerr << " -- Load scene end.\n";
         cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
 

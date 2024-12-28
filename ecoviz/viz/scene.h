@@ -353,9 +353,9 @@ public:
 class mapScene
 {
 private:
-    std::unique_ptr<Terrain> fullResTerrain;   // input terrain -  full resolution
-    std::unique_ptr<Terrain> lowResTerrain;    // low resolution terrain for overview rendering
-    std::unique_ptr<TypeMap> overlay;          // single overlay supported (blended over terrain)
+    std::shared_ptr<Terrain> fullResTerrain;   // input terrain -  full resolution
+    std::shared_ptr<Terrain> lowResTerrain;    // low resolution terrain for overview rendering
+    std::shared_ptr<TypeMap> overlay;          // single overlay supported (blended over terrain)
     std::string datadir;                       // directory containing all the scene data
     std::string basename;                      // the dem name (without extension)
     std::string overlayName;                   // name of overlap image
@@ -385,13 +385,28 @@ public:
         lowResTerrain->initGrid(10, 10, 100.0f, 100.0f);
     }
     ~mapScene() {}
+    // copy constructor - can use default too but I am paranoid...
+    mapScene(const mapScene &rhs)
+    {
+        // copy assign
+        overlayName = rhs.overlayName;
+        datadir = rhs.datadir;
+        basename = rhs.basename;
+        downFactor = rhs.downFactor;
+        selectedRegion = rhs.selectedRegion;
+        //shared pointers
+        fullResTerrain = rhs.fullResTerrain;
+        lowResTerrain = rhs.lowResTerrain;
+        overlay = rhs.overlay;
+    }
 
 
-    // getters
+    // getters - note these are SHARED pointers, so the map data can be shared across both left/right
+    // views but must be identical for this to make sense; else each view have its own unique data.
 
-    std::unique_ptr<Terrain> & getHighResTerrain(void)  { return fullResTerrain; }
-    std::unique_ptr<Terrain> & getLowResTerrain(void) { return lowResTerrain; }
-    std::unique_ptr<TypeMap> & getOverlayMap(void) { return overlay; }
+    std::shared_ptr<Terrain>  getHighResTerrain(void)  { return fullResTerrain; }
+    std::shared_ptr<Terrain>  getLowResTerrain(void) { return lowResTerrain; }
+    std::shared_ptr<TypeMap>  getOverlayMap(void) { return overlay; }
     void setSelectedRegion(Region reg) { selectedRegion = reg; } // NOTE: after this, sub-terr must be extracted again
     Region getSelectedRegion(void) const { return selectedRegion; }
     Region getEntireRegion() { return fullResTerrain->getEntireRegion(); }
@@ -407,7 +422,9 @@ public:
 
     // factor: default reduction factor to extract sub-region for main terrain (10 = 1/10th)
     // return value = a unique_ptr to extracted Terrain  that must be managed by the caller
-    std::unique_ptr<Terrain> loadOverViewData(int factor = 10);
+    // noLoad: if TRUE, the data has already been loaded in another mapScene instance and is accessed
+    // via internal shared_ptr which points to data memebers of that instance.
+    std::unique_ptr<Terrain> loadOverViewData(int factor = 10, bool noLoad = false);
 
 };
 

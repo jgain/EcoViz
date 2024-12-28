@@ -547,7 +547,8 @@ std::unique_ptr<Terrain> mapScene::extractTerrainSubwindow(Region region)
 
 // factor: default reduction factor to extract sub-region for main terrain (10 = 1/10th)
 // return value = a unique_ptr to extracted Terrain  that must be managed by the caller
-std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
+// noLoad = TRUE, skip loading code - data is alaeday present (loaded in a shared instance)
+std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor, bool noLoad)
 {
 
     //std::string terfile = datadir+"/dem.elv";
@@ -570,14 +571,17 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
     vpPoint mid;
 
     // load terrain
-    if (binaryElvFile)
-        fullResTerrain->loadElvBinary(terfile);
-    else
-        fullResTerrain->loadElv(terfile);
+    if (noLoad == false)
+    {
+        if (binaryElvFile)
+            fullResTerrain->loadElvBinary(terfile);
+        else
+            fullResTerrain->loadElv(terfile);
 
-    fullResTerrain->calcMeanHeight();
+        fullResTerrain->calcMeanHeight();
+        std::cout << "\n ****** Hi-res Terrain loaded...\n";
+     }
 
-    std::cout << "\n ****** Hi-res Terrain loaded...\n";
     std::cout << " ****** Mean height: " << fullResTerrain->getHeightMean() << "\n";
     fullResTerrain->getTerrainDim(terx, tery);
     std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
@@ -585,6 +589,7 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
     std::cout << " ****** grid samples: " << gridx << " x " << gridy << "\n";
     fullResTerrain->getMidPoint(mid);
     std::cout << " ****** midpt = (" << mid.x << ", " << mid.y << ", " << mid.z << ")\n";
+
 
     // define default region to be small aspect ratio preserving subregion of full terrain input
     float centrex = (gridx-1)/2.0f, centrey = (gridy-1)/2.0f;
@@ -602,15 +607,18 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor)
     //defRegion.y1 = gridy-1;
 
     // create downsampled overview
-    if (binaryElvFile)
-        lowResTerrain->loadElvBinary(terfile, downFactor);
-    else
-        lowResTerrain->loadElv(terfile, downFactor);
-    lowResTerrain->calcMeanHeight();
+    if (noLoad == false)
+    {
+        if (binaryElvFile)
+            lowResTerrain->loadElvBinary(terfile, downFactor);
+        else
+            lowResTerrain->loadElv(terfile, downFactor);
+        lowResTerrain->calcMeanHeight();
+        std::cout << "\n ****** Lo-res Terrain loaded...\n";
+    }
 
     selectedRegion = defRegion;
 
-    std::cout << "\n ****** Lo-res Terrain loaded...\n";
     std::cout << " ****** Mean height: " << lowResTerrain->getHeightMean() << "\n";
     lowResTerrain->getTerrainDim(terx, tery);
     std::cout << " ****** terrain area : " << terx << " X " << tery << "\n";
