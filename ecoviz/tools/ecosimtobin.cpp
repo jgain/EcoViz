@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 
   if (elvConv)
     {
-      int pos = elvFile.find(".elv");
+      size_t pos = elvFile.find(".elv");
       if (pos != string::npos)
 	{
 	  string ofile = elvFile.substr(0,pos) + ".elvb";
@@ -126,11 +126,13 @@ void elevationToBin(const string & in, const string & out)
         infile >> step;
         infile >> locx >> locy;
 
-	for (size_t idx = 0; idx < dx*dy; ++idx)
+    for (size_t idx = 0; idx < (size_t)(dx*dy); ++idx)
 	  {
 	    infile >> val;
 	    heights.push_back(val);
 	  }
+    std::cerr << " -- convert elevation: header dx = " << dx  << "; dy = " << dy << "; step = " << step <<
+                 "; locx = " << locx << "; locy = " << locy << std::endl;
     }
     else
     {
