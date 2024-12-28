@@ -284,6 +284,18 @@ TimelineGraph::TimelineGraph(Timeline * tline, int nseries, std::string name)
     setTimeLine(tline);
 }
 
+TimelineGraph::TimelineGraph(const TimelineGraph & rhs)
+{
+    timeline = new Timeline;
+    *timeline = *rhs.timeline; // default copy
+
+    graphdata = rhs.graphdata;
+    hscale = rhs.hscale;
+    vscale = rhs.vscale;
+    numseries = rhs.numseries;
+    title = rhs.title;
+}
+
 TimelineGraph::~TimelineGraph()
 {
     for(auto g: graphdata)

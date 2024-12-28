@@ -340,8 +340,10 @@ private:
 
     /**
      * @brief setupGraphModels  set up the data structures for dynamic graphs
+     * @param scene_index the scene (0 or 1)
+     * @param copyData copy data from scene 0 graphs into scene 1 graphs
      */
-    void setupGraphModels(int scene_index);
+    void setupGraphModels(int scene_index, bool copyData = false);
 
     /**
      * @brief setSmoothing Set smoothing distance to soften the underlying plant grid

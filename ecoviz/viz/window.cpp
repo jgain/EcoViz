@@ -950,16 +950,32 @@ void Window::setupVizPanel()
     ""));*/
 }
 
-void Window::setupGraphModels(int scene_index)
+// if copydata = T, then compute when scene_idx = 0, and copy when it is 1, else compute for both cases
+void Window::setupGraphModels(int scene_index, bool copyData)
 {
     auto charts = TimelineGraph::getChartTypes();
     graphModels[scene_index].clear();
 
     // loop over all charts and extract the data for it
     for (auto c : charts) {
-        TimelineGraph *tg = new TimelineGraph;
-        tg->setTimeLine(scenes[scene_index]->getTimeline());
-        tg->extractDataSeries(scenes[scene_index], c);
+        TimelineGraph *tg;
+
+        if (scene_index < 0 || scene_index > 1)
+        {
+            std::ostringstream oss;
+            oss << "run-time error: setupGraphModels() - invalid scene selected";
+            throw std::runtime_error(oss.str());
+        }
+
+        if (copyData == false || scene_index == 0)
+        {
+            tg = new TimelineGraph;
+            tg->setTimeLine(scenes[scene_index]->getTimeline());
+            tg->extractDataSeries(scenes[scene_index], c);
+        }
+        else // share precomputed data from scene 0
+            tg = new TimelineGraph(*graphModels[0][int(c)]);
+
         graphModels[scene_index].push_back(tg);
     }
 }
@@ -1138,7 +1154,7 @@ std::cerr << " -- Load scene end.\n";
         perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
-        setupGraphModels(i);
+        setupGraphModels(i, (prefix[0]==prefix[1]) ); // if left and right files are same, only compute series once
         chartViews[i]->setScene(scenes[i]);
         chartViews[i]->setGraphs(graphModels[i]);
         chartViews[i]->setXLabels(timelineIDs);

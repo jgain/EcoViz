@@ -272,6 +272,8 @@ public:
 
     TimelineGraph(Timeline * tline, int nseries, std::string name);
 
+    TimelineGraph(const TimelineGraph & rhs);
+
     ~TimelineGraph();
 
     void init();
