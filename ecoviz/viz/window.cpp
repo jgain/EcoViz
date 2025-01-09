@@ -950,16 +950,32 @@ void Window::setupVizPanel()
     ""));*/
 }
 
-void Window::setupGraphModels(int scene_index)
+// if copydata = T, then compute when scene_idx = 0, and copy when it is 1, else compute for both cases
+void Window::setupGraphModels(int scene_index, bool copyData)
 {
     auto charts = TimelineGraph::getChartTypes();
     graphModels[scene_index].clear();
 
     // loop over all charts and extract the data for it
     for (auto c : charts) {
-        TimelineGraph *tg = new TimelineGraph;
-        tg->setTimeLine(scenes[scene_index]->getTimeline());
-        tg->extractDataSeries(scenes[scene_index], c);
+        TimelineGraph *tg;
+
+        if (scene_index < 0 || scene_index > 1)
+        {
+            std::ostringstream oss;
+            oss << "run-time error: setupGraphModels() - invalid scene selected";
+            throw std::runtime_error(oss.str());
+        }
+
+        if (copyData == false || scene_index == 0)
+        {
+            tg = new TimelineGraph;
+            tg->setTimeLine(scenes[scene_index]->getTimeline());
+            tg->extractDataSeries(scenes[scene_index], c);
+        }
+        else // share precomputed data from scene 0
+            tg = new TimelineGraph(*graphModels[0][int(c)]);
+
         graphModels[scene_index].push_back(tg);
     }
 }
@@ -1019,7 +1035,13 @@ Window::Window(string datadir, string lprefix, string rprefix)
     {
         Scene * s = new Scene(datadir, (i == 0 ? lprefix : rprefix) );
         scenes.push_back(s);
-        mapScene * ms = new mapScene(datadir, mapOverlayFile[i], (i ==0 ? lprefix : rprefix) );
+        mapScene * ms;
+        // NB: we assume that L/R scene data is the same if the *base names* (prefixes) are the same!
+        // always load left view fully if 1st allocation OR the windows load *different* scene data
+        if (i == 0 || lprefix != rprefix)
+            ms = new mapScene(datadir, mapOverlayFile[i], (i ==0 ? lprefix : rprefix) );
+        else
+            ms = new mapScene(*mapScenes[0]);
         mapScenes.push_back(ms);
         coredir[i] = datadir;
     }
@@ -1100,9 +1122,13 @@ void Window::run_viewer()
         // PCM: added overview map
         // load large scale terrain, downsample for oevrview map, and extract  default sub-region for
         // main render window.
-        std::unique_ptr<Terrain> subTerr = mapScenes[i]->loadOverViewData(extractWindowDSample);
+std::cerr << " -- load overview (w. dsample)\n";
+        // if left scene data is same as right scene data, we share - so load happens for left view only
+        std::unique_ptr<Terrain> subTerr =
+                mapScenes[i]->loadOverViewData(extractWindowDSample, ( (prefix[0]==prefix[1]) && i == 1) );
         // (1) set extracted sub-region as the region for this window
         // (2) pass in a pointer to highres (master) terrain
+std::cerr << " -- set up terrain copy.\n";
         scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
         vpPoint midPoint;
         scenes[i]->getTerrain()->getMidPoint(midPoint);
@@ -1110,10 +1136,14 @@ void Window::run_viewer()
         // load in remaing eco-system data - NOTE:
         // the original source region extent is stored in scene[i] - this is later queried to
         // ensure only plants overlapping that region are correctly displayed (translated to the sub-region)
-
+std::cerr << " -- acquire timeline.\n";
         std::vector<int> timelineIDs;
         acquireTimeline(timelineIDs, prefix[i]);
-        scenes[i]->loadScene(timelineIDs);
+ std::cerr << " -- Load scene start: \n";
+        scenes[i]->loadScene(timelineIDs,
+                             (prefix[0]==prefix[1]), // if these match, assume we have IDENTICAL left/right cohort data!
+                             (i==0?std::shared_ptr<CohortMaps>() : scenes[0]->getCohortMaps())); // if L/R cohorts are same, only allocate 1st call
+std::cerr << " -- Load scene end.\n";
         cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
 
@@ -1123,7 +1153,7 @@ void Window::run_viewer()
         perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
-        setupGraphModels(i);
+        setupGraphModels(i, (prefix[0]==prefix[1]) ); // if left and right files are same, only compute series once
         chartViews[i]->setScene(scenes[i]);
         chartViews[i]->setGraphs(graphModels[i]);
         chartViews[i]->setXLabels(timelineIDs);
