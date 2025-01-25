@@ -174,6 +174,10 @@ public:
     void setViewLockState(bool state){ viewlock = state; }
     bool getViewLockState(){ return viewlock; }
 
+    /// manage whether overviewmap is drawn or not.
+    bool getOverwviewMapState(void) const { return overviewEnabled;}
+    void setOverviewMapState(bool v) { overviewEnabled = v; }
+
     /// control the texture overlay
 
     /**
@@ -318,6 +322,7 @@ private:
     bool painted; //< set after first successful paint
     bool persRotating; // if arcball rotation of main perspective view is active
     bool overviewPick; // if a mouse press occurs on the overview map
+    bool overviewEnabled; // is the overview map enabled? On by default
     std::vector<bool> plantvis;
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true
