@@ -229,7 +229,9 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 		ss >> treeid;    // TODO: leaving out ID for now, must include it later
 
         ss >> species_id; // alpha-numeric species key
+        // std::cerr << "Species ID = " << species_id << std::endl;
         tree.species = species_lookup.at(species_id);
+        // std::cerr << "Species Found " << std::endl;
         //ss >> tree.species;
 		ss >> tree.x;
 		ss >> tree.y;

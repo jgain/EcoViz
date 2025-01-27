@@ -33,6 +33,7 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
     timestep_indices.resize(timestep_range, 0);
 
+
     for (int ts : timesteps)
     {
         timestep_indices.at(ts - min_timestep) = 1;
@@ -48,6 +49,7 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         }
     }
 
+
     timestep_maps.resize(filenames.size());
     timestep_mature.resize(filenames.size());
     for (auto &fname : filenames)
@@ -56,8 +58,11 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         if (fname.rfind(".pdbb") != std::string::npos)
             binFileRead = true;
 
+          std::cerr << "CohortMaps: A" << std::endl;
+
         auto fdata = (binFileRead == false ?  ilanddata::read(fname, minversion, species_lookup, ALL_FILEDATA) :
                                               ilanddata::readbinary(fname, minversion, species_lookup, ALL_FILEDATA));
+          std::cerr << "CohortMaps: B" << std::endl;
         if (dx < 0.0f || dy < 0.0f)
         {
             dx = fdata.dx;
@@ -74,7 +79,6 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         //float thisrh = fdata.maxy - fdata.miny;
 
         int idx = timestep_indices.at(fdata.timestep - min_timestep);
-
         locx = fdata.locx; locy = fdata.locy;
 
         int maxx = 0, maxy = 0;
@@ -87,7 +91,6 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
             timestep_mature.at(idx).push_back(tree);
         }
         //std::cerr << "Max tree placement = " << maxx << ", " << maxy << std::endl;
-
         timestep_maps.at(idx) = ValueGridMap<std::vector<ilanddata::cohort > >(fdata.dx, fdata.dy, rw, rh, 1.0f, 1.0f);
         auto &map = timestep_maps.at(idx);
         if (gw == -1 || gh == -1)
@@ -122,6 +125,8 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
     actionmap.fill({DonateDir::NONE, -1, 0});
 
     //fix_cohortmaps();
+    std::cerr << "CohortMaps: END" << std::endl;
+
 
 }
 

@@ -202,7 +202,7 @@ bool shaderProgram::compileAndLink(void)
 
         if (fileInput)
         {
-        std::ifstream vshader(vertSrc.c_str(), std::ios::binary),
+                std::ifstream vshader(vertSrc.c_str(), std::ios::binary),
                 fshader(fragSrc.c_str(), std::ios::binary);
 
                 if (!vshader)

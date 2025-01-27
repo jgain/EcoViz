@@ -184,7 +184,9 @@ public slots:
     void syncDataMapPanel(); // if a perspective view goes into transect view update datamap params
 
     // view panel
-     void uncheckViewPanel(); // on close change view menu item to unchecked state
+    void uncheckViewPanel(); // on close change view menu item to unchecked state
+    void leftMinimapToggle(int status);
+    void rightMinimapToggle(int status);
 
     // locking
     void lockViewsFromLeft();

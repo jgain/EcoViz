@@ -178,6 +178,8 @@ public:
     bool getOverwviewMapState(void) const { return overviewEnabled;}
     void setOverviewMapState(bool v) { overviewEnabled = v; }
 
+    void setMinimapVisible(bool mapon){ overviewEnabled = mapon; }
+
     /// control the texture overlay
 
     /**
