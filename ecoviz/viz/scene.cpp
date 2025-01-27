@@ -320,6 +320,7 @@ void TimelineGraph::init()
 
 void TimelineGraph::extractDataSeries(Scene *scene, ChartType chart_type)
 {
+    cerr << "Extract Data Series" << endl;
     title = graph_titles[chart_type];
     switch (chart_type){
     case ChartBasalArea:

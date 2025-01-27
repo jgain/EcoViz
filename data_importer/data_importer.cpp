@@ -374,8 +374,8 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
 
     // ecosystem location
     ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
-    ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
-
+    ifs.read(reinterpret_cast<char*>(&fdata.locy), sizeof(long));
+    
     ifs.read(reinterpret_cast<char*>(&fdata.timestep), sizeof(int));
 
     if(timestep_only)

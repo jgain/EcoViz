@@ -643,8 +643,8 @@ void Terrain::loadElvBinary(const std::string &filename, int dFactor)
         infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
         infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
         infile.read(reinterpret_cast<char*>(&step), sizeof(float));
-        infile.read(reinterpret_cast<char*>(&locx), sizeof(float));
-        infile.read(reinterpret_cast<char*>(&locy), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locx), sizeof(long));
+        infile.read(reinterpret_cast<char*>(&locy), sizeof(long));
 
         assert(dx > dFactor);
         assert(dy > dFactor);

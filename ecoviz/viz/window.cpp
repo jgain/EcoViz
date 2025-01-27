@@ -1154,7 +1154,6 @@ std::cerr << " -- acquire timeline.\n";
                              (prefix[0]==prefix[1]), // if these match, assume we have IDENTICAL left/right cohort data!
                              (i==0?std::shared_ptr<CohortMaps>() : scenes[0]->getCohortMaps())); // if L/R cohorts are same, only allocate 1st call
 std::cerr << " -- Load scene end.\n";
-        cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
 
 
