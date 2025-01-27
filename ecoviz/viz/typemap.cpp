@@ -458,7 +458,8 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
     // input is a csv file, with 256 RGB entries, one on each line
     // note that this is not robust to format errors in the input file
 
-    // hack to create local copy from Qt resource
+    // hack to create local copy from Qt resource in the temporary directory
+    // has issues if the file already exists
     std::string filename = colmapfile.substr(colmapfile.find_last_of("/")+1) ; // extract file name from path
     QString path = QDir::temp().absoluteFilePath(filename.c_str());
     QFile::copy(QString(colmapfile.c_str()), path);

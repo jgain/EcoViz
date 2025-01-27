@@ -127,6 +127,7 @@ GLWidget::GLWidget(const QSurfaceFormat& format, Window * wp, Scene * scn, Trans
     persRotating = false;
     painted = false;
     rebindplants = true;
+    overviewEnabled = true; //enabled by default - need for selection of sub-terrain in main window; can be disabled/enabled
     scf = 10000.0f;
     decalTexture = 0;
     overlay = TypeMapType::EMPTY;
@@ -646,48 +647,52 @@ void GLWidget::paintGL()
         renderer->draw(view);
 
         // ** overview map draw : draw on resrtricted viewport:
+        // ** can be turned off - but no terrain selection until re-enabled.
 
-        int wd, ht;
-        GLint viewport[4];
-        glGetIntegerv(GL_VIEWPORT, viewport);
-
-        // PCM fix inital aspect mismatch in overview
-        if (mapView->isTerrainReady() == false)
+        if (overviewEnabled)
         {
-            mapView->setWindowSize();
-            mapView->resetViewDims();
-            mapView->setTerrainReady(true);
-        }
+            int wd, ht;
+            GLint viewport[4];
+            glGetIntegerv(GL_VIEWPORT, viewport);
 
-        // mapView->getWindowSize(wd,ht); // JG - viewport and window coordinates are different on Apple
-        mapView->getViewSize(viewport[2], wd, ht);
-        GLint newport[4];
+            // PCM fix inital aspect mismatch in overview
+            if (mapView->isTerrainReady() == false)
+            {
+                mapView->setWindowSize();
+                mapView->resetViewDims();
+                mapView->setTerrainReady(true);
+            }
 
-        newport[0] = (GLint)(viewport[2] - wd);
-        newport[1] = (GLint)(viewport[3] - ht);
-        newport[2] = (GLint)wd;
-        newport[3] = (GLint)ht;
+            // mapView->getWindowSize(wd,ht); // JG - viewport and window coordinates are different on Apple
+            mapView->getViewSize(viewport[2], wd, ht);
+            GLint newport[4];
 
-        /*
+            newport[0] = (GLint)(viewport[2] - wd);
+            newport[1] = (GLint)(viewport[3] - ht);
+            newport[2] = (GLint)wd;
+            newport[3] = (GLint)ht;
+
+            /*
         cerr << "newport = " << newport[0] << ", " << newport[1] << ", " << newport[2] << ", " << newport[3] << endl;
         cerr << "oldport = " << viewport[0] << ", " << viewport[1] << ", " << viewport[2] << ", " << viewport[3] << endl;
         cerr << "olddim = " << this->width() << ", " << this->height() << endl;
         cerr << "newdim = " << wd << ", " << ht << endl;
         */
 
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //glEnable(GL_SCISSOR_TEST);
-        //glViewport(viewport[0], viewport[1], viewport[2]-500, viewport[3]-500);
-        //glScissor(viewport[0], viewport[1], viewport[2]-300, viewport[3]-300);
-        //GLint wdim = viewport[2]-600, hdim = viewport[3]-600;
-        //GLint wpos = viewport[0], hpos = viewport[1];
-        //glViewport(wpos, hpos,  wdim, hdim);
-        glViewport(newport[0], newport[1], newport[2], newport[3]);
-        mapView->draw();
-        //glDisable(GL_SCISSOR_TEST);
-        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-//QThread::msleep(1000);
-        // ** end overview map draw **
+            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //glEnable(GL_SCISSOR_TEST);
+            //glViewport(viewport[0], viewport[1], viewport[2]-500, viewport[3]-500);
+            //glScissor(viewport[0], viewport[1], viewport[2]-300, viewport[3]-300);
+            //GLint wdim = viewport[2]-600, hdim = viewport[3]-600;
+            //GLint wpos = viewport[0], hpos = viewport[1];
+            //glViewport(wpos, hpos,  wdim, hdim);
+            glViewport(newport[0], newport[1], newport[2], newport[3]);
+            mapView->draw();
+            //glDisable(GL_SCISSOR_TEST);
+            glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+            //QThread::msleep(1000);
+            // ** end overview map draw **
+        }
 
         t.stop();
 
@@ -754,17 +759,6 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         update();
     }
 
-    /*
-    if(event->key() == Qt::Key_O) // 'O' raise overviewmaps
-    {
-        cerr << "O keypress" << endl;
-        winparent->positionVizOverMap(0);
-        winparent->positionVizOverMap(1);
-        view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
-        signalRepaintAllGL();
-    }
-    */
-
     if(event->key() == Qt::Key_N) // 'N' to save overview map selection
     {
          Region savereg = mapView->getSelectionRegion();
@@ -777,25 +771,13 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
                 savereg.x1 << "," << savereg.y1 << "]" << endl;
     }
 
-    if(event->key() == Qt::Key_M) // 'M' to restore overview map selection
+    if(event->key() == Qt::Key_M) // 'M' to toggle ovewviewmap
     {
-        /*
-        mapView->setSelectionRegion(savereg);
-        cerr << "Overview region restored" << endl;
-        cerr << " Subregion restored -  [x0,y0,x1,y1] = [" << savereg.x0 << "," << savereg.y0 << "," <<
-               savereg.x1 << "," << savereg.y1 << "]" << endl;
-        int i;
-        // now apply change
-        Region currRegion = mapView->getSelectionRegion();
-        if(viewlock)
-            i = 2; // signal change to both perspective views
-        else
-            i = (wname=="left" ? 0: 1);
-        cerr << "REGION = " << currRegion.x0 << ", " << currRegion.y0 << " - " << currRegion.x1 << ", " << currRegion.y1 << endl;
-        cerr << "SIGNAL = " << i << endl;
-        signalExtractNewSubTerrain(i, currRegion.x0, currRegion.y0, currRegion.x1, currRegion.y1);
-        */
+        overviewEnabled = ! overviewEnabled; // toggle ovewviewmap
+        winparent->rendercount++;
+        update();
     }
+
     /*
     if(event->key() == Qt::Key_N) // 'N' to toggle display of canopy trees on or off
     {
@@ -1003,7 +985,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     // ensure this viewport is current for unproject
     refreshViews(); // should not be necessary
 
-    if(mapView->mouseInOverView(width(), height(), sx, sy))
+    if(mapView->mouseInOverView(width(), height(), sx, sy) && overviewEnabled)
     {
         int ox, oy;
 
@@ -1049,7 +1031,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     sx = event->x(); sy = event->y();
 
     // double click in overview should do nothing
-    if(mapView->mouseInOverView(width(), height(), sx, sy))
+    if(mapView->mouseInOverView(width(), height(), sx, sy) && overviewEnabled)
         return;
 
     if((event->modifiers() == Qt::MetaModifier && event->buttons() == Qt::LeftButton) || (event->modifiers() == Qt::AltModifier && event->buttons() == Qt::LeftButton) || event->buttons() == Qt::RightButton)
@@ -1153,7 +1135,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     sx = event->x(); sy = event->y();
 
     persRotating = false;
-    if(mapView->mouseInOverView(width(), height(), sx, sy) || mapView->getPickOnTerrain())
+    if( (mapView->mouseInOverView(width(), height(), sx, sy) || mapView->getPickOnTerrain() ) && overviewEnabled)
     {
         persRotating = false;
         if(mapView->endRegionChange())
@@ -1224,7 +1206,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     // cerr << "in overview = " << mapView->mouseInOverView(W, H, x, y);
     // control view orientation with right mouse button or ctrl modifier key and left mouse
 
-    if(mapView->mouseInOverView(width(), height(), x, y))
+    if(mapView->mouseInOverView(width(), height(), x, y) && overviewEnabled)
     {
         int ox, oy;
 

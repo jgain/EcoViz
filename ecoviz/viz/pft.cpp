@@ -46,7 +46,7 @@ bool Biome::read_dataimporter(std::string cdata_fpath)
 {
     // data_importer::common_data cdata = data_importer::common_data(cdata_fpath);
     cdata = new data_importer::common_data(cdata_fpath);
-
+    std::cerr << cdata_fpath << std::endl;
     return read_dataimporter((* cdata));
 }
 
@@ -77,6 +77,8 @@ bool Biome::read_dataimporter(data_importer::common_data &cdata)
         species_info.push_back(sinfo);
         // save in lookup table
         species_key_lookup[sinfo.speciesId] = sinfo.species_num_id;
+        // std::cerr << sinfo.speciesId << ": " << sinfo.species_num_id << std::endl;
+
 
         pft.code = spec.cname;
         for (int i = 0; i < 4; i++)

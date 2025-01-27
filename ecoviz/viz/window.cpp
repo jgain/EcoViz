@@ -563,6 +563,16 @@ void Window::setupViewPanel()
         matrixViewLeftLayout->addWidget(leftLoad);
         matrixViewRightLayout->addWidget(rightSave);
         matrixViewRightLayout->addWidget(rightLoad);
+
+        // minimap check box
+        QCheckBox * mrbL = new QCheckBox(tr("left minimap"));
+        QCheckBox * mrbR = new QCheckBox(tr("right minimap"));
+        mrbL->setChecked(true);
+        mrbR->setChecked(true);
+        matrixViewLeftLayout->addWidget(mrbL);
+        matrixViewRightLayout->addWidget(mrbR);
+        connect(mrbL, SIGNAL(stateChanged(int)), this, SLOT(leftMinimapToggle(int)));
+        connect(mrbR, SIGNAL(stateChanged(int)), this, SLOT(rightMinimapToggle(int)));
     }
 
     viewLayout->addWidget(matrixViewLeftGroup);
@@ -1746,6 +1756,20 @@ void Window::clearTransects()
     QApplication::processEvents( QEventLoop::ExcludeUserInputEvents );
     resize( sizeHint() );
     transectsValid = false;
+}
+
+void Window::leftMinimapToggle(int status)
+{
+    perspectiveViews[0]->setMinimapVisible(status == Qt::Checked);
+    rendercount++;
+    repaintAllGL();
+}
+
+void Window::rightMinimapToggle(int status)
+{
+    perspectiveViews[1]->setMinimapVisible(status == Qt::Checked);
+    rendercount++;
+    repaintAllGL();
 }
 
 void Window::showGridLines(int show)
