@@ -103,7 +103,7 @@ public:
  *
  * @see @ref stats::enableTimers.
  */
-class Timer : public TimerBase
+class Timer2 : public TimerBase
 {
 private:
     // Use high-resolution timer if it is monotonic, otherwise steady_timer (which always is)
@@ -115,13 +115,13 @@ private:
     std::chrono::time_point<clock_type> start;
 
 public:
-    explicit Timer(const TimeInit &t, double *out = nullptr);
-    explicit Timer(const std::shared_ptr<Time> &t, double *out = nullptr);
-    Timer(Timer &&);
+    explicit Timer2(const TimeInit &t, double *out = nullptr);
+    explicit Timer2(const std::shared_ptr<Time> &t, double *out = nullptr);
+    Timer2(Timer2 &&);
 
     /// Stop the timer, print the information, and perform accumulations.
     void stop();
-    ~Timer();
+    ~Timer2();
 };
 
 /**

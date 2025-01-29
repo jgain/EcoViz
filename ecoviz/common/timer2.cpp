@@ -12,7 +12,7 @@
 #include <algorithm>
 #include "debug_string.h"
 #include "debug_vector.h"
-#include "timer.h"
+#include "timer2.h"
 #include "stats.h"
 
 namespace stats
@@ -151,19 +151,19 @@ void TimerBase::doneDouble(double elapsed)
         *out = elapsed;
 }
 
-Timer::Timer(const TimeInit &t, double *out) :
+Timer2::Timer2(const TimeInit &t, double *out) :
     TimerBase(t, out),
     start(detail::timersEnabled ? clock_type::now() : clock_type::time_point())
 {
 }
 
-Timer::Timer(const std::shared_ptr<Time> &t, double *out) :
+Timer2::Timer2(const std::shared_ptr<Time> &t, double *out) :
     TimerBase(t, out),
     start(detail::timersEnabled ? clock_type::now() : clock_type::time_point())
 {
 }
 
-Timer::Timer(Timer &&other) : TimerBase(std::move(other))
+Timer2::Timer2(Timer2 &&other) : TimerBase(std::move(other))
 {
     if (this != &other)
     {
@@ -172,7 +172,7 @@ Timer::Timer(Timer &&other) : TimerBase(std::move(other))
     }
 }
 
-void Timer::stop()
+void Timer2::stop()
 {
     if (detail::timersEnabled && start != clock_type::time_point())
     {
@@ -183,7 +183,7 @@ void Timer::stop()
     }
 }
 
-Timer::~Timer()
+Timer2::~Timer2()
 {
     stop();
 }

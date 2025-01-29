@@ -1302,42 +1302,42 @@ void TRenderer::initShaders(void)
   std::string fshaderName;
   std::string vshaderName;
 
-      shaderProgram *s;
+  shaderProgram *s;
 
-        std::vector< std::tuple<std::string, std::string, std::string> > shaderInfo; // tuple - fragName, vertName, commonName
+  std::vector< std::tuple<std::string, std::string, std::string> > shaderInfo; // tuple - fragName, vertName, commonName
 
-        shaderInfo.push_back(std::make_tuple("basic.frag", "basic.vert", "basicShader"));
-        shaderInfo.push_back(std::make_tuple("genNormal.frag", "genNormal.vert", "normalShader"));
-        shaderInfo.push_back(std::make_tuple("phong.frag", "phong.vert", "phong"));
-        shaderInfo.push_back(std::make_tuple("rad_scaling_pass1.frag", "rad_scaling_pass1.vert", "rscale1"));
-        shaderInfo.push_back(std::make_tuple("rad_scaling_pass2.frag", "rad_scaling_pass2.vert", "rscale2"));
-        shaderInfo.push_back(std::make_tuple("rad_scaling_pass2b.frag", "rad_scaling_pass2b.vert", "rscale2b"));
-        shaderInfo.push_back(std::make_tuple("phongRS.frag", "phongRS.vert", "phongRS"));
-        shaderInfo.push_back(std::make_tuple("phongRSmanip.frag", "phongRSmanip.vert", "phongRSmanip"));
-        shaderInfo.push_back(std::make_tuple("sun.frag", "sun.vert", "sunShader"));
-        shaderInfo.push_back(std::make_tuple("canopy.frag", "canopy.vert", "canopyShader"));
+  shaderInfo.push_back(std::make_tuple("basic.frag", "basic.vert", "basicShader"));
+  shaderInfo.push_back(std::make_tuple("genNormal.frag", "genNormal.vert", "normalShader"));
+  shaderInfo.push_back(std::make_tuple("phong.frag", "phong.vert", "phong"));
+  shaderInfo.push_back(std::make_tuple("rad_scaling_pass1.frag", "rad_scaling_pass1.vert", "rscale1"));
+  shaderInfo.push_back(std::make_tuple("rad_scaling_pass2.frag", "rad_scaling_pass2.vert", "rscale2"));
+  shaderInfo.push_back(std::make_tuple("rad_scaling_pass2b.frag", "rad_scaling_pass2b.vert", "rscale2b"));
+  shaderInfo.push_back(std::make_tuple("phongRS.frag", "phongRS.vert", "phongRS"));
+  shaderInfo.push_back(std::make_tuple("phongRSmanip.frag", "phongRSmanip.vert", "phongRSmanip"));
+  shaderInfo.push_back(std::make_tuple("sun.frag", "sun.vert", "sunShader"));
+  shaderInfo.push_back(std::make_tuple("canopy.frag", "canopy.vert", "canopyShader"));
 
-        // PCM: flat shader with double sides lighting for terrain
-        shaderInfo.push_back(std::make_tuple("flatTerr.frag", "flatTerr.vert", "flatTransectShader"));
-        shaderInfo.push_back(std::make_tuple("phong-instanced.frag", "phong-instanced.vert", "phongInstancedShader"));
+  // PCM: flat shader with double sides lighting for terrain
+  shaderInfo.push_back(std::make_tuple("flatTerr.frag", "flatTerr.vert", "flatTransectShader"));
+  shaderInfo.push_back(std::make_tuple("phong-instanced.frag", "phong-instanced.vert", "phongInstancedShader"));
 
-        for (auto &sh : shaderInfo)
-        {
-            s = new shaderProgram();
-            std::string fragS = shaderDir + "/" + std::get<0>(sh);
-            std::string vertS = shaderDir + "/" + std::get<1>(sh);
+  for (auto &sh : shaderInfo)
+  {
+      s = new shaderProgram();
+      std::string fragS = shaderDir + "/" + std::get<0>(sh);
+      std::string vertS = shaderDir + "/" + std::get<1>(sh);
 
-            // temp copy of resource
-            std::string ffilename = fragS.substr(fragS.find_last_of("/")+1); // extract file name from path
-            std::string vfilename = vertS.substr(vertS.find_last_of("/")+1) ;
-            QString fpath = QDir::temp().absoluteFilePath(ffilename.c_str());
-            QString vpath = QDir::temp().absoluteFilePath(vfilename.c_str());
-            QFile::copy(QString(fragS.c_str()), fpath);
-            QFile::copy(QString(vertS.c_str()), vpath);
+      // temp copy of resource
+      std::string ffilename = fragS.substr(fragS.find_last_of("/")+1); // extract file name from path
+      std::string vfilename = vertS.substr(vertS.find_last_of("/")+1) ;
+      QString fpath = QDir::temp().absoluteFilePath(ffilename.c_str());
+      QString vpath = QDir::temp().absoluteFilePath(vfilename.c_str());
+      QFile::copy(QString(fragS.c_str()), fpath);
+      QFile::copy(QString(vertS.c_str()), vpath);
 
-            s->setShaderSources( (char *) fpath.toStdString().c_str(), (char *) vpath.toStdString().c_str());
-            shaders[std::get<2>(sh)] = s;
-        }
+      s->setShaderSources( (char *) fpath.toStdString().c_str(), (char *) vpath.toStdString().c_str());
+      shaders[std::get<2>(sh)] = s;
+  }
 
    /*
       s = new shaderProgram();

@@ -25,21 +25,21 @@ TimeWindow::TimeWindow(QWidget *parent, Window * wp, int step_start, int step_en
     play_button = new QPushButton("", this);
     advance_button = new QPushButton("", this);
 
-    QPixmap playmap(":/resources/icons/playicon32.png");
+    QPixmap playmap("resources/icons/playicon32.png");
     playIcon = new QIcon(playmap);
 
-    QPixmap pausemap(":/resources/icons/pauseicon32.png");
+    QPixmap pausemap("resources/icons/pauseicon32.png");
     pauseIcon = new QIcon(pausemap);
 
     play_button->setIcon((* playIcon));
     play_button->setIconSize(QSize(20, 20));
 
-    QPixmap advancemap(":/resources/icons/advanceicon32.png");
+    QPixmap advancemap("resources/icons/advanceicon32.png");
     QIcon advanceIcon(advancemap);
     advance_button->setIcon(advanceIcon);
     advance_button->setIconSize(QSize(18, 18));
 
-    QPixmap backmap(":/resources/icons/backicon32.png");
+    QPixmap backmap("resources/icons/backicon32.png");
     QIcon backIcon(backmap);
     back_button->setIcon(backIcon);
     back_button->setIconSize(QSize(18, 18));

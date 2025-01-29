@@ -36,7 +36,7 @@
     <ClCompile Include="common\stats.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="common\timer.cpp">
+    <ClCompile Include="common\timer2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="viz\chartwindow.cpp">
@@ -182,7 +182,7 @@
     <ClInclude Include="common\str.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="common\timer.h">
+    <ClInclude Include="common\timer2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="khronos_headers\cl\cl.h">

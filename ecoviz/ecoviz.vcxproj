@@ -141,9 +141,12 @@
     <ClCompile Include="common\mathutils.cpp" />
     <ClCompile Include="common\progress.cpp" />
     <ClCompile Include="common\region.cpp" />
-    <ClCompile Include="common\source2cpp.cpp" />
+    <ClCompile Include="common\source2cpp.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="common\stats.cpp" />
-    <ClCompile Include="common\timer.cpp" />
+    <ClCompile Include="common\timer2.cpp" />
     <ClCompile Include="viz\chartwindow.cpp" />
     <ClCompile Include="viz\cohortmaps.cpp" />
     <ClCompile Include="viz\cohortsampler.cpp" />
@@ -196,10 +199,12 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">common/source2cpp.cpp</Outputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python.exe</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Creating C++ source for shaders and kernels</Message>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CustomBuild>
     <ClInclude Include="common\stats.h" />
     <ClInclude Include="common\str.h" />
-    <ClInclude Include="common\timer.h" />
+    <ClInclude Include="common\timer2.h" />
     <ClInclude Include="khronos_headers\cl\cl.h" />
     <ClInclude Include="khronos_headers\cl\cl.hpp" />
     <ClInclude Include="khronos_headers\cl\cl_d3d10.h" />

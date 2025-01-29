@@ -101,7 +101,7 @@ GLTransect::GLTransect(const QSurfaceFormat& format, Window * wp, Scene * scn, T
 
     view = nullptr;
 
-    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, "resources/shaders/");
 
     setParent(wp);
 

@@ -925,21 +925,24 @@ public:
         return get(coords.x, coords.y);
     }
 
-    T set_fromreal(float real_x, float real_y, T val)
+    bool set_fromreal(float real_x, float real_y, T val)
     {
         xy<int> coords = togrid(real_x, real_y);
         if (real_x > rx || real_y > ry || real_x < 0 || real_y < 0)
         {
             std::string msg = "real coordinates (" + std::to_string(real_x) + ", " + std::to_string(real_y) + ") out of range in ValueGridMap::set_fromreal";
             throw std::out_of_range(msg.c_str());
+            return false;
         }
         if (coords.x >= gx || coords.y >= gy || coords.x < 0 || coords.y < 0)
         {
             std::string msg = "grid coordinates (" + std::to_string(coords.x) + ", " + std::to_string(coords.y) + ") out of range in ValueGridMap::set_fromreal (although real coordinates were valid)";
             //throw std::out_of_range(msg);
             std::cerr << msg;
+            return false;
         } else {
-        this->set(coords.x, coords.y, val);
+          this->set(coords.x, coords.y, val);
+          return true;
         }
     }
 

@@ -83,6 +83,7 @@ std::string dir = "";
 
 int main(int argc, char *argv[])
 {
+
     //int run_id, nyears;
 
     parseCommandLine(argc, argv);
@@ -91,10 +92,14 @@ int main(int argc, char *argv[])
     while (datadir.back() == '/')
         datadir.pop_back();
 
+		//std::cerr << "Data directory: " << datadir << std::endl;
+		//std::cerr << "Left prefix: " << leftprefix << std::endl;
+		//std::cerr << "Right prefix: " << rightprefix << std::endl;
+
     try
     {    
-        QApplication app(argc, argv);    
 
+        QApplication app(argc, argv);
         Window * window = new Window(datadir, leftprefix, rightprefix);
 
         QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedKingdom));
@@ -113,11 +118,15 @@ int main(int argc, char *argv[])
             window->showMaximized();
         window->run_viewer();
         int status = app.exec();
+
+        system("pause");
         return status;
     }
     catch (std::exception &e)
     {
         std::cerr << e.what() << std::endl;
+
+        system("pause");
         return 1;
     }
 }
