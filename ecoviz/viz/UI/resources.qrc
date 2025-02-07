@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="/">
+    <file alias="resources/mitsuba/ModelSpecies/Profile.csv">../../../resources/mitsuba/ModelSpecies/Profile.csv</file>
+    <file alias="resources/databases/european.db">../../../resources/databases/european.db</file>
     <file alias="resources/icons/advanceicon32.png">../../../resources/icons/advanceicon32.png</file>
     <file alias="resources/icons/backicon32.png">../../../resources/icons/backicon32.png</file>
     <file alias="resources/icons/locklefticon32.png">../../../resources/icons/locklefticon32.png</file>
@@ -11,7 +13,6 @@
     <file alias="resources/colourmaps/linear_grey_10-95_c0_n256.csv">../../../resources/colourmaps/linear_grey_10-95_c0_n256.csv</file>
     <file alias="resources/colourmaps/linear_kryw_5-100_c67_n256.csv">../../../resources/colourmaps/linear_kryw_5-100_c67_n256.csv</file>
     <file alias="resources/colourmaps/linear_blue_95-50_c20_n256.csv">../../../resources/colourmaps/linear_blue_95-50_c20_n256.csv</file>
-    <file alias="resources/databases/european.db">../../../resources/databases/european.db</file>
     <file alias="resources/shaders/basic.frag">../../../resources/shaders/basic.frag</file>
     <file alias="resources/shaders/basic.vert">../../../resources/shaders/basic.vert</file>
     <file alias="resources/shaders/genNormal.frag">../../../resources/shaders/genNormal.frag</file>

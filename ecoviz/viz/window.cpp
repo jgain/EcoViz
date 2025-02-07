@@ -68,6 +68,7 @@
 #include <QtCharts/QChartView>
 #include <QButtonGroup>
 #include <QAction>
+#include <QRegularExpression>
 
 using namespace std;
 
@@ -1091,7 +1092,7 @@ Window::Window(string datadir, string lprefix, string rprefix)
     createActions();
     createMenus();
 
-    readMitsubaExportProfiles("resources/mitsuba/ModelSpecies");
+    readMitsubaExportProfiles(":/resources/mitsuba/ModelSpecies/Profile.csv");
     this->installEventFilter(this);
 
     mainWidget->setLayout(mainLayout);
@@ -2131,113 +2132,236 @@ void Window::setSmoothing(int d)
     }
 }
 
-void Window::readMitsubaExportProfiles(string profilesDirPath)
+/*void Window::readMitsubaExportProfiles(std::string profilePath)
 {
-    QDir profilesDir(profilesDirPath.data());
+  QFile csvFile(QString::fromStdString(profilePath));
 
-    if (profilesDir.exists())
+  if (!csvFile.exists()) {
+    qDebug() << "File does not exist: " << profilePath;
+    return;
+  }
+
+  // Open the file for reading
+  if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
+  {
+    qDebug() << "Error: Cannot open file " << profilePath;
+    return;
+  }
+
+  QTextStream in(&csvFile);
+  QString profileName = "profile";
+  profileName.chop(4); // Remove the ".csv" extension
+
+  QString line;
+  QString plantCode, maxHeightStr, instanceId, actualHeightStr;
+  double maxHeight = -1.0, actualHeight = -1.0;
+  int count = 0;
+
+  while (!in.atEnd())
+  {
+    line = in.readLine();
+    count++;
+
+    if (line.indexOf("plant code;") == 0)
     {
-        QStringList csvProfiles = profilesDir.entryList(QStringList() << "*.csv" << "*.CSV", QDir::Files);
-        for (QString csvName : csvProfiles)
-        {
-            ifstream csvFile(profilesDirPath + "/" + csvName.toUtf8().data());
-
-            string profileName = csvName.remove(".csv").toUtf8().data();
-            string line;
-            string plantCode;
-            string maxHeightStr;
-            double maxHeight;
-            string instanceId;
-            string actualHeightStr;
-            double actualHeight;
-            int count = 0;
-
-            while (getline(csvFile, line))
-            {
-                count++;
-
-                if (line.find("plant code;") == 0)
-                {
-                    // Headers line
-                    continue;
-                }
-
-                if (line.empty() || line.find_first_not_of(" ") == string::npos)
-                {
-                    continue;
-                }
-
-                string delimiter = ";";
-
-                // Plant code
-                size_t pos = line.find(delimiter);
-                string token = line.substr(0, pos);
-                plantCode = token;
-                line.erase(0, pos + delimiter.length());
-
-                // Max height
-                pos = line.find(delimiter);
-                token = line.substr(0, pos);
-                maxHeightStr = token;
-                line.erase(0, pos + delimiter.length());
-
-                int (*fn_isspace)(int) = std::isspace;  // required because std::isspace is overloaded,
-                                                        // template argument deduction for std::isspace fails
-
-                maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
-                char* end = nullptr;
-                maxHeight = strtod(maxHeightStr.c_str(), &end);
-                if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
-                {
-                    maxHeight = -1.0;
-                    cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" << endl;
-                }
-                else if (maxHeight < 0.0)
-                {
-                    cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height is a negative value" << endl;
-                }
-
-                // Instance id
-                pos = line.find(delimiter);
-                token = line.substr(0, pos);
-                instanceId = token;
-                line.erase(0, pos + delimiter.length());
-
-                // Actual height
-                actualHeightStr = line;
-
-                actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
-                end = nullptr;
-                actualHeight = strtod(actualHeightStr.c_str(), &end);
-                if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
-                {
-                    actualHeight = -1.0;
-                    cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" << endl;
-                }
-                else if (actualHeight < 0.0)
-                {
-                    cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height is a negative value" << endl;
-                }
-
-                if (this->profileToSpeciesMap.find(profileName) == this->profileToSpeciesMap.end())
-                {
-                    this->profileToSpeciesMap.insert({ profileName , {} });
-                }
-
-                map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName);
-
-                if (itProfile->second.find(plantCode) == itProfile->second.end())
-                {
-                    itProfile->second.insert({ plantCode, {} });
-                }
-
-                map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
-                itPlantCode->second.push_back({ maxHeight, instanceId, actualHeight });
-            }
-        }
-
-        cout << "readMitsubaExportProfiles finished !" << endl;
+      // Headers line
+      continue;
     }
+
+    if (line.isEmpty() || line.indexOf(QRegularExpression("[^\\s]")) == -1)
+    {
+      continue;
+    }
+
+    QString delimiter = ";";
+
+    // Plant code
+    size_t pos = line.indexOf(delimiter);
+    QString token = line.mid(0, pos);
+    plantCode = token;
+    line.remove(0, pos + delimiter.length());
+
+    // Max height
+    pos = line.indexOf(delimiter);
+    token = line.mid(0, pos);
+    maxHeightStr = token;
+    line.remove(0, pos + delimiter.length());
+
+    int (*fn_isspace)(int) = std::isspace;  // required because std::isspace is overloaded,
+    // template argument deduction for std::isspace fails
+
+    maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
+    char* end = nullptr;
+    maxHeight = strtod(maxHeightStr.toStdString().c_str(), &end);
+    if (end == maxHeightStr.toStdString().c_str() || *end != '\0' || maxHeight == HUGE_VAL)
+    {
+      maxHeight = -1.0;
+      qDebug() << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" ;
+    }
+    else if (maxHeight < 0.0)
+    {
+      qDebug() << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height is a negative value" ;
+    }
+
+    // Instance id
+    pos = line.indexOf(delimiter);
+    token = line.mid(0, pos);
+    instanceId = token;
+    line.remove(0, pos + delimiter.length());
+
+    // Actual height
+    actualHeightStr = line;
+
+    actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
+    end = nullptr;
+    actualHeight = strtod(actualHeightStr.toStdString().c_str(), &end);
+    if (end == actualHeightStr.toStdString().c_str() || *end != '\0' || actualHeight == HUGE_VAL)
+    {
+      actualHeight = -1.0;
+      qDebug() << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" ;
+    }
+    else if (actualHeight < 0.0)
+    {
+      qDebug() << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height is a negative value" ;
+    }
+
+    if (this->profileToSpeciesMap.find(profileName.toStdString()) == this->profileToSpeciesMap.end())
+    {
+      this->profileToSpeciesMap.insert({ profileName.toStdString() , {} });
+    }
+
+    map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName.toStdString());
+
+    if (itProfile->second.find(plantCode.toStdString()) == itProfile->second.end())
+    {
+      itProfile->second.insert({ plantCode.toStdString(), {} });
+    }
+
+    map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode.toStdString());
+    itPlantCode->second.push_back({ maxHeight, instanceId.toStdString(), actualHeight });
+  }
+  
+
+  csvFile.close(); // Close the file after reading
+    
+  qDebug() << "readMitsubaExportProfiles finished !";
+
+}*/
+
+
+void Window::readMitsubaExportProfiles(string profilePath)
+{
+  QFile csvFile(QString::fromStdString(profilePath));
+
+  if (!csvFile.exists()) {
+    qDebug() << "File does not exist: " << profilePath;
+    return;
+  }
+
+  // Open the file for reading
+  if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
+  {
+    qDebug() << "Error: Cannot open file " << profilePath;
+    return;
+  }
+
+  QTextStream in(&csvFile);
+  QString profileName = "profile";
+  profileName.chop(4); // Remove the ".csv" extension
+
+  string line;
+  string plantCode, maxHeightStr, instanceId, actualHeightStr;
+  double maxHeight = -1.0, actualHeight = -1.0;
+  int count = 0;
+
+  while (!in.atEnd())
+  {
+    line = in.readLine().toStdString();
+
+
+    count++;
+
+    if (line.find("plant code;") == 0)
+    {
+        // Headers line
+        continue;
+    }
+
+    if (line.empty() || line.find_first_not_of(" ") == string::npos)
+    {
+        continue;
+    }
+
+    string delimiter = ";";
+
+    // Plant code
+    size_t pos = line.find(delimiter);
+    string token = line.substr(0, pos);
+    plantCode = token;
+    line.erase(0, pos + delimiter.length());
+
+    // Max height
+    pos = line.find(delimiter);
+    token = line.substr(0, pos);
+    maxHeightStr = token;
+    line.erase(0, pos + delimiter.length());
+
+    int (*fn_isspace)(int) = std::isspace;  // required because std::isspace is overloaded,
+                                            // template argument deduction for std::isspace fails
+
+    maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
+    char* end = nullptr;
+    maxHeight = strtod(maxHeightStr.c_str(), &end);
+    if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
+    {
+        maxHeight = -1.0;
+        cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" << endl;
+    }
+    else if (maxHeight < 0.0)
+    {
+        cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] max height is a negative value" << endl;
+    }
+
+    // Instance id
+    pos = line.find(delimiter);
+    token = line.substr(0, pos);
+    instanceId = token;
+    line.erase(0, pos + delimiter.length());
+
+    // Actual height
+    actualHeightStr = line;
+
+    actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
+    end = nullptr;
+    actualHeight = strtod(actualHeightStr.c_str(), &end);
+    if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
+    {
+        actualHeight = -1.0;
+        cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" << endl;
+    }
+    else if (actualHeight < 0.0)
+    {
+        cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] actual height is a negative value" << endl;
+    }
+
+    if (this->profileToSpeciesMap.find(profileName.toStdString()) == this->profileToSpeciesMap.end())
+    {
+        this->profileToSpeciesMap.insert({ profileName.toStdString() , {} });
+    }
+
+    map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName.toStdString());
+
+    if (itProfile->second.find(plantCode) == itProfile->second.end())
+    {
+        itProfile->second.insert({ plantCode, {} });
+    }
+
+    map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
+    itPlantCode->second.push_back({ maxHeight, instanceId, actualHeight });
+  }
+
+  cout << "readMitsubaExportProfiles finished !" << endl;
+
 }
 
 /*
