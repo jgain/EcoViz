@@ -462,7 +462,7 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
     QFile file(colmapfile.c_str()); // Use of the ressources
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-      qWarning() << "Failed to open Colour file!" << colmapfile;
+      qWarning() << "Failed to open Colour file!" << colmapfile.c_str();
       numSamples = -1;
       return;
     }

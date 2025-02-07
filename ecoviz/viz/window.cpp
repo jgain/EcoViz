@@ -2254,14 +2254,14 @@ void Window::readMitsubaExportProfiles(string profilePath)
   QFile csvFile(QString::fromStdString(profilePath));
 
   if (!csvFile.exists()) {
-    qDebug() << "File does not exist: " << profilePath;
+    qDebug() << "File does not exist: " << profilePath.c_str();
     return;
   }
 
   // Open the file for reading
   if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
   {
-    qDebug() << "Error: Cannot open file " << profilePath;
+    qDebug() << "Error: Cannot open file " << profilePath.c_str();
     return;
   }
 
