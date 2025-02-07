@@ -1080,12 +1080,12 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
           map<string, vector<MitsubaModel>>::iterator it;
 					if ((it = speciesMap.find(code)) != speciesMap.end()) // If the plant code is found in the profile
           {
-            int indexNearestHeightMax = 0;
+            int indexNearestHeightMax = -1;
             vector<MitsubaModel>& vectMitsubaModel = it->second;
 
             for (int i = 0; i < vectMitsubaModel.size(); i++)
             {
-              if (vectMitsubaModel[i].maxHeight <= plant.height )
+              if (vectMitsubaModel[i].maxHeight >= plant.height && (indexNearestHeightMax==-1 || vectMitsubaModel[i].maxHeight <= vectMitsubaModel[indexNearestHeightMax].maxHeight))
               {
                 indexNearestHeightMax = i;
               }

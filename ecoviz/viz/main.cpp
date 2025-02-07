@@ -83,7 +83,7 @@ std::string dir = "";
 
 int main(int argc, char *argv[])
 {
-
+    cout << argc << endl;
     //int run_id, nyears;
 
     parseCommandLine(argc, argv);

@@ -1330,12 +1330,13 @@ void TRenderer::initShaders(void)
       // temp copy of resource
       std::string ffilename = fragS.substr(fragS.find_last_of("/")+1); // extract file name from path
       std::string vfilename = vertS.substr(vertS.find_last_of("/")+1) ;
-      QString fpath = QDir::temp().absoluteFilePath(ffilename.c_str());
-      QString vpath = QDir::temp().absoluteFilePath(vfilename.c_str());
-      QFile::copy(QString(fragS.c_str()), fpath);
-      QFile::copy(QString(vertS.c_str()), vpath);
+      //QString fpath = QDir::temp().absoluteFilePath(ffilename.c_str());
+      //QString vpath = QDir::temp().absoluteFilePath(vfilename.c_str());
+      //QFile::copy(QString(fragS.c_str()), fpath);
+      //QFile::copy(QString(vertS.c_str()), vpath);
 
-      s->setShaderSources( (char *) fpath.toStdString().c_str(), (char *) vpath.toStdString().c_str());
+      //s->setShaderSources( (char *) fpath.toStdString().c_str(), (char *) vpath.toStdString().c_str());
+      s->setShaderSources( (char *) fragS.c_str(), (char *) vertS.c_str());
       shaders[std::get<2>(sh)] = s;
   }
 
