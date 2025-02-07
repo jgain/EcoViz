@@ -1327,75 +1327,23 @@ void TRenderer::initShaders(void)
       std::string fragS = shaderDir + "/" + std::get<0>(sh);
       std::string vertS = shaderDir + "/" + std::get<1>(sh);
 
-      // temp copy of resource
-      std::string ffilename = fragS.substr(fragS.find_last_of("/")+1); // extract file name from path
-      std::string vfilename = vertS.substr(vertS.find_last_of("/")+1) ;
-      QString fpath = QDir::temp().absoluteFilePath(ffilename.c_str());
-      QString vpath = QDir::temp().absoluteFilePath(vfilename.c_str());
-      QFile::copy(QString(fragS.c_str()), fpath);
-      QFile::copy(QString(vertS.c_str()), vpath);
-
-      s->setShaderSources( (char *) fpath.toStdString().c_str(), (char *) vpath.toStdString().c_str());
+      s->setShaderSources( (char *)fragS.c_str(), (char *)vertS.c_str());
       shaders[std::get<2>(sh)] = s;
   }
 
-   /*
-      s = new shaderProgram();
-      s->setShaderSources(std::string("basic.frag"), std::string("basic.vert"));
-      shaders["basicShader"] = s;
+  // std::cout << "Compiling shaders...\n";
+  std::map<std::string, shaderProgram*>::iterator it = shaders.begin();
+  while (it != shaders.end() )
+  {
+      // std::cout << " -- shader: " << (*it).first << " -- ";
+      (void)((*it).second)->compileAndLink();
+      // std::cout << "ID = " << ((*it).second)->getProgramID() << std::endl;
+      it++;
+  }
 
-      s = new shaderProgram();
-      s->setShaderSources(std::string("genNormal.frag"), std::string("genNormal.vert"));
-      shaders["normalShader"] = s;
+  shadersReady = true;
 
-      s = new shaderProgram();
-      s->setShaderSources(std::string("phong.frag"), std::string("phong.vert"));
-      shaders["phong"] = s;
-
-      s = new shaderProgram();
-      s->setShaderSources(std::string("rad_scaling_pass1.frag"), std::string("rad_scaling_pass1.vert"));
-      shaders["rscale1"] = s;
-
-      s = new shaderProgram();
-      s->setShaderSources(std::string("rad_scaling_pass2.frag"), std::string("rad_scaling_pass2.vert"));
-      shaders["rscale2"] = s;
-
-      s = new shaderProgram();
-      s->setShaderSources(std::string("phongRS.frag"), std::string("phongRS.vert"));
-      shaders["phongRS"] = s;
-
-      s = new shaderProgram();
-      s->setShaderSources(std::string("phongRSmanip.frag"), std::string("phongRSmanip.vert"));
-      shaders["phongRSmanip"] = s;
-
-      s = new shaderProgram();
-      s->setShaderSources(std::string("sun.frag"), std::string("sun.vert"));
-      shaders["sunShader"] = s;
-
-      s = new shaderProgram();
-      s->setShaderSources(std::string("canopy.frag"), std::string("canopy.vert"));
-      shaders["canopyShader"] = s;
-
-      // PCM: flat shader wi double sides lighting for terrain
-
-      s = new shaderProgram();
-      s->setShaderSources(std::string("flatTerr.frag"), std::string("flatTerr.vert"));
-      shaders["flatTransectShader"] = s;
-*/
-
-    // std::cout << "Compiling shaders...\n";
-    std::map<std::string, shaderProgram*>::iterator it = shaders.begin();
-    while (it != shaders.end() )
-    {
-        // std::cout << " -- shader: " << (*it).first << " -- ";
-        (void)((*it).second)->compileAndLink();
-        // std::cout << "ID = " << ((*it).second)->getProgramID() << std::endl;
-        it++;
-    }
-
-    shadersReady = true;
-
-    // std::cout << "done!\n";
+  // std::cout << "done!\n";
 }
 
 void TRenderer::bindDecals(int width, int height, unsigned char * buffer)

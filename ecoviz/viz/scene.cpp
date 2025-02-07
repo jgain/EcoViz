@@ -872,7 +872,7 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
 
     // getTerrain()->getTerrainDim(rw, rh);
 
-    if (getBiome()->read_dataimporter("resources/databases/european.db"))
+    if (getBiome()->read_dataimporter(":/resources/databases/european.db"))
     {
         // loading plant distribution
         getEcoSys()->setBiome(getBiome());

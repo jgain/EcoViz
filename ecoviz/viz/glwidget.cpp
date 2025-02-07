@@ -117,7 +117,7 @@ GLWidget::GLWidget(const QSurfaceFormat& format, Window * wp, Scene * scn, Trans
     mapView = new overviewWindow(mScene);
 
     setScene(scn);
-    renderer = new PMrender::TRenderer(nullptr, "resources/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
     viewlock = false;
     focuschange = false;
@@ -1316,7 +1316,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     perscale = 0.3f;
     terrainReady = false;
 
-    mrenderer = new PMrender::TRenderer(nullptr, "resources/shaders/");
+    mrenderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
 
     initializeMapRenderer();

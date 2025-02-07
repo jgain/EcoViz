@@ -900,13 +900,13 @@ void Window::setupVizPanel()
     lockG1->setFixedSize(50, 50);
     lockG2->setFixedSize(50, 50);*/
 
-    QPixmap lockleftmap("resources/icons/locklefticon32.png");
+    QPixmap lockleftmap(":/resources/icons/locklefticon32.png");
     lockleftIcon = new QIcon(lockleftmap);
-    QPixmap lockrightmap("resrouces/icons/lockrighticon32.png");
+    QPixmap lockrightmap(":/resrouces/icons/lockrighticon32.png");
     lockrightIcon = new QIcon(lockrightmap);
-    QPixmap unlockleftmap("resources/icons/unlocklefticon32.png");
+    QPixmap unlockleftmap(":/resources/icons/unlocklefticon32.png");
     unlockleftIcon = new QIcon(unlockleftmap);
-    QPixmap unlockrightmap("resources/icons/unlockrighticon32.png");
+    QPixmap unlockrightmap(":/resources/icons/unlockrighticon32.png");
     unlockrightIcon = new QIcon(unlockrightmap);
 
     lockV1->setIcon((* unlockleftIcon));
@@ -989,6 +989,22 @@ void Window::setupGraphModels(int scene_index, bool copyData)
         graphModels[scene_index].push_back(tg);
     }
 }
+
+//void listResources(const QString& path = ":/") {
+//  QDir dir(path);
+//  qDebug() << "Resources in" << path << ":";
+//
+//  QStringList entries = dir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+//  for (const QString& entry : entries) {
+//    QString fullPath = path + entry;
+//    qDebug() << fullPath;
+//
+//    // If it's a directory, recursively list its contents
+//    if (QDir(fullPath).exists()) {
+//      listResources(fullPath + "/");
+//    }
+//  }
+//}
 
 // PCM: add in constructor names for map overlay  - TBD
 Window::Window(string datadir, string lprefix, string rprefix)
