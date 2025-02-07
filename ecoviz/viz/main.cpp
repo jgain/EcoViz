@@ -97,9 +97,12 @@ int main(int argc, char *argv[])
 		//std::cerr << "Right prefix: " << rightprefix << std::endl;
 
     try
-    {    
-
+    {
         QApplication app(argc, argv);
+
+        // Register external resource file if needed
+        //QResource::registerResource("viz/resources.rcc");
+
         Window * window = new Window(datadir, leftprefix, rightprefix);
 
         QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedKingdom));

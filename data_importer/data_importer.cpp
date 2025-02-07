@@ -38,6 +38,11 @@
 
 #include <QFileInfo>
 #include <QLabel>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QVariant>
+#include <QDebug>
 #include <QDir>
 
 const std::array<std::string, 12> months_arr = {"January",
@@ -1097,46 +1102,69 @@ static void sql_err_handler(sqlite3 *db, int errcode, char * errmsg)
 
 data_importer::common_data::common_data(std::string db_filename)
 {
-    sqlite3 *db;
-    int errcode;
-    std::cout << "Opening database file at " << db_filename << std::endl;
-    
-    
-    // hack to create local copy from Qt resource in the temporary directory
-     // has issues if the file already exists
-     //std::string filename = db_filename.substr(db_filename.find_last_of("/")+1) ; // extract file name from path
-     //QString path = QDir::temp().absoluteFilePath(filename.c_str());
-     //QFile::copy(QString(db_filename.c_str()), path);
-		 //qDebug() << "Copied database file to " << path;
-    
-    errcode = sqlite3_open((char *) db_filename.c_str(), &db);
-    if (errcode)
-    {
-        std::string errstr = std::string("Cannot open database file at ") + db_filename;
-        sqlite3_close(db);
-        throw std::runtime_error(errstr.c_str());
+	qDebug() << "Loading species data from database file" << QString::fromStdString(db_filename);
+
+  QFile resourceFile(QString::fromStdString(db_filename)); // Qt Resource path
+  if (!resourceFile.exists()) {
+    qDebug() << "Error: Resource file does not exist!";
+    throw std::runtime_error("Resource file does not exist.");
+  }
+
+  QString tempDbPath = QDir::temp().absoluteFilePath("european.db"); // Temporary file path
+  QFile destinationFile(tempDbPath);
+  if (!destinationFile.exists()) {
+    if (!resourceFile.copy(tempDbPath)) {
+      qDebug() << "Error: Failed to copy the resource file to" << tempDbPath;
+      throw std::runtime_error("Failed to copy resource file.");
     }
-    char * errmsg;
+  }
 
-    errcode = sqlite3_exec(db, "SELECT Tree_ID, \
-                                    alpha_code, \
-                                    common_name, \
-                                    scientific_name, \
-                                    base_col_red, \
-                                    base_col_green, \
-                                    base_col_blue, \
-                                    draw_height, \
-                                    draw_radius, \
-                                    draw_box1, \
-                                    draw_box2, \
-                                    draw_shape \
-                                    FROM species",
-                          sql_callback_common_data_all_species,
-                          this,
-                          &errmsg);
-    sql_err_handler(db, errcode, errmsg);
+  // Open the database in read-only mode
+  QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+  db.setDatabaseName(tempDbPath);
 
-    sqlite3_close(db);
+  if (!db.open())
+  {
+    QString errstr = "Cannot open database file at " + QString::fromStdString(db_filename) + ": " + db.lastError().text();
+    throw std::runtime_error(errstr.toStdString());
+  }
+
+  // Execute SQL query
+  QSqlQuery query(db);
+  QString sql = "SELECT Tree_ID, alpha_code, common_name, scientific_name, base_col_red, base_col_green, base_col_blue, draw_height, draw_radius, draw_box1, draw_box2, draw_shape FROM species";
+
+  if (!query.exec(sql))
+  {
+    qWarning() << "SQL Error:" << query.lastError().text();
+    db.close();
+    return;
+  }
+
+  // Process query results
+  while (query.next())
+  {
+    species sp;
+    int tree_id = query.value(0).toInt();
+    sp.alpha_code = query.value(1).toString().toStdString();
+    sp.cname = query.value(2).toString().toStdString();
+    sp.sname = query.value(3).toString().toStdString();
+
+    sp.basecol[0] = query.value(4).toFloat(); // Red
+    sp.basecol[1] = query.value(5).toFloat(); // Green
+    sp.basecol[2] = query.value(6).toFloat(); // Blue
+    sp.basecol[3] = 1.0f; // Alpha (default to 1.0)
+
+    sp.draw_hght = query.value(7).toFloat();
+    sp.draw_radius = query.value(8).toFloat();
+    sp.draw_box1 = query.value(9).toFloat();
+    sp.draw_box2 = query.value(10).toFloat();
+
+    sp.shapetype = static_cast<treeshape>(query.value(11).toInt());
+
+    all_species[tree_id] = sp;
+  }
+
+  db.close();
 }
 
 

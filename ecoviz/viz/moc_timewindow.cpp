@@ -1,63 +1,61 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'timewindow.h'
 **
-** Created by: The Qt Meta Object Compiler version 68 (Qt 6.7.2)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.1.3)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "timewindow.h"
-#include <QtCore/qmetatype.h>
-
-#include <QtCore/qtmochelpers.h>
-
 #include <memory>
-
-
-#include <QtCore/qxptype_traits.h>
+#include "timewindow.h"
+#include <QtCore/qbytearray.h>
+#include <QtCore/qmetatype.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'timewindow.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 68
-#error "This file was generated using the moc from 6.7.2. It"
+#error "This file was generated using the moc from 6.1.3. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
 
-#ifndef Q_CONSTINIT
-#define Q_CONSTINIT
-#endif
-
+QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
-QT_WARNING_DISABLE_GCC("-Wuseless-cast")
-namespace {
+struct qt_meta_stringdata_TimeWindow_t {
+    const uint offsetsAndSize[26];
+    char stringdata0[162];
+};
+#define QT_MOC_LITERAL(ofs, len) \
+    uint(offsetof(qt_meta_stringdata_TimeWindow_t, stringdata0) + ofs), len 
+static const qt_meta_stringdata_TimeWindow_t qt_meta_stringdata_TimeWindow = {
+    {
+QT_MOC_LITERAL(0, 10), // "TimeWindow"
+QT_MOC_LITERAL(11, 18), // "signalRepaintAllGL"
+QT_MOC_LITERAL(30, 0), // ""
+QT_MOC_LITERAL(31, 18), // "signalRebindPlants"
+QT_MOC_LITERAL(50, 23), // "doCohortMapsAdjustments"
+QT_MOC_LITERAL(74, 20), // "setTimestepAndSample"
+QT_MOC_LITERAL(95, 10), // "signalSync"
+QT_MOC_LITERAL(106, 11), // "updateScene"
+QT_MOC_LITERAL(118, 1), // "t"
+QT_MOC_LITERAL(120, 11), // "synchronize"
+QT_MOC_LITERAL(132, 7), // "advance"
+QT_MOC_LITERAL(140, 9), // "backtrack"
+QT_MOC_LITERAL(150, 11) // "playControl"
 
-#ifdef QT_MOC_HAS_STRINGDATA
-struct qt_meta_stringdata_CLASSTimeWindowENDCLASS_t {};
-constexpr auto qt_meta_stringdata_CLASSTimeWindowENDCLASS = QtMocHelpers::stringData(
-    "TimeWindow",
-    "signalRepaintAllGL",
-    "",
-    "signalRebindPlants",
-    "doCohortMapsAdjustments",
-    "setTimestepAndSample",
-    "signalSync",
-    "updateScene",
-    "t",
-    "synchronize",
-    "advance",
-    "backtrack",
-    "playControl"
-);
-#else  // !QT_MOC_HAS_STRINGDATA
-#error "qtmochelpers.h not found or too old."
-#endif // !QT_MOC_HAS_STRINGDATA
-} // unnamed namespace
+    },
+    "TimeWindow\0signalRepaintAllGL\0\0"
+    "signalRebindPlants\0doCohortMapsAdjustments\0"
+    "setTimestepAndSample\0signalSync\0"
+    "updateScene\0t\0synchronize\0advance\0"
+    "backtrack\0playControl"
+};
+#undef QT_MOC_LITERAL
 
-Q_CONSTINIT static const uint qt_meta_data_CLASSTimeWindowENDCLASS[] = {
+static const uint qt_meta_data_TimeWindow[] = {
 
  // content:
-      12,       // revision
+       9,       // revision
        0,       // classname
        0,    0, // classinfo
       10,   14, // methods
@@ -68,18 +66,18 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSTimeWindowENDCLASS[] = {
        5,       // signalCount
 
  // signals: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    0,   74,    2, 0x06,    1 /* Public */,
-       3,    0,   75,    2, 0x06,    2 /* Public */,
-       4,    1,   76,    2, 0x06,    3 /* Public */,
-       5,    1,   79,    2, 0x06,    5 /* Public */,
-       6,    1,   82,    2, 0x06,    7 /* Public */,
+       1,    0,   74,    2, 0x06,    0 /* Public */,
+       3,    0,   75,    2, 0x06,    1 /* Public */,
+       4,    1,   76,    2, 0x06,    2 /* Public */,
+       5,    1,   79,    2, 0x06,    4 /* Public */,
+       6,    1,   82,    2, 0x06,    6 /* Public */,
 
  // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       7,    1,   85,    2, 0x0a,    9 /* Public */,
-       9,    1,   88,    2, 0x0a,   11 /* Public */,
-      10,    0,   91,    2, 0x0a,   13 /* Public */,
-      11,    0,   92,    2, 0x0a,   14 /* Public */,
-      12,    0,   93,    2, 0x0a,   15 /* Public */,
+       7,    1,   85,    2, 0x0a,    8 /* Public */,
+       9,    1,   88,    2, 0x0a,   10 /* Public */,
+      10,    0,   91,    2, 0x0a,   12 /* Public */,
+      11,    0,   92,    2, 0x0a,   13 /* Public */,
+      12,    0,   93,    2, 0x0a,   14 /* Public */,
 
  // signals: parameters
     QMetaType::Void,
@@ -98,44 +96,6 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSTimeWindowENDCLASS[] = {
        0        // eod
 };
 
-Q_CONSTINIT const QMetaObject TimeWindow::staticMetaObject = { {
-    QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_meta_stringdata_CLASSTimeWindowENDCLASS.offsetsAndSizes,
-    qt_meta_data_CLASSTimeWindowENDCLASS,
-    qt_static_metacall,
-    nullptr,
-    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSTimeWindowENDCLASS_t,
-        // Q_OBJECT / Q_GADGET
-        QtPrivate::TypeAndForceComplete<TimeWindow, std::true_type>,
-        // method 'signalRepaintAllGL'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'signalRebindPlants'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'doCohortMapsAdjustments'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>,
-        // method 'setTimestepAndSample'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>,
-        // method 'signalSync'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>,
-        // method 'updateScene'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>,
-        // method 'synchronize'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>,
-        // method 'advance'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'backtrack'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'playControl'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>
-    >,
-    nullptr
-} };
-
 void TimeWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
@@ -144,11 +104,11 @@ void TimeWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         switch (_id) {
         case 0: _t->signalRepaintAllGL(); break;
         case 1: _t->signalRebindPlants(); break;
-        case 2: _t->doCohortMapsAdjustments((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
-        case 3: _t->setTimestepAndSample((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
-        case 4: _t->signalSync((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
-        case 5: _t->updateScene((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
-        case 6: _t->synchronize((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 2: _t->doCohortMapsAdjustments((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 3: _t->setTimestepAndSample((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 4: _t->signalSync((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 5: _t->updateScene((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 6: _t->synchronize((*reinterpret_cast< int(*)>(_a[1]))); break;
         case 7: _t->advance(); break;
         case 8: _t->backtrack(); break;
         case 9: _t->playControl(); break;
@@ -158,41 +118,57 @@ void TimeWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         int *result = reinterpret_cast<int *>(_a[0]);
         {
             using _t = void (TimeWindow::*)();
-            if (_t _q_method = &TimeWindow::signalRepaintAllGL; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&TimeWindow::signalRepaintAllGL)) {
                 *result = 0;
                 return;
             }
         }
         {
             using _t = void (TimeWindow::*)();
-            if (_t _q_method = &TimeWindow::signalRebindPlants; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&TimeWindow::signalRebindPlants)) {
                 *result = 1;
                 return;
             }
         }
         {
             using _t = void (TimeWindow::*)(int );
-            if (_t _q_method = &TimeWindow::doCohortMapsAdjustments; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&TimeWindow::doCohortMapsAdjustments)) {
                 *result = 2;
                 return;
             }
         }
         {
             using _t = void (TimeWindow::*)(int );
-            if (_t _q_method = &TimeWindow::setTimestepAndSample; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&TimeWindow::setTimestepAndSample)) {
                 *result = 3;
                 return;
             }
         }
         {
             using _t = void (TimeWindow::*)(int );
-            if (_t _q_method = &TimeWindow::signalSync; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&TimeWindow::signalSync)) {
                 *result = 4;
                 return;
             }
         }
     }
 }
+
+const QMetaObject TimeWindow::staticMetaObject = { {
+    QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
+    qt_meta_stringdata_TimeWindow.offsetsAndSize,
+    qt_meta_data_TimeWindow,
+    qt_static_metacall,
+    nullptr,
+qt_incomplete_metaTypeArray<qt_meta_stringdata_TimeWindow_t
+, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>
+, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>
+
+
+>,
+    nullptr
+} };
+
 
 const QMetaObject *TimeWindow::metaObject() const
 {
@@ -202,7 +178,7 @@ const QMetaObject *TimeWindow::metaObject() const
 void *TimeWindow::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_CLASSTimeWindowENDCLASS.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_TimeWindow.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -257,3 +233,4 @@ void TimeWindow::signalSync(int _t1)
     QMetaObject::activate(this, &staticMetaObject, 4, _a);
 }
 QT_WARNING_POP
+QT_END_MOC_NAMESPACE

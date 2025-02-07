@@ -1,10 +1,8 @@
 {
   "Import": [
-    "AbiesAlba/AbiesAlba_1_5m.json",
-    "AbiesAlba/AbiesAlba_6m.json",
-    "AbiesAlba/AbiesAlba_25m.json",
-    "AbiesAlba/AbiesAlba_50m.json",
-    "AcerPseudoplatanus/AcerPseudoplatanus_1_8m.json",
+	"AbiesAlba/AbiesAlba_13_6m.json",
+	"AbiesAlba/AbiesAlba_1_4m.json",
+	"AcerPseudoplatanus/AcerPseudoplatanus_1_8m.json",
     "AcerPseudoplatanus/AcerPseudoplatanus_7_5m.json",
     "AcerPseudoplatanus/AcerPseudoplatanus_30m.json",
     "BetulaPendula/BetulaPendula_1_5m.json",

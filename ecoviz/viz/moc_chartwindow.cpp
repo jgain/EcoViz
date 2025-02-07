@@ -1,56 +1,51 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'chartwindow.h'
 **
-** Created by: The Qt Meta Object Compiler version 68 (Qt 6.7.2)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.1.3)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "chartwindow.h"
-#include <QtCore/qmetatype.h>
-
-#include <QtCore/qtmochelpers.h>
-
 #include <memory>
-
-
-#include <QtCore/qxptype_traits.h>
+#include "chartwindow.h"
+#include <QtCore/qbytearray.h>
+#include <QtCore/qmetatype.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'chartwindow.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 68
-#error "This file was generated using the moc from 6.7.2. It"
+#error "This file was generated using the moc from 6.1.3. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
 
-#ifndef Q_CONSTINIT
-#define Q_CONSTINIT
-#endif
-
+QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
-QT_WARNING_DISABLE_GCC("-Wuseless-cast")
-namespace {
+struct qt_meta_stringdata_ChartWindow_t {
+    const uint offsetsAndSize[12];
+    char stringdata0[66];
+};
+#define QT_MOC_LITERAL(ofs, len) \
+    uint(offsetof(qt_meta_stringdata_ChartWindow_t, stringdata0) + ofs), len 
+static const qt_meta_stringdata_ChartWindow_t qt_meta_stringdata_ChartWindow = {
+    {
+QT_MOC_LITERAL(0, 11), // "ChartWindow"
+QT_MOC_LITERAL(12, 18), // "signalRepaintAllGL"
+QT_MOC_LITERAL(31, 0), // ""
+QT_MOC_LITERAL(32, 13), // "updateTimeBar"
+QT_MOC_LITERAL(46, 13), // "chartSelected"
+QT_MOC_LITERAL(60, 5) // "index"
 
-#ifdef QT_MOC_HAS_STRINGDATA
-struct qt_meta_stringdata_CLASSChartWindowENDCLASS_t {};
-constexpr auto qt_meta_stringdata_CLASSChartWindowENDCLASS = QtMocHelpers::stringData(
-    "ChartWindow",
-    "signalRepaintAllGL",
-    "",
-    "updateTimeBar",
-    "chartSelected",
-    "index"
-);
-#else  // !QT_MOC_HAS_STRINGDATA
-#error "qtmochelpers.h not found or too old."
-#endif // !QT_MOC_HAS_STRINGDATA
-} // unnamed namespace
+    },
+    "ChartWindow\0signalRepaintAllGL\0\0"
+    "updateTimeBar\0chartSelected\0index"
+};
+#undef QT_MOC_LITERAL
 
-Q_CONSTINIT static const uint qt_meta_data_CLASSChartWindowENDCLASS[] = {
+static const uint qt_meta_data_ChartWindow[] = {
 
  // content:
-      12,       // revision
+       9,       // revision
        0,       // classname
        0,    0, // classinfo
        3,   14, // methods
@@ -61,11 +56,11 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSChartWindowENDCLASS[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    0,   32,    2, 0x06,    1 /* Public */,
+       1,    0,   32,    2, 0x06,    0 /* Public */,
 
  // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       3,    0,   33,    2, 0x0a,    2 /* Public */,
-       4,    1,   34,    2, 0x0a,    3 /* Public */,
+       3,    0,   33,    2, 0x0a,    1 /* Public */,
+       4,    1,   34,    2, 0x0a,    2 /* Public */,
 
  // signals: parameters
     QMetaType::Void,
@@ -77,26 +72,6 @@ Q_CONSTINIT static const uint qt_meta_data_CLASSChartWindowENDCLASS[] = {
        0        // eod
 };
 
-Q_CONSTINIT const QMetaObject ChartWindow::staticMetaObject = { {
-    QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_meta_stringdata_CLASSChartWindowENDCLASS.offsetsAndSizes,
-    qt_meta_data_CLASSChartWindowENDCLASS,
-    qt_static_metacall,
-    nullptr,
-    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSChartWindowENDCLASS_t,
-        // Q_OBJECT / Q_GADGET
-        QtPrivate::TypeAndForceComplete<ChartWindow, std::true_type>,
-        // method 'signalRepaintAllGL'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'updateTimeBar'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'chartSelected'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>
-    >,
-    nullptr
-} };
-
 void ChartWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
@@ -105,20 +80,36 @@ void ChartWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id,
         switch (_id) {
         case 0: _t->signalRepaintAllGL(); break;
         case 1: _t->updateTimeBar(); break;
-        case 2: _t->chartSelected((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 2: _t->chartSelected((*reinterpret_cast< int(*)>(_a[1]))); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
         int *result = reinterpret_cast<int *>(_a[0]);
         {
             using _t = void (ChartWindow::*)();
-            if (_t _q_method = &ChartWindow::signalRepaintAllGL; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+            if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&ChartWindow::signalRepaintAllGL)) {
                 *result = 0;
                 return;
             }
         }
     }
 }
+
+const QMetaObject ChartWindow::staticMetaObject = { {
+    QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
+    qt_meta_stringdata_ChartWindow.offsetsAndSize,
+    qt_meta_data_ChartWindow,
+    qt_static_metacall,
+    nullptr,
+qt_incomplete_metaTypeArray<qt_meta_stringdata_ChartWindow_t
+, QtPrivate::TypeAndForceComplete<void, std::false_type>
+, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<void, std::false_type>, QtPrivate::TypeAndForceComplete<int, std::false_type>
+
+
+>,
+    nullptr
+} };
+
 
 const QMetaObject *ChartWindow::metaObject() const
 {
@@ -128,7 +119,7 @@ const QMetaObject *ChartWindow::metaObject() const
 void *ChartWindow::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_CLASSChartWindowENDCLASS.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_ChartWindow.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -156,3 +147,4 @@ void ChartWindow::signalRepaintAllGL()
     QMetaObject::activate(this, &staticMetaObject, 0, nullptr);
 }
 QT_WARNING_POP
+QT_END_MOC_NAMESPACE
