@@ -387,7 +387,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
 
     // ecosystem location
     ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
-    ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
+    ifs.read(reinterpret_cast<char*>(&fdata.locy), sizeof(long));
 
     ifs.read(reinterpret_cast<char*>(&fdata.timestep), sizeof(int));
 
@@ -449,10 +449,16 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
     float maxx = -std::numeric_limits<float>::max() , maxy = -std::numeric_limits<float>::max();
     float dx = -1.0f, dy = -1.0f;
 
-    ifs.read(reinterpret_cast<char*>(dataB.data()), sizeof(cohortB)*ncohorts_expected);
+    size_t readBytesB = sizeof(cohortB)*ncohorts_expected;
+    ifs.read(reinterpret_cast<char*>(dataB.data()), readBytesB);
+
+    fdata.cohorts.reserve(ncohorts_expected);
 
     for (int i = 0; i < ncohorts_expected; i++)
     {
+//        if (i > 1657745)
+//           std::cout << i << " ";
+
         std::string species_id; // alpha-numeric species key
         species_id += dataB[i].code[0];
         species_id += dataB[i].code[1];
