@@ -2062,6 +2062,7 @@ void Window::createActions()
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
     connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsubaJSON()));
+
 }
 
 void Window::createMenus()
@@ -2381,87 +2382,111 @@ void Window::exportMitsuba()
 
 void Window::exportMitsubaJSON()
 {
-  QStringList allProfiles;
+    QStringList allProfiles;
 
-  map<string, map<string, vector<MitsubaModel>>>::iterator it;
-  for (it = this->profileToSpeciesMap.begin(); it != this->profileToSpeciesMap.end(); it++)
-  {
-    allProfiles.append(it->first.data());
-  }
+    map<string, map<string, vector<MitsubaModel>>>::iterator it;
+    for (it = this->profileToSpeciesMap.begin(); it != this->profileToSpeciesMap.end(); it++)
+    {
+        allProfiles.append(it->first.data());
+    }
 
-  if (allProfiles.isEmpty())
-  {
-    QMessageBox messageBox;
-    messageBox.warning(this, "No profile found", "No export profile was found.\nPlease check that you have created at least one profile in the folder \"data/mitsubaExportProfiles\"");
-    return;
-  }
+    if (allProfiles.isEmpty())
+    {
+        QMessageBox messageBox;
+        messageBox.warning(this, "No profile found", "No export profile was found.\nPlease check that you have created at least one profile in the folder \"data/mitsubaExportProfiles\"");
+        return;
+    }
 
-  bool ok = false;
-  ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, ok);
+    bool ok = false;
+    ExportSettings exportSettings = ExportDialog::getExportSettings(this, exportBasePath, allProfiles, ok);
 
-  if (ok)
-  {
-    cout << "Export started !" << endl;
+    if (ok)
+    {
+        cout << "Export started !" << endl;
 
-		string jsonDirPath = exportSettings.path;
+        string jsonDirPath = exportSettings.path;
+        exportBasePath = QString::fromStdString(exportSettings.path);
 
-    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Terrain");
-    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Instances");
+        //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Terrain");
+        //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Instances");
 
-		map<string, vector<MitsubaModel>> speciesMap = this->profileToSpeciesMap.find(exportSettings.profile)->second;
+        map<string, vector<MitsubaModel>> speciesMap = this->profileToSpeciesMap.find(exportSettings.profile)->second;
 
 
-    if (exportSettings.sceneLeft)
-		{
-			const int left = 0;
+        if (exportSettings.sceneLeft)
+        {
+            const int left = 0;
+            // screenshot
+            if (exportSettings.screenshotLeft) {
+                QImage img;
+                QString filename = QString("%1/%2_screenshot.png").
+                                   arg(jsonDirPath.c_str()).
+                                   arg(exportSettings.filenameLeft.c_str());
+                QSize image_size = QSize(exportSettings.resolutionW, exportSettings.resolutionH);
+                this->perspectiveViews[0]->screenCapture(&img, image_size);
+                img.save(filename);
+                cerr << endl << "Screenshot saved " << filename.toStdString() << endl;
+            }
 
-			// Data
-			Scene* sceneLeft = this->scenes[left];
-      Transect* transectLeft = this->transectControls[left];
+            if (exportSettings.viewfileLeft) {
+                QString filename = QString("%1/%2_view.vew").
+                                   arg(jsonDirPath.c_str()).
+                                   arg(exportSettings.filenameLeft.c_str());
+                viewScene scnview(perspectiveViews[0]->getMapRegion(), (* perspectiveViews[0]->getView()));
 
-			// Export Cameras JSON
-			cout << "- Export camera left" << endl;
-			this->perspectiveViews[left]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameLeft + "_cameraLeft");
-          
-			// Export Terrain JSON
-			cout << "- Export terrain left" << endl;
-			sceneLeft->exportTerrainJSON( jsonDirPath + "/Terrain/", exportSettings.filenameLeft + "_terrainLeft");
+                scnview.save(filename.toStdString());
+                cerr << endl << "SCENE VIEW SAVED " << filename.toStdString() << endl;
+            }
 
-			// Export Instances
-			cout << "- Export vegetation instances" << endl;
-			sceneLeft->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameLeft + "_instancesLeft", sceneLeft, transectLeft);
+            // Data
+            Scene* sceneLeft = this->scenes[left];
+            Transect* transectLeft = this->transectControls[left];
 
-      // Export Scene JSON 
-			cout << "- Export scene left" << endl;
-			sceneLeft->exportSceneJSON(jsonDirPath, exportSettings.filenameLeft + "_cameraLeft", "Lights", exportSettings.filenameLeft + "_terrainLeft", exportSettings.filenameLeft + "_instancesLeft",
-        exportSettings.filenameLeft, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
-		}
+            // Export Cameras JSON
+            cout << "- Export camera left" << endl;
+            this->perspectiveViews[left]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameLeft + "_cameraLeft");
 
-		if (exportSettings.sceneRight)
-		{
-      const int right = 1;
-      // Data
-			Scene* sceneRight = this->scenes[right];
-			Transect* transectRight = this->transectControls[right];
+            // Export Terrain JSON
+            cout << "- Export terrain left" << endl;
+            sceneLeft->exportTerrainJSON( jsonDirPath + "/Terrain/", exportSettings.filenameLeft + "_terrainLeft");
 
-      // Export Cameras JSON
-			cout << "- Export camera right" << endl;
-			this->perspectiveViews[right]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameRight + "_cameraRight");
+            // Export Instances
+            cout << "- Export vegetation instances" << endl;
+            sceneLeft->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameLeft + "_instancesLeft", sceneLeft, transectLeft);
 
-			// Export Terrain JSON
-			cout << "- Export terrain right" << endl;
-			sceneRight->exportTerrainJSON(jsonDirPath + "/Terrain/", exportSettings.filenameRight + "_terrainRight");
+            // Export Scene JSON
+            cout << "- Export scene left" << endl;
+            sceneLeft->exportSceneJSON(jsonDirPath, exportSettings.filenameLeft + "_cameraLeft", "Lights", exportSettings.filenameLeft + "_terrainLeft", exportSettings.filenameLeft + "_instancesLeft",
+                                       exportSettings.filenameLeft, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
+        }
 
-      // Export Instances
-      cout << "- Export vegetation instances" << endl;
-      sceneRight->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameRight+"_instancesRight", sceneRight, transectRight);
+        if (exportSettings.sceneRight)
+        {
+            const int right = 1;
+            // Data
+            Scene* sceneRight = this->scenes[right];
+            Transect* transectRight = this->transectControls[right];
 
-			// Export Scene JSON
-			cout << "- Export scene right" << endl;
-			sceneRight->exportSceneJSON(jsonDirPath, exportSettings.filenameRight + "_cameraRight", "Lights", exportSettings.filenameRight + "_terrainRight", exportSettings.filenameRight + "_instancesRight",
-				exportSettings.filenameRight, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
+            // Export Cameras JSON
+            cout << "- Export camera right" << endl;
+            this->perspectiveViews[right]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameRight + "_cameraRight");
 
-		}
-    cout << "Export finished !" << endl;
-  }
+            // Export Terrain JSON
+            cout << "- Export terrain right" << endl;
+            sceneRight->exportTerrainJSON(jsonDirPath + "/Terrain/", exportSettings.filenameRight + "_terrainRight");
+
+            // Export Instances
+            cout << "- Export vegetation instances" << endl;
+            sceneRight->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameRight+"_instancesRight", sceneRight, transectRight);
+
+            // Export Scene JSON
+            cout << "- Export scene right" << endl;
+            sceneRight->exportSceneJSON(jsonDirPath, exportSettings.filenameRight + "_cameraRight", "Lights", exportSettings.filenameRight + "_terrainRight", exportSettings.filenameRight + "_instancesRight",
+                                        exportSettings.filenameRight, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
+
+        }
+        cout << "Export finished !" << endl;
+        QMessageBox::information(this, "Ecoviz", QString("The export finished!\nExport location: %1").arg(exportBasePath));
+    }
 }
+
