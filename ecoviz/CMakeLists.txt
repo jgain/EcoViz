@@ -8,6 +8,7 @@ set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/6.7.2/gcc_64/)
 if (APPLE)
     set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@6/lib/cmake/Qt6")
     set(Qt6Widgets_DIR $/opt/homebrew/opt/qt@6/lib/cmake/Qt6Widgets)
+    set(GLM_INCLUDE_DIRS "opt/homebrew/opt/glm/include")
 endif()
 
 option(SMOKE_TEST "run a smoke test on every build" 1)
@@ -42,6 +43,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/khronos_headers
     ${Boost_INCLUDE_DIRS}
+    ${GLM_INCLUDE_DIRS}
 )
 link_directories(
     ${PROJECT_SOURCE_DIR}/common
