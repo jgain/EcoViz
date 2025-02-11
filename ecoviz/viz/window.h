@@ -293,6 +293,7 @@ private:
 
     // Map containing the different export profiles (Mitsuba)
     map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;
+    QString exportBasePath;
 
     // PCM --- name of image overlay for overview maps (left and right)
     std::string mapOverlayFile[2];
