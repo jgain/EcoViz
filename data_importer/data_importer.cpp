@@ -34,7 +34,7 @@
 #include <sstream>
 #include <string>
 #include <cassert>
-#include <sqlite3.h>
+//#include <sqlite3.h>
 
 #include <QFileInfo>
 #include <QLabel>
@@ -1089,17 +1089,6 @@ static int sql_callback_common_data_check_tables(void *junk, int argc, char ** a
     std::cout << std::endl;
 }
 
-static void sql_err_handler(sqlite3 *db, int errcode, char * errmsg)
-{
-    if (errcode != SQLITE_OK)
-    {
-        std::cout << "SQL error: " << errmsg << std::endl;
-        sqlite3_free(errmsg);
-        sqlite3_close(db);
-        throw std::runtime_error("SQL SELECT statment error");
-    }
-}
-
 data_importer::common_data::common_data(std::string db_filename)
 {
 	qDebug() << "Loading species data from database file" << QString::fromStdString(db_filename);
@@ -1110,18 +1099,9 @@ data_importer::common_data::common_data(std::string db_filename)
     throw std::runtime_error("Resource file does not exist.");
   }
 
-  QString tempDbPath = QDir::temp().absoluteFilePath("european.db"); // Temporary file path
-  QFile destinationFile(tempDbPath);
-  if (!destinationFile.exists()) {
-    if (!resourceFile.copy(tempDbPath)) {
-      qDebug() << "Error: Failed to copy the resource file to" << tempDbPath;
-      throw std::runtime_error("Failed to copy resource file.");
-    }
-  }
-
   // Open the database in read-only mode
   QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-  db.setDatabaseName(tempDbPath);
+  db.setDatabaseName(QString::fromStdString(db_filename));
 
   if (!db.open())
   {

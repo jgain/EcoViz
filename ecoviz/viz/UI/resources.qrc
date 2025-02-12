@@ -1,7 +1,5 @@
 <RCC>
   <qresource prefix="/">
-    <file alias="resources/mitsuba/ModelSpecies/Profile.csv">../../../resources/mitsuba/ModelSpecies/Profile.csv</file>
-    <file alias="resources/databases/european.db">../../../resources/databases/european.db</file>
     <file alias="resources/icons/advanceicon32.png">../../../resources/icons/advanceicon32.png</file>
     <file alias="resources/icons/backicon32.png">../../../resources/icons/backicon32.png</file>
     <file alias="resources/icons/locklefticon32.png">../../../resources/icons/locklefticon32.png</file>

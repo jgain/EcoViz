@@ -9,8 +9,12 @@
 #include <QSpinBox>
 #include <QRadioButton>
 #include <QButtonGroup>
+#include <QPushButton>
+#include <QFileDialog>
 
-ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(parent)
+
+
+ExportDialog::ExportDialog(QString baseDir, QStringList allProfiles, QWidget* parent) : QDialog(parent)
 {
     setWindowTitle("Export settings");
 
@@ -67,7 +71,6 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
       layoutLeft->addWidget(biomeFramesSpinBoxMaxL, 1, 2);*/
 
       // - Mitsuba scene path
-
       QLabel* labelSceneLeftName = new QLabel(QString("Scene name"), this);
       layoutLeft->addWidget(labelSceneLeftName, 1, 0);
 
@@ -119,15 +122,27 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
 		layoutAll->addWidget(groupBoxScene);
 
 		// Mitsuba settings form
-
     QGroupBox* groupBoxMitsuba = new QGroupBox("Mitsuba settings", this);
     QFormLayout* layoutMitsuba = new QFormLayout(this);
 
 		// - Mitsuba output path
 		lineEditMitsubaOutputPath = new QLineEdit(this);
-		layoutMitsuba->addRow("Ouput path", lineEditMitsubaOutputPath);
-    lineEditMitsubaOutputPath->setText("../../resources/mitsuba/"); // JG PATH FIX REQUIRED
+		layoutMitsuba->addRow("Output path", lineEditMitsubaOutputPath);
+    lineEditMitsubaOutputPath->setText(baseDir ); // JG PATH FIX REQUIRED
    
+    QPushButton* buttonBrowseOutput = new QPushButton("Browse...", this);
+    layoutMitsuba->addRow(buttonBrowseOutput);
+    connect(buttonBrowseOutput, &QPushButton::clicked, this, &ExportDialog::selectDirectoryOutput);
+
+    // - Mitsuba resources path
+    lineEditMitsubaResourcesPath = new QLineEdit(this);
+    layoutMitsuba->addRow("Resources path", lineEditMitsubaResourcesPath);
+    lineEditMitsubaResourcesPath->setText("../../resources/mitsuba/"); // JG PATH FIX REQUIRED
+
+    QPushButton* buttonBrowseResources = new QPushButton("Browse...", this);
+    layoutMitsuba->addRow(buttonBrowseResources);
+    connect(buttonBrowseResources, &QPushButton::clicked, this, &ExportDialog::selectDirectoryResources);
+
 		// - Mitsuba resolution width
 		spinBoxMitsubaResolutionW = new QSpinBox(this);
 		spinBoxMitsubaResolutionW->setRange(1, 10000);
@@ -190,24 +205,42 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
     setLayout(layoutAll);
 }
 
-ExportSettings ExportDialog::getExportSettings(QWidget* parent, QStringList allProfiles, bool& ok)
+void ExportDialog::selectDirectoryOutput() {
+  QString dir = QFileDialog::getExistingDirectory(this, "Select Directory", lineEditMitsubaOutputPath->text(),
+    QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+  if (!dir.isEmpty()) {
+    lineEditMitsubaOutputPath->setText(dir);
+  }
+}
+
+
+void ExportDialog::selectDirectoryResources() {
+  QString toDir = QFileDialog::getExistingDirectory(this, "Select Directory", lineEditMitsubaResourcesPath->text(),
+    QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+  if (!toDir.isEmpty()) {
+    lineEditMitsubaResourcesPath->setText(toDir+"/");
+  }
+}
+
+ExportSettings ExportDialog::getExportSettings(QWidget* parent, QString baseDir, QStringList allProfiles, bool& ok)
 {
     ExportSettings ret;
-    ExportDialog* dialog = new ExportDialog(allProfiles, parent);
+    ExportDialog* dialog = new ExportDialog(baseDir, allProfiles, parent);
 
     if (dialog->exec())
     {
       ok = true;
 
-      ret.profile = dialog->comboboxProfiles->currentText().toUtf8().data();
+      ret.profile = dialog->comboboxProfiles->currentText().toStdString();
       ret.sceneLeft = dialog->exportLeftScene->isChecked();
       ret.sceneRight = dialog->exportRightScene->isChecked();
       //ret.sceneLight = dialog->comboboxSceneLights->currentText().toUtf8().data();
 
-      ret.filenameLeft = dialog->lineEditMitsubaSceneLeft->text().toUtf8().data();
-      ret.filenameRight = dialog->lineEditMitsubaSceneRight->text().toUtf8().data();
+      ret.filenameLeft = dialog->lineEditMitsubaSceneLeft->text().toStdString();
+      ret.filenameRight = dialog->lineEditMitsubaSceneRight->text().toStdString();
 
-      ret.path = dialog->lineEditMitsubaOutputPath->text().toUtf8().data();
+      ret.pathOutput = dialog->lineEditMitsubaOutputPath->text().toStdString();
+      ret.pathResources = dialog->lineEditMitsubaResourcesPath->text().toStdString();
       ret.resolutionW = dialog->spinBoxMitsubaResolutionW->value();
       ret.resolutionH = dialog->spinBoxMitsubaResolutionH->value();
       ret.samples = dialog->comboboxMitsubaSamples->currentText().toInt();

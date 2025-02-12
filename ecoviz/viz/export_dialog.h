@@ -19,7 +19,8 @@ struct ExportSettings
     bool transect;      // Define whether the export concerns the transect view or the entire scene
 		string filenameLeft;    // Name of the file to export
     string filenameRight;    // Name of the file to export
-		string path;        // Path to the file to export
+		string pathOutput;        // Path to the file to export
+    string pathResources;        // Path to the file to export
 		int resolutionW;    // Width of the exported image
 		int resolutionH;    // Height of the exported image
 		int samples;        // Number of samples to use for the export
@@ -33,9 +34,13 @@ class ExportDialog : public QDialog
 {
     Q_OBJECT
 public:
-    ExportDialog(QStringList allProfiles, QWidget* parent = nullptr);
+    ExportDialog(QString baseDir, QStringList allProfiles, QWidget* parent = nullptr);
 
-    static ExportSettings getExportSettings(QWidget* parent, QStringList allProfiles, bool& ok);
+    static ExportSettings getExportSettings(QWidget* parent, QString baseDir, QStringList allProfiles, bool& ok);
+
+private slots:
+    void selectDirectoryOutput();
+    void selectDirectoryResources();
 
 private:
     // Scene data
@@ -53,6 +58,7 @@ private:
 
 		// Mitsuba data
     QLineEdit* lineEditMitsubaOutputPath;
+    QLineEdit* lineEditMitsubaResourcesPath;
     QComboBox* comboboxMitsubaSamples;
 		QSpinBox* spinBoxMitsubaResolutionW;
     QSpinBox* spinBoxMitsubaResolutionH;

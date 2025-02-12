@@ -1092,7 +1092,9 @@ Window::Window(string datadir, string lprefix, string rprefix)
     createActions();
     createMenus();
 
-    readMitsubaExportProfiles(":/resources/mitsuba/ModelSpecies/Profile.csv");
+    string dirCSVFile = datadir + "/reference_data/";
+    readMitsubaExportProfiles(dirCSVFile);
+
     this->installEventFilter(this);
 
     mainWidget->setLayout(mainLayout);
@@ -2132,234 +2134,124 @@ void Window::setSmoothing(int d)
     }
 }
 
-/*void Window::readMitsubaExportProfiles(std::string profilePath)
+void Window::readMitsubaExportProfiles(string dirCSVFile)
 {
-  QFile csvFile(QString::fromStdString(profilePath));
+  // For all profiles inside the directory
+  QDir dir(dirCSVFile.c_str());
+  QStringList filters;
+  filters << "*.csv";  // Filtre pour les fichiers .db
+  QStringList dbFiles = dir.entryList(filters, QDir::Files);
 
-  if (!csvFile.exists()) {
-    qDebug() << "File does not exist: " << profilePath;
-    return;
+  if (dbFiles.isEmpty() || dbFiles.count() > 1) {
+    qDebug() << "No profile files or more than one found in" << dir.absolutePath();
   }
 
-  // Open the file for reading
-  if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
-  {
-    qDebug() << "Error: Cannot open file " << profilePath;
-    return;
-  }
+  for (const QString& file : dbFiles) {
+    qDebug() << "Database file found:" << dir.absoluteFilePath(file);
 
-  QTextStream in(&csvFile);
-  QString profileName = "profile";
-  profileName.chop(4); // Remove the ".csv" extension
 
-  QString line;
-  QString plantCode, maxHeightStr, instanceId, actualHeightStr;
-  double maxHeight = -1.0, actualHeight = -1.0;
-  int count = 0;
+    string profilePath = dirCSVFile + file.toStdString();
 
-  while (!in.atEnd())
-  {
-    line = in.readLine();
-    count++;
 
-    if (line.indexOf("plant code;") == 0)
-    {
-      // Headers line
-      continue;
+    QFile csvFile(QString::fromStdString(profilePath));
+
+    if (!csvFile.exists()) {
+      qDebug() << "File does not exist: " << profilePath.c_str();
+      return;
     }
 
-    if (line.isEmpty() || line.indexOf(QRegularExpression("[^\\s]")) == -1)
+    // Open the file for reading
+    if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-      continue;
+      qDebug() << "Error: Cannot open file " << profilePath.c_str();
+      return;
     }
 
-    QString delimiter = ";";
+    QTextStream in(&csvFile);
+    QString profileName = file;
+    profileName.chop(4); // Remove the ".csv" extension
 
-    // Plant code
-    size_t pos = line.indexOf(delimiter);
-    QString token = line.mid(0, pos);
-    plantCode = token;
-    line.remove(0, pos + delimiter.length());
+    string line;
+    string plantCode, maxHeightStr, instanceId, actualHeightStr;
+    double maxHeight = -1.0, actualHeight = -1.0;
+    int count = 0;
 
-    // Max height
-    pos = line.indexOf(delimiter);
-    token = line.mid(0, pos);
-    maxHeightStr = token;
-    line.remove(0, pos + delimiter.length());
-
-    int (*fn_isspace)(int) = std::isspace;  // required because std::isspace is overloaded,
-    // template argument deduction for std::isspace fails
-
-    maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
-    char* end = nullptr;
-    maxHeight = strtod(maxHeightStr.toStdString().c_str(), &end);
-    if (end == maxHeightStr.toStdString().c_str() || *end != '\0' || maxHeight == HUGE_VAL)
+    while (!in.atEnd())
     {
-      maxHeight = -1.0;
-      qDebug() << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" ;
-    }
-    else if (maxHeight < 0.0)
-    {
-      qDebug() << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] max height is a negative value" ;
-    }
+      line = in.readLine().toStdString();
+      count++;
 
-    // Instance id
-    pos = line.indexOf(delimiter);
-    token = line.mid(0, pos);
-    instanceId = token;
-    line.remove(0, pos + delimiter.length());
-
-    // Actual height
-    actualHeightStr = line;
-
-    actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
-    end = nullptr;
-    actualHeight = strtod(actualHeightStr.toStdString().c_str(), &end);
-    if (end == actualHeightStr.toStdString().c_str() || *end != '\0' || actualHeight == HUGE_VAL)
-    {
-      actualHeight = -1.0;
-      qDebug() << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" ;
-    }
-    else if (actualHeight < 0.0)
-    {
-      qDebug() << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName << "], line [" << count << "] actual height is a negative value" ;
-    }
-
-    if (this->profileToSpeciesMap.find(profileName.toStdString()) == this->profileToSpeciesMap.end())
-    {
-      this->profileToSpeciesMap.insert({ profileName.toStdString() , {} });
-    }
-
-    map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName.toStdString());
-
-    if (itProfile->second.find(plantCode.toStdString()) == itProfile->second.end())
-    {
-      itProfile->second.insert({ plantCode.toStdString(), {} });
-    }
-
-    map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode.toStdString());
-    itPlantCode->second.push_back({ maxHeight, instanceId.toStdString(), actualHeight });
-  }
-  
-
-  csvFile.close(); // Close the file after reading
-    
-  qDebug() << "readMitsubaExportProfiles finished !";
-
-}*/
-
-
-void Window::readMitsubaExportProfiles(string profilePath)
-{
-  QFile csvFile(QString::fromStdString(profilePath));
-
-  if (!csvFile.exists()) {
-    qDebug() << "File does not exist: " << profilePath.c_str();
-    return;
-  }
-
-  // Open the file for reading
-  if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
-  {
-    qDebug() << "Error: Cannot open file " << profilePath.c_str();
-    return;
-  }
-
-  QTextStream in(&csvFile);
-  QString profileName = "profile";
-  profileName.chop(4); // Remove the ".csv" extension
-
-  string line;
-  string plantCode, maxHeightStr, instanceId, actualHeightStr;
-  double maxHeight = -1.0, actualHeight = -1.0;
-  int count = 0;
-
-  while (!in.atEnd())
-  {
-    line = in.readLine().toStdString();
-
-
-    count++;
-
-    if (line.find("plant code;") == 0)
-    {
-        // Headers line
+      if (line.find("plant code;") == 0 || line.empty() || line.find_first_not_of(" ") == string::npos)// Headers line
         continue;
-    }
 
-    if (line.empty() || line.find_first_not_of(" ") == string::npos)
-    {
-        continue;
-    }
+      string delimiter = ";";
 
-    string delimiter = ";";
+      // Plant code
+      size_t pos = line.find(delimiter);
+      string token = line.substr(0, pos);
+      plantCode = token;
+      line.erase(0, pos + delimiter.length());
 
-    // Plant code
-    size_t pos = line.find(delimiter);
-    string token = line.substr(0, pos);
-    plantCode = token;
-    line.erase(0, pos + delimiter.length());
+      // Max height
+      pos = line.find(delimiter);
+      token = line.substr(0, pos);
+      maxHeightStr = token;
+      line.erase(0, pos + delimiter.length());
 
-    // Max height
-    pos = line.find(delimiter);
-    token = line.substr(0, pos);
-    maxHeightStr = token;
-    line.erase(0, pos + delimiter.length());
+      int (*fn_isspace)(int) = std::isspace;  // required because std::isspace is overloaded,
+      // template argument deduction for std::isspace fails
 
-    int (*fn_isspace)(int) = std::isspace;  // required because std::isspace is overloaded,
-                                            // template argument deduction for std::isspace fails
-
-    maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
-    char* end = nullptr;
-    maxHeight = strtod(maxHeightStr.c_str(), &end);
-    if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
-    {
+      maxHeightStr.erase(remove_if(maxHeightStr.begin(), maxHeightStr.end(), fn_isspace), maxHeightStr.end());
+      char* end = nullptr;
+      maxHeight = strtod(maxHeightStr.c_str(), &end);
+      if (end == maxHeightStr.c_str() || *end != '\0' || maxHeight == HUGE_VAL)
+      {
         maxHeight = -1.0;
         cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] max height could not be converted to double. Max height was automatically set to -1.0 !" << endl;
-    }
-    else if (maxHeight < 0.0)
-    {
+      }
+      else if (maxHeight < 0.0)
+      {
         cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] max height is a negative value" << endl;
-    }
+      }
 
-    // Instance id
-    pos = line.find(delimiter);
-    token = line.substr(0, pos);
-    instanceId = token;
-    line.erase(0, pos + delimiter.length());
+      // Instance id
+      pos = line.find(delimiter);
+      token = line.substr(0, pos);
+      instanceId = token;
+      line.erase(0, pos + delimiter.length());
 
-    // Actual height
-    actualHeightStr = line;
+      // Actual height
+      actualHeightStr = line;
 
-    actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
-    end = nullptr;
-    actualHeight = strtod(actualHeightStr.c_str(), &end);
-    if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
-    {
+      actualHeightStr.erase(remove_if(actualHeightStr.begin(), actualHeightStr.end(), fn_isspace), actualHeightStr.end());
+      end = nullptr;
+      actualHeight = strtod(actualHeightStr.c_str(), &end);
+      if (end == actualHeightStr.c_str() || *end != '\0' || actualHeight == HUGE_VAL)
+      {
         actualHeight = -1.0;
         cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] actual height could not be converted to double. Actual height was automatically set to -1.0 !" << endl;
-    }
-    else if (actualHeight < 0.0)
-    {
+      }
+      else if (actualHeight < 0.0)
+      {
         cerr << "Warning in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] actual height is a negative value" << endl;
-    }
+      }
 
-    if (this->profileToSpeciesMap.find(profileName.toStdString()) == this->profileToSpeciesMap.end())
-    {
+      if (this->profileToSpeciesMap.find(profileName.toStdString()) == this->profileToSpeciesMap.end())
+      {
         this->profileToSpeciesMap.insert({ profileName.toStdString() , {} });
-    }
+      }
 
-    map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName.toStdString());
+      map<string, map<string, vector<MitsubaModel>>>::iterator itProfile = this->profileToSpeciesMap.find(profileName.toStdString());
 
-    if (itProfile->second.find(plantCode) == itProfile->second.end())
-    {
+      if (itProfile->second.find(plantCode) == itProfile->second.end())
+      {
         itProfile->second.insert({ plantCode, {} });
+      }
+
+      map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
+      itPlantCode->second.push_back({ maxHeight, instanceId, actualHeight });
     }
-
-    map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
-    itPlantCode->second.push_back({ maxHeight, instanceId, actualHeight });
   }
-
   cout << "readMitsubaExportProfiles finished !" << endl;
 
 }
@@ -2465,56 +2357,40 @@ bool Window::eventFilter(QObject *obj, QEvent *event)
 }
 */
 
-void Window::exportMitsuba()
-{
-	std::cout << "Obsolete function exportMitsuba() called" << std::endl;
-  /*
-    QStringList allProfiles;
+bool copyDirectory(const QString& sourceDir, const QString& destinationDir) {
 
-    map<string, map<string, vector<MitsubaModel>>>::iterator it;
-    for (it = this->profileToSpeciesMap.begin(); it != this->profileToSpeciesMap.end(); it++)
-    {
-        allProfiles.append(it->first.data());
+	qDebug() << "Copying directory:" << sourceDir << "to" << destinationDir;
+
+  QDir src(sourceDir);
+  if (!src.exists()) {
+    qWarning() << "Source directory does not exist:" << sourceDir;
+    return false;
+  }
+
+  QDir dest(destinationDir);
+  if (!dest.exists()) {
+    dest.mkpath(destinationDir);  // Create destination directory if it does not exist
+  }
+
+  foreach(QString file, src.entryList(QDir::Files)) {
+    QString srcFilePath = sourceDir + "/" + file;
+    QString destFilePath = destinationDir + "/" + file;
+    if (!QFile::copy(srcFilePath, destFilePath)) {
+      qWarning() << "Failed to copy file:" << srcFilePath;
+      return false;
     }
+  }
 
-    if (allProfiles.isEmpty())
-    {
-        QMessageBox messageBox;
-        messageBox.warning(this, "No profile found", "No export profile was found.\nPlease check that you have created at least one profile in the folder \"data/mitsubaExportProfiles\"");
-        return;
+  foreach(QString subDir, src.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+    QString srcSubDirPath = sourceDir + "/" + subDir;
+    QString destSubDirPath = destinationDir + "/" + subDir;
+    if (!copyDirectory(srcSubDirPath, destSubDirPath)) {
+      return false;
     }
+  }
 
-    bool ok = false;
-    ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, ok);
-
-    if (ok)
-    {
-        map<string, vector<MitsubaModel>> speciesMap = this->profileToSpeciesMap.find(exportSettings.profile)->second;
-
-        QDir().mkdir("./instances");
-
-        ofstream sceneXml;
-        sceneXml.open("./instances/instances.xml");
-
-        sceneXml << "<scene version=\"0.5.0\">\n";
-
-        if (exportSettings.transect)
-        {
-            Transect* transect = this->transectControls[exportSettings.sceneIndex];
-            this->scenes[exportSettings.sceneIndex]->exportSceneXml(speciesMap, sceneXml, transect);
-        }
-        else
-        {
-            this->scenes[exportSettings.sceneIndex]->exportSceneXml(speciesMap, sceneXml);
-        }
-
-        sceneXml << "</scene>\n";
-
-        sceneXml.close();
-        cout << "Export finished !" << endl;
-    }*/
+  return true;
 }
-
 
 void Window::exportMitsubaJSON()
 {
@@ -2534,19 +2410,25 @@ void Window::exportMitsubaJSON()
   }
 
   bool ok = false;
-  ExportSettings exportSettings = ExportDialog::getExportSettings(this, allProfiles, ok);
+  ExportSettings exportSettings = ExportDialog::getExportSettings(this, QString::fromStdString(basedir), allProfiles, ok);
 
   if (ok)
   {
-    cout << "Export started !" << endl;
+    std::cout << "Export started !" << endl;
 
-		string jsonDirPath = exportSettings.path;
-
-    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Terrain");
-    //QDir().mkdir(QString::fromStdString(jsonDirPath) + "/Instances");
-
+		string jsonDirPath = exportSettings.pathOutput;
 		map<string, vector<MitsubaModel>> speciesMap = this->profileToSpeciesMap.find(exportSettings.profile)->second;
 
+		// Copy Pyhton script to the output directory
+		QString pythonFileOutput = QString::fromStdString(jsonDirPath) + "/render_scene.py";
+    QString pythonFileRessource = QString::fromStdString(exportSettings.pathResources) + "/render_scene.py";
+
+    if (!QFile::exists(pythonFileOutput)) {
+      if (!QFile::copy(pythonFileRessource, pythonFileOutput)) {
+        qWarning() << "Failed to copy file:" << pythonFileRessource;
+        return;
+      }
+    }
 
     if (exportSettings.sceneLeft)
 		{
@@ -2557,20 +2439,21 @@ void Window::exportMitsubaJSON()
       Transect* transectLeft = this->transectControls[left];
 
 			// Export Cameras JSON
-			cout << "- Export camera left" << endl;
+      std::cout << "- Export camera left" << endl;
 			this->perspectiveViews[left]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameLeft + "_cameraLeft");
           
 			// Export Terrain JSON
-			cout << "- Export terrain left" << endl;
+      std::cout << "- Export terrain left" << endl;
+			copyDirectory(QString::fromStdString(exportSettings.pathResources + "/Terrain"), QString::fromStdString(jsonDirPath + "/Terrain"));
 			sceneLeft->exportTerrainJSON( jsonDirPath + "/Terrain/", exportSettings.filenameLeft + "_terrainLeft");
 
 			// Export Instances
-			cout << "- Export vegetation instances" << endl;
+      std::cout << "- Export vegetation instances" << endl;
 			sceneLeft->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameLeft + "_instancesLeft", sceneLeft, transectLeft);
 
       // Export Scene JSON 
-			cout << "- Export scene left" << endl;
-			sceneLeft->exportSceneJSON(jsonDirPath, exportSettings.filenameLeft + "_cameraLeft", "Lights", exportSettings.filenameLeft + "_terrainLeft", exportSettings.filenameLeft + "_instancesLeft",
+      std::cout << "- Export scene left" << endl;
+			sceneLeft->exportSceneJSON(jsonDirPath, exportSettings.pathResources,exportSettings.filenameLeft + "_cameraLeft", "Lights", exportSettings.filenameLeft + "_terrainLeft", exportSettings.filenameLeft + "_instancesLeft",
         exportSettings.filenameLeft, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
 		}
 
@@ -2582,23 +2465,23 @@ void Window::exportMitsubaJSON()
 			Transect* transectRight = this->transectControls[right];
 
       // Export Cameras JSON
-			cout << "- Export camera right" << endl;
+      std::cout << "- Export camera right" << endl;
 			this->perspectiveViews[right]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameRight + "_cameraRight");
 
 			// Export Terrain JSON
-			cout << "- Export terrain right" << endl;
+      std::cout << "- Export terrain right" << endl;
 			sceneRight->exportTerrainJSON(jsonDirPath + "/Terrain/", exportSettings.filenameRight + "_terrainRight");
 
       // Export Instances
-      cout << "- Export vegetation instances" << endl;
+      std::cout << "- Export vegetation instances" << endl;
       sceneRight->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameRight+"_instancesRight", sceneRight, transectRight);
 
 			// Export Scene JSON
-			cout << "- Export scene right" << endl;
-			sceneRight->exportSceneJSON(jsonDirPath, exportSettings.filenameRight + "_cameraRight", "Lights", exportSettings.filenameRight + "_terrainRight", exportSettings.filenameRight + "_instancesRight",
+      std::cout << "- Export scene right" << endl;
+			sceneRight->exportSceneJSON(jsonDirPath, exportSettings.pathResources, exportSettings.filenameRight + "_cameraRight", "Lights", exportSettings.filenameRight + "_terrainRight", exportSettings.filenameRight + "_instancesRight",
 				exportSettings.filenameRight, exportSettings.resolutionW, exportSettings.resolutionH, exportSettings.samples, exportSettings.threads);
 
 		}
-    cout << "Export finished !" << endl;
+    std::cout << "Export finished !" << endl;
   }
 }

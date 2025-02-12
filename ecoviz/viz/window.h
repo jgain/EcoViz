@@ -159,7 +159,6 @@ public slots:
     void showViewOptions();
     void showContours(int show);
     void showGridLines(int show);
-    void exportMitsuba();
     void exportMitsubaJSON();
 
     // render panel
