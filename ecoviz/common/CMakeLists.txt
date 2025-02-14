@@ -6,7 +6,7 @@ set(COMMON_SOURCES
     progress.cpp
     region.cpp
     stats.cpp
-    timer.cpp)
+    timer2.cpp)
 
 if (BUILD_SOURCE2CPP)
     set(KERNELS

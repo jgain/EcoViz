@@ -4,10 +4,13 @@ cmake_minimum_required(VERSION 3.5)
 include(CheckLibraryExists)
 #set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/5.7/gcc_64)
 #set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/6.7/gcc_64)
-set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/6.7.2/gcc_64/)
+#set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/6.7.2/gcc_64/)
+set(CMAKE_PREFIX_PATH $ENV{HOME}/Qt/6.8.0/gcc_64/)
 if (APPLE)
     set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@6/lib/cmake/Qt6")
     set(Qt6Widgets_DIR $/opt/homebrew/opt/qt@6/lib/cmake/Qt6Widgets)
+    set(GLM_INCLUDE_DIRS "opt/homebrew/opt/glm/include")
+    set(MySQL_INCLUDE_DIR=/opt/homebrew/opt/mysql/include/mysql)
 endif()
 
 option(SMOKE_TEST "run a smoke test on every build" 1)
@@ -25,9 +28,11 @@ add_definitions(-DBOOST_FILESYSTEM_VERSION=3)
 find_package(Boost REQUIRED COMPONENTS filesystem program_options serialization system)
 find_package(PkgConfig REQUIRED)
 find_package(PythonInterp)
-find_package(Qt6 COMPONENTS Core Gui Charts REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Charts Sql REQUIRED)
 find_package(Qt6Widgets 6.7 REQUIRED)
 find_package(Qt6OpenGL 6.7 REQUIRED)
+#find_package(Qt6MYSQL 6.7 REQUIRED)
+find_package(Qt6Sql REQUIRED)
 cmake_policy(SET CMP0072 NEW)
 find_package(OpenGL)
 pkg_check_modules(GLEW glew)
@@ -42,6 +47,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/khronos_headers
     ${Boost_INCLUDE_DIRS}
+    ${GLM_INCLUDE_DIRS}
 )
 link_directories(
     ${PROJECT_SOURCE_DIR}/common
