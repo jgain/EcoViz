@@ -137,7 +137,7 @@ ExportDialog::ExportDialog(QString baseDir, QStringList allProfiles, QWidget* pa
     // - Mitsuba resources path
     lineEditMitsubaResourcesPath = new QLineEdit(this);
     layoutMitsuba->addRow("Resources path", lineEditMitsubaResourcesPath);
-    lineEditMitsubaResourcesPath->setText("../../resources/mitsuba/"); // JG PATH FIX REQUIRED
+    lineEditMitsubaResourcesPath->setText("../../resources/mitsuba"); // JG PATH FIX REQUIRED
 
     QPushButton* buttonBrowseResources = new QPushButton("Browse...", this);
     layoutMitsuba->addRow(buttonBrowseResources);

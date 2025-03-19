@@ -1232,9 +1232,9 @@ void Scene::exportSceneJSON(const string jsonDirPath, const string jsonResources
   jsonFile << "\t[\n";
   jsonFile << "\t\t\"" << relativePath.toStdString() << "/ModelSpecies/Species.json\",\n";
   jsonFile << "\t\t\"" << relativePath.toStdString() << "/EnvMaps/" << lightsName << ".json\",\n";
-  jsonFile << "\t\t\"Terrain/" << terrainName << ".json\",\n";
-  jsonFile << "\t\t\"Cameras/" << cameraName <<".json\",\n"; 
-  jsonFile << "\t\t\"Instances/" << instancesName << ".json\"\n";
+  jsonFile << "\t\t\"Mitsuba/Terrain/" << terrainName << ".json\",\n";
+  jsonFile << "\t\t\"Mitsuba/Cameras/" << cameraName <<".json\",\n"; 
+  jsonFile << "\t\t\"Mitsuba/Instances/" << instancesName << ".json\"\n";
   jsonFile << "\t],\n";
   jsonFile << "\t\"Scene\":\n"; 
   jsonFile << "\t{\n";
@@ -1261,8 +1261,8 @@ void Scene::exportSceneJSON(const string jsonDirPath, const string jsonResources
 void Scene::exportTerrainJSON(const string terrainURL, const string terrainName, Transect* transect)
 {
 
-  QDir().mkdir(QString::fromStdString(terrainURL) + "/OBJ");
-  QDir().mkdir(QString::fromStdString(terrainURL) + "/Masks");
+  QDir().mkdir(QString::fromStdString(terrainURL) + "OBJ");
+  QDir().mkdir(QString::fromStdString(terrainURL) + "Masks");
 
   // Export OBJ
   Terrain* terrain = getTerrain();
