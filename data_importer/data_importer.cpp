@@ -1161,7 +1161,7 @@ data_importer::common_data::common_data(std::string db_filename)
 
     sqlite3_close(db);
 
-    QFile::remove(path); // delete the temporary file again
+    //QFile::remove(path); // delete the temporary file again
 
 }
 
