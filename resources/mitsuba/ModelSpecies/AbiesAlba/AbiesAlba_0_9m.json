@@ -1,0 +1,86 @@
+{
+	"Objects": [
+		{
+			"Name":"AbiesAlba_0_9m",
+			"Definition":[
+				{
+					"Name":"AbiesAlba_0_9m_TheGroveBranches",
+					"File":"AbiesAlba_0_9m_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"AbiesAlba.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_0_9m_TheGroveApicalTwigs",
+					"File":"AbiesAlba_0_9m_TheGroveApicalTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_0_9m_TheGroveLateralTwigs",
+					"File":"AbiesAlba_0_9m_TheGroveLateralTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_0_9m_TheGroveUpwardTwigs",
+					"File":"AbiesAlba_0_9m_TheGroveUpwardTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_0_9m_1",
+					"File":"AbiesAlba_0_9m_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_0_9m_1",
+					"File":"AbiesAlba_0_9m_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

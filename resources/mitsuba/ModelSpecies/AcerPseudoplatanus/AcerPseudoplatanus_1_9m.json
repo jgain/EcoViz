@@ -1,0 +1,112 @@
+{
+	"Objects": [
+		{
+			"Name":"AcerPseudoplatanus_1_9m",
+			"Definition":[
+				{
+					"Name":"AcerPseudoplatanus_1_9m_TheGroveBranches",
+					"File":"AcerPseudoplatanus_1_9m_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"AcerPseudoplatanus.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AcerPseudoplatanus_1_9m_TheGroveApicalTwigs",
+					"File":"AcerPseudoplatanus_1_9m_TheGroveApicalTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Acer_Pseudoplatanus-2-transformed-albedo.png",
+						"OpacityMap":"Acer_Pseudoplatanus-2-transformed-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AcerPseudoplatanus_1_9m_TheGroveLateralTwigs",
+					"File":"AcerPseudoplatanus_1_9m_TheGroveLateralTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Acer_Pseudoplatanus-2-transformed-albedo.png",
+						"OpacityMap":"Acer_Pseudoplatanus-2-transformed-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AcerPseudoplatanus_1_9m_TheGroveUpwardTwigs",
+					"File":"AcerPseudoplatanus_1_9m_TheGroveUpwardTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Acer_Pseudoplatanus-2-transformed-albedo.png",
+						"OpacityMap":"Acer_Pseudoplatanus-2-transformed-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AcerPseudoplatanus_1_9m_TheGroveDeadTwigs",
+					"File":"AcerPseudoplatanus_1_9m_TheGroveDeadTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Acer_Pseudoplatanus-2-transformed-albedo.png",
+						"OpacityMap":"Acer_Pseudoplatanus-2-transformed-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AcerPseudoplatanus_1_9m_Materiau",
+					"File":"AcerPseudoplatanus_1_9m_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Acer_Pseudoplatanus-2-transformed-albedo.png",
+						"OpacityMap":"Acer_Pseudoplatanus-2-transformed-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AcerPseudoplatanus_1_9m_Materiau",
+					"File":"AcerPseudoplatanus_1_9m_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Acer_Pseudoplatanus-2-transformed-albedo.png",
+						"OpacityMap":"Acer_Pseudoplatanus-2-transformed-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AcerPseudoplatanus_1_9m_Materiau",
+					"File":"AcerPseudoplatanus_1_9m_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"front_albedo.png",
+						"OpacityMap":"front_alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

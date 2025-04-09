@@ -1,0 +1,34 @@
+{
+	"Objects": [
+		{
+			"Name":"BetulaPendula_1_1m",
+			"Definition":[
+				{
+					"Name":"BetulaPendula_1_1m_TheGroveBranches",
+					"File":"BetulaPendula_1_1m_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"BetulaPendula.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"BetulaPendula_1_1m_LeafSide",
+					"File":"BetulaPendula_1_1m_LeafSide.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"BP-side-albedo.png",
+						"OpacityMap":"BP-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

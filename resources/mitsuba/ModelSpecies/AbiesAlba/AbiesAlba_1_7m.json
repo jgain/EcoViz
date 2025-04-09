@@ -1,0 +1,99 @@
+{
+	"Objects": [
+		{
+			"Name":"AbiesAlba_1_7m",
+			"Definition":[
+				{
+					"Name":"AbiesAlba_1_7m_TheGroveBranches",
+					"File":"AbiesAlba_1_7m_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"AbiesAlba.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_1_7m_TheGroveApicalTwigs",
+					"File":"AbiesAlba_1_7m_TheGroveApicalTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_1_7m_TheGroveLateralTwigs",
+					"File":"AbiesAlba_1_7m_TheGroveLateralTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_1_7m_TheGroveUpwardTwigs",
+					"File":"AbiesAlba_1_7m_TheGroveUpwardTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_1_7m_TheGroveDeadTwigs",
+					"File":"AbiesAlba_1_7m_TheGroveDeadTwigs.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_1_7m_1",
+					"File":"AbiesAlba_1_7m_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"AbiesAlba_1_7m_1",
+					"File":"AbiesAlba_1_7m_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"abies_alba_branch_1_diffuse.jpg",
+						"OpacityMap":"abies_alba_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}
