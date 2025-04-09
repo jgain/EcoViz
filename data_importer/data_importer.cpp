@@ -258,6 +258,16 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
     float maxx = -std::numeric_limits<float>::max() , maxy = -std::numeric_limits<float>::max();
     float dx = -1.0f, dy = -1.0f;
 
+    if (ncohorts_expected == 0) {
+        dx = 2.f; dy = 2.f;
+        auto treex = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.x<b.x;});
+        auto treey = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.y<b.y;});
+        minx = treex.first == fdata.trees.end() ? 0 : treex.first->x;
+        maxx = treex.second == fdata.trees.end() ? 0 : treex.second->x;
+        miny = treey.first == fdata.trees.end() ? 0 : treey.first->y;
+        maxy = treey.second == fdata.trees.end() ? 0 : treey.second->y;
+    }
+
 	for (int i = 0; i < ncohorts_expected; i++)
 	{
 		std::getline(ifs, lstr);
@@ -312,9 +322,12 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
     fdata.dx = dx;
     fdata.dy = dy;
 
-    auto minmaxh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.height<b.height;});
-    auto minmaxdbh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.dbh<b.dbh;});
-    std::cout << "Range height: " << minmaxh.first->height << " - " << minmaxh.second->height << ", Range DBH: " << minmaxdbh.first->dbh << " - " << minmaxdbh.second->dbh << std::endl;
+    if (fdata.trees.size() > 0) {
+        auto minmaxh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.height<b.height;});
+        auto minmaxdbh = std::minmax_element(fdata.trees.begin(), fdata.trees.end(), [&](const basic_tree &a, const basic_tree &b) {return a.dbh<b.dbh;});
+
+        std::cout << "Range height: " << minmaxh.first->height << " - " << minmaxh.second->height << ", Range DBH: " << minmaxdbh.first->dbh << " - " << minmaxdbh.second->dbh << std::endl;
+    }
 
     std::cout << "Maximum species index for larger trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail.begin(), species_avail.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
     std::cout << "Maximum species index for cohort trees in timestep " << fdata.timestep << ": " << std::max_element(species_avail_cohorts.begin(), species_avail_cohorts.end(), [](const std::pair<int, bool> &p1, const std::pair<int, bool> &p2) { return p1.first < p2.first; })->first << std::endl;
@@ -379,7 +392,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
 
     // ecosystem location
     ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
-    ifs.read(reinterpret_cast<char*>(&fdata.locx), sizeof(long));
+    ifs.read(reinterpret_cast<char*>(&fdata.locy), sizeof(long));
 
     ifs.read(reinterpret_cast<char*>(&fdata.timestep), sizeof(int));
 
@@ -441,10 +454,16 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
     float maxx = -std::numeric_limits<float>::max() , maxy = -std::numeric_limits<float>::max();
     float dx = -1.0f, dy = -1.0f;
 
-    ifs.read(reinterpret_cast<char*>(dataB.data()), sizeof(cohortB)*ncohorts_expected);
+    size_t readBytesB = sizeof(cohortB)*ncohorts_expected;
+    ifs.read(reinterpret_cast<char*>(dataB.data()), readBytesB);
+
+    fdata.cohorts.reserve(ncohorts_expected);
 
     for (int i = 0; i < ncohorts_expected; i++)
     {
+//        if (i > 1657745)
+//           std::cout << i << " ";
+
         std::string species_id; // alpha-numeric species key
         species_id += dataB[i].code[0];
         species_id += dataB[i].code[1];
@@ -970,6 +989,8 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
     float draw_radius, draw_box1, draw_box2;
 
     data_importer::treeshape draw_shape;
+    const char* oldNumLoc = setlocale(LC_NUMERIC, 0);
+    setlocale(LC_NUMERIC, "C");
 
     for (int i = 0; i < argc; i++)
     {
@@ -1004,31 +1025,31 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
         }
         else if (colstr == "base_col_red")
         {
-            draw_color[0] = std::stof(valstr);
+            draw_color[0] = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "base_col_green")
         {
-            draw_color[1] = std::stof(valstr);
+            draw_color[1] = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "base_col_blue")
         {
-            draw_color[2] = std::stof(valstr);
+            draw_color[2] = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_height")
         {
-            draw_height = std::stof(valstr);
+            draw_height = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_radius")
         {
-            draw_radius = std::stof(valstr);
+            draw_radius = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_box1")
         {
-            draw_box1 = std::stof(valstr);
+            draw_box1 = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_box2")
         {
-            draw_box2 = std::stof(valstr);
+            draw_box2 = atof(valstr.c_str()); // std::stof(valstr);
         }
         else if (colstr == "draw_shape")
         {
@@ -1072,6 +1093,8 @@ static int sql_callback_common_data_all_species(void *write_info, int argc, char
     sp.shapetype = draw_shape;
 
     auto result = common->all_species.insert({sp.idx, sp});
+    // restore old locale category
+    setlocale(LC_NUMERIC, oldNumLoc);
     return 0;
 }
 
@@ -1145,6 +1168,9 @@ data_importer::common_data::common_data(std::string db_filename)
   }
 
   db.close();
+
+   // QFile::remove(path); // delete the temporary file again
+
 }
 
 
