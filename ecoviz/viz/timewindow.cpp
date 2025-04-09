@@ -189,9 +189,11 @@ void TimeWindow::setScene(Scene * s)
     {
         int gw, gh;
         float rw, rh;
+
         //PCM: changed to get params of master/high res terrain from which this is extracted
         scene->getMasterTerrain()->getGridDim(gw, gh);
         scene->getMasterTerrain()->getTerrainDim(rw, rh);
+
         // auto amap = scene->cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
         updateScene(scene->getTimeline()->getNow());
     }
@@ -200,7 +202,6 @@ void TimeWindow::setScene(Scene * s)
         cerr << "no cohort plant counts" << endl;
         QMessageBox(QMessageBox::Warning, "Typemap Error", "No cohort plant count maps available").exec();
     }
-
     //   tstep_scrollwindow->set_labelvalue(tstep);
 }
 
@@ -216,6 +217,7 @@ void TimeWindow::updateScene(int t)
 
 void TimeWindow::updateSingleScene(int t)
 {
+
      // auto bt_master = std::chrono::steady_clock::now().time_since_epoch();
      set_labelvalue(t, scene->getTimeline()->getTimeEnd());
      scene->getTimeline()->setNow(t);
@@ -228,15 +230,26 @@ void TimeWindow::updateSingleScene(int t)
      // auto et_sample = std::chrono::steady_clock::now().time_since_epoch();
      std::vector<basic_tree> mature = scene->cohortmaps->get_maturetrees(curr_cohortmap);
 
+     int out_of_bounds = 0;
+     float in_x_min = 10000000000, in_x_max = -10000000000, in_y_min = 100000000000, in_y_max = -100000000000;
      for(auto &tree: mature)
      {
          // PCM: changed to use Master terrain - we will place all then cull away (to avoid issues with Timeline)
          // PCM: why are x/y swapped?
-         if(scene->getMasterTerrain()->inGridBounds(tree.y, tree.x))
+         if(scene->getMasterTerrain()->inGridBounds(tree.y, tree.x)) {
              trees.push_back(tree);
-         else
-             cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
+             in_x_min = std::min(in_x_min, tree.x); in_y_min = std::min(in_y_min, tree.y);
+             in_x_max = std::max(in_x_max, tree.x); in_y_max = std::max(in_y_max, tree.y);
+         } else {
+             //cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
+             ++out_of_bounds;
+         }
      }
+
+     if (out_of_bounds>0)
+         cerr << out_of_bounds << " mature trees out of bound!" << endl <<
+             "in bounds rectangle: x min: " << in_x_min << ", x max: " << in_x_max << ", y min: " << in_y_min << ", y max: " << in_y_max;
+
 
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
@@ -258,5 +271,4 @@ void TimeWindow::updateSingleScene(int t)
      // std::cout << "Overall time: " << overalltime << std::endl;
      // std::cout << "Sample time: " << sampletime << std::endl;
      // std::cout << "Render time: " << rendertime << std::endl;
-
  }

@@ -10,7 +10,7 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 
-ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(parent)
+ExportDialog::ExportDialog(QStringList allProfiles, QString base_path, QWidget* parent) : QDialog(parent)
 {
     setWindowTitle("Export settings");
 
@@ -52,6 +52,12 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
       exportLeftScene->setChecked(true);
       layoutLeft->addWidget(exportLeftScene, 0, 0, 1, 2);
 
+      exportLeftScreenshot = new QCheckBox("Ecvoiz screenshot", this);
+      layoutLeft->addWidget(exportLeftScreenshot,2,0,1,2);
+
+      exportLeftViewfile = new QCheckBox("View file", this);
+      layoutLeft->addWidget(exportLeftViewfile,3,0,1,2);
+
       // -- Biome profile
       /*QLabel* biomeFramesL = new QLabel(QString("Biome profile"), this);
       layoutLeft->addWidget(biomeFramesL, 1, 0);
@@ -89,6 +95,13 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
       exportRightScene = new  QCheckBox("Export right scene", this);
       exportRightScene->setChecked(true);
       layoutRight->addWidget(exportRightScene, 0, 0, 1, 3);
+
+      exportRightScreenshot = new QCheckBox("Ecvoiz screenshot", this);
+      layoutRight->addWidget(exportRightScreenshot,2,0,1,3);
+
+      exportRightViewfile = new QCheckBox("View file", this);
+      layoutRight->addWidget(exportRightViewfile,3,0,1,3);
+
 
       // -- Biome profile
       /*QLabel* biomeFramesR = new QLabel(QString("Biome profile"), this);
@@ -190,10 +203,10 @@ ExportDialog::ExportDialog(QStringList allProfiles, QWidget* parent) : QDialog(p
     setLayout(layoutAll);
 }
 
-ExportSettings ExportDialog::getExportSettings(QWidget* parent, QStringList allProfiles, bool& ok)
+ExportSettings ExportDialog::getExportSettings(QWidget* parent, QString base_path, QStringList allProfiles, bool& ok)
 {
     ExportSettings ret;
-    ExportDialog* dialog = new ExportDialog(allProfiles, parent);
+    ExportDialog* dialog = new ExportDialog(allProfiles, base_path, parent);
 
     if (dialog->exec())
     {
@@ -202,6 +215,12 @@ ExportSettings ExportDialog::getExportSettings(QWidget* parent, QStringList allP
       ret.profile = dialog->comboboxProfiles->currentText().toUtf8().data();
       ret.sceneLeft = dialog->exportLeftScene->isChecked();
       ret.sceneRight = dialog->exportRightScene->isChecked();
+
+      ret.screenshotLeft = dialog->exportLeftScreenshot->isChecked();
+      ret.screenshotRight = dialog->exportRightScreenshot->isChecked();
+
+      ret.viewfileLeft = dialog->exportLeftViewfile->isChecked();
+      ret.viewfileRight  = dialog->exportRightViewfile->isChecked();
       //ret.sceneLight = dialog->comboboxSceneLights->currentText().toUtf8().data();
 
       ret.filenameLeft = dialog->lineEditMitsubaSceneLeft->text().toUtf8().data();
