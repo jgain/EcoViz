@@ -38,7 +38,7 @@ if (BUILD_GUI)
     add_library(vgui ${GUI_SOURCES})
     target_include_directories(vgui PRIVATE ${PROJECT_SOURCE_DIR} ${BASE_ALL_DIR})
     target_link_libraries(vgui common
-        ${GLEW_LIBRARIES} ${Qt6Widgets_LIBRARIES} ${Qt6OpenGL_LIBRARIES} ${Qt6Charts_LIBRARIES}
+        ${GLEW_LIBRARIES} ${Qt6Widgets_LIBRARIES} ${Qt6OpenGL_LIBRARIES} ${Qt6Sql_LIBRARIES} ${Qt6Charts_LIBRARIES}
         ${OPENGL_LIBRARIES} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt6Widgets_EXECUTABLE_COMPILE_FLAGS}")

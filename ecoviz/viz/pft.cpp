@@ -46,7 +46,7 @@ bool Biome::read_dataimporter(std::string cdata_fpath)
 {
     // data_importer::common_data cdata = data_importer::common_data(cdata_fpath);
     cdata = new data_importer::common_data(cdata_fpath);
-    std::cerr << cdata_fpath << std::endl;
+    //std::cerr << cdata_fpath << std::endl;
     return read_dataimporter((* cdata));
 }
 

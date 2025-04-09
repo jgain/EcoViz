@@ -554,7 +554,8 @@ public:
 
      /**
 			* @brief expoert the scene parameters to the JSON specified
-      * @param jsonFile 
+      * @param jsonDirPath 
+      * @param jsonResourcesDirPath
       * @param cameraName 
       * @param lightsName 
       * @param terrainName 
@@ -565,7 +566,7 @@ public:
       * @param quality 
       * @param threads 
       */
-     void exportSceneJSON(const string jsonDirPath, const string cameraName, const string lightsName, const string terrainName, const string instancesName, const string sceneName, const int resX, const int resY, const int quality, const int threads);
+     void exportSceneJSON(const string jsonDirPath, const string jsonResourcesDirPath, const string cameraName, const string lightsName, const string terrainName, const string instancesName, const string sceneName, const int resX, const int resY, const int quality, const int threads);
 
      /**
       * Export the terrain (for Mitsuba) to the JSON specified and OBJ File

@@ -84,8 +84,7 @@ int main(int argc, char *argv[])
 		  // 
 		  if (sequence == -1)
 		    {
-              //printError("Cohort conversion error: file has no sequence number - " + fname);
-              cerr << "Skipping file: " << fname << endl;
+		      printError("Cohort conversion error: file has no sequence number - " + fname);
 		    }
 		  filenumbers.push_back(sequence);   
 		}
@@ -97,7 +96,7 @@ int main(int argc, char *argv[])
       int filesToProcess = (nFiles > 0 ? min(nFiles, int(filenumbers.size()) ) : int(filenumbers.size())); 
       for (int i = 0; i < filesToProcess; ++i)
 	{
-      string fname = base + std::to_string(filenumbers[i]);
+	  string fname = base + to_string(i);
       cerr << fname << endl;
 	  cohortmapToBin(fname + ".pdb", fname + ".pdbb", version);
 	}
@@ -178,12 +177,12 @@ void cohortmapToBin(const string &in, const string & out, const string & verStr)
   if (!ifs.is_open())
     throw invalid_argument("Could not open file at " + in);
 
+
   string versionNumber;
   ifs >> versionNumber;
   long locx, locy;
   ifs >> locx;
   ifs >> locy;
-  // cerr << "LOCX = " << locx << " LOCY = " << locy << endl;
   int timestep;
   ifs >> timestep;
   int ntrees_expected;
@@ -244,7 +243,7 @@ void cohortmapToBin(const string &in, const string & out, const string & verStr)
   int slen = versionNumber.length();
   cout << "Version string: " << versionNumber << " of length " << slen << endl;
   ofs.write(reinterpret_cast<const char*>(&slen), sizeof(int));				  
-  ofs.write(versionNumber.c_str(), slen*sizeof(char)); // don't store null
+  ofs.write(versionNumber.c_str(), slen); // don't store null
   ofs.write(reinterpret_cast<const char*>(&locx), sizeof(long));
   ofs.write(reinterpret_cast<const char*>(&locy), sizeof(long));
   ofs.write(reinterpret_cast<const char*>(&timestep), sizeof(int));

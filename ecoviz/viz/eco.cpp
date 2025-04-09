@@ -1022,7 +1022,6 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<Co
 
 void EcoSystem::placeManyPlants(Terrain *ter, NoiseField * nfield, std::shared_ptr<CohortMaps> cohortmaps, const std::vector<basic_tree> &trees)
 {
-
     for (int i = 0; i < int(trees.size()); i++)
     {
         // std::cerr << i << std::endl;

@@ -71,7 +71,7 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         else
         {
             if (fabs(fdata.dx - dx) > 1e-5f || fabs(fdata.dy - dy) > 1e-5f)
-                throw std::invalid_argument("All cohorts must have the same dimensions");
+                throw std::invalid_argument("All cohorts must have the same dimentions");
         }
 
         // XXX: it might be useful later on to allow each cohort map to have its own size, offset, etc. So just keeping this here for now, commented

@@ -1125,7 +1125,7 @@ bool Shape::bindInstances(std::vector<glm::vec3> * iTransl, std::vector<glm::vec
         ef->glEnableVertexAttribArray(2);
         ef->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(nz) );
 
-        // genrate buffer for translation and scaling (2 scales only)
+        // generate buffer for translation and scaling (2 scales only)
 
         ef->glGenBuffers(1, &iTranslBuffer);
         ef->glBindBuffer(GL_ARRAY_BUFFER, iTranslBuffer);

@@ -643,8 +643,8 @@ void Terrain::loadElvBinary(const std::string &filename, int dFactor)
         infile.read(reinterpret_cast<char*>(&dx), sizeof(int));
         infile.read(reinterpret_cast<char*>(&dy), sizeof(int));
         infile.read(reinterpret_cast<char*>(&step), sizeof(float));
-        infile.read(reinterpret_cast<char*>(&locx), sizeof(long));
-        infile.read(reinterpret_cast<char*>(&locy), sizeof(long));
+        infile.read(reinterpret_cast<char*>(&locx), sizeof(float));
+        infile.read(reinterpret_cast<char*>(&locy), sizeof(float));
 
         assert(dx > dFactor);
         assert(dy > dFactor);
@@ -730,10 +730,7 @@ void Terrain::loadElv(const std::string &filename)
             for (int y = 0; y < dy; y++)
             // for (int x = 0; x < dx; x++)
             {
-                if (!(infile >> std::ws >> val)) {
-                    std::cerr << "Error reading value: " << infile.rdstate() << std::endl;
-                    break;
-                }
+                infile >> val;
                 grid->set(x, y, val); //  * 0.3048f); // convert from feet to metres
                 drawgrid->set(y, x, val); // * 0.3048f);
             }

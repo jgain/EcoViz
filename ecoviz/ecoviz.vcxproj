@@ -108,7 +108,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;.\khronos_headers;.\windows_extern_packages\sqlite3;$(QT6DIR)\include\;$(QT6DIR)\include\QtCore;$(QT6DIR)\include\QtGui;$(QT6DIR)\include\QtOpenGL;$(QT6DIR)\include\QtWidgets;$(QT6DIR)\include\QtOpenGLWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;.\khronos_headers;$(QT6DIR)\include\;$(QT6DIR)\include\QtCore;$(QT6DIR)\include\QtGui;$(QT6DIR)\include\QtOpenGL;$(QT6DIR)\include\QtWidgets;$(QT6DIR)\include\QtOpenGLWidgets;$(QT6DIR)\include\QtSql;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING;_USE_MATH_DEFINES;NOMINMAX;SONOMA_DB_FILEPATH="../../european.db"</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
@@ -116,13 +116,13 @@
       <AdditionalOptions>/Zc:__cplusplus /permissive- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Qt6Cored.lib;Qt6Guid.lib;Qt6Widgetsd.lib;Qt6OpenGLd.lib;Qt6OpenGLWidgetsd.lib;Qt6Chartsd.lib;glu32.lib;opengl32.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\windows_extern_packages\sqlite3;$(QT6DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Qt6Cored.lib;Qt6Guid.lib;Qt6Widgetsd.lib;Qt6OpenGLd.lib;Qt6OpenGLWidgetsd.lib;Qt6Chartsd.lib;Qt6Sqld.lib;glu32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(QT6DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;.\khronos_headers;.\windows_extern_packages\sqlite3;$(QT6DIR)\include\;$(QT6DIR)\include\QtCore;$(QT6DIR)\include\QtGui;$(QT6DIR)\include\QtOpenGL;$(QT6DIR)\include\QtOpenGLWidgets;$(QT6DIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;.\khronos_headers;$(QT6DIR)\include\;$(QT6DIR)\include\QtCore;$(QT6DIR)\include\QtGui;$(QT6DIR)\include\QtOpenGL;$(QT6DIR)\include\QtOpenGLWidgets;$(QT6DIR)\include\QtWidgets;$(QT6DIR)\include\QtSql;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING;_USE_MATH_DEFINES;NOMINMAX;SONOMA_DB_FILEPATH="../../european.db"</PreprocessorDefinitions>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
@@ -130,8 +130,8 @@
       <AdditionalOptions>/Zc:__cplusplus /permissive- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Qt6Core.lib;Qt6Gui.lib;Qt6Widgets.lib;Qt6OpenGL.lib;Qt6OpenGLWidgets.lib;Qt6Charts.lib;glu32.lib;opengl32.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\windows_extern_packages\sqlite3;$(QT6DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Qt6Core.lib;Qt6Gui.lib;Qt6Widgets.lib;Qt6OpenGL.lib;Qt6OpenGLWidgets.lib;Qt6Charts.lib;Qt6Sql.lib;glu32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(QT6DIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -141,10 +141,6 @@
     <ClCompile Include="common\mathutils.cpp" />
     <ClCompile Include="common\progress.cpp" />
     <ClCompile Include="common\region.cpp" />
-    <ClCompile Include="common\source2cpp.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="common\stats.cpp" />
     <ClCompile Include="common\timer2.cpp" />
     <ClCompile Include="viz\chartwindow.cpp" />
@@ -167,6 +163,7 @@
     <ClCompile Include="viz\moc_window.cpp" />
     <ClCompile Include="viz\pft.cpp" />
     <ClCompile Include="viz\progressbar_window.cpp" />
+    <ClCompile Include="viz\resources.cpp" />
     <ClCompile Include="viz\scene.cpp" />
     <ClCompile Include="viz\scrollwindow.cpp" />
     <ClCompile Include="viz\shaderProgram.cpp" />
@@ -344,6 +341,17 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="viz\UI\resources.qrc">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT6DIR)\bin\rcc.exe viz\UI\%(Filename)%(Extension) -o viz\%(Filename).cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">RCC'ing viz\UI\%(Filename)%(Extension)  into  viz\%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">RCC'ing viz\UI\%(Filename)%(Extension)  into  viz\%(Filename).cpp</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT6DIR)\bin\rcc.exe viz\UI\%(Filename)%(Extension) -o viz\%(Filename).cpp</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\%(Filename).cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT6DIR)\bin\rcc.exe</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT6DIR)\bin\rcc.exe</AdditionalInputs>
+    </CustomBuild>
     <None Include="doc\html\graph_legend.html" />
     <None Include="doc\html\index.html" />
     <None Include="doc\html\search\nomatches.html" />

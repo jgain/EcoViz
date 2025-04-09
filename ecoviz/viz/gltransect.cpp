@@ -101,7 +101,7 @@ GLTransect::GLTransect(const QSurfaceFormat& format, Window * wp, Scene * scn, T
 
     view = nullptr;
 
-    renderer = new PMrender::TRenderer(nullptr, "resources/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
     setParent(wp);
 
@@ -259,7 +259,7 @@ void GLTransect::initializeGL()
     qDebug() << "Really used OpenGl: " << context()->format().majorVersion() << "." <<
               context()->format().minorVersion();
     qDebug() << "OpenGl information: VENDOR:       " << (const char*)glGetString(GL_VENDOR);
-    qDebug() << "                    RENDERDER:    " << (const char*)glGetString(GL_RENDERER);
+    qDebug() << "                    RENDERER:    " << (const char*)glGetString(GL_RENDERER);
     qDebug() << "                    VERSION:      " << (const char*)glGetString(GL_VERSION);
     qDebug() << "                    GLSL VERSION: " << (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 

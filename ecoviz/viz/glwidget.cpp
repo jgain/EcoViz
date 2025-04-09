@@ -73,7 +73,6 @@
 #include <QCoreApplication>
 #include <QInputDialog>
 #include <QLineEdit>
-#include <QOpenGLFramebufferObject>
 
 
 #include <fstream>
@@ -118,7 +117,7 @@ GLWidget::GLWidget(const QSurfaceFormat& format, Window * wp, Scene * scn, Trans
     mapView = new overviewWindow(mScene);
 
     setScene(scn);
-    renderer = new PMrender::TRenderer(nullptr, "resources/shaders/");
+    renderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
     viewlock = false;
     focuschange = false;
@@ -167,16 +166,8 @@ QSize GLWidget::sizeHint() const
 
 void GLWidget::screenCapture(QImage * capImg, QSize capSize)
 {
-
-    /*QOpenGLFramebufferObject fbo(capSize);
-    fbo.bind();
-
     paintGL();
     glFlush();
-
-    *capImg = fbo.toImage();
-
-    fbo.release(); */
 
     (* capImg) = grabFramebuffer();
     (* capImg) = capImg->scaled(capSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
@@ -1325,7 +1316,7 @@ overviewWindow::overviewWindow(mapScene * scn)
     perscale = 0.3f;
     terrainReady = false;
 
-    mrenderer = new PMrender::TRenderer(nullptr, "resources/shaders/");
+    mrenderer = new PMrender::TRenderer(nullptr, ":/resources/shaders/");
 
 
     initializeMapRenderer();
