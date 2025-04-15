@@ -47,3 +47,15 @@ ecoviz/viz/.DS_Store
 .DS_Store
 data/test2.zip
 data/test2/ecoviz.elv
+/data/BGD_full
+/data/BGD_KBT
+/data/Mitsuba/Instances
+/data/Mitsuba/Terrain
+/data/test2_old
+/deploy
+/ecoviz/european.db
+/ecoviz/ecoviz.vcxproj.user
+/data/Mitsuba
+/data/test
+/ecoviz/viz/resources.cpp
+/ecoviz/viz
