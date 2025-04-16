@@ -36,6 +36,7 @@
 #include <QFileInfo>
 #include <QLabel>
 #include <QDir>
+#include <QResource>
 
 /*
 Perceptually uniform colourmaps from:
@@ -442,7 +443,7 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
     GLfloat *col;
     float r[256], g[256], b[256];
     ifstream infile;
-    string valstr, line;
+    QString valstr, line;
     int i, pos, step;
 
     if(samples < 3 || samples > 32)
@@ -451,70 +452,55 @@ void TypeMap::initPerceptualColTable(std::string colmapfile, int samples, float 
     for(i = 0; i < 32; i++) // set all colours in table to black initially
     {
         col = new GLfloat[4];
-        col[0] = col[1] = col[2] = 0.0f; col[3] = 1.0f;
+        col[0] = col[1] = col[2] = 0.0f; 
+        col[3] = 1.0f;
         colmap.push_back(col);
     }
 
     // input is a csv file, with 256 RGB entries, one on each line
     // note that this is not robust to format errors in the input file
-
-    // hack to create local copy from Qt resource in the temporary directory
-    // has issues if the file already exists
-    std::string filename = colmapfile.substr(colmapfile.find_last_of("/")+1) ; // extract file name from path
-    QString path = QDir::temp().absoluteFilePath(filename.c_str());
-    QFile::copy(QString(colmapfile.c_str()), path);
-
-    infile.open((char *) path.toStdString().c_str(), ios_base::in);
-
-    if(infile.is_open())
+    QFile file(colmapfile.c_str()); // Use of the ressources
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        i = 0;
-        while(std::getline(infile, line))
-        {
-            std::size_t prev = 0, pos;
-
-            // red component
-            pos = line.find_first_of(",", prev);
-            valstr = line.substr(prev, pos-prev);
-            istringstream isr(valstr);
-            isr >> r[i];
-            prev = pos+1;
-
-            // green component
-            pos = line.find_first_of(",", prev);
-            valstr = line.substr(prev, pos-prev);
-            istringstream isg(valstr);
-            isg >> g[i];
-            prev = pos+1;
-
-            // blue component
-            valstr = line.substr(prev, std::string::npos);
-            istringstream isb(valstr);
-            isb >> b[i];
-
-            i++;
-        }
-        infile.close();
-        numSamples = samples+1;
+      qWarning() << "Failed to open Colour file!" << colmapfile.c_str();
+      numSamples = -1;
+      return;
     }
     else
     {
-        std::cerr << "Warning: could not read colourmap at " << colmapfile << std::endl;
-        numSamples = -1;
+      qDebug() << "Colour file opened successfully!";
     }
 
-    // now sample the colour map at even intervals according to the number of samples
-    // first and last samples map to the beginning and end of the scale
-    step = (int) ((256.0f * truncend) / (float) (samples-1));
+    QTextStream in(&file);
+    i = 0;
+
+    while (!in.atEnd() && i < 256) // Éviter de dépasser le tableau
+    {
+      line = in.readLine();
+      QStringList values = line.split(',');
+
+      if (values.size() >= 3)
+      {
+        r[i] = values[0].toFloat();
+        g[i] = values[1].toFloat();
+        b[i] = values[2].toFloat();
+      }
+      i++;
+    }
+
+    file.close();
+    numSamples = samples + 1;
+
+    // Échantillonne la table de couleurs
+    step = static_cast<int>((256.0f * truncend) / (samples - 1));
     pos = 0;
 
-    /* colmap[0] = freecol;
-    colmap[1] = freecol;
-    colmap[2] = redcol;*/
-    for(i = 1; i <= samples; i++)
+    for (i = 1; i <= samples; i++)
     {
-        colmap[i][0] = (GLfloat) r[pos]; colmap[i][1] = (GLfloat) g[pos]; colmap[i][2] = (GLfloat) b[pos];
-        pos += step;
+      colmap[i][0] = static_cast<GLfloat>(r[pos]);
+      colmap[i][1] = static_cast<GLfloat>(g[pos]);
+      colmap[i][2] = static_cast<GLfloat>(b[pos]);
+      pos += step;
     }
 }
 
@@ -771,6 +757,7 @@ void TypeMap::saveToPaintImage(const std::string &filename)
 
 void TypeMap::setPurpose(TypeMapType purpose)
 {
+
     usage = purpose;
     switch(usage)
     {

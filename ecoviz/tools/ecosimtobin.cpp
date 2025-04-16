@@ -84,8 +84,7 @@ int main(int argc, char *argv[])
 		  // 
 		  if (sequence == -1)
 		    {
-              //printError("Cohort conversion error: file has no sequence number - " + fname);
-              cerr << "Skipping file: " << fname << endl;
+		      printError("Cohort conversion error: file has no sequence number - " + fname);
 		    }
 		  filenumbers.push_back(sequence);   
 		}
@@ -97,7 +96,7 @@ int main(int argc, char *argv[])
       int filesToProcess = (nFiles > 0 ? min(nFiles, int(filenumbers.size()) ) : int(filenumbers.size())); 
       for (int i = 0; i < filesToProcess; ++i)
 	{
-      string fname = base + std::to_string(filenumbers[i]);
+	  string fname = base + to_string(i);
       cerr << fname << endl;
 	  cohortmapToBin(fname + ".pdb", fname + ".pdbb", version);
 	}

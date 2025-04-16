@@ -159,7 +159,6 @@ public slots:
     void showViewOptions();
     void showContours(int show);
     void showGridLines(int show);
-    void exportMitsuba();
     void exportMitsubaJSON();
 
     // render panel
@@ -293,7 +292,6 @@ private:
 
     // Map containing the different export profiles (Mitsuba)
     map<string, map<string, vector<MitsubaModel>>> profileToSpeciesMap;
-    QString exportBasePath;
 
     // PCM --- name of image overlay for overview maps (left and right)
     std::string mapOverlayFile[2];

@@ -1,0 +1,47 @@
+{
+	"Objects": [
+		{
+			"Name":"QuercusPetrae_2_0m",
+			"Definition":[
+				{
+					"Name":"QuercusPetrae_2_0m_TheGroveBranches",
+					"File":"QuercusPetrae_2_0m_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"QuercusPetrae.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"QuercusPetrae_2_0m_LeafTop",
+					"File":"QuercusPetrae_2_0m_LeafTop.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"QuercusPetrea-Top-albedo.png",
+						"OpacityMap":"QuercusPetrea-Top-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"QuercusPetrae_2_0m_LeafFront",
+					"File":"QuercusPetrae_2_0m_LeafFront.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"QuercusPetrea-Front-albedo.png",
+						"OpacityMap":"QuercusPetrea-Front-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

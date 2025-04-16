@@ -876,7 +876,19 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
 
     // getTerrain()->getTerrainDim(rw, rh);
 
-    if (getBiome()->read_dataimporter(":/resources/databases/european.db"))
+    string dirDBFile = datadir + "/reference_data/";
+
+    QDir dir(dirDBFile.c_str());
+    QStringList filters;
+    filters << "*.db";  // Filtre pour les fichiers .db
+    QStringList dbFiles = dir.entryList(filters, QDir::Files);
+
+		if (dbFiles.isEmpty() || dbFiles.count()>1) {
+			qDebug() << "No database files or more than one found in" << dir.absolutePath();
+		}
+
+    string dbfile = dirDBFile + dbFiles[0].toStdString() ;
+    if (getBiome()->read_dataimporter(dbfile))
     {
         // loading plant distribution
         getEcoSys()->setBiome(getBiome());
@@ -908,17 +920,15 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }
-        if (cohortmaps) {
-            before_mod_map = cohortmaps->get_map(0);
-            //cohortmaps->do_adjustments(2);
+        before_mod_map = cohortmaps->get_map(0);
+        //cohortmaps->do_adjustments(2);
 
-            if (cohortmaps->get_nmaps() > 0)
-            {
-                reset_sampler(cohortmaps->get_maxpercell());
+        if (cohortmaps->get_nmaps() > 0)
+        {
+            reset_sampler(cohortmaps->get_maxpercell());
 
-                //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
-                //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
-            }
+            //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
+            //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
         }
 
         // set timeline
@@ -1045,140 +1055,158 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
  */
 void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, string urlInstances, string nameInstances, Scene* scene, Transect* transect) 
 {
+  try {
+    // Code that might throw an exception
+    QDir().mkpath(QString::fromStdString(urlInstances + nameInstances) + "/");
 
-  QDir().mkpath(QString::fromStdString(urlInstances + nameInstances) + "/");
+    ofstream jsonFile;
+    jsonFile.open(urlInstances + nameInstances +".json");
 
-  ofstream jsonFile;
-  jsonFile.open(urlInstances + nameInstances +".json");
+    set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
 
-  set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
-
-  map<string, ofstream> streams;
+    map<string, ofstream> streams;
 
 
-  Region parentRegion;
-  float parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy;
+    Region parentRegion;
+    float parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy;
 
-  bool parentRegionAvailable = scene->getTerrain()->getSourceRegion(parentRegion, parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy);
+    bool parentRegionAvailable = scene->getTerrain()->getSourceRegion(parentRegion, parentX0, parentY0, parentX1, parentY1, parentDimx, parentDimy);
 
-  PlantGrid* pg = this->getEcoSys()->getPlants();
-  for (int x = 0; x < pg->gx; x++)
-  {
-    for (int y = 0; y < pg->gy; y++)
+    PlantGrid* pg = this->getEcoSys()->getPlants();
+    for (int x = 0; x < pg->gx; x++)
     {
-			auto ppopulation = pg->getPopulation(x, y); // Get the population of the current cell
-      for (int s = 0; s < (int)ppopulation->pop.size(); s++)
+      for (int y = 0; y < pg->gy; y++)
       {
-        for (int p = 0; p < (int)ppopulation->pop[s].size(); p++)
+			  auto ppopulation = pg->getPopulation(x, y); // Get the population of the current cell
+
+        for (int s = 0; s < (int)ppopulation->pop.size(); s++)
         {
-					Plant plant = ppopulation->pop[s][p]; // Get the current plant
-
-					if (parentRegionAvailable)
-					{
-						if (plant.pos.x < parentY0 || plant.pos.x > parentY1 || plant.pos.z < parentX0 || plant.pos.z > parentX1)
-						{
-							continue;
-						}
-					}
-
-          string code = this->biome->getSpeciesMetaData()[s].scientific_name;
-
-          map<string, vector<MitsubaModel>>::iterator it;
-					if ((it = speciesMap.find(code)) != speciesMap.end()) // If the plant code is found in the profile
+          for (int p = 0; p < (int)ppopulation->pop[s].size(); p++)
           {
-            int indexNearestHeightMax = 0;
-            vector<MitsubaModel>& vectMitsubaModel = it->second;
+					  Plant plant = ppopulation->pop[s][p]; // Get the current plant
 
-            for (int i = 0; i < vectMitsubaModel.size(); i++)
+					  if (parentRegionAvailable)
+					  {
+						  if (plant.pos.x < parentY0 || plant.pos.x > parentY1 || plant.pos.z < parentX0 || plant.pos.z > parentX1)
+						  {
+							  continue;
+						  }
+					  }
+
+            string code = this->biome->getSpeciesMetaData()[s].scientific_name;
+
+            map<string, vector<MitsubaModel>>::iterator it;
+					  if ((it = speciesMap.find(code)) != speciesMap.end()) // If the plant code is found in the profile
             {
-              if (vectMitsubaModel[i].maxHeight <= plant.height )
+              int indexNearestHeightMax = -1;
+              vector<MitsubaModel>& vectMitsubaModel = it->second;
+
+              for (int i = 0; i < vectMitsubaModel.size(); i++)
               {
-                indexNearestHeightMax = i;
+                if (vectMitsubaModel[i].maxHeight >= plant.height && (indexNearestHeightMax==-1 || vectMitsubaModel[i].maxHeight <= vectMitsubaModel[indexNearestHeightMax].maxHeight))
+                {
+                  indexNearestHeightMax = i;
+                }
+              }
+
+              if (indexNearestHeightMax == -1)
+              {
+                //qDebug() << "Error to select a model " ;
+              }
+              else
+              {
+
+                int xHash = plant.pos.x * 100;
+                int zHash = plant.pos.z * 100;
+                int rotate = hashTable[(int)(hashTable[(int)((xHash) & 0xfffL)] ^ ((zHash) & 0xfffL))] % 360;
+                double scale = plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight;
+
+                // Current Instance
+                string key = vectMitsubaModel[indexNearestHeightMax].id;
+                if (streams.find(key) != streams.end())
+                {
+                  streams[key] << ",\n";
+                }
+                else
+                {
+                  // Create Stream
+                  streams.emplace(key, ofstream());
+
+                  // Init stream
+                  streams[key].open(urlInstances + "/" + nameInstances + "/" + nameInstances + "_" + key + ".json");
+                  streams[key] << "{\n";
+                  streams[key] << "\t\"ObjectsInstances\": [\n";
+                  streams[key] << "\t{\n";
+                  streams[key] << "\t\t\"Ref\": \"" << key << "\",\n";
+                  streams[key] << "\t\t\"Instances\": [\n";
+                }
+
+                ofstream& stream = streams[key];
+
+                stream << "\t\t\t{";
+                stream << "\"Rotate\": [ 0, " << std::to_string(rotate / 10.) << ", 0 ],";// Rotation Y
+                stream << "\"Translate\": [ " << std::to_string(plant.pos.x - parentY0) << ", " << std::to_string(plant.pos.y) << ", " << std::to_string(plant.pos.z - parentX0) << " ],";// Translation
+                stream << "\"Scale\": [ " << std::to_string(scale) << ", " << std::to_string(scale) << ", " + std::to_string(scale) << " ]";// Scale
+                stream << "}";
               }
             }
-
-            int xHash = plant.pos.x * 100;
-            int zHash = plant.pos.z * 100;
-            int rotate = hashTable[(int)(hashTable[(int)((xHash) & 0xfffL)] ^ ((zHash) & 0xfffL))] % 360;
-            double scale = plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight;
-
-            // Current Instance
-            string key = vectMitsubaModel[indexNearestHeightMax].id;
-            if (streams.find(key) != streams.end())
-						{
-              streams[key] << ",\n";
-						}
-            else
+            else if (plantCodeNotFound.find(code) == plantCodeNotFound.end())
             {
-              // Create Stream
-              streams.emplace(key, ofstream());
-
-              // Init stream
-              streams[key].open(urlInstances + "/" + nameInstances + "/" + nameInstances + "_" + key + ".json");
-              streams[key] << "{\n";
-              streams[key] << "\t\"ObjectsInstances\": [\n";
-              streams[key] << "\t{\n";
-              streams[key] << "\t\t\"Ref\": \"" << key << "\",\n";
-              streams[key] << "\t\t\"Instances\": [\n";
+              // Plant code was not found in the profile
+              plantCodeNotFound.insert(code);
             }
-
-            ofstream& stream = streams[key];
-
-            stream << "\t\t\t{";
-            stream << "\"Rotate\": [ 0, " << std::to_string(rotate/10.) << ", 0 ],";// Rotation Y
-            stream << "\"Translate\": [ " << std::to_string(plant.pos.x - parentY0) << ", " << std::to_string(plant.pos.y) << ", " << std::to_string(plant.pos.z - parentX0) << " ],";// Translation
-            stream << "\"Scale\": [ "<< std::to_string(scale) <<", "<< std::to_string(scale) <<", "+ std::to_string(scale) <<" ]";// Scale
-            stream << "}";
-
-          }
-          else if (plantCodeNotFound.find(code) == plantCodeNotFound.end())
-          {
-            // Plant code was not found in the profile
-            plantCodeNotFound.insert(code);
           }
         }
       }
     }
-  }
   
-  if (!streams.empty())
-	{
-    jsonFile << "{\n";
-    jsonFile << "\t\"Import\": [\n";
-	}
+    if (!streams.empty())
+	  {
+      jsonFile << "{\n";
+      jsonFile << "\t\"Import\": [\n";
+	  }
 
-  bool first = true;
-  for (auto const &ent : streams)
-  {
-
-    if(!first)
-			jsonFile << ",\n";
-    jsonFile << "\t\t\"./"<<nameInstances<<"/"<< nameInstances <<"_" << ent.first << ".json\"";
-
-    ofstream& stream = streams[ent.first];
-    stream << "\n\t\t]\n";
-    stream << "\t}]\n";
-    stream << "}\n";
-    stream.close();
-    first = false;
-  }
-
-  if (!streams.empty())
-  {
-    jsonFile << "\n\t]\n";
-    jsonFile << "}\n";
-  }
-
-
-  if (!plantCodeNotFound.empty())
-  {
-    QMessageBox messageBox;
-    QString warningMessage = "The following plant codes were not found and have been skipped :";
-    for (string code : plantCodeNotFound)
+    bool first = true;
+    for (auto const &ent : streams)
     {
-      warningMessage += QString("\n - ") + code.data();
+
+      if(!first)
+			  jsonFile << ",\n";
+      jsonFile << "\t\t\"./"<<nameInstances<<"/"<< nameInstances <<"_" << ent.first << ".json\"";
+
+      ofstream& stream = streams[ent.first];
+      stream << "\n\t\t]\n";
+      stream << "\t}]\n";
+      stream << "}\n";
+      stream.close();
+      first = false;
     }
-    messageBox.warning(0, "Plant code not found", warningMessage);
+
+    if (!streams.empty())
+    {
+      jsonFile << "\n\t]\n";
+      jsonFile << "}\n";
+    }
+
+
+    if (!plantCodeNotFound.empty())
+    {
+      QMessageBox messageBox;
+      QString warningMessage = "The following plant codes were not found and have been skipped :";
+      for (string code : plantCodeNotFound)
+      {
+        warningMessage += QString("\n - ") + code.data();
+      }
+      messageBox.warning(0, "Plant code not found", warningMessage);
+    }
+  }
+  catch (const std::bad_alloc& e) {
+    qWarning() << "Memory allocation failed:" << e.what();
+    // Handle the error appropriately, e.g., by returning or logging
+  }
+  catch (const std::exception& e) {
+    qWarning() << "Exception caught:" << e.what();
+    // Handle other types of exceptions here
   }
 }
 
@@ -1188,10 +1216,15 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
  * @param jsonFile: The JSON file to write to
  * @param transect: The transect to export
 */
-void Scene::exportSceneJSON(const string jsonDirPath, const string cameraName, const string lightsName,
+void Scene::exportSceneJSON(const string jsonDirPath, const string jsonResourcesDirPath, const string cameraName, const string lightsName,
   const string terrainName, const string instancesName, const string sceneName, const int resX, 
   const int resY, const int quality, const int threads)
 {
+  QString fromDir = QString::fromStdString(jsonDirPath);
+  QString toDir = QString::fromStdString(jsonResourcesDirPath);
+
+  QDir baseDir(fromDir);
+  QString relativePath = baseDir.relativeFilePath(toDir);
 
 	ofstream jsonFile;
   jsonFile.open(jsonDirPath + "/"+ sceneName +".json");
@@ -1201,11 +1234,11 @@ void Scene::exportSceneJSON(const string jsonDirPath, const string cameraName, c
 
   jsonFile << "\t\"Import\":\n";
   jsonFile << "\t[\n";
-  jsonFile << "\t\t\"ModelSpecies/Species.json\",\n";
-  jsonFile << "\t\t\"Cameras/" << cameraName <<".json\",\n";
-  jsonFile << "\t\t\"EnvMaps/" << lightsName << ".json\",\n";
-  jsonFile << "\t\t\"Terrain/" << terrainName << ".json\",\n";
-  jsonFile << "\t\t\"Instances/" << instancesName << ".json\"\n";
+  jsonFile << "\t\t\"" << relativePath.toStdString() << "/ModelSpecies/Species.json\",\n";
+  jsonFile << "\t\t\"" << relativePath.toStdString() << "/EnvMaps/" << lightsName << ".json\",\n";
+  jsonFile << "\t\t\"Mitsuba/Terrain/" << terrainName << ".json\",\n";
+  jsonFile << "\t\t\"Mitsuba/Cameras/" << cameraName <<".json\",\n"; 
+  jsonFile << "\t\t\"Mitsuba/Instances/" << instancesName << ".json\"\n";
   jsonFile << "\t],\n";
   jsonFile << "\t\"Scene\":\n"; 
   jsonFile << "\t{\n";
@@ -1232,8 +1265,8 @@ void Scene::exportSceneJSON(const string jsonDirPath, const string cameraName, c
 void Scene::exportTerrainJSON(const string terrainURL, const string terrainName, Transect* transect)
 {
 
-  QDir().mkdir(QString::fromStdString(terrainURL) + "/OBJ");
-  QDir().mkdir(QString::fromStdString(terrainURL) + "/Masks");
+  QDir().mkdir(QString::fromStdString(terrainURL) + "OBJ");
+  QDir().mkdir(QString::fromStdString(terrainURL) + "Masks");
 
   // Export OBJ
   Terrain* terrain = getTerrain();

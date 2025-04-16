@@ -12,7 +12,7 @@
 						"UVScale": 1.0
 					},
 					"Instances": [
-						{"Rotate": [-1.5708,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
 					]
 				}
 ,				{
@@ -25,7 +25,7 @@
 						"UVScale": 1.0
 					},
 					"Instances": [
-						{"Rotate": [-1.5708,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
 					]
 				}
 ,				{
@@ -38,7 +38,7 @@
 						"UVScale": 1.0
 					},
 					"Instances": [
-						{"Rotate": [-1.5708,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
 					]
 				}
 			]

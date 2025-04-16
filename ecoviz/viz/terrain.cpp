@@ -730,10 +730,7 @@ void Terrain::loadElv(const std::string &filename)
             for (int y = 0; y < dy; y++)
             // for (int x = 0; x < dx; x++)
             {
-                if (!(infile >> std::ws >> val)) {
-                    std::cerr << "Error reading value: " << infile.rdstate() << std::endl;
-                    break;
-                }
+                infile >> val;
                 grid->set(x, y, val); //  * 0.3048f); // convert from feet to metres
                 drawgrid->set(y, x, val); // * 0.3048f);
             }

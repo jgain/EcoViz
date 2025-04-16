@@ -1,0 +1,34 @@
+{
+	"Objects": [
+		{
+			"Name":"SorbusAucuparia_7_6m",
+			"Definition":[
+				{
+					"Name":"SorbusAucuparia_7_6m_TheGroveBranches",
+					"File":"SorbusAucuparia_7_6m_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"SorbusAucuparia.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"SorbusAucuparia_7_6m_Leaf3",
+					"File":"SorbusAucuparia_7_6m_Leaf3.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Sorbus_Aucuparia3-albedo.png",
+						"OpacityMap":"Sorbus_Aucuparia3-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

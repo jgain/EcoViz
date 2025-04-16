@@ -73,7 +73,6 @@
 #include <QCoreApplication>
 #include <QInputDialog>
 #include <QLineEdit>
-#include <QOpenGLFramebufferObject>
 
 
 #include <fstream>
@@ -167,16 +166,8 @@ QSize GLWidget::sizeHint() const
 
 void GLWidget::screenCapture(QImage * capImg, QSize capSize)
 {
-
-    /*QOpenGLFramebufferObject fbo(capSize);
-    fbo.bind();
-
     paintGL();
     glFlush();
-
-    *capImg = fbo.toImage();
-
-    fbo.release(); */
 
     (* capImg) = grabFramebuffer();
     (* capImg) = capImg->scaled(capSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
