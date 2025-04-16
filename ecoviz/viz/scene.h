@@ -345,7 +345,7 @@ public:
     View getView(){ return view; }
 
     // save region and view to file
-    void save(std::string filename);
+    void save(std::string filename, string comment="");
 
     // load region and view from file
     void load(std::string filename);
@@ -581,6 +581,15 @@ public:
       * @param slopeMax 
       */
      void exportTextureSlope(const string URL, float slopeMin, float slopeMax);
+
+     /**
+            * @brief get a descriptive string on data shown in the scene
+      */
+
+     std::string getDataDescription() {
+         std::string result = "folder: " + datadir + " stem: " + basename + " step#: " + std::to_string(getTimeline()->getNow());
+         return result;
+     }
 };
 
 #endif // SCENE_H

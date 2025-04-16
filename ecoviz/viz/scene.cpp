@@ -473,7 +473,7 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
 
 //// sceneView - for controlling loading and saving of view state
 
-void viewScene::save(std::string filename)
+void viewScene::save(std::string filename, std::string comment)
 {
     ofstream outfile;
 
@@ -482,6 +482,7 @@ void viewScene::save(std::string filename)
     {
         outfile << region.x0 << " " << region.x1 << " " << region.y0 << " " << region.y1 << endl;
         view.save(outfile);
+        outfile << comment << endl; // add as last
         outfile.close();
     }
     else
@@ -494,10 +495,13 @@ void viewScene::load(std::string filename)
 {
     ifstream infile;
     infile.open((char *) filename.c_str(), ios_base::in);
+    std::string comment;
     if(infile.is_open())
     {
         infile >> region.x0 >> region.x1 >> region.y0 >> region.y1;
         view.load(infile);
+        infile >> comment;
+        cerr << comment;
         infile.close();
     }
     else
