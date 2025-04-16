@@ -473,7 +473,7 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
 
 //// sceneView - for controlling loading and saving of view state
 
-void viewScene::save(std::string filename)
+void viewScene::save(std::string filename, std::string comment)
 {
     ofstream outfile;
 
@@ -482,6 +482,7 @@ void viewScene::save(std::string filename)
     {
         outfile << region.x0 << " " << region.x1 << " " << region.y0 << " " << region.y1 << endl;
         view.save(outfile);
+        outfile << comment << endl; // add as last
         outfile.close();
     }
     else
@@ -494,10 +495,13 @@ void viewScene::load(std::string filename)
 {
     ifstream infile;
     infile.open((char *) filename.c_str(), ios_base::in);
+    std::string comment;
     if(infile.is_open())
     {
         infile >> region.x0 >> region.x1 >> region.y0 >> region.y1;
         view.load(infile);
+        infile >> comment;
+        cerr << comment;
         infile.close();
     }
     else
@@ -1137,6 +1141,8 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
 
                   // Init stream
                   streams[key].open(urlInstances + "/" + nameInstances + "/" + nameInstances + "_" + key + ".json");
+                  streams[key].imbue(std::locale::classic());
+                  streams[key] << std::fixed << std::setprecision(6);
                   streams[key] << "{\n";
                   streams[key] << "\t\"ObjectsInstances\": [\n";
                   streams[key] << "\t{\n";
@@ -1147,9 +1153,9 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
                 ofstream& stream = streams[key];
 
                 stream << "\t\t\t{";
-                stream << "\"Rotate\": [ 0, " << std::to_string(rotate / 10.) << ", 0 ],";// Rotation Y
-                stream << "\"Translate\": [ " << std::to_string(plant.pos.x - parentY0) << ", " << std::to_string(plant.pos.y) << ", " << std::to_string(plant.pos.z - parentX0) << " ],";// Translation
-                stream << "\"Scale\": [ " << std::to_string(scale) << ", " << std::to_string(scale) << ", " + std::to_string(scale) << " ]";// Scale
+                stream << "\"Rotate\": [ 0, " << rotate / 10. << ", 0 ],";// Rotation Y
+                stream << "\"Translate\": [ " << plant.pos.x - parentY0 << ", " << plant.pos.y << ", " << plant.pos.z - parentX0 << " ],";// Translation
+                stream << "\"Scale\": [ " << scale << ", " << scale << ", " << scale << " ]";// Scale
                 stream << "}";
               }
             }

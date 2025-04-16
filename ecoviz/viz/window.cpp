@@ -1272,7 +1272,8 @@ void Window::saveSceneView(int i)
     QString qFileName = QFileDialog::getSaveFileName(this, tr("Save View"), coredir[i].c_str(), tr("View Files (*.vew)"));
     // add file name to list
     // remember to auto-populate views
-    scnview.save(qFileName.toStdString());
+    std::string comment = scenes[i]->getDataDescription();
+    scnview.save(qFileName.toStdString(), comment);
     cerr << endl << "SCENE VIEW SAVED " << i << endl;
 }
 
