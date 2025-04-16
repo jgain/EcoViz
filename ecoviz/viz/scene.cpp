@@ -1134,6 +1134,8 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
 
                   // Init stream
                   streams[key].open(urlInstances + "/" + nameInstances + "/" + nameInstances + "_" + key + ".json");
+                  streams[key].imbue(std::locale::classic());
+                  streams[key] << std::fixed << std::setprecision(6);
                   streams[key] << "{\n";
                   streams[key] << "\t\"ObjectsInstances\": [\n";
                   streams[key] << "\t{\n";
@@ -1144,9 +1146,9 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
                 ofstream& stream = streams[key];
 
                 stream << "\t\t\t{";
-                stream << "\"Rotate\": [ 0, " << std::to_string(rotate / 10.) << ", 0 ],";// Rotation Y
-                stream << "\"Translate\": [ " << std::to_string(plant.pos.x - parentY0) << ", " << std::to_string(plant.pos.y) << ", " << std::to_string(plant.pos.z - parentX0) << " ],";// Translation
-                stream << "\"Scale\": [ " << std::to_string(scale) << ", " << std::to_string(scale) << ", " + std::to_string(scale) << " ]";// Scale
+                stream << "\"Rotate\": [ 0, " << rotate / 10. << ", 0 ],";// Rotation Y
+                stream << "\"Translate\": [ " << plant.pos.x - parentY0 << ", " << plant.pos.y << ", " << plant.pos.z - parentX0 << " ],";// Translation
+                stream << "\"Scale\": [ " << scale << ", " << scale << ", " << scale << " ]";// Scale
                 stream << "}";
               }
             }
