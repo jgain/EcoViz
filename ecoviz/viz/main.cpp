@@ -106,6 +106,8 @@ int main(int argc, char *argv[])
         Window * window = new Window(datadir, leftprefix, rightprefix);
 
         QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedKingdom));
+        // Set the numeric locale to "C" (or "classic")
+        setlocale(LC_NUMERIC, "C");
 
         window->resize(window->sizeHint());
         window->setSizePolicy (QSizePolicy::Ignored, QSizePolicy::Ignored);
