@@ -570,6 +570,13 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor, bool noLoad)
     //std::string terfile = datadir+"/dem.elv";
     std::string binfile = datadir+"/" + basename + ".elvb";
     std::string txtfile = datadir+"/" + basename + ".elv";
+
+    if (!std::filesystem::exists(std::filesystem::path(binfile)) && !std::filesystem::exists(std::filesystem::path(txtfile))) {
+        // fallback: default name
+        binfile = datadir + "/dem.elvb";
+        txtfile = datadir + "/dem.elv";
+    }
+
     std::string terfile;
 
     bool binaryElvFile = false;
@@ -887,7 +894,7 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
 			qDebug() << "No database files or more than one found in" << dir.absolutePath();
 		}
 
-    string dbfile = dirDBFile + dbFiles[0].toStdString() ;
+    string dbfile = dirDBFile + (dbFiles.isEmpty() ? "" : dbFiles[0].toStdString());
     if (getBiome()->read_dataimporter(dbfile))
     {
         // loading plant distribution

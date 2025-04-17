@@ -93,7 +93,7 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         //std::cerr << "Max tree placement = " << maxx << ", " << maxy << std::endl;
         timestep_maps.at(idx) = ValueGridMap<std::vector<ilanddata::cohort > >(fdata.dx, fdata.dy, rw, rh, 1.0f, 1.0f);
         auto &map = timestep_maps.at(idx);
-        if (gw == -1 || gh == -1)
+        if (gw < 0 || gh < 0) // in case no cohorts are loaded
             map.getDim(gw, gh);
         else
         {
