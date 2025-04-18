@@ -2171,6 +2171,8 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
     QTextStream in(&csvFile);
     QString profileName = file;
     profileName.chop(4); // Remove the ".csv" extension
+    setlocale(LC_NUMERIC, "C");
+
 
     string line;
     string plantCode, maxHeightStr, instanceId, actualHeightStr;
