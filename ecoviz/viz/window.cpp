@@ -2362,7 +2362,7 @@ bool Window::eventFilter(QObject *obj, QEvent *event)
 
 bool copyDirectory(const QString& sourceDir, const QString& destinationDir) {
 
-	qDebug() << "Copying directory:" << sourceDir << "to" << destinationDir;
+	//qDebug() << "Copying directory:" << sourceDir << "to" << destinationDir;
 
   QDir src(sourceDir);
   if (!src.exists()) {
@@ -2372,21 +2372,24 @@ bool copyDirectory(const QString& sourceDir, const QString& destinationDir) {
 
   QDir dest(destinationDir);
   if (!dest.exists()) {
-    dest.mkpath(destinationDir);  // Create destination directory if it does not exist
+    QDir().mkpath(destinationDir);  // Create destination directory if it does not exist
   }
 
   foreach(QString file, src.entryList(QDir::Files)) {
-    QString srcFilePath = sourceDir + "/" + file;
-    QString destFilePath = destinationDir + "/" + file;
-    if (!QFile::copy(srcFilePath, destFilePath)) {
-      qWarning() << "Failed to copy file:" << srcFilePath;
-      return false;
+    QString srcFilePath = src.absolutePath() + "/" + file;
+    QString destFilePath = dest.absolutePath() + "/" + file;
+    if (!QFile(destFilePath).exists())
+    {
+      if (!QFile::copy(srcFilePath, destFilePath)) {
+        qWarning() << "Failed to copy file:" << srcFilePath;
+        return false;
+      }
     }
   }
 
   foreach(QString subDir, src.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-    QString srcSubDirPath = sourceDir + "/" + subDir;
-    QString destSubDirPath = destinationDir + "/" + subDir;
+    QString srcSubDirPath = src.absolutePath() + "/" + subDir;
+    QString destSubDirPath = dest.absolutePath() + "/" + subDir;
     if (!copyDirectory(srcSubDirPath, destSubDirPath)) {
       return false;
     }
@@ -2433,6 +2436,13 @@ void Window::exportMitsubaJSON()
       }
     }
 
+    string pathCameras = jsonDirPath + "/Mitsuba/Cameras/";
+    string pathTerrain = jsonDirPath + "/Mitsuba/Terrain/";
+    string pathInstances = jsonDirPath + "/Mitsuba/Instances/";
+
+    if (!QDir(QString().fromStdString(pathTerrain)).exists()) QDir().mkpath(QString::fromStdString(pathTerrain) );
+		copyDirectory(QString::fromStdString(exportSettings.pathResources + "/Terrain"), QString::fromStdString(pathTerrain));
+
     if (exportSettings.sceneLeft)
 		{
 			const int left = 0;
@@ -2443,16 +2453,15 @@ void Window::exportMitsubaJSON()
 
 			// Export Cameras JSON
       std::cout << "- Export camera left" << endl;
-			this->perspectiveViews[left]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameLeft + "_cameraLeft");
+			this->perspectiveViews[left]->getView()->exportCameraJSON(pathCameras, exportSettings.filenameLeft + "_cameraLeft");
           
 			// Export Terrain JSON
       std::cout << "- Export terrain left" << endl;
-			copyDirectory(QString::fromStdString(exportSettings.pathResources + "/Terrain"), QString::fromStdString(jsonDirPath + "/Terrain"));
-			sceneLeft->exportTerrainJSON( jsonDirPath + "/Terrain/", exportSettings.filenameLeft + "_terrainLeft");
+			sceneLeft->exportTerrainJSON(pathTerrain, exportSettings.filenameLeft + "_terrainLeft");
 
 			// Export Instances
       std::cout << "- Export vegetation instances" << endl;
-			sceneLeft->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameLeft + "_instancesLeft", sceneLeft, transectLeft);
+			sceneLeft->exportInstancesJSON(speciesMap, pathInstances, exportSettings.filenameLeft + "_instancesLeft", sceneLeft, transectLeft);
 
       // Export Scene JSON 
       std::cout << "- Export scene left" << endl;
@@ -2469,15 +2478,15 @@ void Window::exportMitsubaJSON()
 
       // Export Cameras JSON
       std::cout << "- Export camera right" << endl;
-			this->perspectiveViews[right]->getView()->exportCameraJSON(jsonDirPath + "/Cameras/", exportSettings.filenameRight + "_cameraRight");
+			this->perspectiveViews[right]->getView()->exportCameraJSON(pathCameras, exportSettings.filenameRight + "_cameraRight");
 
 			// Export Terrain JSON
       std::cout << "- Export terrain right" << endl;
-			sceneRight->exportTerrainJSON(jsonDirPath + "/Terrain/", exportSettings.filenameRight + "_terrainRight");
+			sceneRight->exportTerrainJSON(pathTerrain, exportSettings.filenameRight + "_terrainRight");
 
       // Export Instances
       std::cout << "- Export vegetation instances" << endl;
-      sceneRight->exportInstancesJSON(speciesMap, jsonDirPath + "/Instances/", exportSettings.filenameRight+"_instancesRight", sceneRight, transectRight);
+      sceneRight->exportInstancesJSON(speciesMap, pathInstances, exportSettings.filenameRight+"_instancesRight", sceneRight, transectRight);
 
 			// Export Scene JSON
       std::cout << "- Export scene right" << endl;
