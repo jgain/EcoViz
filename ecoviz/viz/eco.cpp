@@ -984,7 +984,6 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<Co
 
     ter->getTerrainLoc(terlocx, terlocy);
     cohortmaps->getCohortLoc(ecolocx, ecolocy);
-
     // cerr << "terloc = " << terlocx << ", " << terlocy << endl;
     // cerr << "ecoloc = " << ecolocx << ", " << ecolocy << endl;
     // cerr << "xoffset = " << (ecolocx - terlocx) << ", yoffset = " << (ecolocy - terlocy) << endl;
@@ -992,12 +991,17 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<Co
     // calculate offset of ecosystem corner from terrain corner in global reference
     offx = (float) (ecolocx-terlocx);
     offy = (float) (ecolocy-terlocy) * -1.0f;
+
+    // cerr << "offx = " << offx << ", offy = " << offy << endl;
+    // cerr << "tree.x = " << tree.x << ", tree.y = " << tree.y << endl;
     float h = ter->getHeightFromReal(tx - tree.y+offy, tree.x+offx);
     vpPoint pos(tree.x+offx, h, tx - tree.y+offy);
+
     // cerr << "h = " << h << endl;
 
     int spc = tree.species;
 
+    // cerr << "spc = " << spc << endl;
     // introduce small random variation in colour
     // PCM: I swapped x/y for call to getNoise: I am not sure what correct order is, but this avoid out-of-range error in coordinate lookup (and
     // we really just want a random numbetr).
