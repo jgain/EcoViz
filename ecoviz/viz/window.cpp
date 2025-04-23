@@ -1176,14 +1176,16 @@ std::cerr << " -- Load scene end.\n";
         cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
 
-
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
+
         //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
+
         setupGraphModels(i, (prefix[0]==prefix[1]) ); // if left and right files are same, only compute series once
+
         chartViews[i]->setScene(scenes[i]);
         chartViews[i]->setGraphs(graphModels[i]);
         chartViews[i]->setXLabels(timelineIDs);
@@ -1195,6 +1197,7 @@ std::cerr << " -- Load scene end.\n";
     setupDataMapPanel();
     setupViewPanel();
     rendercount++;
+
     repaintAllGL();
 }
 

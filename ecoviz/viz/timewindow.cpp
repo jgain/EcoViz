@@ -189,6 +189,7 @@ void TimeWindow::setScene(Scene * s)
     {
         int gw, gh;
         float rw, rh;
+
         //PCM: changed to get params of master/high res terrain from which this is extracted
         scene->getMasterTerrain()->getGridDim(gw, gh);
         scene->getMasterTerrain()->getTerrainDim(rw, rh);
@@ -200,12 +201,12 @@ void TimeWindow::setScene(Scene * s)
         cerr << "no cohort plant counts" << endl;
         QMessageBox(QMessageBox::Warning, "Typemap Error", "No cohort plant count maps available").exec();
     }
-
     //   tstep_scrollwindow->set_labelvalue(tstep);
 }
 
 void TimeWindow::updateScene(int t)
 {
+    cerr << "t = " << t << endl;
     updateSingleScene(t);
     if(viewlock)
     {
@@ -241,6 +242,7 @@ void TimeWindow::updateSingleScene(int t)
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
      scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), scene->cohortmaps, trees);
+
      signalRebindPlants();
      winparent->rendercount++;
      signalRepaintAllGL();
