@@ -1256,7 +1256,7 @@ MitsubaModel Scene::getModelIndex(const std::vector<MitsubaModel>& models, Plant
 	double radiusO = interpolateRadiusByHeight(endingWithO, plant);
 	double radiusNotO = interpolateRadiusByHeight(notEndingWithO, plant);
 
-	qDebug() << "radiusO: " << radiusO << " radiusNotO: " << radiusNotO << " plant.canopy: " << plant.canopy;
+	//qDebug() << "radiusO: " << radiusO << " radiusNotO: " << radiusNotO << " plant.canopy: " << plant.canopy;
 
   // Choose appropriate model set based on canopy
   const std::vector<MitsubaModel>& selectedModels = (plant.canopy > (radiusO + radiusNotO) / 2.0) ? endingWithO : notEndingWithO;
