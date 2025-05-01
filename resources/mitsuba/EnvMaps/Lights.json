@@ -7,7 +7,7 @@
       "Instances": [
           {
               "Rotate":    [0,	0, 0],
-              "Intensity": 0.5
+              "Intensity": 1.0
           }
       ]
     }
