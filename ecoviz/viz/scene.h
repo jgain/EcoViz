@@ -584,6 +584,15 @@ public:
      void exportTextureSlope(const string URL, float slopeMin, float slopeMax);
 
      /**
+			* @brief Get the index of the model to be used for a given plant
+      * @param models 
+      * @param plant
+      * @return MitsubaModel of the chosen plant
+      */
+     MitsubaModel getModelIndex(const std::vector<MitsubaModel>& models, Plant plant );
+
+
+     /**
             * @brief get a descriptive string on data shown in the scene
       */
 

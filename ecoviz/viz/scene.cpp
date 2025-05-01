@@ -962,7 +962,7 @@ void Scene::loadDataMaps(int timesteps)
 // PCM - this won't export properly with overview window since that loads entire ecosystem, and can't deal with sub-regions
 // TBD
 void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstream& xmlFile, Transect * transect) {
-    set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
+/*    set<string> plantCodeNotFound; // Store plant codes that were not found to display a warning message at the end
 
     PlantGrid* pg = this->getEcoSys()->getPlants();
     for (int x = 0; x < pg->gx; x++)
@@ -1049,7 +1049,7 @@ void Scene::exportSceneXml(map<string, vector<MitsubaModel>>& speciesMap, ofstre
             warningMessage += QString("\n - ") + code.data();
         }
         messageBox.warning(0, "Plant code not found", warningMessage);
-    }
+    }*/
 }
 
 
@@ -1105,20 +1105,13 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
             map<string, vector<MitsubaModel>>::iterator it;
 					  if ((it = speciesMap.find(code)) != speciesMap.end()) // If the plant code is found in the profile
             {
-              int indexNearestHeightMax = -1;
               vector<MitsubaModel>& vectMitsubaModel = it->second;
 
-              for (int i = 0; i < vectMitsubaModel.size(); i++)
-              {
-                if (vectMitsubaModel[i].maxHeight >= plant.height && (indexNearestHeightMax==-1 || vectMitsubaModel[i].maxHeight <= vectMitsubaModel[indexNearestHeightMax].maxHeight))
-                {
-                  indexNearestHeightMax = i;
-                }
-              }
+              MitsubaModel model = getModelIndex(vectMitsubaModel, plant);
 
-              if (indexNearestHeightMax == -1)
+              if (model.id == "")
               {
-                //qDebug() << "Error to select a model " ;
+                qDebug() << "Error to select a model " ;
               }
               else
               {
@@ -1126,10 +1119,10 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
                 int xHash = plant.pos.x * 100;
                 int zHash = plant.pos.z * 100;
                 int rotate = hashTable[(int)(hashTable[(int)((xHash) & 0xfffL)] ^ ((zHash) & 0xfffL))] % 360;
-                double scale = plant.height / vectMitsubaModel[indexNearestHeightMax].actualHeight;
+                double scale = plant.height / model.height;
 
                 // Current Instance
-                string key = vectMitsubaModel[indexNearestHeightMax].id;
+                string key = model.id;
                 if (streams.find(key) != streams.end())
                 {
                   streams[key] << ",\n";
@@ -1217,6 +1210,66 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
     qWarning() << "Exception caught:" << e.what();
     // Handle other types of exceptions here
   }
+}
+
+double interpolateRadiusByHeight(const std::vector<MitsubaModel>& models, Plant plant) {
+  if (models.empty()) return 0.0f;
+
+  if (plant.height <= models.front().height) return models.front().radius;
+  if (plant.height >= models.back().height) return models.back().radius;
+
+  for (size_t i = 0; i < models.size() - 1; ++i) {
+    const auto& lower = models[i];
+    const auto& upper = models[i + 1];
+
+    if (lower.height <= plant.height && plant.height <= upper.height) {
+      float t = (plant.height - lower.height) / (upper.height - lower.height);
+      return lower.radius + t * (upper.radius - lower.radius);
+    }
+  }
+
+  return models.back().radius; // fallback
+}
+
+MitsubaModel Scene::getModelIndex(const std::vector<MitsubaModel>& models, Plant plant)
+{
+	int indexNearestHeightMax = -1;
+
+	// Separate models id ending with "-o" and not ending with "-o"
+  std::vector<MitsubaModel> endingWithO;
+  std::vector<MitsubaModel> notEndingWithO;
+
+  for (const auto& model : models) {
+    if (model.id.find("-o") != std::string::npos)
+      endingWithO.push_back(model);
+    else
+      notEndingWithO.push_back(model);
+  }
+
+	// Sort models by height
+  auto sortByHeight = [](std::vector<MitsubaModel>& vec) {std::sort(vec.begin(), vec.end(), [](const MitsubaModel& a, const MitsubaModel& b) {return a.height < b.height;});};
+
+  sortByHeight(endingWithO);
+  sortByHeight(notEndingWithO);
+
+  // Get the interpolated index according to the heigth
+	double radiusO = interpolateRadiusByHeight(endingWithO, plant);
+	double radiusNotO = interpolateRadiusByHeight(notEndingWithO, plant);
+
+	qDebug() << "radiusO: " << radiusO << " radiusNotO: " << radiusNotO << " plant.canopy: " << plant.canopy;
+
+  // Choose appropriate model set based on canopy
+  const std::vector<MitsubaModel>& selectedModels = (plant.canopy > (radiusO + radiusNotO) / 2.0) ? endingWithO : notEndingWithO;
+
+  // Find the first model with height >= plant.height
+  for (const auto& model : selectedModels) {
+    if (model.height >= plant.height)
+      return model;
+  }
+
+  // Fallback to smallest model if none match
+  return selectedModels.empty() ? MitsubaModel{} : selectedModels.front();
+
 }
 
 

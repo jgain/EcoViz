@@ -2175,10 +2175,11 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
 
 
     string line;
-    string plantCode, maxHeightStr, instanceId, actualHeightStr;
-    double maxHeight = -1.0, actualHeight = -1.0;
+    //string plantCode, maxHeightStr, instanceId, actualHeightStr;
+    //double maxHeight = -1.0, actualHeight = -1.0;
     int count = 0;
 
+    string delimiter = ";";
     while (!in.atEnd())
     {
       line = in.readLine().toStdString();
@@ -2187,8 +2188,37 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
       if (line.find("plant code;") == 0 || line.empty() || line.find_first_not_of(" ") == string::npos)// Headers line
         continue;
 
-      string delimiter = ";";
+			QString lineQ = QString::fromStdString(line);
+			QStringList tokens = lineQ.split(";");
 
+			if (tokens.size() != 4)
+			{
+				cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] not enough tokens" << endl;
+				continue;
+			}
+
+      bool ok;
+
+			string plantCode = tokens[0].toStdString();
+      string id = tokens[1].toStdString();
+			double height = tokens[2].toDouble(&ok);
+			if (!ok || (height < 0.0 || height == HUGE_VAL))
+			{
+				cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] height could not be converted to double" << endl;
+				continue;
+			}
+			double radius = tokens[3].toDouble(&ok);
+			if (!ok || (radius < 0.0 || radius == HUGE_VAL))
+			{
+				cerr << "Error in Window::readMitsubaExportProfiles : in the profile [" << profileName.toStdString() << "], line [" << count << "] radius could not be converted to double" << endl;
+				continue;
+			}
+
+      auto& speciesMap = this->profileToSpeciesMap[profileName.toStdString()];
+      auto& models = speciesMap[plantCode];
+      models.push_back({ id, height, radius });
+
+      /*
       // Plant code
       size_t pos = line.find(delimiter);
       string token = line.substr(0, pos);
@@ -2252,7 +2282,7 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
       }
 
       map<string, vector<MitsubaModel>>::iterator itPlantCode = itProfile->second.find(plantCode);
-      itPlantCode->second.push_back({ maxHeight, instanceId, actualHeight });
+      itPlantCode->second.push_back({ maxHeight, instanceId, actualHeight });*/
     }
   }
   cout << "readMitsubaExportProfiles finished !" << endl;

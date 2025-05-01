@@ -1,0 +1,73 @@
+{
+	"Objects": [
+		{
+			"Name":"FagusSylvatica_28_5m",
+			"Definition":[
+				{
+					"Name":"FagusSylvatica_28_5m_TheGroveBranches",
+					"File":"FagusSylvatica_28_5m_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"FagusSylvatica.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"FagusSylvatica_28_5m_Materiau",
+					"File":"FagusSylvatica_28_5m_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"FS-side-albedo.png",
+						"OpacityMap":"FS-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"FagusSylvatica_28_5m_Materiau",
+					"File":"FagusSylvatica_28_5m_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"FS-side-albedo.png",
+						"OpacityMap":"FS-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"FagusSylvatica_28_5m_Materiau",
+					"File":"FagusSylvatica_28_5m_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"FS-side-albedo.png",
+						"OpacityMap":"FS-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"FagusSylvatica_28_5m_Materiau",
+					"File":"FagusSylvatica_28_5m_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"FS-side-albedo.png",
+						"OpacityMap":"FS-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

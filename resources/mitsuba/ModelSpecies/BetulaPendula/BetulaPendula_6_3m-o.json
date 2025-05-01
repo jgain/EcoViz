@@ -1,0 +1,60 @@
+{
+	"Objects": [
+		{
+			"Name":"BetulaPendula_6_3m-o",
+			"Definition":[
+				{
+					"Name":"BetulaPendula_6_3m-o_TheGroveBranches",
+					"File":"BetulaPendula_6_3m-o_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"BetulaPendula.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"BetulaPendula_6_3m-o_Materiau",
+					"File":"BetulaPendula_6_3m-o_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"BP-side-albedo.png",
+						"OpacityMap":"BP-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"BetulaPendula_6_3m-o_Materiau",
+					"File":"BetulaPendula_6_3m-o_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"BP-side-albedo.png",
+						"OpacityMap":"BP-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"BetulaPendula_6_3m-o_Materiau",
+					"File":"BetulaPendula_6_3m-o_Materiau.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"BP-side-albedo.png",
+						"OpacityMap":"BP-side-alpha.png",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

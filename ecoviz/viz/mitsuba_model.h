@@ -5,9 +5,11 @@
 
 struct MitsubaModel
 {
-    double maxHeight;    // Maximum plant height to use this model
+    //double maxHeight;    // Maximum plant height to use this model
     std::string id;      // Instance id
-    double actualHeight; // Actual height of the model
+    double height; // Actual height of the model
+    double radius; // Actual height of the model
+    bool isOpen;
 };
 
 #endif

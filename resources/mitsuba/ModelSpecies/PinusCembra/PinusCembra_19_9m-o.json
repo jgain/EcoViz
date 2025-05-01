@@ -1,0 +1,47 @@
+{
+	"Objects": [
+		{
+			"Name":"PinusCembra_19_9m-o",
+			"Definition":[
+				{
+					"Name":"PinusCembra_19_9m-o_TheGroveBranches",
+					"File":"PinusCembra_19_9m-o_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"PinusCembra.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"PinusCembra_19_9m-o_1",
+					"File":"PinusCembra_19_9m-o_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Pinus_cembra_branch_1_diffuse.jpg",
+						"OpacityMap":"Pinus_cembra_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"PinusCembra_19_9m-o_1",
+					"File":"PinusCembra_19_9m-o_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Pinus_cembra_branch_1_diffuse.jpg",
+						"OpacityMap":"Pinus_cembra_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

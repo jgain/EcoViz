@@ -1,0 +1,47 @@
+{
+	"Objects": [
+		{
+			"Name":"LarixDecidua_10_1m-o",
+			"Definition":[
+				{
+					"Name":"LarixDecidua_10_1m-o_TheGroveBranches",
+					"File":"LarixDecidua_10_1m-o_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"LarixDecidua.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"LarixDecidua_10_1m-o_1",
+					"File":"LarixDecidua_10_1m-o_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Larix_decidua_branch_1_diffuse.jpg",
+						"OpacityMap":"Larix_decidua_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"LarixDecidua_10_1m-o_1",
+					"File":"LarixDecidua_10_1m-o_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"Larix_decidua_branch_1_diffuse.jpg",
+						"OpacityMap":"Larix_decidua_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

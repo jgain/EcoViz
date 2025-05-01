@@ -1,0 +1,47 @@
+{
+	"Objects": [
+		{
+			"Name":"PiceaAbies_24_7m-o",
+			"Definition":[
+				{
+					"Name":"PiceaAbies_24_7m-o_TheGroveBranches",
+					"File":"PiceaAbies_24_7m-o_TheGroveBranches.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"PiceaAbies.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"PiceaAbies_24_7m-o_1",
+					"File":"PiceaAbies_24_7m-o_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"picea_abies_branch_1_diffuse.jpg",
+						"OpacityMap":"picea_abies_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+,				{
+					"Name":"PiceaAbies_24_7m-o_1",
+					"File":"PiceaAbies_24_7m-o_1.serialized",
+					"Material": {
+						"Type":"Textured",
+						"ColorMap":"picea_abies_branch_1_diffuse.jpg",
+						"OpacityMap":"picea_abies_branch_1_opacity.jpg",
+						"UVScale": 1.0
+					},
+					"Instances": [
+						{"Rotate": [0,0,0], "Translate": [0,0,0], "Scale": [1,1,1]}
+					]
+				}
+			]
+		}
+	]
+}

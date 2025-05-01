@@ -150,7 +150,7 @@ void parseCommandLine(int argc, char *argv[])
             if (i+1 >= argc) printError("-lprefix must have an argument");
             leftprefix = argv[++i];
         }
-        if (arg == "-rprefix")
+        else if (arg == "-rprefix")
         {
             if (i+1 >= argc) printError("-rprefix must have an argument");
             rightprefix = argv[++i];
