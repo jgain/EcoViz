@@ -1191,7 +1191,7 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
     }
 
     // Mitsuba model usage stats
-    dumpModelSelection(urlInstances + nameInstances +"_modeldump.csv");
+    // dumpModelSelection(urlInstances + nameInstances +"_modeldump.csv");
 
 
     if (!plantCodeNotFound.empty())
