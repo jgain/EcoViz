@@ -456,7 +456,7 @@ void GLWidget::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> 
     shape.setColour(col);
 
     // place vertical cylinder
-    scale = view->getScaleFactor();
+    scale = view->getScaleFactor() * 0.75f;
     idt = glm::mat4(1.0f);
     trs = glm::vec3(p.x, p.y, p.z);
     rot = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -516,11 +516,11 @@ void GLWidget::createTransectShape(float hghtoffset)
     if(active)
     {
         createLine(&line[0], trc->trx->getBoundStart(), trc->trx->getClampedInnerStart(), hghtoffset);
-        trc->trxshape[0].genDashedCylinderCurve(line[0], transectradius * 0.5f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
+        trc->trxshape[0].genDashedCylinderCurve(line[0], transectradius * 0.25f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
         createLine(&line[1], trc->trx->getClampedInnerStart(), trc->trx->getClampedInnerEnd(), hghtoffset);
-        trc->trxshape[1].genCylinderCurve(line[1], transectradius * 0.5f * view->getScaleFactor(), tol, 10);
+        trc->trxshape[1].genCylinderCurve(line[1], transectradius * 0.25f * view->getScaleFactor(), tol, 10);
         createLine(&line[2], trc->trx->getClampedInnerEnd(), trc->trx->getBoundEnd(), hghtoffset);
-        trc->trxshape[2].genDashedCylinderCurve(line[2], transectradius * 0.5f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
+        trc->trxshape[2].genDashedCylinderCurve(line[2], transectradius * 0.25f * view->getScaleFactor(), tol, transectradius * view->getScaleFactor(), 10);
     }
 }
 
@@ -582,7 +582,7 @@ void GLWidget::paintGL()
                 loadTypeMap(trc->trx->getTransectMap(), TypeMapType::TRANSECT);
                 refreshOverlay();
                 trc->trx->clearChangeFlag();
-                signalRebindTransectPlants(); // PCM...see if thsi works
+                signalRebindTransectPlants();
             }
 
             if(trc->trxstate == 0)
@@ -1263,7 +1263,10 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         signalRepaintAllGL();
     }
     else // otherwise adjust view zoom
+    {
         view->incrZoom(del);
+        trc->trx->setChangeFlag(); // render thickness of transects depends on zoom
+    }
     refreshViews();
 }
 
