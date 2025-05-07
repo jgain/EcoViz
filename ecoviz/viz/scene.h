@@ -451,6 +451,22 @@ private:
     // ensure scene directory is valid
     std::string get_dirprefix();
 
+    // cache for mitsuba models
+    void fillModelCache(const string &species_name, std::vector<MitsubaModel> models);
+    void dumpModelSelection(const string filename);
+    struct SMitsubaCacheItem {
+        std::vector<MitsubaModel> endingWithO;
+        std::vector<MitsubaModel> notEndingWithO;
+        std::vector<double> radiusO;
+        std::vector<double> radiusNotO;
+        int pickedO {0};
+        int pickedNotO {0};
+        MitsubaModel selectModel(Plant &plant);
+
+    };
+
+    std::map<std::string, SMitsubaCacheItem > mitsuba_cache;
+
 public:
 
     std::shared_ptr<CohortMaps> cohortmaps;     //< agreggate ecosystem data
@@ -590,7 +606,7 @@ public:
       * @param plant
       * @return MitsubaModel of the chosen plant
       */
-     MitsubaModel getModelIndex(const std::vector<MitsubaModel>& models, Plant plant );
+     MitsubaModel getModelIndex(const std::vector<MitsubaModel>& models, const string &code, Plant plant );
 
 
      /**

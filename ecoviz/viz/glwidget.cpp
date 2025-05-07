@@ -456,7 +456,7 @@ void GLWidget::paintSphere(vpPoint p, GLfloat * col, std::vector<ShapeDrawData> 
     shape.setColour(col);
 
     // place vertical cylinder
-    scale = view->getScaleFactor() * 0.75f;
+    scale = view->getScaleFactor() * 0.5f;
     idt = glm::mat4(1.0f);
     trs = glm::vec3(p.x, p.y, p.z);
     rot = glm::vec3(1.0f, 0.0f, 0.0f);
