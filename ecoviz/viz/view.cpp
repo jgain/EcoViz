@@ -525,7 +525,7 @@ float View::getScaleFactor()
     if(getZoom() > 9.0f * viewscale)
         scale = 1.525f * tsizemul;
     else
-        scale = std::max(0.1f * tsizemul, getZoom() / 80000.0f + 0.4f * tsizemul);
+        scale = std::max(0.05f * tsizemul, getZoom() / 80000.0f + 0.4f * tsizemul);
 
     //return scale;
     return 2.3f * scale;
