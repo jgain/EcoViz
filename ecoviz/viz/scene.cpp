@@ -1107,7 +1107,7 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
             {
               vector<MitsubaModel>& vectMitsubaModel = it->second;
 
-              MitsubaModel model = getModelIndex(vectMitsubaModel, plant);
+              MitsubaModel model = getModelIndex(vectMitsubaModel, code, plant);
 
               if (model.id == "")
               {
@@ -1190,6 +1190,9 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
       jsonFile << "}\n";
     }
 
+    // Mitsuba model usage stats
+    // dumpModelSelection(urlInstances + nameInstances +"_modeldump.csv");
+
 
     if (!plantCodeNotFound.empty())
     {
@@ -1212,18 +1215,18 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
   }
 }
 
-double interpolateRadiusByHeight(const std::vector<MitsubaModel>& models, Plant plant) {
+double interpolateRadiusByHeight(const std::vector<MitsubaModel>& models, double tree_height) {
   if (models.empty()) return 0.0f;
 
-  if (plant.height <= models.front().height) return models.front().radius;
-  if (plant.height >= models.back().height) return models.back().radius;
+  if (tree_height <= models.front().height) return models.front().radius;
+  if (tree_height >= models.back().height) return models.back().radius;
 
   for (size_t i = 0; i < models.size() - 1; ++i) {
     const auto& lower = models[i];
     const auto& upper = models[i + 1];
 
-    if (lower.height <= plant.height && plant.height <= upper.height) {
-      float t = (plant.height - lower.height) / (upper.height - lower.height);
+    if (lower.height <= tree_height && tree_height <= upper.height) {
+      float t = (tree_height - lower.height) / (upper.height - lower.height);
       return lower.radius + t * (upper.radius - lower.radius);
     }
   }
@@ -1231,45 +1234,143 @@ double interpolateRadiusByHeight(const std::vector<MitsubaModel>& models, Plant 
   return models.back().radius; // fallback
 }
 
-MitsubaModel Scene::getModelIndex(const std::vector<MitsubaModel>& models, Plant plant)
+void Scene::fillModelCache(const std::string &species_name, std::vector<MitsubaModel> models) {
+    // Separate models id ending with "-o" and not ending with "-o"
+    std::vector<MitsubaModel> endingWithO;
+    std::vector<MitsubaModel> notEndingWithO;
+
+    for (const auto& model : models) {
+        if (model.id.find("-o") != std::string::npos)
+            endingWithO.push_back(model);
+        else
+            notEndingWithO.push_back(model);
+    }
+
+    // Sort models by height
+    auto sortByHeight = [](std::vector<MitsubaModel>& vec) {std::sort(vec.begin(), vec.end(), [](const MitsubaModel& a, const MitsubaModel& b) {return a.height < b.height;});};
+
+    sortByHeight(endingWithO);
+    sortByHeight(notEndingWithO);
+
+    SMitsubaCacheItem item;
+    item.endingWithO = endingWithO;
+    item.notEndingWithO = notEndingWithO;
+
+    // interpolate radius in 1m tree height steps
+    for (int treeh = 0; treeh<100; ++treeh) {
+        item.radiusO.push_back(interpolateRadiusByHeight(item.endingWithO, treeh + 0.5));
+        item.radiusNotO.push_back(interpolateRadiusByHeight(item.notEndingWithO, treeh + 0.5));
+    }
+    // save in cache
+    mitsuba_cache[species_name] = item;
+}
+
+void Scene::dumpModelSelection(const string filename)
 {
-	int indexNearestHeightMax = -1;
+    // 1. Open the output file stream
+    std::ofstream outFile(filename);
 
-	// Separate models id ending with "-o" and not ending with "-o"
-  std::vector<MitsubaModel> endingWithO;
-  std::vector<MitsubaModel> notEndingWithO;
+    // 2. Minimal error check: Ensure the file was opened successfully
+    if (!outFile.is_open()) {
+        // Simple error handling: print to cerr and return.
+        // Consider throwing an exception for more robust error handling.
+        std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
+        return;
+    }
 
-  for (const auto& model : models) {
-    if (model.id.find("-o") != std::string::npos)
-      endingWithO.push_back(model);
-    else
-      notEndingWithO.push_back(model);
-  }
+    // 3. Write the header row
+    outFile << "species_code,pickedO,pickedNotO";
+    for (int i = 1; i <= 40; ++i) {
+        outFile << ",radiusO_" << i;
+    }
+    for (int i = 1; i <= 40; ++i) {
+        outFile << ",radiusNotO_" << i;
+    }
+    outFile << "\n"; // End of header row
 
-	// Sort models by height
-  auto sortByHeight = [](std::vector<MitsubaModel>& vec) {std::sort(vec.begin(), vec.end(), [](const MitsubaModel& a, const MitsubaModel& b) {return a.height < b.height;});};
+    // 4. Iterate through the map and write data rows
+    for (const auto& pair : mitsuba_cache) {
+        const std::string& species_code = pair.first;
+        const SMitsubaCacheItem& item = pair.second;
 
-  sortByHeight(endingWithO);
-  sortByHeight(notEndingWithO);
+        // Write fixed columns
+        outFile << species_code << "," << item.pickedO << "," << item.pickedNotO;
 
-  // Get the interpolated index according to the heigth
-	double radiusO = interpolateRadiusByHeight(endingWithO, plant);
-	double radiusNotO = interpolateRadiusByHeight(notEndingWithO, plant);
+        // Write radiusO columns (up to 40)
+        size_t num_radiusO_to_write = std::min(static_cast<size_t>(40), item.radiusO.size());
+        for (size_t i = 0; i < num_radiusO_to_write; ++i) {
+            outFile << "," << item.radiusO[i];
+        }
+        // Pad remaining radiusO columns with empty values (just commas)
+        for (size_t i = num_radiusO_to_write; i < 40; ++i) {
+            outFile << ",";
+        }
 
-	//qDebug() << "radiusO: " << radiusO << " radiusNotO: " << radiusNotO << " plant.canopy: " << plant.canopy;
+        // Write radiusNotO columns (up to 40)
+        size_t num_radiusNotO_to_write = std::min(static_cast<size_t>(40), item.radiusNotO.size());
+        for (size_t i = 0; i < num_radiusNotO_to_write; ++i) {
+            outFile << "," << item.radiusNotO[i];
+        }
+        // Pad remaining radiusNotO columns with empty values (just commas)
+        for (size_t i = num_radiusNotO_to_write; i < 40; ++i) {
+            outFile << ",";
+        }
 
-  // Choose appropriate model set based on canopy
-  const std::vector<MitsubaModel>& selectedModels = (plant.canopy > (radiusO + radiusNotO) / 2.0) ? endingWithO : notEndingWithO;
+        outFile << "\n"; // End of data row
+    }
+    std::cerr << "dumped model use stats to " << filename << std::endl;
+    // 5. File stream is automatically closed when outFile goes out of scope (RAII)
 
-  // Find the first model with height >= plant.height
-  for (const auto& model : selectedModels) {
-    if (model.height >= plant.height)
-      return model;
-  }
+}
 
-  // Fallback to smallest model if none match
-  return selectedModels.empty() ? MitsubaModel{} : selectedModels.front();
+MitsubaModel Scene::SMitsubaCacheItem::selectModel(Plant &plant) {
 
+    int iheight = static_cast<int>(plant.height);
+    double r0 = iheight>=0 && iheight<radiusO.size() ? radiusO[iheight] : 1;
+    double rNotO = iheight>=0 && iheight<radiusNotO.size() ? radiusNotO[iheight] : 2;
+
+    const std::vector<MitsubaModel>* selectedModels =  nullptr;
+    /* Here is the crucial hack to force selecting tree models dedicated to open-canopy trees,
+     * i.e. tree models that represent trees with little competition (long crown, lots of foliage)
+     * There are two sets of models in the data, but the "closed canopy" models (notEndingWithO)
+     * appeaer a bit unrealistic as the crowns are too small, and the resulting forest is too open.
+     * Moreover, the way of selecting the model is currently based on comparing the crown width
+     * from the input data with the crown width of the tree models, but that is also not ideal,
+     * mostly because the 3d models are not that consistent.
+     * For now we just force using the "open" models using a fixed offset for the threshold.
+    */
+    const int hack_force_closed_canopy_trees = 5;
+
+    if (plant.canopy + hack_force_closed_canopy_trees > (r0 + rNotO) / 2.0) {
+        selectedModels = &endingWithO;
+        ++pickedO;
+    } else {
+        selectedModels = &notEndingWithO;
+        ++pickedNotO;
+    }
+
+    // Find the first model with height >= plant.height
+    for (const auto& model : *selectedModels) {
+        if (model.height >= plant.height)
+            return model;
+    }
+    // fallback to smallest model if none match
+    return selectedModels->empty() ? MitsubaModel{} : selectedModels->front();
+}
+
+MitsubaModel Scene::getModelIndex(const std::vector<MitsubaModel>& models, const std::string &code, Plant plant)
+{
+
+    auto it = mitsuba_cache.find(code);
+    if (it == mitsuba_cache.end()) {
+        fillModelCache(code, models);
+        it = mitsuba_cache.find(code);
+        if (it == mitsuba_cache.end()) {
+            cerr << "panic - mitsuba cache not working in Scene::getModelIndex";
+            return models.front();
+        }
+    }
+    return it->second.selectModel(plant);
 }
 
 
