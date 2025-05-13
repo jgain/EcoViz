@@ -1258,14 +1258,16 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     if(wheel->modifiers() == Qt::ControlModifier) // adjust transect width
     {
         del /= 60.0f;
-        trc->trx->setThickness(trc->trx->getThickness()+del, scene->getTerrain());
+        if(trc->showtransect)
+            trc->trx->setThickness(trc->trx->getThickness()+del, scene->getTerrain());
         signalRebindTransectPlants(); // PCM...see if this works
         signalRepaintAllGL();
     }
     else // otherwise adjust view zoom
     {
         view->incrZoom(del);
-        trc->trx->setChangeFlag(); // render thickness of transects depends on zoom
+        if(trc->showtransect)
+            trc->trx->setChangeFlag(); // render thickness of transects depends on zoom
     }
     refreshViews();
 }
