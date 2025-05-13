@@ -150,7 +150,7 @@ public:
     inline Vector getHorizontal(){ return hori; }
     inline Vector getVertical(){ return vert; }
     inline bool getChangeFlag(){ return redraw; }
-    inline bool setChangeFlag(){ redraw = true; }
+    inline void setChangeFlag(){ redraw = true; }
     inline bool getValidFlag(){ return valid; }
     inline void setValidFlag(bool status){ valid = status; }
     inline basic_types::MapFloat * getTransectMap(){ return mapviz; }
