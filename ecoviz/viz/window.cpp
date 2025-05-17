@@ -2462,6 +2462,7 @@ void Window::exportMitsubaJSON()
     if (!QFile::exists(pythonFileOutput)) {
       if (!QFile::copy(pythonFileRessource, pythonFileOutput)) {
         qWarning() << "Failed to copy file:" << pythonFileRessource;
+        QMessageBox::critical(this, "Error in Mitsuba export", "Copying of files from resource folder failed. Please check the selected resource folder.");
         return;
       }
     }
@@ -2525,5 +2526,6 @@ void Window::exportMitsubaJSON()
 
 		}
     std::cout << "Export finished !" << endl;
+    QMessageBox::information(this, "Mitusba Export", "Mitsuba export finished successfully.\nUse render_scene.py and Mitsuba to render the image.");
   }
 }
