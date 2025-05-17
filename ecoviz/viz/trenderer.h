@@ -1,7 +1,8 @@
 /*******************************************************************************
  *
- * EcoSynth - Data-driven Authoring of Large-Scale Ecosystems (Undergrowth simulator)
- * Copyright (C) 2020  J.E. Gain  (jgain@cs.uct.ac.za)
+ * EcoViz -  a tool for visual analysis and photo‐realistic rendering of forest
+ * landscape model simulations
+ * Copyright (C) 2025  P.C. Marais  (patrick@cs.uct.ac.za)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +18,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  ********************************************************************************/
-
 
 #ifndef TRENDERER_H
 #define TRENDERER_H

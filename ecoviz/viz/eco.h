@@ -1,7 +1,8 @@
 /*******************************************************************************
  *
- * EcoSynth - Data-driven Authoring of Large-Scale Ecosystems (Undergrowth simulator)
- * Copyright (C) 2020  J.E. Gain  (jgain@cs.uct.ac.za)
+ * EcoViz -  a tool for visual analysis and photo‐realistic rendering of forest
+ * landscape model simulations
+ * Copyright (C) 2025  J.E. Gain  (jgain@cs.uct.ac.za)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +19,7 @@
  *
  ********************************************************************************/
 
-
 // eco.h: core classes for controlling ecosystems and plant placement
-// author: James Gain
-// date: 27 February 2016
 
 #ifndef _eco_h
 #define _eco_h

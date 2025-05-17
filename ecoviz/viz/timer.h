@@ -1,7 +1,8 @@
 /*******************************************************************************
  *
- * EcoSynth - Data-driven Authoring of Large-Scale Ecosystems (Undergrowth simulator)
- * Copyright (C) 2020  J.E. Gain  (jgain@cs.uct.ac.za)
+ * EcoViz -  a tool for visual analysis and photo‐realistic rendering of forest
+ * landscape model simulations
+ * Copyright (C) 2025  J.E. Gain  (jgain@cs.uct.ac.za)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +19,10 @@
  *
  ********************************************************************************/
 
+// timer.h: fairly accurate timing routines
 
 #ifndef TimerC
 #define TimerC
-/* file: timer.h
-   author: (c) James Gain, 2006
-   notes: fairly accurate timing routines
-*/
 
 #ifdef _WIN32
 #include <winsock.h>

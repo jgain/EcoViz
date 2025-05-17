@@ -1,7 +1,8 @@
 /*******************************************************************************
  *
- * EcoSynth - Data-driven Authoring of Large-Scale Ecosystems (Undergrowth simulator)
- * Copyright (C) 2020  J.E. Gain  (jgain@cs.uct.ac.za)
+ * EcoViz -  a tool for visual analysis and photo‐realistic rendering of forest
+ * landscape model simulations
+ * Copyright (C) 2025  J.E. Gain  (jgain@cs.uct.ac.za)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,15 +19,10 @@
  *
  ********************************************************************************/
 
+// view.h: controlling viewpoint changes to support terrain sketching
 
 #ifndef _INC_VIEW
 #define _INC_VIEW
-/* file: view.h
-   author: (c) James Gain, 2006
-   project: ScapeSketch - sketch-based design of procedural landscapes
-   notes: controlling viewpoint changes to support terrain sketching
-   changes: modified for 3D curve project 5 December 2012
-*/
 
 #include "vecpnt.h"
 #include "timer.h"

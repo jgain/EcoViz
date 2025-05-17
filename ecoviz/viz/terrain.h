@@ -1,7 +1,8 @@
 /*******************************************************************************
  *
- * EcoSynth - Data-driven Authoring of Large-Scale Ecosystems (Undergrowth simulator)
- * Copyright (C) 2020  J.E. Gain  (jgain@cs.uct.ac.za)
+ * EcoViz -  a tool for visual analysis and photo‐realistic rendering of forest
+ * landscape model simulations
+ * Copyright (C) 2025  J.E. Gain  (jgain@cs.uct.ac.za)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +19,7 @@
  *
  ********************************************************************************/
 
-
-/**
- * @file
- */
+// terrain.h: model for terrain. Responsible for storage and display of heightfield terrain data
 
 #ifndef TERRAIN_H
 #define TERRAIN_H
@@ -35,9 +33,6 @@
 #define DEFAULT_DIMX 512
 #define DEFAULT_DIMY 512
 
-// terrain.h: model for terrain. Responsible for storage and display of heightfield terrain data
-// author: James Gain
-// date: 17 December 2012
 
 class AccelSphere
 {
