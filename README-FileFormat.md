@@ -5,8 +5,6 @@ Vegetation data (i.e., trees or cohorts of trees) are loaded in EcoViz from data
 Note that EcoViz supports a text-file-based format (PDB) and a binary format (PDBB). The latter is decreasing file size and increasing performance substantially. 
 
 
-todo: species codes, AAIgrid, space (origin)
------
 
 ### Text-Based PDB File Format (`.pdb`)
 
