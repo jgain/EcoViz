@@ -4,16 +4,18 @@ Ecoviz is a C++ application developed using the Qt6 framework for visualizing ec
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Installation](#installation)
-   - [Ubuntu Installation](#ubuntu-installation)
-   - [Windows Installation](#windows-installation)
-3. [Building and Running Ecoviz](#building-and-running-ecoviz)
-   - [Ubuntu](#ubuntu)
-   - [Windows](#windows)
-4. [Rendering with Mitsuba](#rendering-with-mitsuba)
-5. [Project Structure](#project-structure)
-6. [Description](#description)
+- [Ecoviz - Ecosystem Visualization Application](#ecoviz---ecosystem-visualization-application)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+    - [Ubuntu Installation](#ubuntu-installation)
+    - [Windows Installation](#windows-installation)
+  - [Building and Running Ecoviz](#building-and-running-ecoviz)
+    - [Ubuntu](#ubuntu)
+    - [Windows](#windows)
+  - [Rendering with Mitsuba](#rendering-with-mitsuba)
+  - [Project Structure](#project-structure)
+  - [Description](#description)
 
 ## Prerequisites
 
@@ -50,6 +52,7 @@ Follow these steps to set up Ecoviz on Ubuntu:
 
 1. **Install Qt6**:
    - Download the installer from the [official Qt website](https://www.qt.io/download) and follow the installation steps.
+   - During installation, ensure that you install the `msvc` (**not** `mingw`) version of Qt6, which can be checked under **Customize > Qt 6.X.X**.
    - During installation, ensure that you include the **QtCharts** module.
    - After installation, you need to set the `QT6DIR` environment variable:
      1. Open the **Start Menu** and search for "Environment Variables".
@@ -61,7 +64,7 @@ Follow these steps to set up Ecoviz on Ubuntu:
 2. **Set Up the Visual Studio Project**:
    - Open the Ecoviz Visual Studio solution (`.sln`) using **Visual Studio 2022**.
    - Open the **NuGet Package Manager** and install the following packages:
-     - `boost`
+     - `boost v1.85.0`
      - `boost_serialization-vc143` (specifically for Visual Studio 2022)
      - `glm`
    - Set up the project properties:
