@@ -310,6 +310,7 @@ public:
 
     /// Is the point inside the bounds of the terrain in world coordinates
     bool inWorldBounds(vpPoint p) const;
+    bool inWorldBounds(float x, float y) const;
 
     /// Is the point inside the synth bounds of the terrain in world coordinates
     bool inSynthBounds(vpPoint p) const;

@@ -368,7 +368,7 @@ void TimelineGraph::extractDBHSums(Scene * s)
    std::cerr << "\n Ntrees = " << trees.size() << "; Nmature = " << mature.size() << "\n";
         for(auto &tree: mature)
         {
-            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         tmr.elapsed("build list");
@@ -406,7 +406,7 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         cerr << "num trees = " << (int) trees.size() << " t = " << t << endl;
@@ -452,7 +452,7 @@ void TimelineGraph::extractSpeciesCounts(Scene * s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         for(auto &tree: mature)
         {
-            if(s->getMasterTerrain()->inGridBounds(tree.y, tree.x))
+            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x))
                trees.push_back(tree);
         }
         for(int spc = 0; spc < nspecies; spc++) // iterate over species

@@ -135,6 +135,11 @@ bool Terrain::inWorldBounds(vpPoint p) const
     return (p.x >= 0.0f && p.x <= dimx && p.z >= 0.0f && p.z <= dimy);
 }
 
+bool Terrain::inWorldBounds(float x, float y) const
+{
+    return (x >= 0.0f && x <= dimx && y >= 0.0f && y <= dimy);
+}
+
 bool Terrain::inSynthBounds(vpPoint p) const
 {
     return (p.x >= 0.0f-synthx && p.x <= dimx+synthx && p.z >= 0.0f-synthy && p.z <= dimy+synthy);

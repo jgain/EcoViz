@@ -232,7 +232,7 @@ void TimeWindow::updateSingleScene(int t)
      {
          // PCM: changed to use Master terrain - we will place all then cull away (to avoid issues with Timeline)
          // PCM: why are x/y swapped?
-         if(scene->getMasterTerrain()->inGridBounds(tree.y, tree.x))
+         if(scene->getMasterTerrain()->inWorldBounds(tree.y, tree.x))
              trees.push_back(tree);
          else
              cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
