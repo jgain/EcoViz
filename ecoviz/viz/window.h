@@ -69,6 +69,7 @@
 #include <QWidget>
 #include <QtWidgets>
 #include <string>
+#include "startup_dialog.h"
 
 class QAction;
 class QMenu;
@@ -128,12 +129,14 @@ protected:
     void closeEvent(QCloseEvent* event);
 };
 
+class StartupDialog;
+
 class Window : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    Window(std::string datadir, std::string lbasename, std::string rbasename);
+    Window(std::string datadir, std::string lbasename, std::string rbasename, StartupDialog* startupDialog);
 
     ~Window();
 
@@ -147,6 +150,7 @@ public:
     void run_viewer();
 
 public slots:
+    void showStartupDialog();
     void repaintAllGL();
     void transectSyncPlace(bool firstplace);
     void timelineSync(int t);
@@ -238,6 +242,11 @@ private:
     std::string coredir[2];                     ///< Directories with scene data
     std::string prefix[2];                      ///< Filename filters
     std::string basedir;
+    StartupDialog* m_startupDialog;
+    LogStreambuf* m_streambuf;
+    std::streambuf* m_originalCoutStreambuf;
+
+
 
 
     // data map parameters

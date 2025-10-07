@@ -73,6 +73,7 @@
 #include <QTimer>
 
 #include "window.h"
+#include "startup_dialog.h"
 
 void parseCommandLine(int agc, char *argv[]);
 void printUsage(void);
@@ -100,10 +101,17 @@ int main(int argc, char *argv[])
     {
         QApplication app(argc, argv);
 
+        StartupDialog startupDialog;
+        startupDialog.show();
+
+        LogStreambuf streambuf(startupDialog.getLogOutput());
+        std::streambuf* originalCerrStreambuf = std::cerr.rdbuf(&streambuf);
+        std::streambuf* originalCoutStreambuf = std::cout.rdbuf(&streambuf);
+
         // Register external resource file if needed
         //QResource::registerResource("viz/resources.rcc");
 
-        Window * window = new Window(datadir, leftprefix, rightprefix);
+        Window * window = new Window(datadir, leftprefix, rightprefix, &startupDialog);
 
         QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedKingdom));
         // Set the numeric locale to "C" (or "classic")
@@ -122,6 +130,11 @@ int main(int argc, char *argv[])
         else
             window->showMaximized();
         window->run_viewer();
+        startupDialog.close();
+
+        std::cerr.rdbuf(originalCerrStreambuf);
+        std::cout.rdbuf(originalCoutStreambuf);
+
         int status = app.exec();
 
         system("pause");

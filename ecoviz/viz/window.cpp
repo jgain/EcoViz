@@ -60,6 +60,7 @@
 ****************************************************************************/
 
 #include "window.h"
+#include "startup_dialog.h"
 #include "vecpnt.h"
 #include "export_dialog.h"
 
@@ -1008,8 +1009,10 @@ void Window::setupGraphModels(int scene_index, bool copyData)
 //}
 
 // PCM: add in constructor names for map overlay  - TBD
-Window::Window(string datadir, string lprefix, string rprefix)
+Window::Window(string datadir, string lprefix, string rprefix, StartupDialog* startupDialog)
 {
+    m_startupDialog = startupDialog;
+
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout();
 
@@ -1110,6 +1113,10 @@ Window::Window(string datadir, string lprefix, string rprefix)
 
 Window::~Window()
 {
+    
+    std::cout.rdbuf(m_originalCoutStreambuf);
+    delete m_streambuf;
+
     // delete transect controllers
     for(auto &it: transectControls)
         if (it != nullptr) delete it;
@@ -1144,6 +1151,8 @@ void Window::acquireTimeline(std::vector<int> & timestepIDs, std::string prefix)
 
 void Window::run_viewer()
 {
+    m_startupDialog->setProgress(10);
+    QApplication::processEvents();
     int extractWindowDSample = 6;
 
     for(int i = 0; i < 2; i++)
@@ -1155,10 +1164,14 @@ std::cerr << " -- load overview (w. dsample)\n";
         // if left scene data is same as right scene data, we share - so load happens for left view only
         std::unique_ptr<Terrain> subTerr =
                 mapScenes[i]->loadOverViewData(extractWindowDSample, ( (prefix[0]==prefix[1]) && i == 1) );
+        m_startupDialog->setProgress(20 + i * 10);
+        QApplication::processEvents();
         // (1) set extracted sub-region as the region for this window
         // (2) pass in a pointer to highres (master) terrain
 std::cerr << " -- set up terrain copy.\n";
         scenes[i]->setNewTerrainData(std::move(subTerr), mapScenes[i]->getHighResTerrain().get());
+        m_startupDialog->setProgress(40 + i * 10);
+        QApplication::processEvents();
         vpPoint midPoint;
         scenes[i]->getTerrain()->getMidPoint(midPoint);
         scenes[i]->getTerrain()->setFocus(midPoint);
@@ -1168,13 +1181,19 @@ std::cerr << " -- set up terrain copy.\n";
 std::cerr << " -- acquire timeline.\n";
         std::vector<int> timelineIDs;
         acquireTimeline(timelineIDs, prefix[i]);
+        m_startupDialog->setProgress(60 + i * 10);
+        QApplication::processEvents();
  std::cerr << " -- Load scene start: \n";
         scenes[i]->loadScene(timelineIDs,
                              (prefix[0]==prefix[1]), // if these match, assume we have IDENTICAL left/right cohort data!
                              (i==0?std::shared_ptr<CohortMaps>() : scenes[0]->getCohortMaps())); // if L/R cohorts are same, only allocate 1st call
+        m_startupDialog->setProgress(80 + i * 5);
+        QApplication::processEvents();
 std::cerr << " -- Load scene end.\n";
         cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
+        m_startupDialog->setProgress(90 + i * 5);
+        QApplication::processEvents();
 
 
         transectViews[i]->setScene(scenes[i]);
@@ -1196,6 +1215,8 @@ std::cerr << " -- Load scene end.\n";
     setupViewPanel();
     rendercount++;
     repaintAllGL();
+    m_startupDialog->hide();
+    m_startupDialog->setProgress(100);
 }
 
 void Window::scaleRenderParams(float scale)
@@ -2097,6 +2118,15 @@ void Window::createMenus()
     viewMenu->addAction(showDataMapAct);
     viewMenu->addAction(showViewAct);
     viewMenu->addAction(clearTransectsAct);
+
+    QAction* showStartupLogAct = new QAction(tr("Show Startup Log"), this);
+    connect(showStartupLogAct, &QAction::triggered, this, &Window::showStartupDialog);
+    viewMenu->addAction(showStartupLogAct);
+}
+
+void Window::showStartupDialog()
+{
+    m_startupDialog->show();
 }
 
 class AdjustmentRunnable : public QRunnable

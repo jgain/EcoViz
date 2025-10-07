@@ -156,6 +156,12 @@
     <ClCompile Include="viz\typemap.cpp">
       <Filter>Source Files\Model</Filter>
     </ClCompile>
+    <ClCompile Include="viz\startup_dialog.cpp">
+      <Filter>Source Files\View</Filter>
+    </ClCompile>
+    <ClCompile Include="viz\moc_startup_dialog.cpp">
+      <Filter>Source Files\Generated files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common\constraint_interface.h">
@@ -368,6 +374,9 @@
     <ClInclude Include="viz\hash_table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="viz\startup_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="doc\html\graph_legend.html" />
@@ -401,6 +410,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="viz\export_dialog.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="viz\startup_dialog.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="viz\UI\resources.qrc">

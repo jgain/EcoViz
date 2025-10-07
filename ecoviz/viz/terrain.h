@@ -374,11 +374,22 @@ public:
     void loadElvBinary(const std::string &filename, int downsample);
 
     /**
+     * @brief Saves the current terrain grid data to a binary file.
+     *
+     * This function writes the terrain metadata (dimensions, step, location)
+     * followed by the raw height data to the specified file. The format is
+     * designed to be read quickly by the loadElvBinary function.
+     *
+     * @param filename The path to the binary file to be created.
+     */
+    void saveElvBinary(const std::string &filename);
+    /**
        * Save a terrain to file.
        * @param filename   File to save (simple ascii elevation format)
        * @see @ref MemMap for exception information
        */
-    void saveElv(const std::string &filename);
+    void saveElv(const std::string& filename);
+
 
     /**
        * Save a terrain to OBJ file.

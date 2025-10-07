@@ -159,6 +159,7 @@
     <ClCompile Include="viz\moc_glwidget.cpp" />
     <ClCompile Include="viz\moc_progressbar_window.cpp" />
     <ClCompile Include="viz\moc_scrollwindow.cpp" />
+    <ClCompile Include="viz\moc_startup_dialog.cpp" />
     <ClCompile Include="viz\moc_timewindow.cpp" />
     <ClCompile Include="viz\moc_window.cpp" />
     <ClCompile Include="viz\pft.cpp" />
@@ -168,6 +169,7 @@
     <ClCompile Include="viz\scrollwindow.cpp" />
     <ClCompile Include="viz\shaderProgram.cpp" />
     <ClCompile Include="viz\shape.cpp" />
+    <ClCompile Include="viz\startup_dialog.cpp" />
     <ClCompile Include="viz\stroke.cpp" />
     <ClCompile Include="viz\terrain.cpp" />
     <ClCompile Include="viz\timer.cpp" />
@@ -312,6 +314,17 @@
     </CustomBuild>
     <ClInclude Include="viz\shaderProgram.h" />
     <ClInclude Include="viz\shape.h" />
+
+    <CustomBuild Include="viz\startup_dialog.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT6DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension) into viz\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT6DIR)\bin\moc.exe</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT6DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension) into viz\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT6DIR)\bin\moc.exe</AdditionalInputs>
+    </CustomBuild>
     <ClInclude Include="viz\stroke.h" />
     <ClInclude Include="viz\terrain.h" />
     <ClInclude Include="viz\timer.h" />

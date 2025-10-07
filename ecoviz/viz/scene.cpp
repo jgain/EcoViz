@@ -35,7 +35,7 @@
 #include <QElapsedTimer>
 #include <qdir.h>
 
-class ElapsedTimer
+/* class ElapsedTimer
 {
 public:
     ElapsedTimer(std::string name) { cap = name; qet.start(); }
@@ -45,7 +45,7 @@ private:
    QElapsedTimer qet;
    std::string cap;
 
-};
+}; */
 
 
 //// Transect
@@ -598,8 +598,11 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor, bool noLoad)
     {
         if (binaryElvFile)
             fullResTerrain->loadElvBinary(terfile);
-        else
+        else {
             fullResTerrain->loadElv(terfile);
+            // save a cache file for the future
+            fullResTerrain->saveElvBinary(binfile);
+        }
 
         fullResTerrain->calcMeanHeight();
         std::cout << "\n ****** Hi-res Terrain loaded...\n";

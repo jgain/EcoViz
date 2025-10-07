@@ -31,7 +31,7 @@
 #include <QDir>
 #include <QElapsedTimer>
 
-class ElapsedTimer
+/* * /class ElapsedTimer
 {
 public:
     ElapsedTimer(std::string name) { cap = name; qet.start(); }
@@ -41,7 +41,7 @@ private:
    QElapsedTimer qet;
    std::string cap;
 
-};
+};*/
 
 /// NoiseField
 

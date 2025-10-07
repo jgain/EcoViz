@@ -34,6 +34,7 @@
 
 using namespace std;
 
+
 bool Terrain::inGridBounds(int x, int y)
 {
     int gx, gy;
@@ -570,6 +571,7 @@ bool Terrain::drapePnt(vpPoint pnt, vpPoint & drape)
 void Terrain::loadElv(const std::string &filename, int dFactor)
 {
     //float lat;
+    ElapsedTimer tmr("load DEM (text)");
     int dx, dy;
 
 
@@ -636,6 +638,7 @@ void Terrain::loadElvBinary(const std::string &filename, int dFactor)
 {
     //float lat;
     int dx, dy;
+    ElapsedTimer tmr("load DEM (binary)");
 
     float val;
     ifstream infile;
@@ -752,6 +755,7 @@ void Terrain::loadElv(const std::string &filename)
 void Terrain::loadElvBinary(const std::string &filename)
 {
     //float lat;
+    ElapsedTimer tmr("load DEM (binary)");
     int dx, dy;
 
     float val;
@@ -802,6 +806,7 @@ std::cerr << " -- *** -- Done read: " << dx << "," << dy << ", " << step << ", "
     }
 }
 
+
 void Terrain::saveElv(const std::string &filename)
 {
     int gx, gy;
@@ -827,6 +832,67 @@ void Terrain::saveElv(const std::string &filename)
     {
         cerr << "Error Terrain::loadElv:unable to open file " << filename << endl;
     }
+}
+
+
+/**
+ * @brief Saves the current terrain grid data to a binary file.
+ *
+ * This function writes the terrain metadata (dimensions, step, location)
+ * followed by the raw height data to the specified file. The format is
+ * designed to be read quickly by the loadElvBinary function.
+ *
+ * @param filename The path to the binary file to be created.
+ */
+void Terrain::saveElvBinary(const std::string& filename)
+{
+    // Open the file for writing in binary mode
+    std::ofstream outfile(filename, std::ios::binary);
+    if (!outfile.is_open())
+    {
+        std::cerr << "Error Terrain::saveElvBinary: unable to open file " << filename << std::endl;
+        return;
+    }
+
+    ElapsedTimer tmr("save binary DEM");
+
+    // Get the dimensions of the grid
+    int gx, gy;
+    getGridDim(gx, gy);
+
+    // --- Write Header ---
+    // The order and data types must exactly match the reading function.
+    // Note: I'm assuming 'step', 'locx', and 'locy' are float members of the Terrain class.
+    // Ensure consistency with the types used in your loadElvBinary function.
+    outfile.write(reinterpret_cast<const char*>(&gx), sizeof(int));
+    outfile.write(reinterpret_cast<const char*>(&gy), sizeof(int));
+    outfile.write(reinterpret_cast<const char*>(&step), sizeof(float));
+    outfile.write(reinterpret_cast<const char*>(&locx), sizeof(float));
+    outfile.write(reinterpret_cast<const char*>(&locy), sizeof(float));
+
+    // --- Write Grid Data ---
+    // To write efficiently, we'll gather all height data into a vector first.
+    std::vector<float> heights;
+    heights.reserve(gx * gy); // Pre-allocate memory for efficiency
+
+    // The data must be read in the same loop order (x-outer, y-inner)
+    // as it is in the loadElvBinary function.
+    for (int x = 0; x < gx; ++x)
+    {
+        for (int y = 0; y < gy; ++y)
+        {
+            heights.push_back(grid->get(x, y));
+        }
+    }
+
+    // Write the entire vector of floats to the file in one operation
+    if (!heights.empty())
+    {
+        outfile.write(reinterpret_cast<const char*>(heights.data()), heights.size() * sizeof(float));
+    }
+
+    outfile.close();
+    std::cout << " -- Saved binary cache file: " << filename << std::endl;
 }
 
 
