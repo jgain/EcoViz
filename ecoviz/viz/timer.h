@@ -73,4 +73,20 @@ public:
     float peek();
 };
 
+#include <QElapsedTimer>
+#include <iostream>
+
+/* Simple class to time lengthly operations */
+class ElapsedTimer
+{
+public:
+    ElapsedTimer(std::string name) { cap = name; qet.start(); }
+    ~ElapsedTimer() { std::cerr << "Time: " << cap << ": " << qet.elapsed() << "ms"; }
+    void elapsed(std::string tx) { std::cerr << "Timer " << cap << " - " << tx << ": " << qet.elapsed() << "ms"; }
+private:
+    QElapsedTimer qet;
+    std::string cap;
+
+};
+
 #endif
