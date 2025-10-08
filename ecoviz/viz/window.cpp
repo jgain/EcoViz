@@ -292,7 +292,7 @@ void Window::setupRenderPanel()
     connect(wetMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(chmMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));*/
-    // connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
+    connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
 
     renderPanel->setLayout(renderLayout);
 }

@@ -218,8 +218,8 @@ public:
     /// get and set viewing mode
     inline void setViewMode(ViewMode vm)
     {
-        viewmode = vm;
         reset();
+        viewmode = vm;
     }
 
     inline ViewMode getViewMode(){ return viewmode; }

@@ -489,6 +489,7 @@ glm::mat4x4 View::getViewMtx()
     }
     else
     {
+        // JG: VIEWING FIX NEEDED HERE
         viewMx = glm::mat4x4(1.0f);
 
         // quaternion to mult matrix from arcball

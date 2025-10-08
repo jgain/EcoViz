@@ -1,0 +1,27 @@
+EcoViz Interaction Regression Tests
+
+
+Camera Mode:
+- Switch from orbit to flyover camera (View -> Show Terrain Options -> Camera)
+- Test correct camera controls in both left and right perspective views. Mouse movement rotates about the current viewing position; middle mouse moves forwards and backwards. 
+- Test that transect viewing is not affected. I.e., that the mouse controls behave the same in both orbit and flyover mode.
+- Switch back to orbit and test that left and middle mouse buttons follow arc ball and zoom behaviour patterns.
+
+Locking:
+- Successively lock and unlock from the left: transects, perspective view, graphs. While locked tests that interactions are synchronised in both the left and right panel. Also test that currently unlocked panels are not synchronised. Once the test panels are unlocked make sure that they are no longer synchronised.
+- Repeat the same procedure for locking and unlocking from the right
+
+Minimaps:
+- In both left and right minimaps:
+- (A) mark out a new area using right button press and release.
+- (B) slide the existing area to the bottom right corner, using left button pick on the blue area and release. Movement should be limited by the minimap boundaries.
+
+Transects:
+
+Graphs:
+
+Plant Options Menu:
+
+Datamap Options Menu:
+
+View Controls:

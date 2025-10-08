@@ -1013,7 +1013,8 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             nx = (2.0f * (float) sx - W) / W;
             ny = (H - 2.0f * (float) sy) / H;
             lastPos = event->pos();
-            view->startArcRotate(nx, ny);
+            // if(view->getViewMode() == ViewMode::ARCBALL)
+                view->startArcRotate(nx, ny);
             persRotating = true;
         }
     }
@@ -1231,7 +1232,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             // convert to [0,1] X [0,1] domain
             nx = (2.0f * (float) x - W) / W;
             ny = (H - 2.0f * (float) y) / H;
-            view->arcRotate(nx, ny);
+            // if(view->getViewMode() == ViewMode::ARCBALL)
+                view->arcRotate(nx, ny);
 
             refreshViews();
         }
@@ -1265,7 +1267,8 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     }
     else // otherwise adjust view zoom
     {
-        view->incrZoom(del);
+        if(view->getViewMode() == ViewMode::ARCBALL)
+            view->incrZoom(del);
         if(trc->showtransect)
             trc->trx->setChangeFlag(); // render thickness of transects depends on zoom
     }
