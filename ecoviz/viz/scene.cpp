@@ -366,16 +366,20 @@ void TimelineGraph::extractDBHSums(Scene * s)
         std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
         tmr.elapsed("sampler");
    std::cerr << "\n Ntrees = " << trees.size() << "; Nmature = " << mature.size() << "\n";
-        for(auto &tree: mature)
-        {
-            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x))
-               trees.push_back(tree);
-        }
-        tmr.elapsed("build list");
-        auto dbhs = std::vector<float>(nspecies);
+        
+        auto dbhs = std::vector<float>(nspecies, 0.0f);
         for (const auto &tree : trees) {
             dbhs[tree.species] += tree.dbh;
         }
+
+        for(const auto &tree: mature)
+        {
+            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x))
+               dbhs[tree.species] += tree.dbh;
+        }
+
+        tmr.elapsed("build list");
+        
         float dbhtot = 0.f;
         for (int spc=0; spc<nspecies; ++spc) {
             dbhs[spc]/=hectares;
@@ -400,23 +404,31 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
 
     setNumSeries(nspecies);
 
+    const float basal_area_factor = PI / 4. / 10000.;
+
     for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
     {
+        auto basal_areas = std::vector<float>(nspecies, 0.0f);
+
+        // Process sampled trees
         std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
-        std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
-        for(auto &tree: mature)
-        {
-            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x))
-               trees.push_back(tree);
+        for(const auto &tree: trees) {
+            basal_areas[tree.species] += tree.dbh * tree.dbh;
         }
-        cerr << "num trees = " << (int) trees.size() << " t = " << t << endl;
-        auto basal_areas = std::vector<float>(nspecies);
-        for(const auto &tree: trees)  // count species
-            basal_areas[tree.species] += (PI * tree.dbh*tree.dbh/ 4. / 10000.); // dbh is in cm, need to convert to m.
+
+        // Process mature trees
+        std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
+        for(const auto &tree: mature) {
+            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x)) {
+               basal_areas[tree.species] += tree.dbh * tree.dbh;
+            }
+        }
+
+        cerr << "num trees (sampled) = " << (int) trees.size() << ", num trees (mature) = " << (int) mature.size() << " t = " << t << endl;
 
         float basaltot = 0.f;
         for (int spc=0; spc<nspecies; ++spc) {
-            basal_areas[spc] /= hectares; // calc m2/ha
+            basal_areas[spc] *= basal_area_factor / hectares; // calc m2/ha
             basaltot += basal_areas[spc];
             assignData(spc, t, basal_areas[spc]);
         }

@@ -50,6 +50,7 @@ public:
 
         m_logOutput = new QTextEdit(this);
         m_logOutput->setReadOnly(true);
+        m_logOutput->setText("Starting Ecoviz, loading the scene....");
 
         QVBoxLayout* layout = new QVBoxLayout(this);
         layout->addWidget(m_progressBar);

@@ -1142,7 +1142,7 @@ void Window::acquireTimeline(std::vector<int> & timestepIDs, std::string prefix)
             if(std::all_of(id.begin(), id.end(), ::isdigit))
                 timestepIDs.push_back(std::stoi(id));
             else
-                cerr << "Error Window::acquireTimeline : malformed input file " << filtername << endl;
+                cerr << "Info Window::acquireTimeline : input file not used: " << filtername << endl;
         }
     }
     std::sort(timestepIDs.begin(), timestepIDs.end(), std::less<int>()); // sort in ascending order
@@ -1154,6 +1154,8 @@ void Window::run_viewer()
     m_startupDialog->setProgress(10);
     QApplication::processEvents();
     int extractWindowDSample = 6;
+
+    ElapsedTimer tmr("Loading scenes");
 
     for(int i = 0; i < 2; i++)
     {

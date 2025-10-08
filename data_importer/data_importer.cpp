@@ -35,6 +35,7 @@
 #include <string>
 #include <cassert>
 //#include <sqlite3.h>
+#include "../viz/timer.h"
 
 #include <QFileInfo>
 #include <QLabel>
@@ -184,6 +185,7 @@ std::vector<data_importer::ilanddata::filedata> data_importer::ilanddata::read_m
 data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string filename, std::string minversion, const std::map<std::string, int> &species_lookup, bool timestep_only)
 {
     using namespace data_importer::ilanddata;
+    ElapsedTimer et("Read vegetation: " + filename);
 
     std::map<int, bool> species_avail;
     std::map<int, bool> species_avail_cohorts;
@@ -366,6 +368,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
     std::map<int, bool> species_avail_cohorts;
 
     std::ifstream ifs(filename, std::ios::binary);
+    ElapsedTimer tmr("Read vegetation (binary): " + filename);
 
     if (!ifs.is_open())
         throw std::invalid_argument("Could not open binary file at " + filename);
@@ -411,7 +414,8 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
     // can use this integer to check that the file and import are consistent by comparing to tree vector size
 
     std::cout << "Reading " << ntrees_expected << " trees..." << std::endl;
-    std::string species_id;
+
+    fdata.trees.reserve(ntrees_expected);
 
     std::vector<cohortA> Adata;
     Adata.resize(ntrees_expected);
@@ -424,11 +428,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
 
         // TODO: leaving out ID for now, must include it later
 
-        std::string species_id; // alpha-numeric species key
-        species_id += Adata[i].code[0];
-        species_id += Adata[i].code[1];
-        species_id += Adata[i].code[2];
-        species_id += Adata[i].code[3];
+        std::string species_id(Adata[i].code, 4); // alpha-numeric species key
         tree.species = species_lookup.at(species_id);
 
         tree.x = Adata[i].x;
@@ -468,11 +468,7 @@ data_importer::ilanddata::filedata data_importer::ilanddata::readbinary(std::str
 //        if (i > 1657745)
 //           std::cout << i << " ";
 
-        std::string species_id; // alpha-numeric species key
-        species_id += dataB[i].code[0];
-        species_id += dataB[i].code[1];
-        species_id += dataB[i].code[2];
-        species_id += dataB[i].code[3];
+        std::string species_id(dataB[i].code, 4); // alpha-numeric species key
 
         fdata.cohorts.emplace_back(dataB[i].xs, dataB[i].ys, species_lookup.at(species_id), dataB[i].dbh, dataB[i].height, dataB[i].nplants);
 
