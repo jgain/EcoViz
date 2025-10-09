@@ -581,7 +581,7 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor, bool noLoad)
 
     //std::string terfile = datadir+"/dem.elv";
     std::string binfile = datadir+"/" + basename + ".elvb";
-    std::string currdir = std::filesystem::current_path();
+    std::string currdir = std::filesystem::current_path().string();
     std::string txtfile = currdir + "/" + datadir+"/" + basename + ".elv";
 
     int direxists = std::filesystem::is_directory(datadir); // weirdly without this it can't find the file
