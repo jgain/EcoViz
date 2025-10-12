@@ -851,6 +851,7 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
     std::vector<std::string> timestep_files;
     bool checkfiles = true;
 
+    std::cerr << "LOAD SCENE" << std::endl;
     using namespace data_importer;
 
     //std::string terfile = datadir+"/dem.elv";

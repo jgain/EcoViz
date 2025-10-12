@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
 void elevationToBin(const string & in, const string & out)
 {
-  // format: width(int) height(int) step (float)
+  // format: width(int) height(int) step (float) locx (long) locy (long)
   // width*height floats
       
     int dx, dy;

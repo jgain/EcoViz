@@ -376,6 +376,7 @@ void Window::setupPlantPanel()
     QPushButton * plantsOff = new QPushButton(tr("None Visible"));;
     connect(plantsOn, SIGNAL(clicked()), this, SLOT(allPlantsOn()));
     connect(plantsOff, SIGNAL(clicked()), this, SLOT(allPlantsOff()));
+    connect(smoothEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     globalLayout->addWidget(plantsOn);
     globalLayout->addWidget(plantsOff);
 
@@ -1194,6 +1195,7 @@ std::cerr << " -- acquire timeline.\n";
 std::cerr << " -- Load scene end.\n";
         cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
+
         m_startupDialog->setProgress(90 + i * 5);
         QApplication::processEvents();
 
@@ -2033,6 +2035,7 @@ void Window::lineEditChange()
 
     // cerr << "val entered " << val << endl;
 
+
     // without this the renderer defaults back to factory settings at certain stages - very wierd bug
     for(auto pview: perspectiveViews)
     {
@@ -2143,13 +2146,17 @@ public:
     {
         CohortMaps * maps = scene->cohortmaps.get();
 
+        cerr << "tstep = " << tstep << endl;
+        cerr << "smooth level = " << distance << endl;
         if (maps)
         {
             maps->do_adjustments(distance);
-            scene->reset_sampler(maps->get_maxpercell());
+            // scene->reset_sampler(maps->get_maxpercell());
         }
         if (tstep >= 0)
+        {
             tview->updateScene(tstep);
+        }
     }
 private:
     TimeWindow * tview;
@@ -2180,8 +2187,7 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
   }
 
   for (const QString& file : dbFiles) {
-    qDebug() << "Database file found:" << dir.absoluteFilePath(file);
-
+    qDebug() << "Profile file found:" << dir.absoluteFilePath(file);
 
     string profilePath = dirCSVFile + file.toStdString();
 
@@ -2204,7 +2210,6 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
     QString profileName = file;
     profileName.chop(4); // Remove the ".csv" extension
     setlocale(LC_NUMERIC, "C");
-
 
     string line;
     //string plantCode, maxHeightStr, instanceId, actualHeightStr;
