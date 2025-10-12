@@ -948,6 +948,7 @@ static int sql_callback_common_data_species(void *write_info, int argc, char ** 
 {
     //std::cout << "Processing row in sql_callback_common_data_species" << std::endl;
 
+    qDebug() << "sql_callback_common_data_species";
     data_importer::common_data *common = (data_importer::common_data *)write_info;
 
     int tree_idx;
@@ -980,6 +981,7 @@ static int sql_callback_common_data_species(void *write_info, int argc, char ** 
 
 static int sql_callback_common_data_all_species(void *write_info, int argc, char ** argv, char **colnames)
 {
+    qDebug() << "sql_callback_common_data_all_species";
     data_importer::common_data *common = (data_importer::common_data *)write_info;
 
     int tree_idx;
@@ -1125,24 +1127,24 @@ data_importer::common_data::common_data(std::string db_filename)
   // Open the database in read-only mode
   QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
   db.setDatabaseName(QString::fromStdString(db_filename));
-
+   
   if (!db.open())
   {
     QString errstr = "Cannot open database file at " + QString::fromStdString(db_filename) + ": " + db.lastError().text();
     throw std::runtime_error(errstr.toStdString());
   }
-
+   
   // Execute SQL query
   QSqlQuery query(db);
   QString sql = "SELECT Tree_ID, alpha_code, common_name, scientific_name, base_col_red, base_col_green, base_col_blue, draw_height, draw_radius, draw_box1, draw_box2, draw_shape FROM species";
-
+    
   if (!query.exec(sql))
   {
     qWarning() << "SQL Error:" << query.lastError().text();
     db.close();
     return;
   }
-
+    
   // Process query results
   while (query.next())
   {
@@ -1168,9 +1170,7 @@ data_importer::common_data::common_data(std::string db_filename)
   }
 
   db.close();
-
    // QFile::remove(path); // delete the temporary file again
-
 }
 
 

@@ -905,7 +905,7 @@ void Window::setupVizPanel()
 
     QPixmap lockleftmap(":/resources/icons/locklefticon32.png");
     lockleftIcon = new QIcon(lockleftmap);
-    QPixmap lockrightmap(":/resrouces/icons/lockrighticon32.png");
+    QPixmap lockrightmap(":/resources/icons/lockrighticon32.png");
     lockrightIcon = new QIcon(lockrightmap);
     QPixmap unlockleftmap(":/resources/icons/unlocklefticon32.png");
     unlockleftIcon = new QIcon(unlockleftmap);
@@ -1449,7 +1449,6 @@ void Window::showViewOptions()
 
 void Window::unlockViews()
 {
-    cerr << "((((((( UNLOCK VIEWS ))))))))" << endl;
     if((int) perspectiveViews.size() == 2)
     {
         perspectiveViews[0]->unlockView();
@@ -1457,6 +1456,7 @@ void Window::unlockViews()
             p->setViewLockState(false);
         lockV1->setIcon((* unlockleftIcon));
         lockV2->setIcon((* unlockrightIcon));
+        viewLock = LockState::UNLOCKED;
     }
     else
     {
@@ -1471,12 +1471,13 @@ void Window::lockViewsFromLeft()
         if(viewLock == LockState::LOCKEDFROMLEFT)
         {
             unlockViews();
-            viewLock = LockState::UNLOCKED;
         }
         else
         {
             if(viewLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
+            {
                 unlockViews();
+            }
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
             perspectiveViews[1]->lockMap(perspectiveViews[0]->getMapRegion());
@@ -1502,19 +1503,19 @@ void Window::lockViewsFromRight()
         if(viewLock == LockState::LOCKEDFROMRIGHT)
         {
             unlockViews();
-            viewLock = LockState::UNLOCKED;
         }
         else
         {
             if(viewLock == LockState::LOCKEDFROMLEFT) // need to unlock first
+            {
                 unlockViews();
+            }
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
             perspectiveViews[0]->lockMap(perspectiveViews[1]->getMapRegion());
             perspectiveViews[0]->lockView(perspectiveViews[1]->getView()); // Do not re-order this and previous line
             viewLock = LockState::LOCKEDFROMRIGHT;
             lockV2->setIcon((* lockrightIcon));
-
         }
 
         rendercount++;
