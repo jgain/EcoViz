@@ -1486,8 +1486,8 @@ void Scene::exportTerrainJSON(const string terrainURL, const string terrainName,
   jsonFile << "\t\t\t\t\"Type\":   \"Blended\",\n";
   jsonFile << "\t\t\t\t\"Layers\" : [\n";
   jsonFile << "\t\t\t\t\t{\n";
-  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/Grass_BaseColor.png\",\n";
-  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/coast_sand_rocks_02_nor_gl_2k.exr\",\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/aerial_grass_rock_diff_4k.png\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/aerial_grass_rock_nor_gl_4k.exr\",\n";
 	double sizeGrass = 30.0; // in meters
   jsonFile << "\t\t\t\t\t\t\"UVScale\" : "<<  max(tx,ty)/sizeGrass <<"\n"; //,\n";
   //jsonFile << "\t\t\t\t\t\t\"OpacityMap\" : \"Terrain/Textures/Grass_Opacity.png\",\n";
