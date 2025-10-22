@@ -166,6 +166,7 @@ void TimeWindow::setSliderBounds(int tstart, int tend)
     {
         nticks /= 2;
     }
+    if (nticks == 0) nticks = 1;
     tstep_slider->setTickInterval((tend - tstart) / nticks);
     tstep_slider->setTickPosition(QSlider::TicksBelow);
     set_labelvalue(get_sliderval(), tend);
