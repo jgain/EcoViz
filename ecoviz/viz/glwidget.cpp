@@ -271,10 +271,40 @@ void GLWidget::setScene(Scene * s)
 
 void GLWidget::changeViewMode(ViewMode vm)
 {
-    view->setViewMode(vm);
-    view->setForcedFocus(scene->getTerrain()->getFocus());
-    view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
-    view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
+    if (vm == view->getViewMode()) return; // No change
+
+    if (vm == ViewMode::FLY) {
+        // Transition to Flyover from Orbit
+        vpPoint focusPoint = view->getFocus();
+        focusPoint.y += 50.0f; // Start 50m above focus
+
+        Vector endDir;
+        endDir.diff(view->getCOP(), view->getFocus());
+        endDir.j = 0;
+        if (endDir.length() < 0.01f) { endDir = Vector(0.0f, 0.0f, 1.0f); }
+        endDir.normalize();
+
+        view->transitionToFly(focusPoint, endDir);
+
+    } else { // Transition to Orbit from Flyover
+        // Keep current position as the new focus
+        vpPoint newFocus = view->getFocus();
+
+        // Pull camera back to a reasonable zoom distance
+        float newZoom = view->getViewScale() / 2.0f / tan(view->getHalfHorizontalFOV());
+        view->setZoomdist(newZoom);
+
+        // Set a default "look down" orientation
+        float xaxis[] = {-1.0f, 0.0f, 0.0f};
+        float newQuat[4];
+        axis_to_quat(xaxis, PI/2.5f, newQuat);
+        view->setQuaternion(newQuat);
+
+        // Set the focus and mode
+        view->setForcedFocus(newFocus);
+        view->setViewMode(vm);
+    }
+
     update();
 }
 
@@ -811,7 +841,9 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_F2)
     {
-        winparent->toggleCameraMode();
+        ViewMode currentMode = view->getViewMode();
+        ViewMode newMode = (currentMode == ViewMode::ARCBALL) ? ViewMode::FLY : ViewMode::ARCBALL;
+        changeViewMode(newMode);
     }
 
     if(event->key() == Qt::Key_N) // 'N' to save overview map selection

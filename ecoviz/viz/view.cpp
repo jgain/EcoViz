@@ -669,6 +669,7 @@ void View::save(ofstream & outfile)
     // save zoomdist and curquat, sufficient to restore viewpoint under most circumstances
     if(outfile.is_open())
     {
+        outfile << static_cast<int>(viewmode) << endl;
         outfile << zoomdist << endl;
         outfile << curquat[0] << " " << curquat[1] << " " << curquat[2] << " " << curquat[3] << endl;
         outfile << currfocus.x << " " << currfocus.y << " " << currfocus.z << endl;
@@ -679,6 +680,9 @@ void View::load(ifstream & infile)
 {
     if(infile.is_open())
     {
+        int mode_i;
+        infile >> mode_i;
+        viewmode = static_cast<ViewMode>(mode_i);
         infile >> zoomdist >> curquat[0] >> curquat[1] >> curquat[2] >> curquat[3];
         infile >> currfocus.x >> currfocus.y >> currfocus.z;
     }

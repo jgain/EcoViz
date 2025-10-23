@@ -1295,6 +1295,13 @@ void Window::saveSceneView(int i)
 
     // get data directory
     QString qFileName = QFileDialog::getSaveFileName(this, tr("Save View"), coredir[i].c_str(), tr("View Files (*.vew)"));
+    if (qFileName.isEmpty())
+        return;
+
+    // aadd file extension if missing
+    if (!qFileName.endsWith(".vew", Qt::CaseInsensitive))
+        qFileName += ".vew";
+
     // add file name to list
     // remember to auto-populate views
     std::string comment = scenes[i]->getDataDescription();
@@ -1311,6 +1318,9 @@ void Window::loadSceneView(int i)
     // get data directory
 
     QString qFileName = QFileDialog::getOpenFileName(this, tr("Open View"), coredir[i].c_str(), tr("View Files (*.vew)"));
+    if (qFileName.isEmpty())
+        return;
+
     scnview.load(qFileName.toStdString());
     cerr << endl << "SCENE VIEW LOADED " << i << endl;
 
@@ -1318,6 +1328,13 @@ void Window::loadSceneView(int i)
     view = scnview.getView();
     extractNewSubTerrain(i, region.x0, region.y0, region.x1, region.y1);
     perspectiveViews[i]->setView(view);
+
+    // Update the UI to reflect the loaded view mode, blocking signals to prevent a reset
+    cameraDropDown->blockSignals(true);
+    ViewMode loadedMode = perspectiveViews[i]->getView()->getViewMode();
+    cameraDropDown->setCurrentIndex( (loadedMode == ViewMode::ARCBALL) ? 0 : 1 );
+    cameraDropDown->blockSignals(false);
+
     repaintAllGL();
 }
 
