@@ -168,6 +168,7 @@ public slots:
     void lineEditChange();
     void mapChange(bool on);
     void cameraChange(int idx);
+    void toggleCameraMode();
 
     // plant panel
     void plantChange(int show);
@@ -182,11 +183,11 @@ public slots:
     void rightRampChoice(int id);
     void leftGraphChoice(int id);
     void rightGraphChoice(int id);
-    void uncheckDataMapPanel(); // on close change view menu item to unchecked state
-    void syncDataMapPanel(); // if a perspective view goes into transect view update datamap params
+    void uncheckDataMapPanel();
+    void syncDataMapPanel();
 
     // view panel
-    void uncheckViewPanel(); // on close change view menu item to unchecked state
+    void uncheckViewPanel();
     void leftMinimapToggle(int status);
     void rightMinimapToggle(int status);
 
@@ -285,6 +286,7 @@ private:
     QAction *showDataMapAct;
     QAction *showViewAct;
     QAction *exportMitsubaAct;
+    QAction *toggleCameraModeAct;
     QAction *fromLeftTransectAct, *fromRightTransectAct;
     QAction *clearTransectsAct;
     bool transectsValid;

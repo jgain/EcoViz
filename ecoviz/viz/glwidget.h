@@ -73,6 +73,7 @@
 #include <list>
 #include "common/basic_types.h"
 #include <memory>
+#include <glm/gtc/quaternion.hpp>
 
 #include "scene.h"
 #include "view.h"
@@ -162,6 +163,7 @@ public:
 
     /// alter the mode of the camera view to either ARBALL or FLY
     void changeViewMode(ViewMode vm);
+    void startViewModeAnimation(ViewMode newMode);
 
     /// create an independent view object with the same parameter
     void unlockView();
@@ -329,6 +331,13 @@ private:
     bool canopyvis; //< display the canopy plants if true
     bool undervis; //< display the understorey plants if true
     bool rebindplants; //< flag to indicate that plants have changed and need to be rebound
+
+    // Animation state for view reset
+    bool isResettingView;
+    int resetAnimStep;
+    vpPoint resetStartPos, resetEndPos;
+    float resetStartQuat[4], resetEndQuat[4];
+
     float scf;
     int sun_mth; // which month to display in the sunlight texture
     int wet_mth; // which month to display in the moisture texture
@@ -388,6 +397,11 @@ private:
      * @brief refreshViews Signal update to either this view or all views depending on lock state
      */
     void refreshViews();
+
+    /**
+     * @brief moveFlyCamera Move the camera in fly mode with terrain collision
+     */
+    void moveFlyCamera(float base_delta, bool isStrafing);
 };
 
 class overviewWindow {

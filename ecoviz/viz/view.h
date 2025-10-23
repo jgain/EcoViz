@@ -129,6 +129,9 @@ public:
     /// offsetX/Z  is the camera x-z offset (in terrain ground plane)
     /// to accommodate for sub-regions. This will allow *global* camera to be extracted
 
+    void transitionToFly(const vpPoint& newFocus, const Vector& newDir);
+    void getQuaternion(float q[4]) const;
+    void setQuaternion(const float q[4]);
     void saveCameraMatrices(const std::string & basename, float  offsetX, float offsetZ);
 
     /// save and load functionality. Note that save and load rely on already open files, correctly positioned
@@ -194,6 +197,7 @@ public:
         viewscale = extent;
         zoomdist = viewscale / 2.0f / tan(getHalfHorizontalFOV());
     }
+    inline float getViewScale() const { return viewscale; }
 
     /// set the extent of the orthogonal view using the terrain dimensions (tx, ty) in metres
     inline void setOrthoViewExtent(float tx, float ty)

@@ -2076,6 +2076,12 @@ void Window::cameraChange(int idx)
     }
 }
 
+void Window::toggleCameraMode()
+{
+    int newIndex = (cameraDropDown->currentIndex() + 1) % cameraDropDown->count();
+    cameraDropDown->setCurrentIndex(newIndex);
+}
+
 void Window::createActions()
 {
     showRenderAct = new QAction(tr("Show Terrain Options"), this);
@@ -2110,6 +2116,11 @@ void Window::createActions()
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
     connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsubaJSON()));
+
+    toggleCameraModeAct = new QAction(tr("Toggle Camera Mode"), this);
+    toggleCameraModeAct->setShortcut(QKeySequence(Qt::Key_F2));
+    toggleCameraModeAct->setStatusTip(tr("Toggle between Orbit and Flyover camera modes"));
+    connect(toggleCameraModeAct, SIGNAL(triggered()), this, SLOT(toggleCameraMode()));
 }
 
 void Window::createMenus()
@@ -2124,6 +2135,7 @@ void Window::createMenus()
     viewMenu->addAction(showDataMapAct);
     viewMenu->addAction(showViewAct);
     viewMenu->addAction(clearTransectsAct);
+    viewMenu->addAction(toggleCameraModeAct);
 
     QAction* showStartupLogAct = new QAction(tr("Show Startup Log"), this);
     connect(showStartupLogAct, &QAction::triggered, this, &Window::showStartupDialog);

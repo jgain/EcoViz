@@ -73,6 +73,7 @@
 #include <QCoreApplication>
 #include <QInputDialog>
 #include <QLineEdit>
+#include <cmath>
 
 
 #include <fstream>
@@ -80,6 +81,24 @@
 #include "data_importer/map_procs.h"
 #include "cohortmaps.h"
 #include "window.h"
+
+// Helper for position interpolation
+vpPoint lerp(const vpPoint& start, const vpPoint& end, float t) {
+    vpPoint result;
+    result.x = start.x + (end.x - start.x) * t;
+    result.y = start.y + (end.y - start.y) * t;
+    result.z = start.z + (end.z - start.z) * t;
+    return result;
+}
+
+// Helper for direction interpolation
+Vector lerp(const Vector& start, const Vector& end, float t) {
+    Vector result;
+    result.i = start.i + (end.i - start.i) * t;
+    result.j = start.j + (end.j - start.j) * t;
+    result.k = start.k + (end.k - start.k) * t;
+    return result;
+}
 
 using namespace std;
 
@@ -128,6 +147,10 @@ GLWidget::GLWidget(const QSurfaceFormat& format, Window * wp, Scene * scn, Trans
     painted = false;
     rebindplants = true;
     overviewEnabled = true; //enabled by default - need for selection of sub-terrain in main window; can be disabled/enabled
+
+    isResettingView = false;
+    resetAnimStep = 0;
+
     scf = 10000.0f;
     decalTexture = 0;
     overlay = TypeMapType::EMPTY;
@@ -726,6 +749,32 @@ void GLWidget::resizeGL(int width, int height)
 
 void GLWidget::keyPressEvent(QKeyEvent *event)
 {
+    if (isResettingView) {
+        isResettingView = false;
+        resetAnimStep = 0;
+    }
+
+    // calculate adaptive speed based on height for all fly-mode movement
+    float heightScale = 1.0f;
+    if (view->getViewMode() == ViewMode::FLY) {
+        vpPoint camPos = view->getFocus();
+        int r, c, gridW, gridH;
+        scene->getTerrain()->getGridDim(gridW, gridH);
+        scene->getTerrain()->toGrid(camPos, r, c);
+
+        // Clamp coordinates to valid terrain grid range to prevent crash
+        if (r < 0) r = 0; if (r >= gridH) r = gridH - 1;
+        if (c < 0) c = 0; if (c >= gridW) c = gridW - 1;
+
+        float groundHeight = scene->getTerrain()->getHeight(c, r);
+        float heightAboveGround = camPos.y - groundHeight;
+
+        heightScale = 0.1f + log10(1.0f + heightAboveGround);
+        if (heightScale < 0.05f) heightScale = 0.05f; // Min speed
+        if (heightScale > 50.0f) heightScale = 50.0f; // Max speed
+    }
+
+
     /*
     if(event->key() == Qt::Key_Right)
     {
@@ -741,12 +790,12 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }*/
     if(event->key() == Qt::Key_A || event->key() == Qt::Key_Left) // 'A' fly left
     {
-        view->incrSideFly(-10.0f);
+        moveFlyCamera(-5.0f, true);
         refreshViews();
     }
     if(event->key() == Qt::Key_D || event->key() == Qt::Key_Right) // 'D' fly right
     {
-        view->incrSideFly(10.0f);
+        moveFlyCamera(5.0f, true);
         refreshViews();
     }
     if(event->key() == Qt::Key_E) // 'E' to remove all texture overlays
@@ -758,6 +807,11 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         focusviz = !focusviz;
         winparent->rendercount++;
         update();
+    }
+
+    if(event->key() == Qt::Key_F2)
+    {
+        winparent->toggleCameraMode();
     }
 
     if(event->key() == Qt::Key_N) // 'N' to save overview map selection
@@ -802,9 +856,54 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
     */
 
+    if(event->key() == Qt::Key_R) // 'R' to reset flyover view
+    {
+        if(view->getViewMode() == ViewMode::FLY && !isResettingView)
+        {
+            std::cerr << "--- Initiating Reset Fly View Animation ---\n";
+            // Set animation state
+            isResettingView = true;
+            resetAnimStep = 40; // 40 frames for animation
+
+            // Store start position and orientation
+            resetStartPos = view->getFocus();
+            view->getQuaternion(resetStartQuat);
+
+            // Calculate end position (on the ground + 2m)
+            resetEndPos = resetStartPos;
+            int r, c, gridW, gridH;
+            scene->getTerrain()->getGridDim(gridW, gridH);
+            scene->getTerrain()->toGrid(resetEndPos, r, c);
+            if (r < 0) r = 0; if (r >= gridH) r = gridH - 1;
+            if (c < 0) c = 0; if (c >= gridW) c = gridW - 1;
+            resetEndPos.y = scene->getTerrain()->getHeight(c, r) + 50.0f;
+
+            // Calculate end orientation (horizontal, facing a default "North")
+            Vector endDir = Vector(0.0f, 0.0f, 1.0f);
+
+            // Convert end direction to quaternion
+            Vector z_axis(0.0f, 0.0f, 1.0f);
+            Vector rot_axis;
+            rot_axis.cross(z_axis, endDir);
+            float rot_angle = acos(z_axis.dot(endDir));
+            if (rot_axis.length() < 0.001f) {
+                if (z_axis.dot(endDir) > 0.999f) { // Parallel
+                    resetEndQuat[0]=0.0f; resetEndQuat[1]=0.0f; resetEndQuat[2]=0.0f; resetEndQuat[3]=1.0f;
+                } else { // Anti-parallel
+                    float y_axis_arr[3] = {0.0f, 1.0f, 0.0f};
+                    axis_to_quat(y_axis_arr, PI, resetEndQuat);
+                }
+            } else {
+                float rot_axis_arr[3] = {rot_axis.i, rot_axis.j, rot_axis.k};
+                axis_to_quat(rot_axis_arr, rot_angle, resetEndQuat);
+            }
+
+            atimer->start(10); // Ensure timer is running for the animation
+        }
+    }
     if(event->key() == Qt::Key_S || event->key() == Qt::Key_Down) // 'S' fly backwards
     {
-        view->incrFly(40.0f);
+        moveFlyCamera(20.0f, false);
         refreshViews();
     }/*
     if(event->key() == Qt::Key_T) // 'T' to toggle transect display on/off
@@ -883,8 +982,41 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_W || event->key() == Qt::Key_Up) // 'W' fly forward
     {
-        view->incrFly(-40.0f);
+        moveFlyCamera(-20.0f, false);
         refreshViews();
+    }
+
+    if (event->key() == Qt::Key_PageUp)
+    {
+        if (view->getViewMode() == ViewMode::FLY)
+        {
+            vpPoint pos = view->getFocus();
+            pos.y += 10.0f * heightScale;
+            view->setForcedFocus(pos);
+            refreshViews();
+        }
+    }
+    if (event->key() == Qt::Key_PageDown)
+    {
+        if (view->getViewMode() == ViewMode::FLY)
+        {
+            const float eyeHeight = 2.0f;
+            vpPoint pos = view->getFocus();
+            pos.y -= 10.0f * heightScale;
+
+            // Check for collision with ground
+            int r, c, gridW, gridH;
+            scene->getTerrain()->getGridDim(gridW, gridH);
+            scene->getTerrain()->toGrid(pos, r, c);
+            if (r >= 0 && r < gridH && c >= 0 && c < gridW) { // Only check if in bounds
+                float groundHeight = scene->getTerrain()->getHeight(c, r);
+                if (pos.y < groundHeight + eyeHeight) {
+                    pos.y = groundHeight + eyeHeight;
+                }
+            }
+            view->setForcedFocus(pos);
+            refreshViews();
+        }
     }
 }
 
@@ -977,6 +1109,12 @@ template<typename T> void GLWidget::loadTypeMap(const T &map, TypeMapType purpos
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
+    // Halt the reset animation on any mouse press
+    if (isResettingView) {
+        isResettingView = false;
+        resetAnimStep = 0;
+    }
+
     float nx, ny;
     vpPoint pnt;
     
@@ -1244,6 +1382,12 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
 void GLWidget::wheelEvent(QWheelEvent * wheel)
 {
+    // Halt the reset animation on any mouse wheel movement
+    if (isResettingView) {
+        isResettingView = false;
+        resetAnimStep = 0;
+    }
+
     float del;
  
     QPoint pix = wheel->pixelDelta();
@@ -1274,8 +1418,13 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         }
         else
         {
-            del /= 3.0f; // damp the forward/backward fly speed for greater control
-            view->incrFly(del);
+            // Reduce multipliers to tame mouse wheel speed
+            if(!pix.isNull()) {
+                del = (float) pix.y() * 0.5f;
+            } else if(!deg.isNull()) {
+                del = (float) -deg.y() * 0.05f;
+            }
+            moveFlyCamera(del, false);
         }
         if(trc->showtransect)
             trc->trx->setChangeFlag(); // render thickness of transects depends on zoom
@@ -1285,6 +1434,34 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
 
 void GLWidget::animUpdate()
 {
+    // Animate R-key reset
+    if (isResettingView && resetAnimStep > 0)
+    {
+        float t = 1.0f - (float)resetAnimStep / 40.0f;
+
+        // Interpolate position
+        vpPoint newPos = lerp(resetStartPos, resetEndPos, t);
+        view->setForcedFocus(newPos);
+
+        // Interpolate orientation using SLERP
+        glm::quat q_start(resetStartQuat[3], resetStartQuat[0], resetStartQuat[1], resetStartQuat[2]);
+        glm::quat q_end(resetEndQuat[3], resetEndQuat[0], resetEndQuat[1], resetEndQuat[2]);
+        glm::quat q_interp = glm::slerp(q_start, q_end, t);
+
+        float interp_quat_arr[4];
+        interp_quat_arr[0] = q_interp.x;
+        interp_quat_arr[1] = q_interp.y;
+        interp_quat_arr[2] = q_interp.z;
+        interp_quat_arr[3] = q_interp.w;
+        view->setQuaternion(interp_quat_arr);
+
+        resetAnimStep--;
+        if (resetAnimStep == 0) {
+            isResettingView = false;
+        }
+        refreshViews();
+    }
+
     if(view->animate())
          refreshViews();
 }
@@ -1313,6 +1490,69 @@ void GLWidget::refreshViews()
         update();
     }
 }
+
+void GLWidget::moveFlyCamera(float base_delta, bool isStrafing)
+{
+    const float eyeHeight = 2.0f;
+    vpPoint currentPos = view->getFocus();
+    Vector direction = view->getDir();
+    Vector moveVector;
+
+    // Safety Net: Check if the camera is already underground and correct it.
+    int r_curr, c_curr, gridW, gridH;
+    scene->getTerrain()->getGridDim(gridW, gridH);
+    scene->getTerrain()->toGrid(currentPos, r_curr, c_curr);
+    if (r_curr >= 0 && r_curr < gridH && c_curr >= 0 && c_curr < gridW) {
+        float groundHeight_curr = scene->getTerrain()->getHeight(c_curr, r_curr);
+        if (currentPos.y < groundHeight_curr + eyeHeight) {
+            currentPos.y = groundHeight_curr + eyeHeight;
+        }
+    }
+
+    // Calculate adaptive speed based on height
+    float heightScale = 1.0f;
+    float groundHeight_calc = scene->getTerrain()->getHeight(c_curr, r_curr);
+    float heightAboveGround = currentPos.y - groundHeight_calc;
+    heightScale = 0.1f + log10(1.0f + heightAboveGround);
+    if (heightScale < 0.05f) heightScale = 0.05f; // Min speed
+    if (heightScale > 50.0f) heightScale = 50.0f; // Max speed
+
+    float final_delta = base_delta * heightScale;
+
+    if (isStrafing) {
+        moveVector.i = direction.k;
+        moveVector.j = 0.0f; // Ensure strafing is horizontal
+        moveVector.k = -1.0f * direction.i;
+    } else {
+        moveVector = direction;
+    }
+
+    if (moveVector.length() < 0.0001f) {
+        return;
+    }
+
+    moveVector.normalize();
+    moveVector.mult(final_delta);
+
+    vpPoint nextPos;
+    moveVector.pntplusvec(currentPos, &nextPos);
+
+    // Boundary Collision
+    int r, c;
+    scene->getTerrain()->toGrid(nextPos, r, c);
+    if (r < 0 || r >= gridH || c < 0 || c >= gridW) {
+        return;
+    }
+
+    // Height Adjustment
+    float groundHeight = scene->getTerrain()->getHeight(c, r);
+    if (nextPos.y < groundHeight + eyeHeight) {
+        nextPos.y = groundHeight + eyeHeight;
+    }
+
+    view->setForcedFocus(nextPos);
+}
+
 
 /// overviewmap methods: these methods refer to the part of the main viewport on which the map is overdrawn
 

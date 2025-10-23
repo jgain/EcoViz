@@ -425,6 +425,55 @@ void View::saveCameraMatrices(const std::string & basename, float offX, float of
     }
 }
 
+void View::transitionToFly(const vpPoint& newFocus, const Vector& newDir)
+{
+    std::cerr << "--- Transitioning to Fly ---\n";
+    std::cerr << "New Focus: (" << newFocus.x << ", " << newFocus.y << ", " << newFocus.z << ")\n";
+    std::cerr << "New Dir: (" << newDir.i << ", " << newDir.j << ", " << newDir.k << ")\n";
+
+    viewmode = ViewMode::FLY;
+    setForcedFocus(newFocus);
+    zoomdist = 0.0f;
+
+    Vector z_axis(0.0f, 0.0f, 1.0f);
+    Vector direction = newDir;
+    direction.normalize();
+
+    Vector rot_axis;
+    rot_axis.cross(z_axis, direction);
+    float rot_angle = acos(z_axis.dot(direction));
+
+    if (rot_axis.length() < 0.001f) {
+        if (z_axis.dot(direction) > 0.999f) {
+            // No rotation needed, aligned with +Z. Set identity quaternion.
+            curquat[0] = 0.0f;
+            curquat[1] = 0.0f;
+            curquat[2] = 0.0f;
+            curquat[3] = 1.0;
+        } else { // Anti-parallel, 180-degree rotation around Y axis.
+            float y_axis_arr[3] = {0.0f, 1.0f, 0.0f};
+            axis_to_quat(y_axis_arr, PI, curquat);
+        }
+    } else {
+        float rot_axis_arr[3] = {rot_axis.i, rot_axis.j, rot_axis.k};
+        axis_to_quat(rot_axis_arr, rot_angle, curquat);
+    }
+    updateDir();
+    std::cerr << "Final COP: (" << cop.x << ", " << cop.y << ", " << cop.z << ")\n";
+    std::cerr << "Final Dir: (" << dir.i << ", " << dir.j << ", " << dir.k << ")\n";
+}
+
+void View::getQuaternion(float q[4]) const
+{
+    memcpy(q, curquat, sizeof(float)*4);
+}
+
+void View::setQuaternion(const float q[4])
+{
+    memcpy(curquat, q, sizeof(float)*4);
+    updateDir();
+}
+
 glm::mat4x4 View::getMatrix()
 {
     glm::mat4x4 projMx, viewMx;
@@ -445,9 +494,17 @@ glm::mat4x4 View::getProjMtx()
 
     if(viewtype == ViewState::PERSPECTIVE)
     {
-        minx = -8.0f / aspect;
-        maxx = 8.0f / aspect;
-        projMx = glm::frustum(minx, maxx, -8.0f, 8.0f, 50.0f, 100000.0f);
+        if (viewmode == ViewMode::FLY) {
+            // Use glm::perspective for a standard FOV in Fly mode
+            float aspect = width / height;
+            projMx = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 100000.0f);
+        } else {
+            // Original arcball calculation with narrow FOV
+            float aspect = height / width;
+            float minx = -8.0f / aspect;
+            float maxx = 8.0f / aspect;
+            projMx = glm::frustum(minx, maxx, -8.0f, 8.0f, 50.0f, 100000.0f);
+        }
     }
     else if(viewtype == ViewState::ORTHOGONAL)
     {
@@ -490,20 +547,15 @@ glm::mat4x4 View::getViewMtx()
     }
     else
     {
-        viewMx = glm::mat4x4(1.0f);
-
-        // quaternion to mult matrix from arcball
+        glm::mat4x4 quatMx;
+        float mm[4][4];
         build_rotmatrix(mm, curquat);
         quatMx = glm::make_mat4(&mm[0][0]);
-        viewMx = viewMx * quatMx;
 
-        // zoom
-        trs = glm::vec3(0.0f, 0.0f, -1.0f * zoomdist);
-        viewMx = glm::translate(viewMx, trs);
-
-        // center of projection
-        trs = glm::vec3(-currfocus.x, -currfocus.y, -currfocus.z);
-        viewMx = glm::translate(viewMx, trs);
+        // Correct FPS-style view matrix: inv(Rotation) * inv(Translation)
+        viewMx = glm::transpose(quatMx); // Inverse of rotation is transpose
+        glm::vec3 focus_vec = glm::vec3(-currfocus.x, -currfocus.y, -currfocus.z);
+        viewMx = glm::translate(viewMx, focus_vec);
     }
 
     return viewMx;
