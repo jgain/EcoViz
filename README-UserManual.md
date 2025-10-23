@@ -113,15 +113,24 @@ Flyover mode provides a first-person perspective for exploring the scene from wi
 
 **Pro Tip**: Combine modes for efficient navigation. The following steps illustrate an efficient workflow:
 
-+---------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------+
-| Step 1:                                                                                     | Step 2:                                                                  | Step 3:                                                                       |
-|                                                                                             |                                                                          |                                                                               |
-| Select Area in Orbit Mode                                                                   | Flyover for Detail                                                       | Adjust Height in Flyover                                                      |
-+:============================================================================================+:=========================================================================+:==============================================================================+
-| Use Orbit mode to find an interesting area, then double-right-click to set the focal point. | Press **F2** to switch to Flyover mode to explore that location on foot. | Use **Page Up** or **Page Down** to adjust your height for a better overview. |
-+---------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------+
-| ![Step 1](resources/doc_images/01_navigate_dbl_click.png){width="400"}                      | ![Step 2](resources/doc_images/02_flyover.png){width="400"}              | ![Step 3](resources/doc_images/03_fly_up.png){width="400"}                    |
-+---------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------+
+#### Step 1:  Select Area in Orbit Mode 
+
+Use Orbit mode to find an interesting area, then double-right-click to set the focal point. | Press **F2** to switch to Flyover mode to explore that location on foot. | Use **Page Up** or **Page Down** to adjust your height for a better overview.
+
+<img src="resources/doc_images/01_navigate_dbl_click.png" width="400px">
+
+#### Step 2:  Flyover for Detail              
+
+Press **F2** to switch to Flyover mode to explore that location on foot.
+
+<img src="resources/doc_images/02_flyover.png" width="400px">
+
+#### Step 3: Adjust Height in Flyover 
+
+Use **Page Up** or **Page Down** to adjust your height for a better overview. 
+
+<img src="resources/doc_images/03_fly_up.png" width="400px">
+ 
 
 ### Key UI Components
 
