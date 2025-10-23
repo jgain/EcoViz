@@ -252,6 +252,7 @@ void GLWidget::changeViewMode(ViewMode vm)
     view->setForcedFocus(scene->getTerrain()->getFocus());
     view->setViewScale(scene->getTerrain()->longEdgeDist()*2.0f);
     view->setDim(0.0f, 0.0f, static_cast<float>(this->width()), static_cast<float>(this->height()));
+    update();
 }
 
 Region GLWidget::getMapRegion()
@@ -1268,7 +1269,14 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     else // otherwise adjust view zoom
     {
         if(view->getViewMode() == ViewMode::ARCBALL)
+        {
             view->incrZoom(del);
+        }
+        else
+        {
+            del /= 3.0f; // damp the forward/backward fly speed for greater control
+            view->incrFly(del);
+        }
         if(trc->showtransect)
             trc->trx->setChangeFlag(); // render thickness of transects depends on zoom
     }

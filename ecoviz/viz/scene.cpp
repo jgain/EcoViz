@@ -28,12 +28,15 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <filesystem>
 #include <fstream>
 #include "data_importer/data_importer.h"
 #include "data_importer/map_procs.h"
 #include <QMessageBox>
 #include <QElapsedTimer>
 #include <qdir.h>
+
+namespace fs = std::filesystem;
 
 /* class ElapsedTimer
 {
@@ -580,9 +583,12 @@ std::unique_ptr<Terrain> mapScene::loadOverViewData(int factor, bool noLoad)
 {
 
     //std::string terfile = datadir+"/dem.elv";
-    std::string binfile = datadir+"/" + basename + ".elvb";
-    std::string currdir = std::filesystem::current_path().string();
-    std::string txtfile = currdir + "/" + datadir+"/" + basename + ".elv";
+    //std::string binfile = datadir+"/" + basename + ".elvb";
+    //std::string currdir = std::filesystem::current_path();
+    //std::string txtfile = currdir + "/" + datadir+"/" + basename + ".elv";
+    std::string binfile = (fs::path(datadir) / (basename + ".elvb")).string();
+    fs::path currdir = fs::current_path();
+    std::string txtfile = (currdir / datadir / (basename + ".elv")).string();
 
     int direxists = std::filesystem::is_directory(datadir); // weirdly without this it can't find the file
 
@@ -851,6 +857,7 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
     std::vector<std::string> timestep_files;
     bool checkfiles = true;
 
+    std::cerr << "LOAD SCENE" << std::endl;
     using namespace data_importer;
 
     //std::string terfile = datadir+"/dem.elv";
@@ -1453,6 +1460,8 @@ void Scene::exportTerrainJSON(const string terrainURL, const string terrainName,
   Terrain* terrain = getTerrain();
   terrain->saveOBJ(terrainURL + "OBJ/" + terrainName + ".obj");
   terrain->saveOBJ_Border(terrainURL + "OBJ/" + terrainName+"_Border.obj");
+	float tx, ty;
+	terrain->getTerrainDim(tx, ty);
 
   // Create terrain texture
   // - Save Masks according to a specific slope
@@ -1477,9 +1486,10 @@ void Scene::exportTerrainJSON(const string terrainURL, const string terrainName,
   jsonFile << "\t\t\t\t\"Type\":   \"Blended\",\n";
   jsonFile << "\t\t\t\t\"Layers\" : [\n";
   jsonFile << "\t\t\t\t\t{\n";
-  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/Grass_BaseColor.png\",\n";
-  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/coast_sand_rocks_02_nor_gl_2k.exr\",\n";
-  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 100.0\n"; //,\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/aerial_grass_rock_diff_4k.jpg\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/aerial_grass_rock_nor_gl_4k.exr\",\n";
+	double sizeGrass = 30.0; // in meters
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : "<<  max(tx,ty)/sizeGrass <<"\n"; //,\n";
   //jsonFile << "\t\t\t\t\t\t\"OpacityMap\" : \"Terrain/Textures/Grass_Opacity.png\",\n";
   //jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Terrain/Textures/Grass_Normal.png\",\n";
   //jsonFile << "\t\t\t\t\t\t\"BumpMap\" : \"Terrain/Textures/Grass_Height.png\",\n";
@@ -1489,15 +1499,19 @@ void Scene::exportTerrainJSON(const string terrainURL, const string terrainName,
   jsonFile << "\t\t\t\t\t\t\"AlphaMap\" : \"Masks/" + terrainName + "maskSlopeGround.png\",\n";
   jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/Grass_Dry_BaseColor.jpg\",\n";
   jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/aerial_rocks_04_nor_gl_2k.exr\",\n";
-  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 100.0\n";
+  
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : " << max(tx, ty) / sizeGrass << "\n"; //,\n";
   jsonFile << "\t\t\t\t\t},\n";
   jsonFile << "\t\t\t\t\t{\n";
   jsonFile << "\t\t\t\t\t\t\"AlphaMap\" : \"Masks/" + terrainName + "maskSlopeBedrock.png\",\n";
-  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/T_rock02_DS.tga\",\n";
-  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/T_rock01_N.tga\",\n";
+  jsonFile << "\t\t\t\t\t\t\"ColorMap\":   \"Textures/rock_boulder_dry_diff_4k.jpg\",\n";
+  jsonFile << "\t\t\t\t\t\t\"NormalMap\" : \"Textures/rock_boulder_dry_nor_gl_4k.exr\",\n";
   //jsonFile << "\t\t\t\t\t\t\"BumpMap\" : \"Terrain/Textures/Bedrock_Stone_B.png\",\n";
   //jsonFile << "\t\t\t\t\t\t\"BumpMapIntensity\" : 1.0,\n";
-  jsonFile << "\t\t\t\t\t\t\"UVScale\" : 30.0\n";
+
+  double sizeRock = 150.0; // in meters
+  jsonFile << "\t\t\t\t\t\t\"UVScale\" : " << max(tx, ty) / sizeRock << "\n"; //,\n";
+  //jsonFile << "\t\t\t\t\t\t\"UVScale\" : 30.0\n";
   jsonFile << "\t\t\t\t\t}\n";
   jsonFile << "\t\t\t\t]\n";
   jsonFile << "\t\t\t},\n";

@@ -166,6 +166,7 @@ void TimeWindow::setSliderBounds(int tstart, int tend)
     {
         nticks /= 2;
     }
+    if (nticks == 0) nticks = 1;
     tstep_slider->setTickInterval((tend - tstart) / nticks);
     tstep_slider->setTickPosition(QSlider::TicksBelow);
     set_labelvalue(get_sliderval(), tend);
@@ -201,6 +202,7 @@ void TimeWindow::setScene(Scene * s)
         QMessageBox(QMessageBox::Warning, "Typemap Error", "No cohort plant count maps available").exec();
     }
 
+    cerr << "TimeWindow end" << endl;
     //   tstep_scrollwindow->set_labelvalue(tstep);
 }
 
@@ -217,6 +219,7 @@ void TimeWindow::updateScene(int t)
 void TimeWindow::updateSingleScene(int t)
 {
      // auto bt_master = std::chrono::steady_clock::now().time_since_epoch();
+
      set_labelvalue(t, scene->getTimeline()->getTimeEnd());
      scene->getTimeline()->setNow(t);
      int curr_cohortmap = scene->getTimeline()->getCurrentIdx();
@@ -228,6 +231,7 @@ void TimeWindow::updateSingleScene(int t)
      // auto et_sample = std::chrono::steady_clock::now().time_since_epoch();
      std::vector<basic_tree> mature = scene->cohortmaps->get_maturetrees(curr_cohortmap);
 
+     cerr << "COHORT TREES = " << (int) trees.size() << endl;
      for(auto &tree: mature)
      {
          // PCM: changed to use Master terrain - we will place all then cull away (to avoid issues with Timeline)
@@ -237,6 +241,7 @@ void TimeWindow::updateSingleScene(int t)
          else
              cerr << "tree out of bounds at (" << tree.x << ", " << tree.y << ")" << endl;
      }
+     cerr << "TOTAL TREES = " << (int) trees.size() << endl;
 
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
@@ -258,5 +263,4 @@ void TimeWindow::updateSingleScene(int t)
      // std::cout << "Overall time: " << overalltime << std::endl;
      // std::cout << "Sample time: " << sampletime << std::endl;
      // std::cout << "Render time: " << rendertime << std::endl;
-
  }

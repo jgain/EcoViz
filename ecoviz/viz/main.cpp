@@ -104,9 +104,13 @@ int main(int argc, char *argv[])
         StartupDialog startupDialog;
         startupDialog.show();
 
+
         LogStreambuf streambuf(startupDialog.getLogOutput());
-        std::streambuf* originalCerrStreambuf = std::cerr.rdbuf(&streambuf);
-        std::streambuf* originalCoutStreambuf = std::cout.rdbuf(&streambuf);
+        // std::streambuf* originalCerrStreambuf = std::cerr.rdbuf(&streambuf);
+        std::streambuf* originalCerrStreambuf = std::cerr.rdbuf();
+        // std::streambuf* originalCoutStreambuf = std::cout.rdbuf(&streambuf);
+        std::streambuf* originalCoutStreambuf = std::cout.rdbuf();
+
 
         // Register external resource file if needed
         //QResource::registerResource("viz/resources.rcc");
@@ -137,14 +141,14 @@ int main(int argc, char *argv[])
 
         int status = app.exec();
 
-        system("pause");
+        // system("pause"); // not supported in Linux and OSX
         return status;
     }
     catch (std::exception &e)
     {
         std::cerr << e.what() << std::endl;
 
-        system("pause");
+        // system("pause");
         return 1;
     }
 }

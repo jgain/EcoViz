@@ -153,12 +153,13 @@ void View::arcRotate (float u, float v)
         x[0] = 1.0f; x[1] = 0.0f; x[2] = 0.0f;
         y[0] = 0.0f; y[1] = 1.0f; y[2] = 0.0f;
 
-        xrad += damp * (v-bv);
-        yrad += damp * (u-bu);
+        xrad = damp * (v-bv);
+        yrad = damp * (u-bu);
 
         axis_to_quat(x, xrad, xquat);
         axis_to_quat(y, yrad, yquat);
-        add_quats (xquat, yquat, curquat);
+        add_quats (xquat, curquat, curquat);
+        add_quats (yquat, curquat, curquat);
         bu = u;
         bv = v;
         updateDir();
@@ -489,7 +490,6 @@ glm::mat4x4 View::getViewMtx()
     }
     else
     {
-        // JG: VIEWING FIX NEEDED HERE
         viewMx = glm::mat4x4(1.0f);
 
         // quaternion to mult matrix from arcball

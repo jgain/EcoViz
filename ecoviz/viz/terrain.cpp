@@ -770,6 +770,7 @@ void Terrain::loadElvBinary(const std::string &filename)
         infile.read(reinterpret_cast<char*>(&locx), sizeof(long));
         infile.read(reinterpret_cast<char*>(&locy), sizeof(long));
 
+        cerr << "LOCX = " << locx << " LOCY = " << locy << endl;
         // infile >> lat;
 
         delGrid();
@@ -867,8 +868,8 @@ void Terrain::saveElvBinary(const std::string& filename)
     outfile.write(reinterpret_cast<const char*>(&gx), sizeof(int));
     outfile.write(reinterpret_cast<const char*>(&gy), sizeof(int));
     outfile.write(reinterpret_cast<const char*>(&step), sizeof(float));
-    outfile.write(reinterpret_cast<const char*>(&locx), sizeof(float));
-    outfile.write(reinterpret_cast<const char*>(&locy), sizeof(float));
+    outfile.write(reinterpret_cast<const char*>(&locx), sizeof(long));
+    outfile.write(reinterpret_cast<const char*>(&locy), sizeof(long));
 
     // --- Write Grid Data ---
     // To write efficiently, we'll gather all height data into a vector first.

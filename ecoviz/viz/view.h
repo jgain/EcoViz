@@ -220,6 +220,11 @@ public:
     {
         reset();
         viewmode = vm;
+        if(viewmode == ViewMode::FLY)
+        {
+             trackball(curquat, 0.0f, 0.0f, 0.0f, 0.0f); // set quaternion to side
+             updateDir();
+        }
     }
 
     inline ViewMode getViewMode(){ return viewmode; }

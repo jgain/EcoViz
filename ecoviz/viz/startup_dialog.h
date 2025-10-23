@@ -57,7 +57,8 @@ public:
         layout->addWidget(m_logOutput);
 
         m_streambuf = new LogStreambuf(m_logOutput);
-        m_originalStreambuf = std::cerr.rdbuf(m_streambuf);
+        // m_originalStreambuf = std::cerr.rdbuf(m_streambuf);
+         m_originalStreambuf = std::cerr.rdbuf();
     }
 
     ~StartupDialog() {

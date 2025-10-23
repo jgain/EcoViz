@@ -376,6 +376,7 @@ void Window::setupPlantPanel()
     QPushButton * plantsOff = new QPushButton(tr("None Visible"));;
     connect(plantsOn, SIGNAL(clicked()), this, SLOT(allPlantsOn()));
     connect(plantsOff, SIGNAL(clicked()), this, SLOT(allPlantsOff()));
+    connect(smoothEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     globalLayout->addWidget(plantsOn);
     globalLayout->addWidget(plantsOff);
 
@@ -904,7 +905,7 @@ void Window::setupVizPanel()
 
     QPixmap lockleftmap(":/resources/icons/locklefticon32.png");
     lockleftIcon = new QIcon(lockleftmap);
-    QPixmap lockrightmap(":/resrouces/icons/lockrighticon32.png");
+    QPixmap lockrightmap(":/resources/icons/lockrighticon32.png");
     lockrightIcon = new QIcon(lockrightmap);
     QPixmap unlockleftmap(":/resources/icons/unlocklefticon32.png");
     unlockleftIcon = new QIcon(unlockleftmap);
@@ -1194,6 +1195,7 @@ std::cerr << " -- acquire timeline.\n";
 std::cerr << " -- Load scene end.\n";
         cerr << "loading Data Maps" << endl;
         scenes[i]->loadDataMaps((int) timelineIDs.size());
+
         m_startupDialog->setProgress(90 + i * 5);
         QApplication::processEvents();
 
@@ -1447,7 +1449,6 @@ void Window::showViewOptions()
 
 void Window::unlockViews()
 {
-    cerr << "((((((( UNLOCK VIEWS ))))))))" << endl;
     if((int) perspectiveViews.size() == 2)
     {
         perspectiveViews[0]->unlockView();
@@ -1455,6 +1456,7 @@ void Window::unlockViews()
             p->setViewLockState(false);
         lockV1->setIcon((* unlockleftIcon));
         lockV2->setIcon((* unlockrightIcon));
+        viewLock = LockState::UNLOCKED;
     }
     else
     {
@@ -1469,12 +1471,13 @@ void Window::lockViewsFromLeft()
         if(viewLock == LockState::LOCKEDFROMLEFT)
         {
             unlockViews();
-            viewLock = LockState::UNLOCKED;
         }
         else
         {
             if(viewLock == LockState::LOCKEDFROMRIGHT) // need to unlock first
+            {
                 unlockViews();
+            }
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
             perspectiveViews[1]->lockMap(perspectiveViews[0]->getMapRegion());
@@ -1500,19 +1503,19 @@ void Window::lockViewsFromRight()
         if(viewLock == LockState::LOCKEDFROMRIGHT)
         {
             unlockViews();
-            viewLock = LockState::UNLOCKED;
         }
         else
         {
             if(viewLock == LockState::LOCKEDFROMLEFT) // need to unlock first
+            {
                 unlockViews();
+            }
             for(auto &p: perspectiveViews)
                 p->setViewLockState(true);
             perspectiveViews[0]->lockMap(perspectiveViews[1]->getMapRegion());
             perspectiveViews[0]->lockView(perspectiveViews[1]->getView()); // Do not re-order this and previous line
             viewLock = LockState::LOCKEDFROMRIGHT;
             lockV2->setIcon((* lockrightIcon));
-
         }
 
         rendercount++;
@@ -2033,6 +2036,7 @@ void Window::lineEditChange()
 
     // cerr << "val entered " << val << endl;
 
+
     // without this the renderer defaults back to factory settings at certain stages - very wierd bug
     for(auto pview: perspectiveViews)
     {
@@ -2143,13 +2147,17 @@ public:
     {
         CohortMaps * maps = scene->cohortmaps.get();
 
+        cerr << "tstep = " << tstep << endl;
+        cerr << "smooth level = " << distance << endl;
         if (maps)
         {
             maps->do_adjustments(distance);
-            scene->reset_sampler(maps->get_maxpercell());
+            // scene->reset_sampler(maps->get_maxpercell());
         }
         if (tstep >= 0)
+        {
             tview->updateScene(tstep);
+        }
     }
 private:
     TimeWindow * tview;
@@ -2180,8 +2188,7 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
   }
 
   for (const QString& file : dbFiles) {
-    qDebug() << "Database file found:" << dir.absoluteFilePath(file);
-
+    qDebug() << "Profile file found:" << dir.absoluteFilePath(file);
 
     string profilePath = dirCSVFile + file.toStdString();
 
@@ -2204,7 +2211,6 @@ void Window::readMitsubaExportProfiles(string dirCSVFile)
     QString profileName = file;
     profileName.chop(4); // Remove the ".csv" extension
     setlocale(LC_NUMERIC, "C");
-
 
     string line;
     //string plantCode, maxHeightStr, instanceId, actualHeightStr;

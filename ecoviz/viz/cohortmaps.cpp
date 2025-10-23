@@ -94,7 +94,9 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         timestep_maps.at(idx) = ValueGridMap<std::vector<ilanddata::cohort > >(fdata.dx, fdata.dy, rw, rh, 1.0f, 1.0f);
         auto &map = timestep_maps.at(idx);
         if (gw < 0 || gh < 0) // in case no cohorts are loaded
+        {
             map.getDim(gw, gh);
+        }
         else
         {
             int checkw, checkh;
@@ -742,6 +744,7 @@ void CohortMaps::apply_actionmap()
         }
     };
 
+
     if (progress_label_function)
         progress_label_function("Applying actionmap...");
     if (progress_function)
@@ -760,7 +763,9 @@ void CohortMaps::apply_actionmap()
                 auto action = actionmap.get(x, y);
                 int d = action.distance;
                 if (action.dir == DonateDir::NONE)
+                {
                     continue;
+                }
                 switch (action.dir)
                 {
                     case DonateDir::NORTH:
@@ -786,8 +791,8 @@ void CohortMaps::apply_actionmap()
         if (progress_function)
             progress_function(int(float(iteri) / timestep_maps.size() * 100));
     }
-    std::cout << movecount_empty << " cohorts moved to empty tiles" << std::endl;
-    std::cout << movecount_total << " cohorts moved in total" << std::endl;
+    std::cerr << movecount_empty << " cohorts moved to empty tiles" << std::endl;
+    std::cerr << movecount_total << " cohorts moved in total" << std::endl;
 
     action_applied = true;
 }
