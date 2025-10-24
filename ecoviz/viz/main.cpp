@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
         startupDialog.show();
 
 
-        LogStreambuf streambuf(startupDialog.getLogOutput());
+        // LogStreambuf streambuf(startupDialog.getLogOutput(), std::cerr.rdbuf());
         // std::streambuf* originalCerrStreambuf = std::cerr.rdbuf(&streambuf);
         std::streambuf* originalCerrStreambuf = std::cerr.rdbuf();
         // std::streambuf* originalCoutStreambuf = std::cout.rdbuf(&streambuf);

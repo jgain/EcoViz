@@ -148,8 +148,12 @@ public:
     /// Adjust rendering parameters, grid and contours, to accommodate current scale
     void scaleRenderParams(float scale);
     void run_viewer();
+    std::vector<GLWidget *> getPerspectiveViews() { return perspectiveViews; }
+
 
 public slots:
+    void leftViewModeUpdated(ViewMode newMode);
+    void rightViewModeUpdated(ViewMode newMode);
     void showStartupDialog();
     void repaintAllGL();
     void transectSyncPlace(bool firstplace);
@@ -167,8 +171,7 @@ public slots:
     // render panel
     void lineEditChange();
     void mapChange(bool on);
-    void cameraChange(int idx);
-    void toggleCameraMode();
+    void rightGraphChoice(int id);
 
     // plant panel
     void plantChange(int show);
@@ -182,7 +185,6 @@ public slots:
     void leftRampChoice(int id);
     void rightRampChoice(int id);
     void leftGraphChoice(int id);
-    void rightGraphChoice(int id);
     void uncheckDataMapPanel();
     void syncDataMapPanel();
 
@@ -190,6 +192,8 @@ public slots:
     void uncheckViewPanel();
     void leftMinimapToggle(int status);
     void rightMinimapToggle(int status);
+    void leftViewModeChanged(int index);
+    void rightViewModeChanged(int index);
 
     // locking
     void lockViewsFromLeft();
@@ -266,9 +270,12 @@ private:
     float contourSep, numContours, contourWidth, contourIntensity; ///< contour params
     float radianceTransition, radianceEnhance; ///< radiance scaling params
 
+    // view panel widgets
+    QComboBox *leftViewModeCombo;
+    QComboBox *rightViewModeCombo;
+
     // render panel widgets
     QLineEdit * gridSepXEdit, * gridSepZEdit, * gridWidthEdit, * gridIntensityEdit, * contourSepEdit, * contourWidthEdit, * contourIntensityEdit, * radianceEnhanceEdit;
-    QComboBox * cameraDropDown;
 
 
     // plant viz panel widgets
@@ -286,7 +293,6 @@ private:
     QAction *showDataMapAct;
     QAction *showViewAct;
     QAction *exportMitsubaAct;
-    QAction *toggleCameraModeAct;
     QAction *fromLeftTransectAct, *fromRightTransectAct;
     QAction *clearTransectsAct;
     bool transectsValid;

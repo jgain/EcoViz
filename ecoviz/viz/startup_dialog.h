@@ -12,7 +12,7 @@
 
 class LogStreambuf : public std::streambuf {
 public:
-    LogStreambuf(QTextEdit* textEdit) : m_textEdit(textEdit) {}
+    LogStreambuf(QTextEdit* textEdit, std::streambuf* originalStreambuf) : m_textEdit(textEdit), m_originalStreambuf(originalStreambuf) {}
 
 protected:
     virtual int_type overflow(int_type v = traits_type::eof()) {
@@ -20,6 +20,7 @@ protected:
             m_textEdit->moveCursor(QTextCursor::End);
             m_textEdit->insertPlainText(QString(traits_type::to_char_type(v)));
             m_textEdit->ensureCursorVisible();
+            m_originalStreambuf->sputc(v); // Write to original streambuf
         }
         return v;
     }
@@ -28,11 +29,13 @@ protected:
         m_textEdit->moveCursor(QTextCursor::End);
         m_textEdit->insertPlainText(QString::fromUtf8(s, n));
         m_textEdit->ensureCursorVisible();
+        m_originalStreambuf->sputn(s, n); // Write to original streambuf
         return n;
     }
 
 private:
     QTextEdit* m_textEdit;
+    std::streambuf* m_originalStreambuf;
 };
 
 class StartupDialog : public QDialog {
@@ -56,14 +59,13 @@ public:
         layout->addWidget(m_progressBar);
         layout->addWidget(m_logOutput);
 
-        m_streambuf = new LogStreambuf(m_logOutput);
-        // m_originalStreambuf = std::cerr.rdbuf(m_streambuf);
-         m_originalStreambuf = std::cerr.rdbuf();
+        // Stream redirection handled by Window class
+        m_streambuf = nullptr;
+        m_originalStreambuf = nullptr;
     }
 
     ~StartupDialog() {
-        std::cerr.rdbuf(m_originalStreambuf);
-        delete m_streambuf;
+        // Stream redirection handled by Window class
     }
 
     void setProgress(int value) {

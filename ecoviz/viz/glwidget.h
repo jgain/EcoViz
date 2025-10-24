@@ -275,6 +275,7 @@ public:
     */
 
 signals:
+    void viewModeChanged(ViewMode newMode);
     void signalRepaintAllGL();
     void signalShowTransectView();
     void signalSyncPlace(bool firstPoint);
@@ -337,6 +338,12 @@ private:
     int resetAnimStep;
     vpPoint resetStartPos, resetEndPos;
     float resetStartQuat[4], resetEndQuat[4];
+
+    float lastOrbitZoom;
+    float lastOrbitQuat[4];
+    vpPoint lastOrbitFocus;
+    bool lastOrbitFocusViz;
+    bool hasLastOrbitState;
 
     float scf;
     int sun_mth; // which month to display in the sunlight texture

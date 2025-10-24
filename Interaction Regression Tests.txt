@@ -16,6 +16,15 @@ Minimaps:
 - (A) mark out a new area using right button press and release.
 - (B) slide the existing area to the bottom right corner, using left button pick on the blue area and release. Movement should be limited by the minimap boundaries.
 
+Camera sequence:
+- Select area in minimap
+- focus on a spot (right dbl click), e.g. some clearing
+- switch to flyover (F2 or View options)
+- move around, use elevator keys (pg up / pg down)
+- switch back to orbit mode
+- do this in combination with view locking
+- save view state, change view options, restore view state from file
+
 Transects:
 
 Graphs:

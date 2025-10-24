@@ -84,6 +84,14 @@ private:
     float terdepth;             //< the depth from near to far clipping planes for orthogonal views
     Timer time;
 
+    // orbit state saving
+    float lastOrbitZoom;
+    float lastOrbitQuat[4];
+    vpPoint lastOrbitFocus;
+    bool lastOrbitFocusViz;
+    bool hasLastOrbitState;
+
+
     /// Recalculate viewing direction and up vector
     void updateDir();
 
@@ -119,6 +127,7 @@ public:
         cop = vpPoint(0.0f, 0.0f, 1.0f);
         terextent = 1.0f;
         terdepth = 1.0f;
+        hasLastOrbitState = false;
         updateDir();
     }
 
@@ -133,6 +142,12 @@ public:
     void getQuaternion(float q[4]) const;
     void setQuaternion(const float q[4]);
     void saveCameraMatrices(const std::string & basename, float  offsetX, float offsetZ);
+
+    /// orbit state saving
+    void saveOrbitState(bool focusViz);
+    void restoreOrbitState(bool &focusViz);
+    bool hasOrbitState() const;
+
 
     /// save and load functionality. Note that save and load rely on already open files, correctly positioned
     void save(ofstream & outfile);
@@ -181,6 +196,8 @@ public:
     
     /// Set the center of rotation to @a pnt, with immediate non-animated transition
     void setForcedFocus(vpPoint pnt);
+
+    void setCOP(const vpPoint& p);
     
     /// Return the center of rotation
     inline vpPoint getFocus(){ return currfocus; }
@@ -220,16 +237,7 @@ public:
     inline ViewState getViewType(){ return viewtype; }
 
     /// get and set viewing mode
-    inline void setViewMode(ViewMode vm)
-    {
-        reset();
-        viewmode = vm;
-        if(viewmode == ViewMode::FLY)
-        {
-             trackball(curquat, 0.0f, 0.0f, 0.0f, 0.0f); // set quaternion to side
-             updateDir();
-        }
-    }
+    void setViewMode(ViewMode vm);
 
     inline ViewMode getViewMode(){ return viewmode; }
     inline void switchViewMode()
@@ -239,8 +247,6 @@ public:
         else
             setViewMode(ViewMode::ARCBALL);
     }
-    
-    /// Return the view vector from the center of projection to the focal point
     inline Vector getDir()
     {
         updateDir();

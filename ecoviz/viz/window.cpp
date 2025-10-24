@@ -256,19 +256,10 @@ void Window::setupRenderPanel()
     mapLayout->addWidget(noMapRadio, 4, 0);
     mapGroup->setLayout(mapLayout);*/
 
-    // camera controls
-    QGroupBox *cameraGroup = new QGroupBox(tr("Camera"));
-    QGridLayout *cameraLayout = new QGridLayout;
-    cameraDropDown = new QComboBox();
-    cameraDropDown->addItem(tr("Orbit"));
-    cameraDropDown->addItem(tr("Flyover"));
-    cameraLayout->addWidget(cameraDropDown, 0, 0);
-    cameraGroup->setLayout(cameraLayout);
 
     renderLayout->addWidget(gridGroup);
     renderLayout->addWidget(contourGroup);
     renderLayout->addWidget(radianceGroup);
-    renderLayout->addWidget(cameraGroup);
     // renderLayout->addWidget(mapGroup);
 
     // signal to slot connections
@@ -292,7 +283,6 @@ void Window::setupRenderPanel()
     connect(wetMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(chmMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));
     connect(noMapRadio, SIGNAL(toggled(bool)), this, SLOT(mapChange(bool)));*/
-    connect(cameraDropDown, SIGNAL(currentIndexChanged(int)), this, SLOT(cameraChange(int)));
 
     renderPanel->setLayout(renderLayout);
 }
@@ -576,6 +566,19 @@ void Window::setupViewPanel()
         matrixViewRightLayout->addWidget(mrbR);
         connect(mrbL, SIGNAL(stateChanged(int)), this, SLOT(leftMinimapToggle(int)));
         connect(mrbR, SIGNAL(stateChanged(int)), this, SLOT(rightMinimapToggle(int)));
+
+        // View mode combo boxes
+        leftViewModeCombo = new QComboBox;
+        leftViewModeCombo->addItem("Orbit");
+        leftViewModeCombo->addItem("Flyover");
+        matrixViewLeftLayout->addWidget(leftViewModeCombo);
+        connect(leftViewModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &Window::leftViewModeChanged);
+
+        rightViewModeCombo = new QComboBox;
+        rightViewModeCombo->addItem("Orbit");
+        rightViewModeCombo->addItem("Flyover");
+        matrixViewRightLayout->addWidget(rightViewModeCombo);
+        connect(rightViewModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &Window::rightViewModeChanged);
     }
 
     viewLayout->addWidget(matrixViewLeftGroup);
@@ -703,6 +706,8 @@ void Window::setupVizPerspective(QSurfaceFormat glFormat, int i)
     connect(pview, SIGNAL(signalExtractOtherSubTerrain(int, int,int,int,int)), this,
             SLOT(extractNewSubTerrain(int,int,int,int,int)) );
     connect(pview, SIGNAL(signalSyncDataMap()), this, SLOT(syncDataMapPanel()));
+    connect(pview, &GLWidget::viewModeChanged, this, (i == 0) ? &Window::leftViewModeUpdated : &Window::rightViewModeUpdated);
+
     //connect(pview, SIGNAL(signalUpdateOverviews()), this, SLOT(updateOverviews()));
 
     perspectiveViews[i] = pview;
@@ -1329,12 +1334,6 @@ void Window::loadSceneView(int i)
     extractNewSubTerrain(i, region.x0, region.y0, region.x1, region.y1);
     perspectiveViews[i]->setView(view);
 
-    // Update the UI to reflect the loaded view mode, blocking signals to prevent a reset
-    cameraDropDown->blockSignals(true);
-    ViewMode loadedMode = perspectiveViews[i]->getView()->getViewMode();
-    cameraDropDown->setCurrentIndex( (loadedMode == ViewMode::ARCBALL) ? 0 : 1 );
-    cameraDropDown->blockSignals(false);
-
     repaintAllGL();
 }
 
@@ -1414,6 +1413,10 @@ void Window::extractNewSubTerrain(int i, int x0, int y0, int x1, int y1)
             mapScenes[j]->getLowResTerrain()->setBufferToDirty();
 
             perspectiveViews[j]->rebindPlants();
+            perspectiveViews[j]->changeViewMode(ViewMode::ARCBALL); // Switch to Orbit mode
+
+            perspectiveViews[j]->changeViewMode(ViewMode::ARCBALL); // Switch to Orbit mode
+
 
             // restablish broken connection from timeline widget signals
             //connect(timelineViews[i], SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
@@ -1836,6 +1839,34 @@ void Window::rightMinimapToggle(int status)
     repaintAllGL();
 }
 
+void Window::leftViewModeUpdated(ViewMode newMode)
+{
+    leftViewModeCombo->setCurrentIndex(newMode == ViewMode::ARCBALL ? 0 : 1);
+}
+
+void Window::rightViewModeUpdated(ViewMode newMode)
+{
+    rightViewModeCombo->setCurrentIndex(newMode == ViewMode::ARCBALL ? 0 : 1);
+}
+
+void Window::leftViewModeChanged(int index)
+{
+    ViewMode newMode = (index == 0) ? ViewMode::ARCBALL : ViewMode::FLY;
+    perspectiveViews[0]->changeViewMode(newMode);
+    if (viewLock == LockState::LOCKEDFROMLEFT || viewLock == LockState::LOCKEDFROMRIGHT) {
+        perspectiveViews[1]->changeViewMode(newMode);
+    }
+}
+
+void Window::rightViewModeChanged(int index)
+{
+    ViewMode newMode = (index == 0) ? ViewMode::ARCBALL : ViewMode::FLY;
+    perspectiveViews[1]->changeViewMode(newMode);
+    if (viewLock == LockState::LOCKEDFROMLEFT || viewLock == LockState::LOCKEDFROMRIGHT) {
+        perspectiveViews[0]->changeViewMode(newMode);
+    }
+}
+
 void Window::showGridLines(int show)
 {
     for(auto pview: perspectiveViews)
@@ -2082,23 +2113,6 @@ void Window::mapChange(bool on)
     }
 }
 
-void Window::cameraChange(int idx)
-{
-    for(auto pview: perspectiveViews)
-    {
-        if(idx == 0)
-            pview->changeViewMode(ViewMode::ARCBALL);
-        else
-            pview->changeViewMode(ViewMode::FLY);
-    }
-}
-
-void Window::toggleCameraMode()
-{
-    int newIndex = (cameraDropDown->currentIndex() + 1) % cameraDropDown->count();
-    cameraDropDown->setCurrentIndex(newIndex);
-}
-
 void Window::createActions()
 {
     showRenderAct = new QAction(tr("Show Terrain Options"), this);
@@ -2133,11 +2147,6 @@ void Window::createActions()
     // Export Mitsuba
     exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
     connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsubaJSON()));
-
-    toggleCameraModeAct = new QAction(tr("Toggle Camera Mode"), this);
-    toggleCameraModeAct->setShortcut(QKeySequence(Qt::Key_F2));
-    toggleCameraModeAct->setStatusTip(tr("Toggle between Orbit and Flyover camera modes"));
-    connect(toggleCameraModeAct, SIGNAL(triggered()), this, SLOT(toggleCameraMode()));
 }
 
 void Window::createMenus()
@@ -2152,7 +2161,6 @@ void Window::createMenus()
     viewMenu->addAction(showDataMapAct);
     viewMenu->addAction(showViewAct);
     viewMenu->addAction(clearTransectsAct);
-    viewMenu->addAction(toggleCameraModeAct);
 
     QAction* showStartupLogAct = new QAction(tr("Show Startup Log"), this);
     connect(showStartupLogAct, &QAction::triggered, this, &Window::showStartupDialog);
