@@ -58,11 +58,8 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         if (fname.rfind(".pdbb") != std::string::npos)
             binFileRead = true;
 
-          std::cerr << "CohortMaps: A" << std::endl;
-
         auto fdata = (binFileRead == false ?  ilanddata::read(fname, minversion, species_lookup, ALL_FILEDATA) :
                                               ilanddata::readbinary(fname, minversion, species_lookup, ALL_FILEDATA));
-          std::cerr << "CohortMaps: B" << std::endl;
         if (dx < 0.0f || dy < 0.0f)
         {
             dx = fdata.dx;
@@ -127,9 +124,6 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
     actionmap.fill({DonateDir::NONE, -1, 0});
 
     //fix_cohortmaps();
-    std::cerr << "CohortMaps: END" << std::endl;
-
-
 }
 
 int CohortMaps::get_maxpercell()
