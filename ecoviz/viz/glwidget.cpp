@@ -1203,6 +1203,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
 void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
+
     // set the focus for arcball rotation
     // pick point on terrain or zero plane if outside the terrain bounds
     vpPoint pnt;

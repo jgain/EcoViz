@@ -70,6 +70,7 @@
 #include <QtWidgets>
 #include <string>
 #include "startup_dialog.h"
+#include "help_dialog.h"
 
 class QAction;
 class QMenu;
@@ -152,6 +153,8 @@ public:
 
 
 public slots:
+    void openUserManual();
+    void showHelp();
     void leftViewModeUpdated(ViewMode newMode);
     void rightViewModeUpdated(ViewMode newMode);
     void showStartupDialog();
@@ -287,6 +290,7 @@ private:
     // menu widgets and actions
     QMenu *fileMenu;
     QMenu *viewMenu;
+    QMenu *helpMenu;
 
     QAction *showRenderAct;
     QAction *showPlantAct;
@@ -295,6 +299,9 @@ private:
     QAction *exportMitsubaAct;
     QAction *fromLeftTransectAct, *fromRightTransectAct;
     QAction *clearTransectsAct;
+    QAction *showHelpAct;
+    QAction *userManualAct;
+    HelpDialog *helpDialog;
     bool transectsValid;
 
     // file management

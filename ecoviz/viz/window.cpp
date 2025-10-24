@@ -70,6 +70,8 @@
 #include <QButtonGroup>
 #include <QAction>
 #include <QRegularExpression>
+#include <QDesktopServices>
+#include <QUrl>
 
 using namespace std;
 
@@ -1115,6 +1117,7 @@ Window::Window(string datadir, string lprefix, string rprefix, StartupDialog* st
     plantPanel->hide();
     dataMapPanel->hide();
     viewPanel->hide();
+    helpDialog = nullptr;
 }
 
 Window::~Window()
@@ -1465,6 +1468,20 @@ void Window::showDataMapOptions()
 void Window::showViewOptions()
 {
     viewPanel->setVisible(showViewAct->isChecked());
+}
+
+void Window::showHelp()
+{
+    if (!helpDialog) {
+        helpDialog = new HelpDialog(this);
+    }
+    helpDialog->show();
+}
+
+
+void Window::openUserManual()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/jgain/Ecoviz"));
 }
 
 void Window::unlockViews()
@@ -2138,14 +2155,20 @@ void Window::createActions()
     clearTransectsAct->setStatusTip(tr("Remove Transects"));
     connect(clearTransectsAct, SIGNAL(triggered()), this, SLOT(clearTransects()));
 
-    showViewAct = new QAction(tr("Show View Controls"), this);
+    showViewAct = new QAction(tr("&View"), this);
     showViewAct->setCheckable(true);
-    showViewAct->setChecked(false);
-    showViewAct->setStatusTip(tr("Hide/Show View Controls"));
     connect(showViewAct, SIGNAL(triggered()), this, SLOT(showViewOptions()));
 
-    // Export Mitsuba
-    exportMitsubaAct = new QAction(tr("Export Mitsuba"), this);
+    showHelpAct = new QAction(tr("&Controls Help"), this);
+    connect(showHelpAct, &QAction::triggered, this, &Window::showHelp);
+
+    userManualAct = new QAction(tr("&User Manual"), this);
+    connect(userManualAct, &QAction::triggered, this, &Window::openUserManual);
+
+    userManualAct = new QAction(tr("&User Manual"), this);
+    connect(userManualAct, &QAction::triggered, this, &Window::openUserManual);
+
+    exportMitsubaAct = new QAction(tr("&Mitsuba"), this);
     connect(exportMitsubaAct, SIGNAL(triggered()), this, SLOT(exportMitsubaJSON()));
 }
 
@@ -2160,6 +2183,11 @@ void Window::createMenus()
     viewMenu->addAction(showPlantAct);
     viewMenu->addAction(showDataMapAct);
     viewMenu->addAction(showViewAct);
+
+    helpMenu = menuBar()->addMenu(tr("&Help"));
+    helpMenu->addAction(showHelpAct);
+    helpMenu->addAction(userManualAct);
+    helpMenu->addAction(userManualAct);
     viewMenu->addAction(clearTransectsAct);
 
     QAction* showStartupLogAct = new QAction(tr("Show Startup Log"), this);

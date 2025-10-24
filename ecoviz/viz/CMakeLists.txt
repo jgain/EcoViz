@@ -34,6 +34,7 @@ if (BUILD_GUI)
        progressbar_window.cpp progressbar_window.h
        startup_dialog.cpp startup_dialog.h
        export_dialog.cpp export_dialog.h
+       help_dialog.h
 )
 
     add_library(vgui ${GUI_SOURCES})
