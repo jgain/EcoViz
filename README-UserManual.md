@@ -17,9 +17,7 @@ The primary purpose of EcoViz is to visualize and compare simulated landscape tr
 -   **Transect Analysis**: Select a cross-section of the terrain to view a detailed 2D profile of the vegetation structure.
 -   **Photorealistic Rendering**: Export scenes to Mitsuba, an open-source, physically-based rendering engine, to create high-quality, realistic images for publications and presentations.
 
-
-![EcoViz Main Interface](resources/doc_images/interface.png)
-
+<img src="resources/doc_images/interface.png" width="800px">
 
 ### Source Code
 
@@ -37,7 +35,6 @@ EcoViz is a graphically intensive application that performs best on workstation-
 -   **Memory (RAM)**: Memory requirements depend on the size of the landscape data and the number of simulation time steps. As a baseline, the included demo landscape requires approximately 4GB of free RAM.
 
 ------------------------------------------------------------------------
-
 
 ## 3. Getting Started
 
@@ -114,7 +111,12 @@ Flyover mode provides a first-person perspective for exploring the scene from wi
 -   **Elevator Up/Down**: Use **Page Up** and **Page Down** to move vertically.
 -   **Reset View**: If you get lost, press the **R** key to reset the camera to a level, north-facing view 50 meters above your current position.
 
-**Pro Tip**: Combine modes for efficient navigation. Use Orbit mode to find an interesting area, double-right-click to set the focal point, and press **F2** to switch to Flyover mode to explore that location on foot.
+**Pro Tip**: Combine modes for efficient navigation. Use Orbit mode to find an interesting area, double-right-click to set the focal point, and press **F2** to switch to Flyover mode to explore that location on foot. The following steps illustrate an efficient workflow:
+
+| Step 1: Select Area in Orbit Mode | Step 2: Flyover for Detail | Step 3: Adjust Height in Flyover |
+| :-------------------------------- | :------------------------- | :------------------------------- |
+| Use Orbit mode to find an interesting area, then double-right-click to set the focal point. | Press **F2** to switch to Flyover mode to explore that location on foot. | Use **Page Up** or **Page Down** to adjust your height for a better overview. |
+| <img src="resources/doc_images/01_navigate_dbl_click.png" width="250px"> | <img src="resources/doc_images/02_flyover.png" width="250px"> | <img src="resources/doc_images/03_fly_up.png" width="250px"> |
 
 ### Key UI Components
 
@@ -132,19 +134,19 @@ EcoViz provides several dialogs to customize the visualization. These can be acc
 
 -   **Show Terrain Options**: Toggle grid lines and contours, adjust their properties, and switch between camera modes.
 
-    ![Terrain Options Dialog](resources/doc_images/view_terrain_options.png){width="200"}
+    <img src="resources/doc_images/view_terrain_options.png" width="200px">
 
 -   **Show Plant Options**: Control the visibility of individual tree species or hide/show all plants. A smoothing level can also be applied.
 
-    ![Plant Options Dialog](resources/doc_images/view_plant_options.png){width="200"}
+    <img src="resources/doc_images/view_plant_options.png" width="200px">
 
 -   **Show DataMap Options**: Overlay various data maps (e.g., "Sunlight," "Moisture") on the terrain, with customizable color ramps.
 
-    ![DataMap Options Dialog](resources/doc_images/view_datamap_options.png){width="400"}
+    <img src="resources/doc_images/view_datamap_options.png" width="400px">
 
 -   **Show View Controls**: Save the current camera viewpoint to a file or load a previously saved one.
 
-    ![View Controls Dialog](resources/doc_images/view_view_options.png){width="200"}
+    <img src="resources/doc_images/view_view_options.png" width="200px">
 
 -   **Clear Transects**: Removes the currently defined transect from the scene.
 
@@ -168,7 +170,7 @@ For high-quality, photorealistic images, EcoViz integrates with the Mitsuba rend
 
 1.  Go to **File -\> Export Mitsuba**.
 
-    ![Export Mitsuba Dialog](resources/doc_images/export_mitsuba_dialog.png)
+    <img src="resources/doc_images/export_mitsuba_dialog.png" width="400px">
 
 2.  **Specify an Output Path**: This is the directory where Mitsuba's scene files (including a JSON file) will be saved.
 
@@ -195,7 +197,7 @@ For a complete specification of the file formats, please see the [Data File Form
 This format is human-readable. It contains a header with metadata followed by data for individual trees and cohorts.
 
 | Field               | Data Type | Example  | Description                                  |
-|-------------|-------------|-------------|---------------------------------|
+| :------------------ | :-------- | :------- | :------------------------------------------- |
 | PDB Version         | String    | `"3.0"`  | File format version.                         |
 | World Origin (X, Y) | Double    | `253323` | Metric coordinates of the world origin.      |
 | Time Step           | Integer   | `1`      | Simulation year.                             |
@@ -206,7 +208,7 @@ This format is human-readable. It contains a header with metadata followed by da
 This is a compact, binary representation of the same data, optimized for performance.
 
 | Field                    | C++ Data Type | Size (Bytes) | Description                       |
-|------------------|---------------|---------------|-------------------------|
+| :----------------------- | :------------ | :----------- | :-------------------------------- |
 | Version String Length    | `int`         | 4            | Length of the version string.     |
 | Version String           | `char[]`      | `slen`       | The version string itself.        |
 | World Origin X           | `int64_t`     | 8            | X-coordinate of the world origin. |
