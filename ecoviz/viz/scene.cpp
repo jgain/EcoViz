@@ -793,6 +793,8 @@ Scene::Scene(string ddir, string base) : terrain( new Terrain())
     nfield = new NoiseField(dx,dy,5, 0);
     dmaps = new DataMaps();
     masterTerrain = nullptr;
+    cohortmaps = nullptr;
+    cerr << "COHORT MAPS SET TO NULL" << endl;
 }
 
 Scene::~Scene()
@@ -1018,14 +1020,23 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
         ifs.close();
     }
 
+    if(cohorts == nullptr)
+        cerr << endl << endl << "+++++ NULL COHORTS ++++++ " << endl;
+    cerr << endl << "shareCohorts = " << shareCohorts << endl;
     if(checkfiles)
     {
         // import cohorts
         try {
-            if (shareCohorts == false || (shareCohorts == true && !cohorts) )
+            if (shareCohorts == false || (shareCohorts == true && (cohorts == nullptr)) )
+            {
+                cerr << " NEW COHORTS CREATED " << endl;
                 cohortmaps = std::shared_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "3.0", species_lookup));
+            }
             else
+            {
+                cerr << " OLD COHORTS COPIED " << endl;
                 cohortmaps = cohorts;
+            }
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
         }
