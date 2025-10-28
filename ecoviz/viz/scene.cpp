@@ -332,6 +332,7 @@ void TimelineGraph::extractDataSeries(Scene *scene, ChartType chart_type)
         extractDBHSums(scene);
         break;
     case ChartDBHDistribution:
+        extractDBHDistribution(scene);
         break;
 
     };
@@ -450,6 +451,80 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         }
         cerr << endl;
     }
+    setVertScale(vmax);
+}
+
+void TimelineGraph::extractDBHDistribution(Scene * s)
+{
+    ElapsedTimer tmr("extractDBHDistribution");
+    float vmax = 0.0f;
+    int nspecies = s->getBiome()->numPFTypes();
+    float hectares = s->getMasterTerrain()->getTerrainHectArea();
+    int num_dbh_classes = 10; // 0-10, 10-20, ..., 90-100
+
+    setNumSeries(nspecies * num_dbh_classes);
+
+    for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
+    {
+        auto dbh_dist = std::vector<std::vector<float>>(num_dbh_classes, std::vector<float>(nspecies, 0.0f));
+        int tree_count = 0;
+
+        // Process sampled trees
+        /* --- for now we do not include the sampled trees - this is not efficient and the numbers are very high
+        std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
+        for (const auto &tree : trees) {
+            int dbh_class = static_cast<int>(tree.dbh / 10.0f);
+            if (dbh_class >= num_dbh_classes) {
+                dbh_class = num_dbh_classes - 1;
+            }
+            if (dbh_class >= 0) {
+                dbh_dist[dbh_class][tree.species]++;
+                tree_count++;
+            }
+        }*/
+
+        // Process mature trees
+        const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
+        for(const auto &tree: mature)
+        {
+            if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x)) {
+                int dbh_class = static_cast<int>(tree.dbh / 10.0f);
+                if (dbh_class >= num_dbh_classes) {
+                    dbh_class = num_dbh_classes - 1;
+                }
+                if (dbh_class >= 0) {
+                    dbh_dist[dbh_class][tree.species]++;
+                    tree_count++;
+                }
+            }
+        }
+
+        if (t == 0) {
+            std::cerr << "DBH distribution for timestep " << t << ". Total trees: " << tree_count << std::endl;
+            for (int dbh_class = 0; dbh_class < num_dbh_classes; ++dbh_class) {
+                std::cerr << "  DBH class " << dbh_class * 10 << "-" << (dbh_class + 1) * 10 << ": ";
+                for (int spc = 0; spc < nspecies; ++spc) {
+                    std::cerr << dbh_dist[dbh_class][spc]/hectares << " ";
+                }
+                std::cerr << std::endl;
+            }
+        }
+
+
+        float total_trees_per_ha = 0.0f;
+        for (int dbh_class = 0; dbh_class < num_dbh_classes; ++dbh_class) {
+            for (int spc = 0; spc < nspecies; ++spc) {
+                float trees_per_ha = dbh_dist[dbh_class][spc] / hectares;
+                assignData(dbh_class * nspecies + spc, t, trees_per_ha);
+                total_trees_per_ha += trees_per_ha;
+            }
+        }
+
+        if (total_trees_per_ha > vmax) {
+            vmax = total_trees_per_ha;
+        }
+    }
+
     setVertScale(vmax);
 }
 

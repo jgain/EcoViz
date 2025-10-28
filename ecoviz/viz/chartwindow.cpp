@@ -11,7 +11,9 @@
 #include<QHBoxLayout>
 #include<QGraphicsLayout>
 #include <QGroupBox>
-#include<QStyleOption>
+#include<QStackedBarSeries>
+#include<QBarCategoryAxis>
+#include<QBarSet>
 #include<QComboBox>
 
 ChartWindow::ChartWindow(QWidget *parent, int width, int height)
@@ -68,7 +70,10 @@ ChartWindow::ChartWindow(QWidget *parent, int width, int height)
 void ChartWindow::updateTimeBar()
 {
     if(graphdata != nullptr)
-        setData(graphdata);
+    {
+        TimelineGraph *data = all_graphs[currentChartType];
+        setData(data);
+    }
 }
 
 void ChartWindow::chartSelected(int index)
@@ -82,6 +87,7 @@ void ChartWindow::chartSelected(int index)
 
     // switch graph
     // chartViews[i]->setData(graphModels[i].front()); // set to first visualization
+    currentChartType = (TimelineGraph::ChartType)index;
     TimelineGraph *data = all_graphs[index];
     setData(data);
 }
@@ -96,6 +102,11 @@ void ChartWindow::paintEvent(QPaintEvent * ev)
 
 void ChartWindow::setData(TimelineGraph * gdata)
 {
+    if (gdata->getTitle() == "DBH distribution") {
+        setDBHDistributionData(gdata);
+        return;
+    }
+
     QLineSeries * prev;
 
     graphdata = gdata;
@@ -209,4 +220,48 @@ void ChartWindow::setData(TimelineGraph * gdata)
     chart->axes(Qt::Horizontal).first()->setRange(0, gdata->getHoriScale());
     chart->axes(Qt::Horizontal).first()->setLabelFormat("%d");
     chart->axes(Qt::Vertical).first()->setRange(0, gdata->getVertScale());*/
+}
+
+void ChartWindow::setDBHDistributionData(TimelineGraph * gdata)
+{
+    chart->removeAllSeries();
+    for(auto axis: chart->axes())
+        chart->removeAxis(axis);
+
+    int nspecies = scene->getBiome()->numPFTypes();
+    int num_dbh_classes = 10;
+    int current_timestep = gdata->getTimeLine()->getCurrentIdx();
+
+    QStackedBarSeries *series = new QStackedBarSeries();
+
+    for (int spc = 0; spc < nspecies; ++spc) {
+        QBarSet *set = new QBarSet(QString::fromStdString(scene->getBiome()->getPFType(spc)->code));
+        for (int dbh_class = 0; dbh_class < num_dbh_classes; ++dbh_class) {
+            set->append(gdata->getData(dbh_class * nspecies + spc, current_timestep));
+        }
+        float r = scene->getBiome()->getPFType(spc)->basecol[0];
+        float g = scene->getBiome()->getPFType(spc)->basecol[1];
+        float b = scene->getBiome()->getPFType(spc)->basecol[2];
+        QColor spccol((int) (r*255.0f), (int) (g*255.0f), (int) (b*255.0f));
+        set->setBrush(spccol);
+        series->append(set);
+    }
+
+    chart->addSeries(series);
+
+    QStringList categories;
+    for (int i = 0; i < num_dbh_classes; ++i) {
+        categories << QString("%1-%2").arg(i*10).arg((i+1)*10);
+    }
+    QBarCategoryAxis *axisX = new QBarCategoryAxis();
+    axisX->append(categories);
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis;
+    axisY->setRange(0.0f, gdata->getVertScale());
+    axisY->setTitleText(QString::fromStdString(gdata->getTitle()));
+    axisY->setLabelFormat("%d");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
 }
