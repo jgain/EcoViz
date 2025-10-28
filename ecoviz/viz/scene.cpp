@@ -366,15 +366,16 @@ void TimelineGraph::extractDBHSums(Scene * s)
     for(int t = 0; t < timeline->getNumIdx(); t++) // iterate over timesteps
     {
 
-        std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
-        std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
+        //std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
+        const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
         tmr.elapsed("sampler");
-   std::cerr << "\n Ntrees = " << trees.size() << "; Nmature = " << mature.size() << "\n";
+   std::cerr << "\n Ntrees = " << 0 << "; Nmature = " << mature.size() << "\n";
         
         auto dbhs = std::vector<float>(nspecies, 0.0f);
+        /* kick out requirment for sampling tree positions; now graphs are limited to trees >4m
         for (const auto &tree : trees) {
             dbhs[tree.species] += tree.dbh;
-        }
+        } */
 
         for(const auto &tree: mature)
         {
@@ -415,20 +416,21 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         auto basal_areas = std::vector<float>(nspecies, 0.0f);
 
         // Process sampled trees
+        /* WR: kick out sapligs; runtime cost of sampling!
         std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
         for(const auto &tree: trees) {
             basal_areas[tree.species] += tree.dbh * tree.dbh;
-        }
+        }*/
 
         // Process mature trees
-        std::vector<basic_tree> mature = s->cohortmaps->get_maturetrees(t);
+        const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
         for(const auto &tree: mature) {
             if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x)) {
                basal_areas[tree.species] += tree.dbh * tree.dbh;
             }
         }
 
-        cerr << "num trees (sampled) = " << (int) trees.size() << ", num trees (mature) = " << (int) mature.size() << " t = " << t << endl;
+        cerr << "num trees (sampled) = " << (int) 0 /*trees.size()*/ << ", num trees (mature) = " << (int) mature.size() << " t = " << t << endl;
 
         float basaltot = 0.f;
         for (int spc=0; spc<nspecies; ++spc) {

@@ -258,8 +258,19 @@ void ChartWindow::setDBHDistributionData(TimelineGraph * gdata)
     chart->addAxis(axisX, Qt::AlignBottom);
     series->attachAxis(axisX);
 
+    float max_y = 0.0f;
+    for (int dbh_class = 0; dbh_class < num_dbh_classes; ++dbh_class) {
+        float current_bar_height = 0.0f;
+        for (int spc = 0; spc < nspecies; ++spc) {
+            current_bar_height += gdata->getData(dbh_class * nspecies + spc, current_timestep);
+        }
+        if (current_bar_height > max_y) {
+            max_y = current_bar_height;
+        }
+    }
+
     QValueAxis *axisY = new QValueAxis;
-    axisY->setRange(0.0f, gdata->getVertScale());
+    axisY->setRange(0.0f, max_y);
     axisY->setTitleText(QString::fromStdString(gdata->getTitle()));
     axisY->setLabelFormat("%d");
     chart->addAxis(axisY, Qt::AlignLeft);
