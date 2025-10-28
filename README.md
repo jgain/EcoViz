@@ -3,8 +3,8 @@
 Ecoviz is a C++ application developed using the Qt6 framework for visualizing ecosystems, particularly results from forest landscape simulations. This README provides detailed instructions on setting up the development environment on both Windows and Ubuntu, configuring the necessary dependencies, and running the application. Additionally, it includes comprehensive steps for rendering scenes using Mitsuba with Python.
 
 #### Quick links
-[![Documentation](https://img.shields.io/badge/user-manual-blue)](README-UserManual.md) overview on how to work with Ecoviz
-
+[![Documentation](https://img.shields.io/badge/user-manual-blue)](README-UserManual.md) 
+[![Hardware requirements](https://img.shields.io/badge/hardware-requirements-blue)](README-UserManual.md#2-hardware-recommendations) 
 
 ## Table of Contents
 
