@@ -104,10 +104,19 @@ void View::setForcedFocus(vpPoint pnt)
     prevfocus = pnt; currfocus = pnt; focalstep = 0; focus = pnt;
 }
 
-void View::startSpin()
+void View::setCOP(const vpPoint& p)
 {
-    focalstep = (int) spinsteps;
-    time.start();
+    cop = p;
+}
+
+void View::setViewMode(ViewMode vm)
+{
+    viewmode = vm;
+    if(viewmode == ViewMode::FLY)
+    {
+         trackball(curquat, 0.0f, 0.0f, 0.0f, 0.0f); // set quaternion to side
+         updateDir();
+    }
 }
 
 void View::updateDir()
@@ -128,6 +137,7 @@ void View::updateDir()
     copdir.pntplusvec(origin, &cop);
     cop.x += currfocus.x; cop.y += currfocus.y; cop.z += currfocus.z;
 }
+
 
 void View::startArcRotate(float u, float v)
 {
@@ -688,6 +698,31 @@ void View::load(ifstream & infile)
     }
 }
 
+
+void View::saveOrbitState(bool focusViz)
+{
+    lastOrbitZoom = zoomdist;
+    memcpy(lastOrbitQuat, curquat, sizeof(float)*4);
+    lastOrbitFocus = currfocus;
+    lastOrbitFocusViz = focusViz;
+    hasLastOrbitState = true;
+}
+
+void View::restoreOrbitState(bool &focusViz)
+{
+    if (hasLastOrbitState) {
+        zoomdist = lastOrbitZoom;
+        memcpy(curquat, lastOrbitQuat, sizeof(float)*4);
+        currfocus = lastOrbitFocus;
+        focusViz = lastOrbitFocusViz;
+        hasLastOrbitState = false;
+    }
+}
+
+bool View::hasOrbitState() const
+{
+    return hasLastOrbitState;
+}
 
 void View::exportCameraJSON(const string url, const string filename)
 {

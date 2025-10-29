@@ -345,6 +345,12 @@ public:
      * @param s     Scene for extracting counts
      */
     void extractNormalizedBasalArea(Scene * s);
+
+    /**
+     * @brief extractDBHDistribution Create a graph for the DBH distribution of each species over the timeline period
+     * @param s     Scene for extracting counts
+     */
+    void extractDBHDistribution(Scene * s);
 };
 
 // for externally managing the saving and restoring sub-regions and camera views

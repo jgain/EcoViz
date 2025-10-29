@@ -46,6 +46,7 @@ private:
     std::vector<int> xlabels;   //< labelling for timeline
     QStringList chart_desc;
     QLabel *chart_help_label;
+    TimelineGraph::ChartType currentChartType;
 signals:
     void signalRepaintAllGL();
 
@@ -71,6 +72,7 @@ public:
     void setScene(Scene * s){ scene = s; }
     void setXLabels(std::vector<int> xaxislabels){ xlabels = xaxislabels; }
     void setData(TimelineGraph * gdata);
+    void setDBHDistributionData(TimelineGraph * gdata);
     void setGraphs(std::vector<TimelineGraph*> all_gr) { all_graphs = all_gr; }
     int getNumGraphs(){ return (int) all_graphs.size(); }
     string getGraphName(int idx){ return all_graphs[idx]->getTitle(); }

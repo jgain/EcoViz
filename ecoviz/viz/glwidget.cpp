@@ -274,6 +274,9 @@ void GLWidget::changeViewMode(ViewMode vm)
     if (vm == view->getViewMode()) return; // No change
 
     if (vm == ViewMode::FLY) {
+        view->saveOrbitState(focusviz);
+        focusviz = false; // Deactivate focus stick in flyover
+
         // Transition to Flyover from Orbit
         vpPoint focusPoint = view->getFocus();
         focusPoint.y += 50.0f; // Start 50m above focus
@@ -287,25 +290,24 @@ void GLWidget::changeViewMode(ViewMode vm)
         view->transitionToFly(focusPoint, endDir);
 
     } else { // Transition to Orbit from Flyover
-        // Keep current position as the new focus
-        vpPoint newFocus = view->getFocus();
-
-        // Pull camera back to a reasonable zoom distance
-        float newZoom = view->getViewScale() / 2.0f / tan(view->getHalfHorizontalFOV());
-        view->setZoomdist(newZoom);
-
-        // Set a default "look down" orientation
-        float xaxis[] = {-1.0f, 0.0f, 0.0f};
-        float newQuat[4];
-        axis_to_quat(xaxis, PI/2.5f, newQuat);
-        view->setQuaternion(newQuat);
-
-        // Set the focus and mode
-        view->setForcedFocus(newFocus);
+        if (view->hasOrbitState()) {
+            view->restoreOrbitState(focusviz);
+        } else {
+            // Fallback if no state is stored
+            vpPoint newFocus = view->getFocus();
+            float newZoom = 1000.0f;
+            view->setZoomdist(newZoom);
+            float xaxis[] = {-1.0f, 0.0f, 0.0f};
+            float newQuat[4];
+            axis_to_quat(xaxis, PI/2.0f, newQuat);
+            view->setQuaternion(newQuat);
+            view->setForcedFocus(newFocus);
+        }
         view->setViewMode(vm);
     }
 
     update();
+    emit viewModeChanged(vm);
 }
 
 Region GLWidget::getMapRegion()
@@ -844,6 +846,12 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         ViewMode currentMode = view->getViewMode();
         ViewMode newMode = (currentMode == ViewMode::ARCBALL) ? ViewMode::FLY : ViewMode::ARCBALL;
         changeViewMode(newMode);
+        if (viewlock) {
+            // This is a bit of a hack, but it's the easiest way to get the other widget
+            Window *w = (Window*)winparent;
+            GLWidget *other = (w->getPerspectiveViews()[0] == this) ? w->getPerspectiveViews()[1] : w->getPerspectiveViews()[0];
+            other->changeViewMode(newMode);
+        }
     }
 
     if(event->key() == Qt::Key_N) // 'N' to save overview map selection
@@ -1195,6 +1203,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
 void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
+
     // set the focus for arcball rotation
     // pick point on terrain or zero plane if outside the terrain bounds
     vpPoint pnt;
@@ -1215,7 +1224,8 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
             view->setAnimFocus(pickpnt);
             scene->getTerrain()->setFocus(pickpnt);
             cerr << "Pick Point = " << pickpnt.x << ", " << pickpnt.y << ", " << pickpnt.z << endl;
-            focuschange = true; focusviz = true;
+            focuschange = true; 
+            if(view->getViewMode() != ViewMode::FLY) focusviz = true;
             atimer->start(10);
         }
         else

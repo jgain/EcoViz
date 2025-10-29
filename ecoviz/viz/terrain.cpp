@@ -489,11 +489,13 @@ bool Terrain::rayIntersect(vpPoint start, Vector dirn, vpPoint & p)
                         rayPointDist(start, dirn, currp, tval, dist);
                         if(dist < tol)
                         {
-                            found = true;
-                            if(tval < besttval)
-                            {
-                                besttval = tval;
-                                p = currp;
+                            if (tval > 0) { // only consider points in front of the camera
+                                found = true;
+                                if(tval < besttval)
+                                {
+                                    besttval = tval;
+                                    p = currp;
+                                }
                             }
                         }
                     }
