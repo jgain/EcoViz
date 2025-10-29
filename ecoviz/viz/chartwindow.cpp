@@ -11,9 +11,9 @@
 #include<QHBoxLayout>
 #include<QGraphicsLayout>
 #include <QGroupBox>
-#include<QStackedBarSeries>
-#include<QBarCategoryAxis>
-#include<QBarSet>
+#include<QtCharts/QStackedBarSeries>
+#include<QtCharts/QBarCategoryAxis>
+#include<QtCharts/QBarSet>
 #include<QComboBox>
 
 ChartWindow::ChartWindow(QWidget *parent, int width, int height)
