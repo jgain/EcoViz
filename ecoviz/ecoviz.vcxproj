@@ -152,6 +152,8 @@
     <ClCompile Include="viz\export_dialog.cpp" />
     <ClCompile Include="viz\gltransect.cpp" />
     <ClCompile Include="viz\glwidget.cpp" />
+    <ClCompile Include="viz\help_dialog.cpp" />
+    <ClCompile Include="viz\moc_help_dialog.cpp" />
     <ClCompile Include="viz\main.cpp" />
     <ClCompile Include="viz\moc_chartwindow.cpp" />
     <ClCompile Include="viz\moc_export_dialog.cpp" />
@@ -289,6 +291,16 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT6DIR)\bin\moc.exe</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="viz\hash_table.h" />
+    <CustomBuild Include="viz\help_dialog.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT6DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">viz\moc_%(Filename).cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT6DIR)\bin\moc.exe</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc'ing viz\%(Filename)%(Extension)  into  viz\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">viz\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT6DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QT6DIR)\bin\moc.exe</AdditionalInputs>
+    </CustomBuild>
     <ClInclude Include="viz\mitsuba_model.h" />
     <ClInclude Include="viz\pft.h" />
     <CustomBuild Include="viz\progressbar_window.h">
@@ -314,7 +326,6 @@
     </CustomBuild>
     <ClInclude Include="viz\shaderProgram.h" />
     <ClInclude Include="viz\shape.h" />
-
     <CustomBuild Include="viz\startup_dialog.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QT6DIR)\bin\moc.exe viz\%(Filename)%(Extension) -o viz\moc_%(Filename).cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc'ing viz\%(Filename)%(Extension) into viz\moc_%(Filename).cpp</Message>

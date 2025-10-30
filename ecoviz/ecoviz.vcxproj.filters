@@ -162,6 +162,9 @@
     <ClCompile Include="viz\moc_startup_dialog.cpp">
       <Filter>Source Files\Generated files</Filter>
     </ClCompile>
+    <ClCompile Include="viz\help_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common\constraint_interface.h">
@@ -374,7 +377,7 @@
     <ClInclude Include="viz\hash_table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="viz\startup_dialog.h">
+    <ClInclude Include="viz\help_dialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
