@@ -80,5 +80,25 @@ This format is a more compact, binary representation of the data. The filename h
 |    Height         | `float`                | 4            | Height of the sapling cohort.                                                                          |
 |    Number of Plants | `float`                | 4            | Number of plants represented by this sapling cohort.                                                   |
 
-**Struct Definitions from Code (for clarity of binary format):**
+### Elevation file
+The size of the "landscape" is defined by the digital elevation model provided in the .elv file. The elevation files uses a very simple text based file format. Note that binary files (ending with elvb) are automativally generated to speed up the setup process.
+
+The text elv format consists of a single header line (see below), followed by elevation for each grid cell (space delimeted).
+The header values are also delimited by space and are given as:
+
+`ncols nrows cellsize offsetx offsety`
+
+with: 
+* ncols and nrows: number of cells / rows in the file
+* cellsize: the resolution in meters
+* offsetx and offsety: offset of the lower left corner of the landscape in a metric projection
+
+Example-file:
+
+``` 
+3302 5103 1 4569908 5269425
+1114.68 1114.65 1114.36 1114.61 1114.86 1115.1 1115.35 ....
+1116.54 1116.86 1117 1117.1 1117.21 1117.36 1117.52 ....
+......
+```   
 
