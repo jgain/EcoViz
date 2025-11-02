@@ -367,7 +367,17 @@ void TimelineGraph::extractDBHSums(Scene * s)
     {
 
         //std::vector<basic_tree> trees(s->sampler->sample(s->cohortmaps->get_map(t), nullptr));
-        const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
+        //const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
+        const std::vector<basic_tree>* maturePtr = nullptr;
+
+        if (s && s->cohortmaps)
+          maturePtr = &s->cohortmaps->get_maturetrees(t);
+        else
+          qWarning() << "Scene or cohortmaps is null in get_maturetrees";
+
+        static const std::vector<basic_tree> empty;  // safe fallback
+        const std::vector<basic_tree>& mature = maturePtr ? *maturePtr : empty;
+
         tmr.elapsed("sampler");
    std::cerr << "\n Ntrees = " << 0 << "; Nmature = " << mature.size() << "\n";
         
@@ -423,7 +433,18 @@ void TimelineGraph::extractNormalizedBasalArea(Scene *s)
         }*/
 
         // Process mature trees
-        const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
+        //const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
+        const std::vector<basic_tree>* maturePtr = nullptr;
+
+        if (s && s->cohortmaps) {
+          maturePtr = &s->cohortmaps->get_maturetrees(t);
+        }
+        else {
+          static const std::vector<basic_tree> empty;
+          maturePtr = &empty;
+        }
+
+        const std::vector<basic_tree>& mature = *maturePtr;
         for(const auto &tree: mature) {
             if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x)) {
                basal_areas[tree.species] += tree.dbh * tree.dbh;
@@ -486,7 +507,18 @@ void TimelineGraph::extractDBHDistribution(Scene * s)
         }*/
 
         // Process mature trees
-        const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
+        //const std::vector<basic_tree> &mature = s->cohortmaps->get_maturetrees(t);
+        const std::vector<basic_tree>* maturePtr = nullptr;
+
+        if (s && s->cohortmaps) {
+          maturePtr = &s->cohortmaps->get_maturetrees(t);
+        }
+        else {
+          static const std::vector<basic_tree> empty;
+          maturePtr = &empty;
+        }
+
+        const std::vector<basic_tree>& mature = *maturePtr;
         for(const auto &tree: mature)
         {
             if(s->getMasterTerrain()->inWorldBounds(tree.y, tree.x)) {
@@ -1027,7 +1059,7 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
     {
         // import cohorts
         try {
-            if (shareCohorts == false || (shareCohorts == true && (cohorts == nullptr)) )
+            if (!shareCohorts || cohorts == nullptr)
             {
                 cerr << " NEW COHORTS CREATED " << endl;
                 cohortmaps = std::shared_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "3.0", species_lookup));
@@ -1037,18 +1069,18 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
                 cerr << " OLD COHORTS COPIED " << endl;
                 cohortmaps = cohorts;
             }
+            before_mod_map = cohortmaps->get_map(0);
+            //cohortmaps->do_adjustments(2);
+
+            if (cohortmaps->get_nmaps() > 0)
+            {
+                reset_sampler(cohortmaps->get_maxpercell());
+
+                //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
+                //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
+            }
         } catch (const std::exception &e) {
             cerr << "Exception in create cohort maps: " << e.what();
-        }
-        before_mod_map = cohortmaps->get_map(0);
-        //cohortmaps->do_adjustments(2);
-
-        if (cohortmaps->get_nmaps() > 0)
-        {
-            reset_sampler(cohortmaps->get_maxpercell());
-
-            //std::vector<basic_tree> trees = sampler->sample(cohortmaps[0]);
-            //data_importer::write_pdb("testsample.pdb", trees.data(), trees.data() + trees.size());
         }
 
         // set timeline

@@ -186,7 +186,7 @@ void TimeWindow::setScene(Scene * s)
         QMessageBox(QMessageBox::Warning, "Typemap Error", "Type map for cohorts does not have a valid colour table").exec();
     }
     else*/
-    if (scene->cohortmaps->get_nmaps() > 0)
+    if (scene && scene->cohortmaps && scene->cohortmaps->get_nmaps() > 0)
     {
         int gw, gh;
         float rw, rh;
