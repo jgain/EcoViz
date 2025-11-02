@@ -18,6 +18,7 @@ Before you can run Ecoviz, ensure that you have the following tools and librarie
 1. **Download and Install Qt6**:
    - Visit the [official Qt website](https://www.qt.io/download) to download the Qt6 installer.
    - Run the installer and follow the on-screen instructions.
+     - **Note**: Ensure that you install the `msvc` (**not** `mingw`) version of Qt6, which can be checked under **Customize > Qt 6.X.X** during installation.
    
 2. **Include QtCharts Module**:
    - During the installation process, ensure that you select the **QtCharts** module to be installed. This module is essential for rendering charts and visualizations within Ecoviz.
@@ -43,7 +44,7 @@ Before you can run Ecoviz, ensure that you have the following tools and librarie
    - **Boost**:
      - Right-click on the solution in the **Solution Explorer**.
      - Select **"Manage NuGet Packages for Solution..."**.
-     - In the **Browse** tab, search for `boost` and install it for the Ecoviz project.
+     - In the **Browse** tab, search for `boost` and install version `v1.85.0` for the Ecoviz project.
    
    - **Boost.Serialization**:
      - In the **NuGet Package Manager**, search for `boost_serialization-vc143` (specific to Visual Studio 2022) and install it for the Ecoviz project.
