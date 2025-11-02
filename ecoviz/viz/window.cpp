@@ -732,7 +732,7 @@ void Window::destroyVizPerspective(int i)
 
     perspectiveViews[i]->hide();
     vizLayout->removeWidget(perspectiveViews[i]);
-    delete perspectiveViews[i];
+    perspectiveViews[i]->deleteLater();
     perspectiveViews[i] = nullptr;
 }
 
