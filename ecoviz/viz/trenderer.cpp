@@ -1532,6 +1532,7 @@ void TRenderer::draw(View * view)
         f->glUniform4fv(f->glGetUniformLocation(programID, "ptLightPos1"), 1, glm::value_ptr(LP1) ); CE();
         f->glUniform4fv(f->glGetUniformLocation(programID, "ptLightPos2"), 1, glm::value_ptr(LP2) ); CE();
         f->glUniform4fv(f->glGetUniformLocation(programID, "surfColour"), 1,  glm::value_ptr(terSurfColour) ); CE();
+        f->glUniform1i(f->glGetUniformLocation(programID, "useBaseColourOnly"), 0); CE(); // use full shading
       }
     else if(shadModel == SUN) // sun simulator
     {
@@ -1592,14 +1593,24 @@ void TRenderer::draw(View * view)
 
     f->glUniform1f(f->glGetUniformLocation(programID, "terrainBase"), terrainBase); CE();
     f->glUniform1f(f->glGetUniformLocation(programID, "terrainBasePad"), terrainBasePad); CE();
-    f->glUniform1i(f->glGetUniformLocation(programID, "drawWalls"), 1); // draw walls - ignore normal map lookup
-    GLuint loc = f->glGetUniformLocation(programID, "normalWall");
+    f->glUniform1i(f->glGetUniformLocation(programID, "drawWalls"), 1); CE(); // draw walls - ignore normal map lookup
+    GLuint loc = f->glGetUniformLocation(programID, "normalWall"); CE();
+
+    // force fixed surface colourfor base + capping walls
+    f->glUniform1i(f->glGetUniformLocation(programID, "useBaseColourOnly"), 1); CE(); // always off for walls and base
 
     // turn off region layer texturing for walls:
     f->glUniform1i(f->glGetUniformLocation(programID, "useRegionTexture"), 0); CE(); // always off for walls!
 
+    glm::vec4 tmpSurfColour;
+
     for (int i = 0; i < 5; i++)
     {
+        //hard code bases and wall colirs - no need to light them
+        if (i == 4) tmpSurfColour = 0.75f*terSurfColour;
+        else if (i == 0 || i == 1) tmpSurfColour = 0.94f*terSurfColour;
+        else tmpSurfColour = 0.8f*terSurfColour;
+        f->glUniform4fv(f->glGetUniformLocation(programID, "surfColour"), 1,  glm::value_ptr(tmpSurfColour) ); CE();
         f->glUniform3fv(loc, 1, glm::value_ptr(normalWalls[i])); CE();
         ef->glBindVertexArray(vaoWalls[i]); CE();
         f->glDrawElements(GL_TRIANGLE_STRIP, wallDrawEls[i], GL_UNSIGNED_INT, 0); CE();
