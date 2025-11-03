@@ -1052,21 +1052,21 @@ void Scene::loadScene(std::string dirprefix, std::vector<int> timestepIDs, bool 
         ifs.close();
     }
 
-    if(cohorts == nullptr)
-        cerr << endl << endl << "+++++ NULL COHORTS ++++++ " << endl;
-    cerr << endl << "shareCohorts = " << shareCohorts << endl;
+    // if(cohorts == nullptr)
+    //    cerr << endl << endl << "+++++ NULL COHORTS ++++++ " << endl;
+    // cerr << endl << "shareCohorts = " << shareCohorts << endl;
     if(checkfiles)
     {
         // import cohorts
         try {
             if (!shareCohorts || cohorts == nullptr)
             {
-                cerr << " NEW COHORTS CREATED " << endl;
+                // cerr << " NEW COHORTS CREATED " << endl;
                 cohortmaps = std::shared_ptr<CohortMaps>(new CohortMaps(timestep_files, parentXdim, parentYdim, "3.0", species_lookup));
             }
             else
             {
-                cerr << " OLD COHORTS COPIED " << endl;
+                // cerr << " OLD COHORTS COPIED " << endl;
                 cohortmaps = cohorts;
             }
             before_mod_map = cohortmaps->get_map(0);

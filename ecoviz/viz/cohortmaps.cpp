@@ -310,7 +310,7 @@ int CohortMaps::determine_cohort_startidxes()
             }
         }
     }
-    std::cout << "Maximum index: " << int(maxidx) << std::endl;
+    // std::cout << "Maximum index: " << int(maxidx) << std::endl;
 
     return int(maxidx);
 }
@@ -785,8 +785,8 @@ void CohortMaps::apply_actionmap()
         if (progress_function)
             progress_function(int(float(iteri) / timestep_maps.size() * 100));
     }
-    std::cerr << movecount_empty << " cohorts moved to empty tiles" << std::endl;
-    std::cerr << movecount_total << " cohorts moved in total" << std::endl;
+    // std::cerr << movecount_empty << " cohorts moved to empty tiles" << std::endl;
+    // std::cerr << movecount_total << " cohorts moved in total" << std::endl;
 
     action_applied = true;
 }
@@ -896,7 +896,7 @@ void CohortMaps::undo_actionmap()
             progress_function(int(float(iternum) / timestep_maps.size() * 100));
     }
     action_applied = false;
-    std::cout << movecount << " cohorts moved to original tiles" << std::endl;
+    // std::cout << movecount << " cohorts moved to original tiles" << std::endl;
 
 }
 
