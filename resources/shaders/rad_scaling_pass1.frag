@@ -36,6 +36,7 @@ uniform int drawWallGridLines;
 
 uniform int useRegionTexture;
 uniform int useConstraintTexture;
+uniform int useBaseColourOnly; // No shading - fixed colours for walls/base
 
 uniform int drawOutOfBounds;
 uniform float outBoundsMax;
@@ -88,6 +89,9 @@ void main(void) {
   grad = vec4(gx,gy,depth,1.0);
   norm = vec4(n,gl_FragCoord.z);
 
+  // store incoming colour:
+  vec4 originalColour = colour;
+
   // do nota pply radiance scaling to walls
   if (drawWalls == 1)
      norm = vec4(0.0,0.0,0.0,gl_FragCoord.z);
@@ -108,6 +112,10 @@ void main(void) {
       col = vec4(colour * ( clamp(dot(n, normalize(lightDir1) ), 0.0,1.0) +
                             clamp(dot(n, normalize(lightDir2) ), 0.0,1.0) + 0.3) );
   }
+
+  // force original colour with no shading.
+  if (useBaseColourOnly == 1)
+       col = originalColour;
 
  // draw contours - always draw terrain contours if set, but do not necessarily draw side wall contours
 

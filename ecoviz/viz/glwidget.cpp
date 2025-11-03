@@ -832,7 +832,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     }
     if(event->key() == Qt::Key_E) // 'E' to remove all texture overlays
     {
-        setOverlay(TypeMapType::TRANSECT);
+        //setOverlay(TypeMapType::TRANSECT);
     }
     if(event->key() == Qt::Key_F) // 'F' to toggle focus stick visibility
     {
