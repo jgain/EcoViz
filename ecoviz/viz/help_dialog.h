@@ -36,7 +36,7 @@ public:
             "<ul>"
             "<li><b>Right Mouse Button + Drag:</b> Rotate view (Orbit mode) or look around (Flyover mode).</li>"
             "<li><b>Mouse Wheel:</b> Zoom in/out (Orbit mode) or fly forward/backward (Flyover mode).</li>"
-            "<li><b>Double-Click:</b> Set focus point (Orbit mode).</li>"
+            "<li><b>Right-Double-Click:</b> Set focus point (Orbit mode), move to point (Flyover mode).</li>"
             "<li><b>Ctrl + Left-Click:</b> Place transect point.</li>"
             "</ul>"
         );
