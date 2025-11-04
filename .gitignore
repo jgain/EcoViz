@@ -61,3 +61,6 @@ data/test2/ecoviz.elv
 /data/test2/Mitsuba
 /data/BGD_KBT_old
 /data/test2
+/ecoviz/viz/moc_glwidget.cpp
+/ecoviz/viz/moc_help_dialog.cpp
+/ecoviz/viz/moc_window.cpp
