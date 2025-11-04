@@ -29,10 +29,10 @@ The full source code for EcoViz is available on GitHub: <https://github.com/jgai
 
 EcoViz is a graphically intensive application that performs best on workstation-type machines with a fast CPU and a dedicated GPU.
 
--   **Recommended Setup**: A modern PC with a dedicated NVIDIA or AMD graphics card. On this hardware, startup times for the included demo landscape are typically between 20-30 seconds.
+-   **Recommended Setup**: A modern PC with a dedicated NVIDIA or AMD graphics card. On this hardware, startup times for the included demo landscape are typically between 20-30 seconds with smooth operations.
 -   **Apple Silicon**: Modern Apple laptops (M3, M4 and later) are also well-suited for running EcoViz, as their integrated GPUs offer strong performance.
 -   **Basic Laptops**: While EcoViz can run on typical laptops without a dedicated GPU, users should expect longer loading times and less fluid 3D navigation.
--   **Memory (RAM)**: Memory requirements depend on the size of the landscape data and the number of simulation time steps. As a baseline, the included demo landscape requires approximately 4GB of free RAM.
+-   **Memory (RAM)**: Memory requirements depend on the size of the landscape data and the number of simulation time steps. As a baseline, the included demo landscape requires approximately 8 GB of free RAM.
 
 ------------------------------------------------------------------------
 

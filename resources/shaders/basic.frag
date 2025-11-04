@@ -7,9 +7,7 @@ uniform vec4 matSpec;
 uniform int drawWalls;
 uniform int useRegionTexture;
 uniform int drawContours;
-
 uniform sampler2D overlayTexture;
-
 in vec3 pos;
 in vec2 texCoord;
 
@@ -53,9 +51,7 @@ void main(void)
         //pow(NdotHV,gl_FrontMaterial.shininess);
         color += matSpec * specularCol * pow(NdotHV, shiny);
         }
-
     // draw contours
-
     if (drawContours == 1)
     {
         float f  = abs(fract (pos.y*70) - 0.5);

@@ -2234,9 +2234,27 @@ void Window::setSmoothing(int d)
 {
     for(int i = 0; i < 2; i++)
     {
+        // Removed parallelisation, which caused crash
+        /*
         AdjustmentRunnable *runnable = new AdjustmentRunnable(timelineViews[i], scenes[i], d, scenes[i]->getTimeline()->getNow());
         runnable->setAutoDelete(true);
-        QThreadPool::globalInstance()->start(runnable);
+        QThreadPool::globalInstance()->start(runnable);*/
+
+        CohortMaps * maps = scenes[i]->cohortmaps.get();
+        int tstep = scenes[i]->getTimeline()->getNow();
+        TimeWindow * tview = timelineViews[i];
+
+        // cerr << "smooth level = " << d << endl;
+        if (maps)
+        {
+            maps->do_adjustments(d);
+            // scene->reset_sampler(maps->get_maxpercell());
+        }
+        if (tstep >= 0)
+        {
+            tview->updateScene(tstep);
+        }
+
     }
 }
 
