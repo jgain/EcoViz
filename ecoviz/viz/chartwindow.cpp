@@ -21,6 +21,7 @@ ChartWindow::ChartWindow(QWidget *parent, int width, int height)
 {
     this->resize(width, height);
     graphdata = nullptr;
+    currentChartType = TimelineGraph::ChartBasalArea;
 
     chart = new QChart();
     chart->legend()->hide();

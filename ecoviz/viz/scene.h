@@ -300,7 +300,7 @@ public:
 
     /// getters and setters
     Timeline * getTimeLine(){ return timeline; }
-    void setTimeLine(Timeline * tline){ timeline = tline; init(); }
+    void setTimeLine(Timeline * tline){ timeline = tline; }
     void setTitle(std::string name){ title = name; }
     void setVertScale(float vertscale){ vscale = vertscale; }
     float getVertScale(){ return vscale; }

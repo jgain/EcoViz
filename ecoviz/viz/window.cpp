@@ -993,8 +993,11 @@ void Window::setupGraphModels(int scene_index, bool copyData)
             tg->setTimeLine(scenes[scene_index]->getTimeline());
             tg->extractDataSeries(scenes[scene_index], c);
         }
-        else // share precomputed data from scene 0
+        else {
+            // share precomputed data from scene 0
             tg = new TimelineGraph(*graphModels[0][int(c)]);
+            tg->setTimeLine(scenes[scene_index]->getTimeline());
+        }
 
         graphModels[scene_index].push_back(tg);
     }

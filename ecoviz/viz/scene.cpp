@@ -285,12 +285,12 @@ TimelineGraph::TimelineGraph(Timeline * tline, int nseries, std::string name)
     vscale = 0;
     numseries = nseries;
     setTimeLine(tline);
+    init();
 }
 
 TimelineGraph::TimelineGraph(const TimelineGraph & rhs)
 {
-    timeline = new Timeline;
-    *timeline = *rhs.timeline; // default copy
+    timeline = nullptr; // will be set later
 
     graphdata = rhs.graphdata;
     hscale = rhs.hscale;
