@@ -973,7 +973,7 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<Co
     float tx, ty;
     int gx, gy;
 
-    //  cerr << "x = " << tree.x << " y = " << tree.y << endl;
+    // cerr << "x = " << tree.x << " y = " << tree.y << endl;
     ter->getTerrainDim(tx, ty);
     ter->getGridDim(gx, gy);
 
@@ -981,9 +981,9 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<Co
     float offx, offy;
     long terlocx, terlocy, ecolocx, ecolocy;
 
+    terlocx = 0; terlocy = 0;
     ter->getTerrainLoc(terlocx, terlocy);
     cohortmaps->getCohortLoc(ecolocx, ecolocy);
-
     // cerr << "terloc = " << terlocx << ", " << terlocy << endl;
     // cerr << "ecoloc = " << ecolocx << ", " << ecolocy << endl;
     // cerr << "xoffset = " << (ecolocx - terlocx) << ", yoffset = " << (ecolocy - terlocy) << endl;
@@ -991,7 +991,7 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<Co
     // calculate offset of ecosystem corner from terrain corner in global reference
     offx = (float) (ecolocx-terlocx);
     offy = (float) (ecolocy-terlocy) * -1.0f;
-
+    // cerr << "HX = " << tx - tree.y+offy << " HY = " << tree.x+offx << endl;
     float h = ter->getHeightFromReal(tx - tree.y+offy, tree.x+offx);
     vpPoint pos(tree.x+offx, h, tx - tree.y+offy);
     // cerr << "h = " << h << endl;
@@ -1014,6 +1014,7 @@ void EcoSystem::placePlant(Terrain *ter, NoiseField * nfield, std::shared_ptr<Co
         std::cout << "Adding canopytree xy: " << pos.x << ", " << pos.z << std::endl;
     }
     */
+    // cerr << "rndoff = " << rndoff << endl;
 
     //Plant plnt = {pos, tree.height, tree.radius, coldata};	//XXX: not sure if I should multiply radius by 2 here - according to scaling info in the renderer, 'radius' is actually the diameter, as far as I can see (and visual results also imply this)
     Plant plnt = {pos, tree.height, tree.radius, rndoff};

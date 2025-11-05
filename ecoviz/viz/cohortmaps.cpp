@@ -24,6 +24,7 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         int timestep =  (binFileRead == false ? ilanddata::read(fname, minversion,  species_lookup, TIMESTEP_ONLY).timestep :
                                                 ilanddata::readbinary(fname, minversion,  species_lookup, TIMESTEP_ONLY).timestep);
 
+        std::cerr << "TS = " << timestep << std::endl;
         timesteps.push_back(timestep);
     }
 
@@ -33,6 +34,11 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
 
     timestep_indices.resize(timestep_range, 0);
 
+
+    for (int ts : timesteps)
+    {
+        std::cerr << "ts = " << ts << std::endl;
+    }
 
     for (int ts : timesteps)
     {
@@ -49,9 +55,9 @@ CohortMaps::CohortMaps(const std::vector<std::string> &filenames, float rw, floa
         }
     }
 
-
     timestep_maps.resize(filenames.size());
     timestep_mature.resize(filenames.size());
+    std::cerr << "num timestep maps = " << (int) timestep_maps.size() << std::endl;
     for (auto &fname : filenames)
     {
         bool binFileRead = false;

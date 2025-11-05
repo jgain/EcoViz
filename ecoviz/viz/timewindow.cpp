@@ -175,6 +175,7 @@ void TimeWindow::setSliderBounds(int tstart, int tend)
 void TimeWindow::setScene(Scene * s)
 {
     int tstart, tend;
+
     scene = s;
     scene->getTimeline()->getTimeBounds(tstart, tend);
     setSliderBounds(tstart, tend);
@@ -191,6 +192,7 @@ void TimeWindow::setScene(Scene * s)
         int gw, gh;
         float rw, rh;
         //PCM: changed to get params of master/high res terrain from which this is extracted
+
         scene->getMasterTerrain()->getGridDim(gw, gh);
         scene->getMasterTerrain()->getTerrainDim(rw, rh);
         // auto amap = scene->cohortmaps->get_actionmap_floats(gw, gh, rw, rh);
@@ -219,6 +221,7 @@ void TimeWindow::updateSingleScene(int t)
 {
      // auto bt_master = std::chrono::steady_clock::now().time_since_epoch();
 
+
      set_labelvalue(t, scene->getTimeline()->getTimeEnd());
      scene->getTimeline()->setNow(t);
      int curr_cohortmap = scene->getTimeline()->getCurrentIdx();
@@ -228,10 +231,8 @@ void TimeWindow::updateSingleScene(int t)
      // auto bt_sample = std::chrono::steady_clock::now().time_since_epoch();
      std::vector<basic_tree> trees(scene->sampler->sample(scene->cohortmaps->get_map(curr_cohortmap), nullptr));
      // auto et_sample = std::chrono::steady_clock::now().time_since_epoch();
-
      std::vector<basic_tree> mature = scene->cohortmaps->get_maturetrees(curr_cohortmap);
 
-     // cerr << "COHORT TREES = " << (int) trees.size() << endl;
      for(auto &tree: mature)
      {
          // PCM: changed to use Master terrain - we will place all then cull away (to avoid issues with Timeline)
@@ -245,6 +246,7 @@ void TimeWindow::updateSingleScene(int t)
 
      // auto bt_render = std::chrono::steady_clock::now().time_since_epoch();
      scene->getEcoSys()->clear();
+
      scene->getEcoSys()->placeManyPlants(scene->getMasterTerrain(), scene->getNoiseField(), scene->cohortmaps, trees);
      signalRebindPlants();
      winparent->rendercount++;

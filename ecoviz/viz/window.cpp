@@ -1211,9 +1211,11 @@ std::cerr << " -- Load scene end.\n";
         transectViews[i]->setScene(scenes[i]);
         perspectiveViews[i]->setScene(scenes[i]);
         //overviewMaps[i]->setSelectionRegion(mapScenes[i]->getSelectedRegion());
+
         perspectiveViews[i]->getOverviewWindow()->setSelectionRegion(mapScenes[i]->getSelectedRegion());
         timelineViews[i]->setScene(scenes[i]);
         transectViews[i]->setVisible(false);
+
         setupGraphModels(i, (prefix[0]==prefix[1]) ); // if left and right files are same, only compute series once
         chartViews[i]->setScene(scenes[i]);
         chartViews[i]->setGraphs(graphModels[i]);
