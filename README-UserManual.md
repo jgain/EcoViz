@@ -31,8 +31,9 @@ EcoViz is a graphically intensive application that performs best on workstation-
 
 -   **Recommended Setup**: A modern PC with a dedicated NVIDIA or AMD graphics card. On this hardware, startup times for the included demo landscape are typically between 20-30 seconds with smooth operations.
 -   **Apple Silicon**: Modern Apple laptops (M3, M4 and later) are also well-suited for running EcoViz, as their integrated GPUs offer strong performance.
--   **Basic Laptops**: While EcoViz can run on typical laptops without a dedicated GPU, users should expect longer loading times and less fluid 3D navigation.
+-   **Basic Laptops**: While EcoViz can run on typical laptops without a dedicated GPU, users should expect longer loading times (~1 min) and less fluid 3D navigation.
 -   **Memory (RAM)**: Memory requirements depend on the size of the landscape data and the number of simulation time steps. As a baseline, the included demo landscape requires approximately 8 GB of free RAM.
+-   **Video Memory (VRAM)**: In addition to system memory, GPU memory must also be considered. The GPU memory requirements depend on the size of the landscape data and the number of simulation time steps. As a baseline, the included demo landscape should run well with on a graphics card with 6-8 GB of VRAM. For very large terrains with million of trees and many time steps, much more VRAM will be consumed. In such cases, 12-16 GB VRAM is advised for the best experience. Note that for systems without dedicated GPU, VRAM is typically part of the main memory (and adds to memory requirement there)
 
 ------------------------------------------------------------------------
 
@@ -121,7 +122,7 @@ Flyover mode provides a first-person perspective for exploring the scene from wi
 ### Key UI Components
 
 -   **Minimap**: Press **'m'** to toggle the minimap. In the minimap, **left-click and drag** to move the current selection, or **right-click and drag** to define a new viewing region.
--   **Link Views**: Use the **lock symbols** between the two 3D views to synchronize their camera positions.
+-   **Link Views**: Use the **lock symbols** to synchronize aspects of the left / right view. The locks between 3D views synchronize the viewing regions and the viewing angle (and view mode), the locks between the graphs lock the time steps (points in time) (e.g. when different scenario runs are loaded); the locks between the transect views synchronize the transect.
 -   **Timeline**: The media bar at the bottom allows you to play, pause, or step through the simulation years.
 
 ------------------------------------------------------------------------
