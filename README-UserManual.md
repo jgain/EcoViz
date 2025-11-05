@@ -122,7 +122,7 @@ Flyover mode provides a first-person perspective for exploring the scene from wi
 ### Key UI Components
 
 -   **Minimap**: Press **'m'** to toggle the minimap. In the minimap, **left-click and drag** to move the current selection, or **right-click and drag** to define a new viewing region.
--   **Link Views**: Use the **lock symbols** between the two 3D views to synchronize their camera positions.
+-   **Link Views**: Use the **lock symbols** to synchronize aspects of the left / right view. The locks between 3D views synchronize the viewing regions and the viewing angle (and view mode), the locks between the graphs lock the time steps (points in time) (e.g. when different scenario runs are loaded); the locks between the transect views synchronize the transect.
 -   **Timeline**: The media bar at the bottom allows you to play, pause, or step through the simulation years.
 
 ------------------------------------------------------------------------
