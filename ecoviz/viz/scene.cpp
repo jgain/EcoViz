@@ -1247,6 +1247,13 @@ void Scene::exportInstancesJSON(map<string, vector<MitsubaModel>>& speciesMap, s
 
             string code = this->biome->getSpeciesMetaData()[s].scientific_name;
 
+            // mapping of plants to existing
+            if(code == string("Buxus sempervirens"))
+                code = string("Corylus avellana");
+
+            if(code == string("Quercus petraea"))
+                code = string("Quercus pubescens");
+
             map<string, vector<MitsubaModel>>::iterator it;
 					  if ((it = speciesMap.find(code)) != speciesMap.end()) // If the plant code is found in the profile
             {

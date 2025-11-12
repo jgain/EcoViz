@@ -272,10 +272,8 @@ data_importer::ilanddata::filedata data_importer::ilanddata::read(std::string fi
 
 	for (int i = 0; i < ncohorts_expected; i++)
 	{
-		std::getline(ifs, lstr);
-		std::stringstream ss(lstr);
-        if (!ifs.eof())
-        {
+		if(std::getline(ifs, lstr))
+        {   std::stringstream ss(lstr);
             fdata.cohorts.emplace_back(ss, species_lookup); // load values from stream
             auto &crt = fdata.cohorts.back();
             if (crt.xs < minx)
