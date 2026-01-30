@@ -65,6 +65,7 @@
 #include "glheaders.h" // Must be included before QT opengl headers
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
+#include <QOpenGLFramebufferObject>
 #include <QLabel>
 #include <QTimer>
 #include <QMouseEvent>
@@ -119,6 +120,14 @@ public:
      * @param capSize   the image is scaled by linear interpolation to this size
      */
     void screenCapture(QImage * capImg, QSize capSize);
+
+    /**
+     * @brief renderHighRes Render the scene to a high resolution image file
+     * @param filename Output filename
+     * @param width Width of the output image
+     * @param height Height of the output image
+     */
+    void renderHighRes(const std::string &filename, int width, int height);
 
     /// getters for currently active view, terrain, typemaps, renderer, ecosystem
     PMrender::TRenderer * getRenderer();

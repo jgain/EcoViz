@@ -187,6 +187,71 @@ QSize GLWidget::sizeHint() const
 }
 
 
+void GLWidget::renderHighRes(const std::string &filename, int width, int height)
+{
+    if (!active) return;
+
+    makeCurrent();
+
+    // 1. Save current state
+    bool oldOverviewEnabled = overviewEnabled;
+    float oldWidth = view->width;
+    float oldHeight = view->height;
+
+    // 2. Setup for high res render
+    overviewEnabled = false; // Disable mini-map
+
+    // Create FBO
+    QOpenGLFramebufferObjectFormat format;
+    format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+    QOpenGLFramebufferObject fbo(width, height, format);
+
+    if (!fbo.isValid()) {
+        std::cerr << "Error: Invalid FBO for high res render." << std::endl;
+        // Restore state
+        overviewEnabled = oldOverviewEnabled;
+        return;
+    }
+
+    fbo.bind();
+    glViewport(0, 0, width, height);
+    view->setDim(0.0f, 0.0f, (float)width, (float)height);
+
+    // Force renderer to resize its internal FBOs (Radiance Scaling buffers) to match the high-res output
+    // The renderer uses 2x resolution internally for AA, so we pass 2*width, 2*height
+    renderer->updateRadianceScalingBuffers(2 * width, 2 * height, true);
+
+    // 3. Render
+    // Pass the capture FBO handle so the renderer blits to it instead of screen (0)
+    renderer->forceTextureRebind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderer->draw(view, fbo.handle());
+
+    // 4. Save to file
+    QImage image = fbo.toImage();
+    if (!image.save(QString::fromStdString(filename))) {
+        std::cerr << "Error: Failed to save high res image to " << filename << std::endl;
+    } else {
+        std::cerr << "High res render saved to " << filename << std::endl;
+    }
+
+    // 5. Cleanup and restore
+    fbo.release();
+
+    overviewEnabled = oldOverviewEnabled;
+    view->setDim(0.0f, 0.0f, oldWidth, oldHeight);
+    
+    // Reset viewport to widget size
+    glViewport(0, 0, this->width(), this->height());
+    
+    // Restore renderer buffers to original widget size
+    renderer->updateRadianceScalingBuffers(2 * this->width(), 2 * this->height(), true);
+
+    // Force update to ensure widget state is consistent
+    update();
+}
+
+
 void GLWidget::screenCapture(QImage * capImg, QSize capSize)
 {
     paintGL();
@@ -700,7 +765,7 @@ void GLWidget::paintGL()
             renderer->updateTypeMapTexture(scene->getTypeMap(getOverlay())); // only necessary if the texture is changing dynamically
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderer->draw(view);
+        renderer->draw(view, 0);
 
         // ** overview map draw : draw on resrtricted viewport:
         // ** can be turned off - but no terrain selection until re-enabled.
@@ -839,6 +904,23 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         focusviz = !focusviz;
         winparent->rendercount++;
         update();
+    }
+
+    if(event->key() == Qt::Key_H) // 'H' for High-Res render
+    {
+         // Use path delimiter appropriate for Linux as per user's OS context
+         std::string path = scene->getDataDir();
+         if (!path.empty() && path.back() != '/') {
+             path += "/";
+         }
+         std::string filename = path + "highres_render_" + wname + ".png";
+
+         // Preserve aspect ratio
+         float aspect = (float)this->height() / (float)this->width();
+         int targetWidth = 4000;
+         int targetHeight = (int)(targetWidth * aspect);
+
+         renderHighRes(filename, targetWidth, targetHeight);
     }
 
     if(event->key() == Qt::Key_F2)

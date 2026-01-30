@@ -30,6 +30,7 @@ public:
             "<li><b>V:</b> Top-down view (Orbit mode).</li>"
             "<li><b>F:</b> Toggle focus stick visibility (Orbit mode).</li>"
             "<li><b>M:</b> Toggle minimap visibility.</li>"
+            "<li><b>H:</b> Save a high res (4000x4000px) PNG of symbolic rendering.</li>"
             "<li><b>Ctrl + Mouse Wheel:</b> Adjust transect width.</li>"
             "</ul>"
             "<h2>Mouse Controls</h2>"

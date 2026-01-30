@@ -1383,7 +1383,7 @@ void TRenderer::bindDecals(int width, int height, unsigned char * buffer)
     f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 }
 
-void TRenderer::draw(View * view)
+void TRenderer::draw(View * view, GLuint targetFBO)
 {
     if (!shadersReady) // not compiled!
     {
@@ -1670,7 +1670,7 @@ void TRenderer::draw(View * view)
             shadModel == RADIANCE_SCALING_TRANSECT ||
             shadModel == RADIANCE_SCALING_OVERVIEW)
       {
-        f->glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
+        f->glBindFramebuffer(GL_FRAMEBUFFER, targetFBO);  CE();
         f->glViewport(viewport[0], viewport[1], viewport[2], viewport[3]); // reset viewport to system setting
       }
 
@@ -1762,11 +1762,17 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
     ef->glBindVertexArray(0);  CE();
 
     // bind draw buffer (system
-    f->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);  CE();
+    f->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO);  CE();
     // bind read buffer (fbo)
     f->glBindFramebuffer(GL_READ_FRAMEBUFFER, fboRSOutput);  CE();
     // set draw buffer
     GLenum buf = GL_BACK;
+    // For FBOs (non-zero), draw buffer is usually GL_COLOR_ATTACHMENT0, but let's stick to standard behavior.
+    // However, blitting to a user-provided FBO might need attention if it doesn't have a BACK buffer.
+    // If targetFBO != 0, it likely uses COLOR_ATTACHMENT0.
+    if (targetFBO != 0) {
+        buf = GL_COLOR_ATTACHMENT0;
+    }
     ef->glDrawBuffers(1, &buf);
     // blit to the default framebuffer/back_buffer
     ef->glBlitFramebuffer(0, 0, _w, _h,
@@ -1777,7 +1783,7 @@ if (shadModel == RADIANCE_SCALING || shadModel == RADIANCE_SCALING_TRANSECT ||
 
    // reset viewport to system setting
    f->glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-   f->glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   f->glBindFramebuffer(GL_FRAMEBUFFER, targetFBO);
   }
 
   f->glUseProgram(0);  CE();

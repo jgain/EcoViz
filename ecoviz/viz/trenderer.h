@@ -437,7 +437,7 @@ public:
 
     // draw call -takes the View object; if you want manipulators drawn the drawParams must be ready when
     // this method is disptached.i.e. call setConstraintDrawParams() first
-    void draw(View * view);
+    void draw(View * view, GLuint targetFBO = 0);
 
     // draw call for sunlight visibility rendering. Pass 1 = for base indexed terrain, pass 2 = for canopy
     // light intersection

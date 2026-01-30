@@ -511,6 +511,7 @@ public:
     NoiseField * getNoiseField(){ return nfield; }
     DataMaps * getDataMaps(){ return dmaps; }
     std::shared_ptr<CohortMaps> getCohortMaps()  { return cohortmaps; }
+    std::string getDataDir() { return datadir; }
 
     // set new Terrain core data; assumes newTerr has internal state set up
     void setNewTerrainData(std::unique_ptr<Terrain> newTerr, Terrain *master)
