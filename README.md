@@ -10,7 +10,7 @@ Ecoviz is a C++ application developed using the Qt6 framework for visualizing ec
 
 1. [Prerequisites](#prerequisites)
 2. [Installation](#installation)
-   - [Ubuntu Installation](#ubuntu-installation)
+   - [Linux Installation](#linux-installation)
    - [Windows Installation](#windows-installation)
 3. [Building and Running Ecoviz](#building-and-running-ecoviz)
    - [Ubuntu](#ubuntu)
@@ -32,9 +32,9 @@ Before you can run Ecoviz, ensure that you have the following tools and librarie
 
 ## Installation
 
-### Ubuntu Installation
+### Linux Installation
 
-Follow these steps to set up Ecoviz on Ubuntu:
+Follow these steps to set up Ecoviz on **Ubuntu**:
 
 1. **Install Required Packages**:
    - Open a terminal and run the following command to install the necessary packages:
@@ -49,6 +49,11 @@ Follow these steps to set up Ecoviz on Ubuntu:
      sudo apt install gcc-9 g++-9
      ```
    - Ensure that the correct version is set as default if multiple versions are installed.
+  
+For **Fedora/RedHat**, install the following packages:
+```sh
+sudo dnf install boost-devel qt6-qtbase-devel qt6-qtcharts-devel mesa-libGLU-devel glm-devel
+```
 
 ### Windows Installation
 
